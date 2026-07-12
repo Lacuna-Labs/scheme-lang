@@ -44,7 +44,9 @@ const BLOSSOM_LINES = [
  * comfortable on a phone terminal.
  */
 export function sakuraBanner({ version = '1.0', tagline } = {}) {
-  const nodeMajor = (process.versions && process.versions.node) || '?'
+  const nodeMajor = (process.versions && process.versions.node)
+    ? process.versions.node.split('.')[0]
+    : '?'
   const rightLines = [
     '',
     role.strong('Sakura Scheme') + role.dim(`  v${version}`),
@@ -77,7 +79,9 @@ function visibleLength(s) {
  * Same shape as the Sakura banner, minus the flower.
  */
 export function neutralBanner({ name, version, tagline }) {
-  const nodeMajor = (process.versions && process.versions.node) || '?'
+  const nodeMajor = (process.versions && process.versions.node)
+    ? process.versions.node.split('.')[0]
+    : '?'
   return [
     '',
     role.section(name) + role.dim(`  v${version || '0'}`),
