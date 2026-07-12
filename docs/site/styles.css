@@ -188,6 +188,39 @@ hr {
   max-width: 60ch;
   margin: 0 0 2rem;
 }
+.section h3 {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin: 1.75rem 0 0.5rem;
+  letter-spacing: -0.005em;
+}
+.section h3 + p,
+.section h3 + ul {
+  margin-top: 0.5rem;
+}
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+  max-width: 68ch;
+}
+.feature-list li {
+  padding: 0.45rem 0 0.45rem 1.1rem;
+  border-left: 2px solid var(--line);
+  margin: 0 0 0.4rem;
+  line-height: 1.5;
+}
+.feature-list li strong {
+  color: var(--ink);
+}
+.feature-list code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--cream);
+  padding: 0.05em 0.35em;
+  border-radius: 2px;
+}
 
 /* ── REPL panel ─────────────────────────────────────────────────── */
 .repl {

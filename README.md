@@ -241,21 +241,54 @@ That returns a list of ten circles the display renders as one image. If you're i
 
 ---
 
-## Features (short version)
+## Language features
 
-The features you'll actually reach for in a session:
+Small, stable, and made for two audiences: humans who know Scheme (or want to) and LLMs learning to compose Scheme for tool calls. Every dialect gets these — they're the base language, not any one product's vocabulary.
+
+### Core language
+
+- **R7RS-subset core.** `define`, `lambda`, `let` / `let*` / `letrec`, `cond`, `case`, `if`, `when` / `unless`, `quote`, `quasiquote` / `unquote` / `unquote-splicing`.
+- **First-class functions + closures.** Every function is a value; lambdas capture their enclosing environment.
+- **Tail-call optimization.** Trampoline underneath. Deep recursion doesn't blow the stack — `(fact 1000000)` works.
+- **Hygienic macros.** `syntax-rules` for pattern-based macros; `define-macro` for classic style.
+- **80+ standard primitives.** Arithmetic, list ops (`car`/`cdr`/`cons`/`append`/`reverse`/`zip`/`take`/`drop`/`first`/`last`/`nth`), string ops, math (`sqrt`, `sin`/`cos`/`tan`, `atan2`, `expt`, `floor`/`ceil`/`round`), higher-order (`map`, `filter`, `fold` / `fold-left` / `fold-right`, `reduce`, `for-each`, `any`, `every`, `count`, `apply`).
+- **Batteries for money + shape.** Financial helpers (`margin`, `markup`, `markdown`, `pct`, `pct-change`, `cagr`, `sma`) and shape verbs (`circle`, `disc`) live in the base so dialects don't reinvent them.
+
+### Structure for programs at scale
+
+- **Verb registry.** Every primitive and every custom verb carries metadata — arity, contract, docstring, tiered examples, source location, permission tier. *One source* powers REPL help, IDE hover, generated docs, and LLM tool-call schemas. Add a verb; everything downstream picks it up.
+- **SLAT — S-expression composition format.** `.slat` files parse with the same reader as `.scm`. Config, records, notebooks, session dumps, training corpora — all sit in one uniform sexp format. Comment-tolerant, round-trip safe, streamable line-by-line. One shape for code and data means every tool that reads one reads the other.
+- **Adapter interface.** Plug your own I/O in one call to `setAdapters(…)` — graphics, audio, network, database, whatever. The base ships with no-op stubs; your dialect overrides them.
+- **Namespaced verbs.** `namespace/action` naming (`shop/list-items`, `cart/run`, `net/fetch`). Tiers gate which verbs run at which permission level. Dispatch is one chokepoint you can inspect, log, or wrap.
+- **Fuel budget.** Every evaluation carries a fuel counter. Runaway computations halt cleanly with a real error, not a hung process.
+
+### For LLMs composing tool calls
+
+Scheme s-expressions are a natural surface for language models to generate. This base is built to make that clean.
+
+- **Uniform syntax.** Small, regular, easy to learn. A model that reads a few hundred examples writes valid programs.
+- **Verbs are strongly-metadata'd.** When a model asks "what does `shop/list-items` take?" the registry returns arity + contract + three tiered examples. That's the tool-call schema, straight from source — no separate JSON to maintain.
+- **Small vocabulary composes into big behavior.** A model doesn't need a thousand functions. It needs `let`, `lambda`, `map`, `fold`, and the verb it wants to call. Real reasoning emerges from those.
+- **Structured error records.** When a call fails, the error is a value with `:kind`, `:message`, `:source-pos`, `:did-you-mean`. A model reads that and fixes its own call on the next turn.
+- **Same reader for code and data.** A tool that emits SLAT records emits the same shape a tool that emits Scheme code emits. No mismatch between "what the model returns" and "what the runtime executes."
+
+### REPL surface
 
 - **Fuzzy tab-complete** — verbs, namespaces, meta-commands. Not just prefix.
 - **Ghost signature hints** — as you type `(map ` the row above dims to show arity + arg names + doc summary.
-- **Rainbow parens + live syntax highlighting** — matched parens the same color, cycling by depth.
-- **Auto-close parens** — type `(`, get `()` with the cursor between. Balanced Enter evaluates; unbalanced Enter adds a line.
-- **Multi-line editing** — Shift-Enter always adds a line.
-- **Ctrl-R fuzzy history search** — the emacs classic.
-- **Ctrl-O opens `$EDITOR`** — write in your real editor, come back to the REPL.
-- **Rich display** — number lists render as tables, hash-tables as key-value grids, graphics as stars.
-- **20+ meta-commands** — all discoverable via `,help`.
+- **Rainbow parens + live syntax highlighting.**
+- **Auto-close parens + multi-line editing** — balanced Enter evaluates; unbalanced Enter adds a line.
+- **Rich display** — number lists render as tables, hash-tables as key-value grids, graphics inline where the terminal supports it (iTerm2, WezTerm, kitty, sixel) or Braille everywhere else.
+- **20+ meta-commands** — `,help`, `,type`, `,doc`, `,arity`, `,examples`, `,namespace`, `,apropos`, `,search`, `,time`, `,expand`, `,trace`, `,inspect`, `,watch-file`, `,save` / `,load` session, and more. All discoverable via `,help`.
+- **Ctrl-R fuzzy history search** and **Ctrl-O opens `$EDITOR`** for anything bigger than a line.
 
-Full guide: [`docs/REPL.md`](docs/REPL.md). Features doc: [`docs/REPL-FEATURES.md`](docs/REPL-FEATURES.md).
+Full REPL guide: [`docs/REPL.md`](docs/REPL.md). REPL features doc: [`docs/REPL-FEATURES.md`](docs/REPL-FEATURES.md).
+
+### Community-forkable
+
+- **Every product is a fork.** Fork the repo, rename in `dialect.json`, drop your verbs into `verbs/`, drop your adapters into `adapters/`. The REPL and tooling discover you automatically.
+- **Sakura Scheme is one such fork** — a dialect with shop / cart / animation / persona verbs on top of this base. Same tooling, same tutorial shape, different vocabulary. Yours can be too.
+- **Every fork gets Pages for free.** See [`TEMPLATE-FOR-FORKS-PAGES.md`](TEMPLATE-FOR-FORKS-PAGES.md) for the browser-REPL-and-rendered-docs pattern.
 
 ---
 

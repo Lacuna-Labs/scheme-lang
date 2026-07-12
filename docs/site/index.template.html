@@ -16,6 +16,7 @@
     <a class="nav-brand" href="./">scheme-lang <span class="flower">&#10047;</span></a>
     <nav class="nav-links">
       <a href="#try-it">REPL</a>
+      <a href="#features">Language</a>
       <a href="#tutorial">Tutorial</a>
       <a href="#reference">Reference</a>
       <a href="#forks">Make your own</a>
@@ -67,6 +68,64 @@
   </p>
   <pre class="code"><code>curl -fsSL https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.sh | sh
 scheme-lang</code></pre>
+</section>
+
+<section class="section frame" id="features">
+  <h2>Language features</h2>
+  <p class="lede">
+    Small, stable, and made for two audiences: humans who already know
+    Scheme (or want to) and LLMs learning to compose Scheme for tool
+    calls. Every dialect gets these &mdash; they&rsquo;re the base language,
+    not any one product&rsquo;s vocabulary.
+  </p>
+
+  <h3>Core language</h3>
+  <ul class="feature-list">
+    <li><strong>R7RS-subset core.</strong> <code>define</code>, <code>lambda</code>, <code>let</code> / <code>let*</code> / <code>letrec</code>, <code>cond</code>, <code>case</code>, <code>if</code>, <code>when</code> / <code>unless</code>, <code>quote</code>, <code>quasiquote</code> / <code>unquote</code> / <code>unquote-splicing</code>. If you&rsquo;ve written Scheme before, everything you reach for is already here.</li>
+    <li><strong>First-class functions + closures.</strong> Every function is a value. Lambdas capture their enclosing environment. Higher-order composition is the whole point of the game.</li>
+    <li><strong>Tail-call optimization.</strong> A trampoline underneath means deep recursion doesn&rsquo;t blow the stack. <code>(fact 1000000)</code> works.</li>
+    <li><strong>Hygienic macros.</strong> <code>syntax-rules</code> for pattern-based macros; <code>define-macro</code> when you want the classic style.</li>
+    <li><strong>80+ standard primitives.</strong> Arithmetic, comparison, boolean, list ops (<code>car</code>/<code>cdr</code>/<code>cons</code>/<code>append</code>/<code>reverse</code>/<code>zip</code>/<code>take</code>/<code>drop</code>/<code>first</code>/<code>last</code>/<code>nth</code>), string ops, math (<code>sqrt</code>, <code>sin</code>/<code>cos</code>/<code>tan</code>, <code>atan2</code>, <code>expt</code>, <code>floor</code>/<code>ceil</code>/<code>round</code>), higher-order (<code>map</code>, <code>filter</code>, <code>fold</code> / <code>fold-left</code> / <code>fold-right</code>, <code>reduce</code>, <code>for-each</code>, <code>any</code>, <code>every</code>, <code>count</code>, <code>apply</code>).</li>
+    <li><strong>Batteries for money and shape.</strong> Financial helpers (<code>margin</code>, <code>markup</code>, <code>markdown</code>, <code>pct</code>, <code>pct-change</code>, <code>cagr</code>, simple moving average) and shape verbs (<code>circle</code>, <code>disc</code>) sit in the base so a dialect doesn&rsquo;t have to re-invent them.</li>
+  </ul>
+
+  <h3>Structure for programs at scale</h3>
+  <ul class="feature-list">
+    <li><strong>Verb registry.</strong> Every primitive and every custom verb carries metadata &mdash; arity, contract, docstring, tiered examples, source location, permission tier. <em>One source</em> powers REPL help, IDE hover, generated documentation, and LLM tool-call schemas. Add a verb, everything downstream picks it up.</li>
+    <li><strong>SLAT &mdash; S-expression composition format.</strong> <code>.slat</code> files parse with the same reader as <code>.scm</code>. Use it for config, records, notebooks, session dumps, training corpora. Comment-tolerant, round-trip safe, streamable line-by-line. One shape for code and data means every tool that reads one reads the other.</li>
+    <li><strong>Adapter interface.</strong> Plug your own I/O in one call to <code>setAdapters(&hellip;)</code> &mdash; graphics, audio, network, database, whatever your dialect needs. The base ships with no-op stubs; your dialect overrides them without touching core.</li>
+    <li><strong>Namespaced verbs.</strong> Convention is <code>namespace/action</code> (<code>shop/list-items</code>, <code>cart/run</code>, <code>net/fetch</code>). Tiers gate which verbs run at which permission level. Dispatch is one chokepoint you can inspect, log, or wrap.</li>
+    <li><strong>Fuel budget.</strong> Every evaluation carries a fuel counter. Runaway computations halt cleanly with a real error, not a hung process.</li>
+  </ul>
+
+  <h3>For LLMs composing tool calls</h3>
+  <p>Scheme s-expressions are a natural surface for language models to
+     generate. This base is built to make that clean.</p>
+  <ul class="feature-list">
+    <li><strong>Uniform syntax.</strong> Small, regular, easy to learn. A model that reads a few hundred examples writes valid programs.</li>
+    <li><strong>Verbs are strongly-metadata&rsquo;d.</strong> When a model asks &ldquo;what does <code>shop/list-items</code> take?&rdquo; the registry returns arity + contract + three tiered examples. That&rsquo;s the tool-call schema, straight from the source, no separate JSON to maintain.</li>
+    <li><strong>Small vocabulary composes into big behavior.</strong> A model doesn&rsquo;t need a thousand functions. It needs <code>let</code>, <code>lambda</code>, <code>map</code>, <code>fold</code>, and the verb it wants to call. From those, real reasoning emerges.</li>
+    <li><strong>Structured error records.</strong> When a call fails, the error is a value with <code>:kind</code>, <code>:message</code>, <code>:source-pos</code>, and <code>:did-you-mean</code>. A model can read that and fix its own call on the next turn.</li>
+    <li><strong>Same reader for code and data.</strong> A tool that emits SLAT records is emitting the same thing a tool that emits Scheme code emits. No mismatch between &ldquo;what the model returns&rdquo; and &ldquo;what the runtime executes.&rdquo;</li>
+  </ul>
+
+  <h3>REPL &amp; developer surface</h3>
+  <ul class="feature-list">
+    <li><strong>Fuzzy tab-complete</strong> &mdash; verbs, namespaces, meta-commands. Not just prefix.</li>
+    <li><strong>Ghost signature hints</strong> &mdash; as you type <code>(map </code> the row above dims to show arity + arg names + doc summary.</li>
+    <li><strong>Rainbow parens + live syntax highlighting.</strong></li>
+    <li><strong>Auto-close parens + multi-line editing</strong> &mdash; balanced Enter evaluates, unbalanced Enter adds a line.</li>
+    <li><strong>Rich display</strong> &mdash; number lists render as tables, hash-tables as key-value grids, graphics inline where the terminal supports it.</li>
+    <li><strong>20+ meta-commands</strong> &mdash; <code>,help</code>, <code>,type</code>, <code>,doc</code>, <code>,arity</code>, <code>,examples</code>, <code>,namespace</code>, <code>,apropos</code>, <code>,search</code>, <code>,time</code>, <code>,expand</code>, <code>,trace</code>, <code>,inspect</code>, <code>,watch-file</code>, <code>,save</code> / <code>,load</code> session, and more. All discoverable via <code>,help</code>.</li>
+    <li><strong>Ctrl-R fuzzy history search</strong> and <strong>Ctrl-O opens $EDITOR</strong> for anything bigger than a line.</li>
+  </ul>
+
+  <h3>Community-forkable</h3>
+  <ul class="feature-list">
+    <li><strong>Every product is a fork.</strong> Fork the repo, rename in <code>dialect.json</code>, drop your verbs into <code>verbs/</code>, drop your adapters into <code>adapters/</code>. The REPL and tooling discover you automatically.</li>
+    <li><strong>Sakura Scheme is one such fork.</strong> A dialect with shop / cart / animation / persona verbs on top of this base. Same tooling, same tutorial shape, different vocabulary. Yours can be too.</li>
+    <li><strong>Every fork gets Pages for free.</strong> See <a href="https://github.com/Lacuna-Labs/scheme-lang/blob/main/TEMPLATE-FOR-FORKS-PAGES.md" target="_blank" rel="noopener">TEMPLATE-FOR-FORKS-PAGES.md</a> for the browser-REPL-and-rendered-docs pattern.</li>
+  </ul>
 </section>
 
 <section class="section frame" id="tutorial">
