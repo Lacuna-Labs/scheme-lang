@@ -11,6 +11,7 @@
 
 import { role, PALETTE, fg } from './nordic.js'
 import { renderGraphic } from './braille.js'
+import { renderInline, detectCapabilities, pickProtocol } from './imageRouter.js'
 import { Sym } from '../reader.js'
 
 /**
@@ -148,6 +149,17 @@ function renderKVGrid(obj) {
  */
 export function display(v) {
   // First check if it's a graphic — that trumps everything.
+  // Look for an inline image protocol (iTerm2 / kitty / WezTerm / sixel);
+  // fall back to Braille if none is available or rasterization declines.
+  // Force Braille when SCHEME_LANG_FORCE_BRAILLE=1 (used by tests).
+  const forceBraille = process.env.SCHEME_LANG_FORCE_BRAILLE === '1' || process.env.NO_COLOR === '1'
+  if (!forceBraille) {
+    const caps = detectCapabilities(process.env)
+    if (pickProtocol(caps) !== 'braille') {
+      const inline = renderInline(v, { caps })
+      if (inline) return inline
+    }
+  }
   const g = renderGraphic(v)
   if (g) return g.join('\n')
 

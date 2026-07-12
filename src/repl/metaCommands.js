@@ -16,6 +16,11 @@ import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
 import { display, schemeFormat } from './richDisplay.js'
 import { parse } from '../reader.js'
 import { expandProgram } from '../macro.js'
+import { installTrace, removeTrace, tracedNames } from './trace.js'
+import { inspect } from './valueInspector.js'
+import { addWatch, removeWatch, listWatches } from './fileWatcher.js'
+import { saveSession, loadSession } from './session.js'
+import { detectCapabilities, pickProtocol } from './imageRouter.js'
 
 /**
  * Context passed to every handler:
@@ -59,7 +64,10 @@ function cmdHelp(ctx, args) {
     [',inspect <val>',       'walk into a value (arrow keys)'],
     [',undo',                'pop last evaluation'],
     [',save <file>',         'save session as .slat'],
-    [',load <file>',         'load .slat session'],
+    [',load <file>',         'load .slat session (replay defines + history)'],
+    [',watch-file <path>',   'live-reload defines from .scm on save'],
+    [',unwatch-file [path]', 'stop watching (all if no path)'],
+    [',image',               'report inline-image capabilities'],
     [',shell <cmd>',         'run a shell command'],
     [',ask sakura <q>',      'ask Sakura (requires config)'],
     [',clear',               'clear the screen'],
@@ -240,24 +248,49 @@ function cmdUnwatch(ctx) {
 
 function cmdTrace(ctx, args) {
   const [name] = args
-  if (!name) return ctx.writeLine(role.warn('usage: ,trace <fn>'))
-  ctx.traces = ctx.traces || new Set()
-  ctx.traces.add(name)
-  ctx.writeLine(role.ok(`tracing ${name} (note: interpreter tracing hook is stub)`))
+  if (!name) {
+    const current = tracedNames(ctx)
+    if (current.length === 0) return ctx.writeLine(role.dim('(nothing traced) — usage: ,trace <fn>'))
+    return ctx.writeLine(role.dim('tracing: ') + role.text(current.join(', ')))
+  }
+  const r = installTrace(ctx, name)
+  ctx.writeLine(r.ok ? role.ok(r.message) : role.warn(r.message))
 }
 
 function cmdUntrace(ctx, args) {
   const [name] = args
-  if (!name || !ctx.traces) return
-  ctx.traces.delete(name)
-  ctx.writeLine(role.dim(`untraced ${name}`))
+  if (!name) {
+    // Untrace all.
+    const list = tracedNames(ctx)
+    if (list.length === 0) return ctx.writeLine(role.dim('nothing to untrace'))
+    for (const n of list) removeTrace(ctx, n)
+    return ctx.writeLine(role.dim(`untraced ${list.length} name(s)`))
+  }
+  const r = removeTrace(ctx, name)
+  ctx.writeLine(r.ok ? role.dim(r.message) : role.warn(r.message))
 }
 
-function cmdInspect(ctx, args) {
+async function cmdInspect(ctx, args) {
   const src = args.join(' ')
   const val = src ? tryEval(ctx, src) : ctx.results.last
-  ctx.writeLine(display(val))
-  ctx.writeLine(role.dim('(full inspector walker coming in v1.1; use ,type / ,arity for now)'))
+  if (val === undefined && !src) {
+    ctx.writeLine(role.dim('nothing to inspect — evaluate something first, or pass an expression'))
+    return
+  }
+  // Non-TTY: fall back to display() so piped/tests work.
+  if (!process.stdin.isTTY) {
+    ctx.writeLine(display(val))
+    ctx.writeLine(role.dim('(non-interactive: showing rendered value; arrow-key walker needs a TTY)'))
+    return
+  }
+  const result = await inspect(ctx, val)
+  if (result.kind === 'bind') {
+    ctx.results.last = result.value
+    ctx.results.list.push(result.value)
+    if (ctx.results.list.length > 20) ctx.results.list.shift()
+    if (typeof ctx.rebindResults === 'function') ctx.rebindResults()
+    ctx.writeLine(role.dim('bound focus to _ · ') + display(result.value))
+  }
 }
 
 function tryEval(ctx, src) {
@@ -279,29 +312,55 @@ function cmdUndo(ctx) {
 function cmdSave(ctx, args) {
   const [file] = args
   if (!file) return ctx.writeLine(role.warn('usage: ,save <file>'))
-  const lines = ['#slat session:1']
-  ctx.results.list.forEach((v, i) => {
-    lines.push(`result ${i} := ${schemeFormat(v)}`)
-  })
-  try {
-    writeFileSync(file, lines.join('\n') + '\n', 'utf-8')
-    ctx.writeLine(role.ok(`saved ${ctx.results.list.length} result(s) to ${file}`))
-  } catch (e) {
-    ctx.writeLine(role.err(`save failed: ${e.message}`))
-  }
+  const r = saveSession(ctx, file)
+  ctx.writeLine(r.ok ? role.ok(r.message) : role.err('save failed: ' + r.message))
 }
 
 function cmdLoad(ctx, args) {
-  const [file] = args
-  if (!file) return ctx.writeLine(role.warn('usage: ,load <file>'))
-  try {
-    const raw = readFileSync(file, 'utf-8')
-    ctx.writeLine(role.dim(`loaded ${raw.split('\n').length} lines from ${file}`))
-    // Actual replay hook is v1.1 work.
-    ctx.writeLine(role.dim('(replay hook coming in v1.1 — session load is currently informational)'))
-  } catch (e) {
-    ctx.writeLine(role.err(`load failed: ${e.message}`))
+  const yesAll = args.includes('--yes-all')
+  const file = args.filter(a => !a.startsWith('--'))[0]
+  if (!file) return ctx.writeLine(role.warn('usage: ,load <file> [--yes-all]'))
+  const r = loadSession(ctx, file, { yesAll })
+  ctx.writeLine(r.ok ? role.ok(r.message) : role.err('load failed: ' + r.message))
+}
+
+function cmdWatchFile(ctx, args) {
+  const yesAll = args.includes('--yes-all')
+  const path = args.filter(a => !a.startsWith('--'))[0]
+  if (!path) {
+    const active = listWatches(ctx)
+    if (active.length === 0) return ctx.writeLine(role.dim('(no active watchers) — usage: ,watch-file <path>'))
+    ctx.writeLine(role.dim('watching:'))
+    for (const p of active) ctx.writeLine('  ' + role.text(p))
+    return
   }
+  const r = addWatch(ctx, path, { yesAll })
+  ctx.writeLine(r.ok ? role.ok(r.message) : role.warn(r.message))
+}
+
+function cmdUnwatchFile(ctx, args) {
+  const path = args.filter(a => !a.startsWith('--'))[0]
+  const r = removeWatch(ctx, path)
+  ctx.writeLine(r.ok ? role.dim(r.message) : role.warn(r.message))
+}
+
+function cmdImage(ctx, args) {
+  // Diagnostic — report what the router thinks the terminal supports.
+  const caps = detectCapabilities(process.env)
+  const proto = pickProtocol(caps)
+  ctx.writeLine('')
+  ctx.writeLine(role.section('inline image capabilities'))
+  ctx.writeLine('  ' + role.meta('protocol'.padEnd(12)) + role.text(proto))
+  ctx.writeLine('  ' + role.meta('iterm2'.padEnd(12)) + role.text(String(caps.iterm)))
+  ctx.writeLine('  ' + role.meta('wezterm'.padEnd(12)) + role.text(String(caps.wezterm)))
+  ctx.writeLine('  ' + role.meta('kitty'.padEnd(12)) + role.text(String(caps.kitty)))
+  ctx.writeLine('  ' + role.meta('sixel'.padEnd(12)) + role.text(String(caps.sixel)))
+  if (proto === 'braille') {
+    ctx.writeLine('')
+    ctx.writeLine(role.dim('  Braille fallback active. Set TERM_PROGRAM=iTerm.app'))
+    ctx.writeLine(role.dim('  or run under kitty/WezTerm for inline PNGs.'))
+  }
+  ctx.writeLine('')
 }
 
 function cmdShell(ctx, args) {
@@ -366,6 +425,10 @@ function cmdKeys(ctx) {
     ['Up / Down',           'previous / next history'],
     ['Left / Right',        'move cursor'],
     ['Alt-B / Alt-F',       'word left / right'],
+    ['Ctrl-]  / Alt-]',     'paredit: barf-forward (splurge)'],
+    ['Ctrl-\\ / Alt-S',     'paredit: slurp-forward'],
+    ['Alt-[',               'paredit: slurp-backward'],
+    ['Alt-K',               'paredit: kill enclosing form'],
     ['F1',                  'help for symbol at cursor'],
     ['Esc',                 '(vim mode) enter normal mode'],
   ]
@@ -404,26 +467,48 @@ export const COMMANDS = [
   { names: ['undo'],                       handler: cmdUndo,      doc: 'pop last' },
   { names: ['save'],                       handler: cmdSave,      doc: 'save session' },
   { names: ['load'],                       handler: cmdLoad,      doc: 'load session' },
+  { names: ['watch-file', 'wf'],           handler: cmdWatchFile, doc: 'live-reload .scm file on save' },
+  { names: ['unwatch-file', 'uwf'],        handler: cmdUnwatchFile, doc: 'stop watching a file' },
+  { names: ['image', 'inline-image'],      handler: cmdImage,     doc: 'inline image capabilities' },
   { names: ['shell', 'sh', '!'],           handler: cmdShell,     doc: 'shell command' },
   { names: ['ask'],                        handler: cmdAsk,       doc: 'ask sakura' },
   { names: ['clear', 'cls'],               handler: cmdClear,     doc: 'clear screen' },
   { names: ['keys', 'keybindings'],        handler: cmdKeys,      doc: 'keybindings' },
   { names: ['reset'],                      handler: cmdReset,     doc: 'reset env' },
   { names: ['exit', 'quit', 'q'],          handler: cmdExit,      doc: 'exit REPL' },
-  // v1.1 features — stubbed. Discoverable via ,help + tab-complete; produce
-  // a friendly "coming in v1.1" message when invoked.
-  { names: ['notebook', 'nb'],             handler: cmdV11Stub('notebook'),    doc: 'notebook mode (v1.1)' },
-  { names: ['live', 'live-reload'],        handler: cmdV11Stub('live reload'), doc: 'live-reload .scm files (v1.1)' },
-  { names: ['paredit'],                    handler: cmdV11Stub('full paredit'),doc: 'splurge/slurp/kill-form (v1.1)' },
-  { names: ['lsp'],                        handler: cmdV11Stub('LSP mode'),    doc: 'language-server mode (v1.1)' },
-  { names: ['image', 'inline-image'],      handler: cmdV11Stub('inline images'), doc: 'Sixel/iTerm2/kitty/wezterm (v1.1)' },
+  // Future work — stubbed. Discoverable via ,help + tab-complete; produce
+  // a friendly "coming in v1.2" message when invoked. These are v1.2
+  // roadmap items that fell outside the v1.1 scope. NOTE: paredit is
+  // shipped as key bindings (Ctrl-]/Alt-[/Alt-S/Alt-K) rather than a
+  // meta-command, so it's still listed here as "full paredit" for the
+  // ADDITIONAL forms (splice-* / wrap-* / raise-*) that v1.2 will add.
+  { names: ['notebook', 'nb'],             handler: cmdV11Stub('notebook mode'),    doc: 'notebook mode (v1.2)' },
+  { names: ['paredit'],                    handler: cmdPareditHelp,                 doc: 'paredit key bindings' },
+  { names: ['lsp'],                        handler: cmdV11Stub('LSP mode'),         doc: 'language-server mode (v1.2)' },
 ]
+
+function cmdPareditHelp(ctx) {
+  const { writeLine } = ctx
+  writeLine('')
+  writeLine(role.section('paredit key bindings'))
+  writeLine('')
+  const rows = [
+    ['Ctrl-]  / Alt-]',   'barf-forward (splurge) — pop last child out of the enclosing form'],
+    ['Ctrl-\\ / Alt-S',   'slurp-forward — pull the next form into the enclosing form'],
+    ['Alt-[',             'slurp-backward — pull the previous form in'],
+    ['Alt-K',             'kill enclosing form (delete the surrounding parens + content)'],
+  ]
+  for (const [k, doc] of rows) writeLine('  ' + role.meta(k.padEnd(20)) + role.text(doc))
+  writeLine('')
+  writeLine(role.dim('  v1.2 adds: splice / wrap-round / raise / transpose.'))
+  writeLine('')
+}
 
 function cmdV11Stub(featureName) {
   return function(ctx, _args) {
     ctx.writeLine('')
-    ctx.writeLine(role.strong(`,${featureName}`) + role.dim('  — coming in v1.1'))
-    ctx.writeLine(role.dim('  named on the tin. Under active design. See docs/REPL-FEATURES.md v1.1 roadmap.'))
+    ctx.writeLine(role.strong(`,${featureName}`) + role.dim('  — coming in v1.2'))
+    ctx.writeLine(role.dim('  named on the tin. Under active design. See docs/REPL-FEATURES.md v1.2 roadmap.'))
     ctx.writeLine('')
   }
 }

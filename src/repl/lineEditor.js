@@ -31,6 +31,7 @@ import { currentToken, completeSymbol, commonPrefix } from './complete.js'
 import { role, PALETTE, fg, dim, CTRL } from './nordic.js'
 import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
 import { metaCommandNames } from './metaCommands.js'
+import { slurpForward, barfForward, slurpBackward, killForm } from './paredit.js'
 
 // ── key decoder ──────────────────────────────────────────────────────
 
@@ -63,6 +64,11 @@ function parseKey(buf) {
   if (s === '\x11') return { key: 'ctrl-q' }
   if (s === '\x16') return { key: 'ctrl-v' }
   if (s === '\x18') return { key: 'ctrl-x' }
+  // Paredit keys — Ctrl-] (0x1D) is splurge/barf-forward,
+  // Ctrl-\ (0x1C) is slurp-forward. Ctrl-[ collides with Esc so we
+  // reserve Alt-[ for slurp-backward and Alt-k for kill-form.
+  if (s === '\x1d') return { key: 'ctrl-]' }
+  if (s === '\x1c') return { key: 'ctrl-\\' }
 
   // ESC-based sequences
   if (b === 0x1b) {
@@ -248,6 +254,11 @@ export class LineEditor {
     if (K === 'down') return this._nextHistory()
     if (K === 'alt-b' || K === 'ctrl-left') return this._wordLeft()
     if (K === 'alt-f' || K === 'ctrl-right') return this._wordRight()
+    // Paredit — parse-tree edits over the input buffer.
+    if (K === 'ctrl-]' || K === 'alt-]') return this._pareditBarfForward()
+    if (K === 'ctrl-\\' || K === 'alt-s') return this._pareditSlurpForward()
+    if (K === 'alt-[') return this._pareditSlurpBackward()
+    if (K === 'alt-k') return this._pareditKillForm()
     if (K === 'f1') return this._insertHelpForToken()
     if (K === 'escape') {
       if (this.vim) { this.vimMode = 'normal'; this._render(); return }
@@ -548,6 +559,36 @@ export class LineEditor {
     if (this.tabCandidates) {
       this.tabCandidates.tokenEnd = this.cursor
     }
+  }
+
+  // ── paredit ──────────────────────────────────────────────────────
+
+  _pareditSlurpForward() {
+    const r = slurpForward(this.buffer, this.cursor)
+    this.buffer = r.buffer
+    this.cursor = r.cursor
+    this._render()
+  }
+
+  _pareditBarfForward() {
+    const r = barfForward(this.buffer, this.cursor)
+    this.buffer = r.buffer
+    this.cursor = r.cursor
+    this._render()
+  }
+
+  _pareditSlurpBackward() {
+    const r = slurpBackward(this.buffer, this.cursor)
+    this.buffer = r.buffer
+    this.cursor = r.cursor
+    this._render()
+  }
+
+  _pareditKillForm() {
+    const r = killForm(this.buffer, this.cursor)
+    this.buffer = r.buffer
+    this.cursor = r.cursor
+    this._render()
   }
 
   // ── F1 help ──────────────────────────────────────────────────────

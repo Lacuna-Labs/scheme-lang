@@ -162,9 +162,11 @@ Or the JS-object form (for programmatic use):
 Color defaults to sakura pink; override with `:fill` or `:stroke`
 metadata (v1.1).
 
-If your terminal supports iTerm2/kitty inline images or Sixel, the
-REPL will use those instead when we wire the router (v1.1). Today,
-everything renders as Braille.
+If your terminal supports iTerm2, WezTerm, kitty, or Sixel, the REPL
+automatically routes graphics to the richest inline protocol available.
+Braille remains the universal fallback so a plain xterm still gets a
+picture. Type `,image` to see what your terminal advertises. Set
+`SCHEME_LANG_FORCE_BRAILLE=1` to force the fallback (useful in tests).
 
 ## Meta commands
 
@@ -192,13 +194,25 @@ here's the ones you'll actually use:
 ### Watch + trace
 - `,watch <expr>`            — reprint the value at every prompt
 - `,unwatch`                 — clear the watch
-- `,trace <fn>`              — record calls (stub in v1.0)
+- `,trace <fn>`              — log every call to `fn` with nested indent
+- `,untrace <fn>`            — remove one trace (or bare `,untrace` clears all)
+- `,inspect <val>`           — walk into a value with arrow keys (TTY only)
+
+### Live reload
+- `,watch-file <path>`       — reload `.scm` defines when the file changes
+- `,watch-file <path> --yes-all` — silently overwrite existing bindings
+- `,unwatch-file <path>`     — stop watching one file
+- `,unwatch-file`            — stop watching every file
 
 ### Session
-- `,save <file>`             — dump result history as a SLAT
-- `,load <file>`             — load a SLAT (informational in v1.0)
+- `,save <file>.slat`        — dump defines + history + `_` results
+- `,load <file>.slat`        — replay the defines, restore history + `_`s
+- `,load <file> --yes-all`   — skip the per-binding confirmation
 - `,undo`                    — pop the last result
 - `,reset`                   — reset the environment (stub)
+
+### Graphics
+- `,image`                   — report inline-image protocol availability
 
 ### Escape hatches
 - `,shell <cmd>`             — pipe into the shell, print output
@@ -245,6 +259,10 @@ The full list is `,keys`. The load-bearing ones:
 | `Up` / `Down`           | history                                         |
 | `Left` / `Right`        | move cursor                                     |
 | `Alt-B` / `Alt-F`       | word left / right                               |
+| `Ctrl-]` / `Alt-]`      | paredit: barf-forward (splurge)                 |
+| `Ctrl-\` / `Alt-S`      | paredit: slurp-forward                          |
+| `Alt-[`                 | paredit: slurp-backward                         |
+| `Alt-K`                 | paredit: kill enclosing form                    |
 | `F1`                    | help for the symbol under the cursor            |
 
 ### Vim mode
@@ -341,21 +359,25 @@ next to the Sakura `dialect.json` in this repo.
 it with any leftover args. Zero args → your REPL. `eval "…"` etc.
 are conventional but not enforced by the launcher.
 
-## Not for v1.0 (coming in v1.1+)
+## Shipped in v1.1
+
+- `,trace <fn>` — per-call render with nested indent (see above).
+- `,inspect <val>` — arrow-key value walker (see above).
+- `,watch-file <path>` — live reload of `.scm` defines on save.
+- `,save` / `,load` — full session replay: defines + history + `_`.
+- Inline image router — iTerm2, WezTerm, kitty, Sixel, Braille fallback.
+- Paredit — slurp / barf / kill-form key bindings (see keybindings).
+
+## Not for v1.1 (coming in v1.2+)
 
 Named on the tin so you don't wait for what isn't here:
 
-- Full paredit (splurge/slurp/kill-form/select-form). Auto-close +
-  Ctrl-W give you 80% of paredit for free; the rest is v1.1.
-- Live reload on `.scm` file save.
-- `,inspect` walker (arrow-key value tree).
-- `,trace` with actual per-call render (the meta-command records
-  intent today; the interpreter hook is v1.1).
-- `,save` / `,load` full session replay.
+- Extended paredit: splice, wrap-round, raise, transpose. Slurp/barf/
+  kill-form ship in v1.1; the additional forms follow in v1.2.
 - Notebook mode (`--web` / `.snb`).
 - Real `,ask sakura` wiring — the REPL has the plumbing; the endpoint
   isn't wired.
-- Sixel / iTerm2 inline-image router (graphics render as Braille today).
+- LSP mode.
 
 ## Not for the REPL, ever
 

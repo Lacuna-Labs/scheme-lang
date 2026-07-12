@@ -12,7 +12,7 @@
 //   • history + config
 
 import { parse } from '../reader.js'
-import { evaluate, Env } from '../interp.js'
+import { evaluate, apply as applyFn, Env } from '../interp.js'
 import { expandProgram } from '../macro.js'
 import { makeBaseEnv } from '../base.js'
 import { LineEditor } from './lineEditor.js'
@@ -24,6 +24,7 @@ import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
 import { completeSymbol, currentToken } from './complete.js'
 import { display } from './richDisplay.js'
 import { role } from './nordic.js'
+import { recordSessionLine } from './session.js'
 import { Sym } from '../reader.js'
 
 const DEFAULT_FUEL = 200000
@@ -85,8 +86,18 @@ export async function startRepl(options = {}) {
       process.exit(code)
     },
     evaluate: (src) => runSource(src, env, fuel),
+    applyFn: (fn, args) => applyFn(fn, args, fuel),
+    rebindResults,
+    // Piped/non-TTY confirm — default to false so we don't lose data;
+    // TTY mode lets the user pass --yes-all explicitly. A future hook
+    // could wire an interactive prompt here.
+    confirm: () => false,
     watchExpr: null,
     traces: null,
+    traceOriginals: null,
+    fileWatchers: null,
+    sessionLines: [],
+    sessionResults: [],
   }
 
   // Sig hint — the ghost row above the cursor. Given the buffer, walk
@@ -195,6 +206,7 @@ export async function startRepl(options = {}) {
       results.list.push(value)
       if (results.list.length > 20) results.list.shift()
       rebindResults()
+      recordSessionLine(ctx, line, value)
       process.stdout.write(display(value) + '\n')
     } catch (e) {
       process.stdout.write(role.err('error: ' + (e && e.message ? e.message : String(e))) + '\n')
@@ -239,6 +251,7 @@ async function runPipedRepl({ ctx, env, fuel, results, rebindResults, prompt }) 
       results.list.push(value)
       if (results.list.length > 20) results.list.shift()
       rebindResults()
+      recordSessionLine(ctx, acc, value)
       process.stdout.write(display(value) + '\n')
     } catch (e) {
       process.stdout.write(role.err('error: ' + (e && e.message ? e.message : String(e))) + '\n')
