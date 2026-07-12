@@ -172,12 +172,10 @@ export class LineEditor {
       this._onData = (buf) => this._handleData(buf)
       process.stdin.on('data', this._onData)
       if (process.stdin.setRawMode) process.stdin.setRawMode(true)
-      // Enable bracketed paste mode. Terminals that support it wrap paste
-      // content in ESC [ 200 ~ … ESC [ 201 ~, so we can treat the whole
-      // paste as one insert (no accidental prompt-prefix pollution).
-      if (process.stdout && process.stdout.write) {
-        process.stdout.write('\x1b[?2004h')
-      }
+      // NOTE: we don't emit \x1b[?2004h to force bracketed paste — most
+      // terminals that support it enable it themselves, and iOS terminals
+      // that DON'T support it can misbehave when nudged. We only READ the
+      // ESC [ 200 ~ / ESC [ 201 ~ markers if the terminal sends them.
       process.stdin.resume()
     })
   }
@@ -188,10 +186,6 @@ export class LineEditor {
       this._onData = null
     }
     if (process.stdin.setRawMode) process.stdin.setRawMode(false)
-    // Disable bracketed paste mode we turned on in read().
-    if (process.stdout && process.stdout.write) {
-      process.stdout.write('\x1b[?2004l')
-    }
     process.stdin.pause()
     this._resolve && this._resolve(result)
     this._resolve = null
