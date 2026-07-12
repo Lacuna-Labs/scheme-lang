@@ -68,6 +68,11 @@ export function makeBaseEnv(fuel) {
   def('map', (fn, lst) => lst.map((x) => apply(fn, [x], fuel)))
   def('filter', (fn, lst) => lst.filter((x) => apply(fn, [x], fuel) !== false))
   def('reduce', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
+  def('fold', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
+  def('fold-left', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
+  def('foldl', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
+  def('fold-right', (fn, init, lst) => lst.reduceRight((acc, x) => apply(fn, [x, acc], fuel), init))
+  def('foldr', (fn, init, lst) => lst.reduceRight((acc, x) => apply(fn, [x, acc], fuel), init))
   // (apply fn args) — invoke `fn` with the list `args` as the argument
   // list. Same fuel budget as a direct call.
   def('apply', (fn, args) => apply(fn, Array.isArray(args) ? args : [args], fuel))

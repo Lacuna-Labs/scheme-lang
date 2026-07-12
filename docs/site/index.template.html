@@ -16,6 +16,7 @@
     <a class="nav-brand" href="./">scheme-lang <span class="flower">&#10047;</span></a>
     <nav class="nav-links">
       <a href="#try-it">REPL</a>
+      <a href="#tutorial">Tutorial</a>
       <a href="#reference">Reference</a>
       <a href="#forks">Make your own</a>
       <a href="https://github.com/Lacuna-Labs/scheme-lang" target="_blank" rel="noopener">GitHub</a>
@@ -66,6 +67,141 @@
   </p>
   <pre class="code"><code>curl -fsSL https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.sh | sh
 scheme-lang</code></pre>
+</section>
+
+<section class="section frame" id="tutorial">
+  <h2>Tutorial &mdash; the fun way in</h2>
+  <p class="lede">
+    Every code block below has a <strong>Run</strong> button.
+    Click it and the expression jumps into the REPL and evaluates.
+    You can also edit it up there before you press Enter.
+    Read a few lines, click a few Runs, and you&rsquo;ll be writing your
+    own by the end.
+  </p>
+
+  <h3>1 &middot; Little math, warm up the room</h3>
+  <p>Everything you type is an expression. The parens are the shape of
+     the language &mdash; the first thing in a paren is the verb, the rest
+     are its arguments. Try these:</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(+ 1 2)">Run</button><code>(+ 1 2)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(* 6 7)">Run</button><code>(* 6 7)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(- (* 2 21) (/ 84 2))">Run</button><code>(- (* 2 21) (/ 84 2))</code></pre>
+  <p>Nested parens compose &mdash; the inner ones evaluate first. If you
+     read them right-to-left inside-out it&rsquo;s just a machine doing
+     small things in sequence.</p>
+
+  <h3>2 &middot; Give something a name</h3>
+  <p><code>define</code> hangs a name on a value. That name is now yours
+     to reuse.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(define greeting &quot;hello&quot;)">Run</button><code>(define greeting "hello")</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="greeting">Run</button><code>greeting</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(define answer (* 6 7))">Run</button><code>(define answer (* 6 7))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="answer">Run</button><code>answer</code></pre>
+  <p>The right side gets evaluated before it becomes the value of the
+     name. So <code>answer</code> is <code>42</code>, not the string
+     <code>&quot;(* 6 7)&quot;</code>.</p>
+
+  <h3>3 &middot; Make your own verb</h3>
+  <p>A function is a verb of your own invention. Same
+     <code>define</code>, different shape &mdash; put the name and arguments
+     in a paren together, then the body.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(define (square x) (* x x))">Run</button><code>(define (square x) (* x x))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(square 12)">Run</button><code>(square 12)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(define (hypot a b) (sqrt (+ (square a) (square b))))">Run</button><code>(define (hypot a b) (sqrt (+ (square a) (square b))))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(hypot 3 4)">Run</button><code>(hypot 3 4)</code></pre>
+  <p>Notice <code>hypot</code> calling <code>square</code> &mdash; your
+     functions can call each other, and it just works. Small verbs are
+     the whole game.</p>
+
+  <h3>4 &middot; Lists &mdash; things in a row</h3>
+  <p>A list is written with parens too. Quote it (that&rsquo;s the
+     apostrophe) so the reader treats it as data, not a call.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(list 1 2 3 4)">Run</button><code>(list 1 2 3 4)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="'(sun moon stars)">Run</button><code>'(sun moon stars)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(car '(a b c))">Run</button><code>(car '(a b c))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(cdr '(a b c))">Run</button><code>(cdr '(a b c))</code></pre>
+  <p><code>car</code> is the head of the list. <code>cdr</code> is
+     everything after. Yes, the names are old and a little strange &mdash;
+     that&rsquo;s Scheme tradition, and it grows on you.</p>
+
+  <h3>5 &middot; Do a thing to every thing</h3>
+  <p><code>map</code> applies a function to each item.
+     <code>filter</code> keeps the ones a predicate approves.
+     <code>fold</code> collapses a list down using a two-argument
+     combiner.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(map square '(1 2 3 4 5))">Run</button><code>(map square '(1 2 3 4 5))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(filter (lambda (x) (> x 3)) '(1 2 3 4 5 6))">Run</button><code>(filter (lambda (x) (&gt; x 3)) '(1 2 3 4 5 6))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(fold + 0 '(1 2 3 4 5 6 7 8 9 10))">Run</button><code>(fold + 0 '(1 2 3 4 5 6 7 8 9 10))</code></pre>
+  <p>You just wrote sum-of-first-ten in one line. Fold is quiet
+     magic &mdash; give it a start, give it a way to combine two things,
+     and it will chew through anything list-shaped.</p>
+
+  <h3>6 &middot; Ask a question with <code>cond</code></h3>
+  <p><code>cond</code> is a ladder of clauses. First one whose test is
+     true wins. <code>else</code> catches the rest.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(define (weather t) (cond ((> t 80) 'hot) ((> t 60) 'nice) ((> t 40) 'cool) (else 'cold)))">Run</button><code>(define (weather t)
+  (cond ((&gt; t 80) 'hot)
+        ((&gt; t 60) 'nice)
+        ((&gt; t 40) 'cool)
+        (else     'cold)))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(weather 72)">Run</button><code>(weather 72)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(map weather '(30 55 68 91))">Run</button><code>(map weather '(30 55 68 91))</code></pre>
+
+  <h3>7 &middot; Recursion &mdash; a function that calls itself</h3>
+  <p>A function can call itself. It sounds circular until you notice
+     each call is smaller than the last, and eventually one of them
+     doesn&rsquo;t need to call at all &mdash; that&rsquo;s the base case.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(define (fact n) (if (< n 2) 1 (* n (fact (- n 1)))))">Run</button><code>(define (fact n)
+  (if (&lt; n 2) 1 (* n (fact (- n 1)))))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(fact 10)">Run</button><code>(fact 10)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(map fact '(0 1 2 3 4 5 6))">Run</button><code>(map fact '(0 1 2 3 4 5 6))</code></pre>
+  <p>The trampoline underneath means you can recurse deep without
+     blowing anything up. Try <code>(fact 1000000)</code> if you like.
+     It&rsquo;s a big number.</p>
+
+  <h3>8 &middot; Higher-order &mdash; verbs that make verbs</h3>
+  <p>A function can build another function. This is where a small
+     language starts to feel like a big one.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(define (make-adder n) (lambda (x) (+ x n)))">Run</button><code>(define (make-adder n) (lambda (x) (+ x n)))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(define add5 (make-adder 5))">Run</button><code>(define add5 (make-adder 5))</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(add5 100)">Run</button><code>(add5 100)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(map (make-adder 1000) '(1 2 3 4 5))">Run</button><code>(map (make-adder 1000) '(1 2 3 4 5))</code></pre>
+
+  <h3>9 &middot; Draw something with stars</h3>
+  <p>Shape verbs are first-class. <code>circle</code> takes a center
+     and a radius and comes back as a small list you can look at,
+     compose with, or render.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(circle 40 40 15)">Run</button><code>(circle 40 40 15)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(disc 40 40 15)">Run</button><code>(disc 40 40 15)</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run="(map (lambda (n) (circle (* n 12) 20 3)) '(1 2 3 4 5 6 7 8 9 10))">Run</button><code>(map (lambda (n) (circle (* n 12) 20 3))
+     '(1 2 3 4 5 6 7 8 9 10))</code></pre>
+  <p>Ten little circles in one line, because <code>map</code> made ten
+     of them for you.</p>
+
+  <h3>10 &middot; Ask the REPL itself</h3>
+  <p>Commands that begin with a comma are meta &mdash; they ask the REPL
+     about the language, not the language about the world.</p>
+  <pre class="code scheme"><button class="run-btn" data-run=",help">Run</button><code>,help</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run=",help map">Run</button><code>,help map</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run=",examples fold">Run</button><code>,examples fold</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run=",apropos list">Run</button><code>,apropos list</code></pre>
+  <pre class="code scheme"><button class="run-btn" data-run=",time (map fact '(1 2 3 4 5 6 7 8 9 10))">Run</button><code>,time (map fact '(1 2 3 4 5 6 7 8 9 10))</code></pre>
+  <p>The whole language will tell you about itself if you ask.</p>
+
+  <h3>11 &middot; Little easter egg</h3>
+  <p>Because we couldn&rsquo;t help ourselves.</p>
+  <pre class="code scheme"><button class="run-btn" data-run="(open pod-bay-doors)">Run</button><code>(open pod-bay-doors)</code></pre>
+
+  <h3>12 &middot; Where to next</h3>
+  <p>You know enough now to build things. The
+     <a href="#reference">reference manual</a> below has every primitive
+     and macro, each with a Run button of its own. The
+     <a href="https://github.com/Lacuna-Labs/scheme-lang/blob/main/docs/REPL.md" target="_blank" rel="noopener">REPL guide</a>
+     shows the 20+ meta-commands. The
+     <a href="https://github.com/Lacuna-Labs/scheme-lang/blob/main/README.md" target="_blank" rel="noopener">README</a>
+     has the install line.</p>
+  <p>Or just keep going right here. The REPL up top remembers everything
+     you&rsquo;ve defined this session.</p>
 </section>
 
 <section class="section frame" id="reference">
