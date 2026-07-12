@@ -276,6 +276,49 @@ function runSource(src, env, fuel) {
   const forms = parse(src)
   const { forms: expanded } = expandProgram(forms)
   let last
-  for (const f of expanded) last = evaluate(f, env, fuel)
+  for (const f of expanded) last = evalReplForm(f, env, fuel)
   return last
+}
+
+// REPL-layer eval — normal Scheme, with a small friendlier intercept for
+// unbound "obviously data" forms so a beginner can type
+//
+//     sakura> (circle 40 40 15)
+//
+// and see the picture without needing to know about quotes yet.
+// Real Scheme semantics for anything the user has actually bound.
+const AUTO_QUOTE_HEADS = new Set(['circle', 'disc', 'line', 'rect', 'shapes', 'plot'])
+function evalReplForm(form, env, fuel) {
+  // (open pod-bay-doors) → HAL. Only fires if `open` is unbound.
+  if (Array.isArray(form) && form.length >= 2
+      && form[0] && form[0].name === 'open'
+      && !hasBinding(env, 'open')) {
+    const arg = form[1]
+    const argName = arg && arg.name ? arg.name
+                  : Array.isArray(arg) && arg[0] && arg[0].name === 'quote'
+                    && arg[1] && arg[1].name ? arg[1].name
+                  : null
+    if (argName === 'pod-bay-doors' || argName === 'the-pod-bay-doors') {
+      return "I'm sorry Dave. I'm afraid I can't do that."
+    }
+  }
+  // (circle 40 40 15) etc. → treat as data if head is unbound.
+  if (Array.isArray(form) && form.length >= 1
+      && form[0] && form[0].name
+      && AUTO_QUOTE_HEADS.has(form[0].name)
+      && !hasBinding(env, form[0].name)) {
+    // Return the list literally — the rich display recognises the
+    // tagged-list shape and renders it as a graphic.
+    return form
+  }
+  return evaluate(form, env, fuel)
+}
+
+function hasBinding(env, name) {
+  let e = env
+  while (e) {
+    if (e.vars && e.vars.has(name)) return true
+    e = e.parent
+  }
+  return false
 }

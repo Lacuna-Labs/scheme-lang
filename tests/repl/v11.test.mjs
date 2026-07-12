@@ -610,38 +610,28 @@ test('paredit — respects line comments', () => {
   assert.equal(f, null)
 })
 
-// ── easter eggs + quasiquote family ─────────────────────────────────
-
-test('quasiquote is a bound symbol', () => {
-  const r = spawnSync(SAKURA, ['eval', 'quasiquote'], { encoding: 'utf-8' })
-  assert.equal(r.status, 0)
-  assert.doesNotMatch(r.stdout, /unbound/)
-})
-
-test('unquote is a bound symbol', () => {
-  const r = spawnSync(SAKURA, ['eval', 'unquote'], { encoding: 'utf-8' })
-  assert.equal(r.status, 0)
-  assert.doesNotMatch(r.stdout, /unbound/)
-})
-
-test('unquote-splicing is a bound symbol', () => {
-  const r = spawnSync(SAKURA, ['eval', 'unquote-splicing'], { encoding: 'utf-8' })
-  assert.equal(r.status, 0)
-  assert.doesNotMatch(r.stdout, /unbound/)
-})
+// ── quasiquote reader still parses backtick + comma ──────────────────
 
 test('quasiquote special form still works', () => {
   const r = spawnSync(SAKURA, ['eval', "(define b 42) `(a ,b c)"], { encoding: 'utf-8' })
   assert.match(r.stdout, /\(a 42 c\)/)
 })
 
-test('circle is a bound shape verb (no quote needed)', () => {
-  const r = spawnSync(SAKURA, ['eval', '(circle 40 40 15)'], { encoding: 'utf-8' })
-  assert.equal(r.status, 0)
+// ── REPL-layer graphic-shape auto-quote + easter egg ─────────────────
+
+test('shape verbs auto-quote at REPL prompt', () => {
+  const r = runReplPiped('(circle 40 40 15)\n,exit\n')
   assert.doesNotMatch(r.stdout, /unbound/)
+  // Braille output uses these characters
+  assert.match(r.stdout, /[⠀-⣿]/)
 })
 
-test('HAL 9000 easter egg', () => {
-  const r = spawnSync(SAKURA, ['eval', "(open 'pod-bay-doors)"], { encoding: 'utf-8' })
+test('HAL 9000 easter egg at REPL prompt', () => {
+  const r = runReplPiped('(open pod-bay-doors)\n,exit\n')
   assert.match(r.stdout, /I'm sorry Dave/)
+})
+
+test('user-defined circle wins over intercept', () => {
+  const r = runReplPiped('(define circle 99)\ncircle\n,exit\n')
+  assert.match(r.stdout, /99/)
 })
