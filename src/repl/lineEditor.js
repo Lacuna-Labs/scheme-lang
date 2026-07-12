@@ -167,10 +167,17 @@ export class LineEditor {
       // just-printed result.
       this.rowsLastFrame = 0
       if (this.history) this.history.resetCursor()
+      this._pasteBuf = null   // when set, we're inside a bracketed paste
       this._render()
       this._onData = (buf) => this._handleData(buf)
       process.stdin.on('data', this._onData)
       if (process.stdin.setRawMode) process.stdin.setRawMode(true)
+      // Enable bracketed paste mode. Terminals that support it wrap paste
+      // content in ESC [ 200 ~ … ESC [ 201 ~, so we can treat the whole
+      // paste as one insert (no accidental prompt-prefix pollution).
+      if (process.stdout && process.stdout.write) {
+        process.stdout.write('\x1b[?2004h')
+      }
       process.stdin.resume()
     })
   }
@@ -181,17 +188,54 @@ export class LineEditor {
       this._onData = null
     }
     if (process.stdin.setRawMode) process.stdin.setRawMode(false)
+    // Disable bracketed paste mode we turned on in read().
+    if (process.stdout && process.stdout.write) {
+      process.stdout.write('\x1b[?2004l')
+    }
     process.stdin.pause()
     this._resolve && this._resolve(result)
     this._resolve = null
   }
 
   _handleData(buf) {
-    // Split multi-key sequences that arrive together (e.g., paste + ESC codes).
-    // Simple approach: parse repeatedly, consuming the longest recognized prefix.
+    // Bracketed paste — ESC [ 200 ~ starts, ESC [ 201 ~ ends. Between
+    // those markers we accumulate ALL bytes as one insert, then strip
+    // any prompt-prefixes and insert as if typed. This makes copying
+    // "sakura> (something)" and pasting into a fresh prompt work — the
+    // stray "sakura> " gets stripped.
+    const s = buf.toString()
+    const START = '\x1b[200~'
+    const END = '\x1b[201~'
+    if (this._pasteBuf !== null) {
+      const endIdx = s.indexOf(END)
+      if (endIdx < 0) { this._pasteBuf += s; return }
+      this._pasteBuf += s.slice(0, endIdx)
+      this._insertPaste(this._pasteBuf)
+      this._pasteBuf = null
+      // Continue parsing any bytes after the paste end.
+      const rest = s.slice(endIdx + END.length)
+      if (rest.length) this._handleData(Buffer.from(rest))
+      return
+    }
+    const startIdx = s.indexOf(START)
+    if (startIdx >= 0) {
+      // Any bytes before START are normal keystrokes.
+      if (startIdx > 0) this._handleRawKeys(Buffer.from(s.slice(0, startIdx)))
+      this._pasteBuf = ''
+      // Recurse on the rest (from END marker) via the paste path.
+      const afterStart = s.slice(startIdx + START.length)
+      if (afterStart.length) this._handleData(Buffer.from(afterStart))
+      return
+    }
+    // No bracketed paste in this buffer — parse as normal keystrokes.
+    this._handleRawKeys(buf)
+  }
+
+  _handleRawKeys(buf) {
+    // Original key-parsing loop, extracted so bracketed-paste branch
+    // above can call it for the non-paste portions.
     let i = 0
     while (i < buf.length) {
-      // Try longer prefixes first (ESC sequences can be up to 8 bytes).
       let advanced = false
       for (let len = Math.min(8, buf.length - i); len >= 1; len--) {
         const slice = buf.slice(i, i + len)
@@ -206,6 +250,22 @@ export class LineEditor {
       if (!advanced) i++
       if (!this._resolve) return  // read() resolved mid-buffer
     }
+  }
+
+  _insertPaste(text) {
+    // Strip prompt-like prefixes from each line so pasting REPL output
+    // works cleanly. Recognizes:
+    //   "sakura> "   (Sakura prompt)
+    //   "> "         (generic continuation prompt)
+    //   ";; "        (comment ledger — Enter after ;; is fine, but paste
+    //                 shouldn't re-inject old output)
+    // Strips one such prefix per line.
+    const cleaned = text
+      .split('\n')
+      .map((line) => line.replace(/^(sakura>|>|;;)\s*/, ''))
+      .filter((line, idx, arr) => !(line === '' && idx === arr.length - 1))
+      .join('\n')
+    if (cleaned.length) this._insert(cleaned)
   }
 
   _onKey(k) {
