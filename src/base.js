@@ -505,6 +505,40 @@ export function makeBaseEnv(fuel) {
     return out
   })
 
+  // Shapes — return graphic values the rich display recognizes and
+  // renders as Braille dots (or, in v1.1, native inline images when
+  // your terminal supports iTerm2 / WezTerm / kitty / Sixel).
+  //
+  // She reads them as pictures made of stars.
+  def('circle', (cx, cy, r)         => ({ kind: 'graphic', shapes: [['circle', cx, cy, r]] }))
+  def('disc',   (cx, cy, r)         => ({ kind: 'graphic', shapes: [['disc',   cx, cy, r]] }))
+  def('line',   (x0, y0, x1, y1)    => ({ kind: 'graphic', shapes: [['line',   x0, y0, x1, y1]] }))
+  def('rect',   (x, y, w, h)        => ({ kind: 'graphic', shapes: [['rect',   x, y, w, h]] }))
+  def('shapes', (...shapes)         => ({ kind: 'graphic', shapes: shapes }))
+  def('plot',   (data, w, h)        => ({ kind: 'plot', data, w: w || 40, h: h || 10 }))
+
+  // Quasiquote family — the reader emits these symbols when it sees
+  // backtick + comma. `quasiquote` itself is a special form in the
+  // interpreter (see interp.js), so `(quasiquote x)` is handled before
+  // env lookup. These identity bindings let bare references to the
+  // symbols work — you can pass `quasiquote` around, name it in a
+  // macro binding, or type it at the REPL without getting "unbound".
+  def('quasiquote',       (x) => x)
+  def('unquote',          (x) => x)
+  def('unquote-splicing', (x) => x)
+
+  // She lives in a phone, but she still knows the film.
+  def('open', (thing, ...rest) => {
+    const name = thing && thing.name  ? thing.name
+               : typeof thing === 'string' ? thing
+               : String(thing)
+    if (name === 'pod-bay-doors' || name === 'the-pod-bay-doors') {
+      return "I'm sorry Dave. I'm afraid I can't do that."
+    }
+    // No general open verb in the base dialect — dialects can override.
+    return { kind: 'noop', note: `no open for ${name} in base dialect`, args: rest }
+  })
+
   return e
 }
 

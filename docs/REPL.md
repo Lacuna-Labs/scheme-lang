@@ -136,20 +136,26 @@ warrants:
 
 Everything else falls back to colored S-expression form.
 
-## Graphics — "them dots"
+## Graphics — it's filled with stars
 
-When you evaluate an expression that returns a graphic shape, the
-REPL rasterizes it into a 2×4 subpixel Braille grid. Each Braille
-glyph covers 8 dots, so a 40-char-wide render shows an 80×80 dot
-grid — plenty of resolution for readable circles, lines, and plots.
+Type a shape and the REPL fills the screen with stars. That's how Sakura
+puts it. Under the hood: a 2×4 subpixel Braille grid, where each glyph
+covers 8 dots, so a 40-char-wide render is an 80×80 dot picture — plenty
+for a readable circle, a line, a plot.
 
-Shapes accepted (tagged-list form):
+The shape verbs are real functions in the base — call them directly:
 
 ```
-(circle cx cy r)              outline circle
-(disc   cx cy r)              filled disc
-(line   x0 y0 x1 y1)          line segment
-(rect   x  y  w  h)           outlined rectangle
+(circle 40 40 15)             outline circle
+(disc   40 40 20)             filled disc
+(line   0 0 60 30)            line segment
+(rect   10 10 60 30)          outlined rectangle
+```
+
+You can also hand the REPL the tagged-list data yourself:
+
+```
+'(circle 40 40 15)
 ```
 
 Or the JS-object form (for programmatic use):

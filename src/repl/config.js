@@ -5,7 +5,7 @@
 // preserved so we don't drop tomorrow's settings today.
 //
 // Known keys as of v1.0:
-//   keybindings         'vim | 'emacs | 'default    (default: 'default')
+//   keybindings         'emacs | 'vim | 'default    (default: 'emacs')
 //   theme               'sakura | 'neutral          (default: 'sakura' when dialect=sakura)
 //   sakura-endpoint     URL for ,ask sakura         (default: unset — stub message)
 //   sakura-token        bearer token                (default: unset)
@@ -21,7 +21,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 export const DEFAULTS = Object.freeze({
-  'keybindings':       'default',
+  'keybindings':       'emacs',
   'theme':             'sakura',
   'history-max':       '5000',
   'auto-close-parens': '#t',

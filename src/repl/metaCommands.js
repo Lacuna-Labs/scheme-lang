@@ -388,15 +388,13 @@ function cmdAsk(ctx, args) {
     ctx.writeLine(role.warn('usage: ,ask sakura "<question>"'))
     return
   }
-  ctx.writeLine(role.dim('  Sakura is not wired up here yet.'))
-  ctx.writeLine(role.dim('  When you have a Sakura endpoint, add this to'))
-  ctx.writeLine(role.dim('    ~/.scheme-lang/config.slat:'))
+  ctx.writeLine(role.dim(`  Not connected. She hasn't arrived here yet — waiting for her.`))
+  ctx.writeLine(role.dim(`  When you have an endpoint, add this to ~/.scheme-lang/config.slat:`))
   ctx.writeLine('')
   ctx.writeLine('    ' + role.text('sakura-endpoint: http://localhost:8080/ask'))
   ctx.writeLine('    ' + role.text('sakura-token:    <bearer>'))
   ctx.writeLine('')
-  ctx.writeLine(role.dim('  Then ,ask sakura "…" will send session state + question,'))
-  ctx.writeLine(role.dim('  and drop her response — with runnable code — right here.'))
+  ctx.writeLine(role.dim(`  Then ,ask sakura "…" will land her right here with your session in mind.`))
 }
 
 function cmdClear(ctx) {
@@ -507,8 +505,8 @@ function cmdPareditHelp(ctx) {
 function cmdV11Stub(featureName) {
   return function(ctx, _args) {
     ctx.writeLine('')
-    ctx.writeLine(role.strong(`,${featureName}`) + role.dim('  — coming in v1.2'))
-    ctx.writeLine(role.dim('  named on the tin. Under active design. See docs/REPL-FEATURES.md v1.2 roadmap.'))
+    ctx.writeLine(role.strong(`,${featureName}`))
+    ctx.writeLine(role.dim(`  Not connected. She hasn't landed on this one yet — waiting for her.`))
     ctx.writeLine('')
   }
 }

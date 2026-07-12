@@ -158,7 +158,7 @@ test('repl — ,time shows timing', () => {
 
 test('repl — ,ask sakura hints when unwired', () => {
   const r = runReplPiped(',ask sakura "hello"\n,exit\n')
-  assert.match(r.stdout, /Sakura is not wired up here yet/)
+  assert.match(r.stdout, /waiting for her|not connected/i)
 })
 
 test('repl — named result _ works', () => {

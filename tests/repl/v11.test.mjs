@@ -512,9 +512,9 @@ test('help — lists ,trace and ,inspect and ,watch-file and ,image', () => {
 
 // ── v1.2 stubs still discoverable ───────────────────────────────────
 
-test('stubs — ,notebook still stubbed for v1.2', () => {
+test('stubs — ,notebook returns not-connected voice', () => {
   const r = runReplPiped(',notebook\n,exit\n')
-  assert.match(r.stdout, /v1\.2/)
+  assert.match(r.stdout, /waiting for her|not connected/i)
 })
 
 test('paredit — ,paredit shows key bindings', () => {
@@ -524,9 +524,9 @@ test('paredit — ,paredit shows key bindings', () => {
   assert.match(r.stdout, /slurp-forward/)
 })
 
-test('stubs — ,lsp still stubbed for v1.2', () => {
+test('stubs — ,lsp returns not-connected voice', () => {
   const r = runReplPiped(',lsp\n,exit\n')
-  assert.match(r.stdout, /v1\.2/)
+  assert.match(r.stdout, /waiting for her|not connected/i)
 })
 
 // ── braille inline path (fallback) still works ──────────────────────
@@ -608,4 +608,40 @@ test('paredit — respects line comments', () => {
   const f = findEnclosingForm(buf, 15)
   // Comment content isn't a form.
   assert.equal(f, null)
+})
+
+// ── easter eggs + quasiquote family ─────────────────────────────────
+
+test('quasiquote is a bound symbol', () => {
+  const r = spawnSync(SAKURA, ['eval', 'quasiquote'], { encoding: 'utf-8' })
+  assert.equal(r.status, 0)
+  assert.doesNotMatch(r.stdout, /unbound/)
+})
+
+test('unquote is a bound symbol', () => {
+  const r = spawnSync(SAKURA, ['eval', 'unquote'], { encoding: 'utf-8' })
+  assert.equal(r.status, 0)
+  assert.doesNotMatch(r.stdout, /unbound/)
+})
+
+test('unquote-splicing is a bound symbol', () => {
+  const r = spawnSync(SAKURA, ['eval', 'unquote-splicing'], { encoding: 'utf-8' })
+  assert.equal(r.status, 0)
+  assert.doesNotMatch(r.stdout, /unbound/)
+})
+
+test('quasiquote special form still works', () => {
+  const r = spawnSync(SAKURA, ['eval', "(define b 42) `(a ,b c)"], { encoding: 'utf-8' })
+  assert.match(r.stdout, /\(a 42 c\)/)
+})
+
+test('circle is a bound shape verb (no quote needed)', () => {
+  const r = spawnSync(SAKURA, ['eval', '(circle 40 40 15)'], { encoding: 'utf-8' })
+  assert.equal(r.status, 0)
+  assert.doesNotMatch(r.stdout, /unbound/)
+})
+
+test('HAL 9000 easter egg', () => {
+  const r = spawnSync(SAKURA, ['eval', "(open 'pod-bay-doors)"], { encoding: 'utf-8' })
+  assert.match(r.stdout, /I'm sorry Dave/)
 })
