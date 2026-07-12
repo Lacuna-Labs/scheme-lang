@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>scheme-lang — a small Scheme for humans and AI</title>
+<meta name="description" content="A small Scheme dialect designed for humans and AI to program together. Try it in your browser — no install.">
+<meta name="theme-color" content="#fbfaf8">
+<link rel="stylesheet" href="./styles.css">
+<script type="module" src="./repl.js" defer></script>
+</head>
+<body>
+
+<header class="nav frame">
+  <div class="nav-inner">
+    <a class="nav-brand" href="./">scheme-lang <span class="flower">&#10047;</span></a>
+    <nav class="nav-links">
+      <a href="#try-it">REPL</a>
+      <a href="#reference">Reference</a>
+      <a href="#forks">Make your own</a>
+      <a href="https://github.com/Lacuna-Labs/scheme-lang" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero frame">
+  <div>
+    <h1>A small Scheme<br>for humans and AI<br>to program together.</h1>
+    <p class="tagline">
+      Base language, base REPL, reference manual, tooling.
+      Dialect-neutral. Community-forkable.
+      Runs in your browser right now.
+    </p>
+    <div class="hero-actions">
+      <a class="btn" href="#try-it" data-try-it>Try it &rarr;</a>
+      <a class="btn secondary" href="https://github.com/Lacuna-Labs/scheme-lang" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+  </div>
+  <div class="hero-flower" aria-hidden="true">&#10047;</div>
+</section>
+
+<section class="section frame" id="try-it">
+  <h2>Try it</h2>
+  <p class="lede">
+    The REPL below is the real interpreter, bundled for the browser.
+    Everything you type is evaluated locally — nothing leaves your device.
+    Tab to complete, comma to run a REPL command, Enter to evaluate.
+  </p>
+  <div id="repl" data-version="1.1"></div>
+
+  <p class="lede" style="margin-top: 1.5rem;">
+    Some things to try:
+  </p>
+  <pre class="code scheme"><button class="run-btn" data-run="(+ 1 2 3 4 5)">Run</button><code><span class="c-paren c-p0">(</span><span class="c-fn">+</span> <span class="c-number">1</span> <span class="c-number">2</span> <span class="c-number">3</span> <span class="c-number">4</span> <span class="c-number">5</span><span class="c-paren c-p0">)</span></code></pre>
+
+  <pre class="code scheme"><button class="run-btn" data-run="(map (lambda (x) (* x x)) '(1 2 3 4 5))">Run</button><code><span class="c-paren c-p0">(</span><span class="c-fn">map</span> <span class="c-paren c-p1">(</span><span class="c-keyword">lambda</span> <span class="c-paren c-p2">(</span><span class="c-sym">x</span><span class="c-paren c-p2">)</span> <span class="c-paren c-p2">(</span><span class="c-fn">*</span> <span class="c-sym">x</span> <span class="c-sym">x</span><span class="c-paren c-p2">)</span><span class="c-paren c-p1">)</span> <span class="c-quote">&#39;</span><span class="c-paren c-p1">(</span><span class="c-number">1</span> <span class="c-number">2</span> <span class="c-number">3</span> <span class="c-number">4</span> <span class="c-number">5</span><span class="c-paren c-p1">)</span><span class="c-paren c-p0">)</span></code></pre>
+
+  <pre class="code scheme"><button class="run-btn" data-run="(circle 50 50 30)">Run</button><code><span class="c-paren c-p0">(</span><span class="c-fn">circle</span> <span class="c-number">50</span> <span class="c-number">50</span> <span class="c-number">30</span><span class="c-paren c-p0">)</span></code></pre>
+
+  <pre class="code scheme"><button class="run-btn" data-run="(define (fact n) (if (< n 2) 1 (* n (fact (- n 1)))))">Run</button><code><span class="c-paren c-p0">(</span><span class="c-keyword">define</span> <span class="c-paren c-p1">(</span><span class="c-sym">fact</span> <span class="c-sym">n</span><span class="c-paren c-p1">)</span> <span class="c-paren c-p1">(</span><span class="c-keyword">if</span> <span class="c-paren c-p2">(</span><span class="c-fn">&lt;</span> <span class="c-sym">n</span> <span class="c-number">2</span><span class="c-paren c-p2">)</span> <span class="c-number">1</span> <span class="c-paren c-p2">(</span><span class="c-fn">*</span> <span class="c-sym">n</span> <span class="c-paren c-p3">(</span><span class="c-sym">fact</span> <span class="c-paren c-p4">(</span><span class="c-fn">-</span> <span class="c-sym">n</span> <span class="c-number">1</span><span class="c-paren c-p4">)</span><span class="c-paren c-p3">)</span><span class="c-paren c-p2">)</span><span class="c-paren c-p1">)</span><span class="c-paren c-p0">)</span></code></pre>
+
+  <pre class="code scheme"><button class="run-btn" data-run="(fact 10)">Run</button><code><span class="c-paren c-p0">(</span><span class="c-sym">fact</span> <span class="c-number">10</span><span class="c-paren c-p0">)</span></code></pre>
+
+  <p class="lede" style="margin-top: 1.5rem;">
+    Or install locally:
+  </p>
+  <pre class="code"><code>curl -fsSL https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.sh | sh
+scheme-lang</code></pre>
+</section>
+
+<section class="section frame" id="reference">
+  <h2>Reference manual</h2>
+  <p class="lede">
+    Every primitive, macro, and reserved form.
+    Click <strong>Run</strong> on any code block to send it to the REPL.
+  </p>
+  <!-- REFERENCE_INJECTED_HERE -->
+</section>
+
+<section class="section frame" id="forks">
+  <h2>Make your own dialect</h2>
+  <p class="lede">
+    scheme-lang is the base &mdash; no product verbs.
+    Fork it, add your own vocabulary, and every user gets the same
+    &ldquo;Try it &rarr;&rdquo; affordance on their own Pages site for free.
+    See <a href="https://github.com/Lacuna-Labs/scheme-lang/blob/main/TEMPLATE-FOR-FORKS-PAGES.md" target="_blank" rel="noopener">TEMPLATE-FOR-FORKS-PAGES.md</a>
+    for the pattern.
+  </p>
+  <p>
+    <a class="btn secondary" href="https://github.com/Lacuna-Labs/scheme-lang/fork" target="_blank" rel="noopener">Fork on GitHub</a>
+  </p>
+</section>
+
+<footer class="footer">
+  <div class="frame">
+    Made by <a href="https://github.com/Lacuna-Labs" target="_blank" rel="noopener">Lacuna Labs</a>
+    &middot; MIT license
+    &middot; <a href="https://github.com/Lacuna-Labs/scheme-lang" target="_blank" rel="noopener">source</a>
+  </div>
+</footer>
+
+</body>
+</html>

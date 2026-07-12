@@ -2,6 +2,8 @@
 
 A small Scheme for humans and AI to program together.
 
+**[Try it in your browser →](https://lacuna-labs.github.io/scheme-lang/)** &nbsp;·&nbsp; no install, real interpreter, `Tab` to complete, `,help` for commands.
+
 **One-liner:** the base language + REPL + reference manual + tooling, dialect-neutral, community-forkable.
 
 ---
@@ -304,6 +306,8 @@ Unknown keys are preserved (so tomorrow's settings can live there today).
 ## Make your own dialect
 
 See [`TEMPLATE-FOR-FORKS.md`](TEMPLATE-FOR-FORKS.md). The gist: fork this repo, rename in `dialect.json`, add your verbs to `verbs/`, drop your adapters in `adapters/`, and you're a dialect. The REPL discovers you automatically.
+
+Your fork also gets a **browser REPL + rendered reference on GitHub Pages** for free — see [`TEMPLATE-FOR-FORKS-PAGES.md`](TEMPLATE-FOR-FORKS-PAGES.md). Every fork's README gets its own "Try it →" link at the top pointing at its own Pages URL. Community-forkable ecosystem for free.
 
 ---
 
