@@ -45,7 +45,7 @@ The gist: fork this repo, rename in `dialect.json`, add your verbs to `verbs/`, 
 
 ## Design principles
 
-1. **Clean.** Solid colors. No animation. If you want fireworks, use something else.
+1. **Clean lines and intent to purpose.** Nothing in excess. Frames frame frames — the outer structure exists to guide your eye to the inner structure exists to guide your eye to the code. Bauhaus, IKEA, KDE, Volvo, mid-century modern, brutalist — that discipline. Solid colors. No animation. No gradient sunsets. If you want fireworks, use something else.
 2. **Not an IDE.** REPL only. Editor lives next to us in a split.
 3. **Interface over implementation.** The command is `scheme-lang`; whether Node or Rust is behind it is our business, not yours.
 4. **Batteries included, not the kitchen sink.** The 20+ meta-commands cover the 80% every REPL user hits. Exotic features are named on the tin as v1.1.

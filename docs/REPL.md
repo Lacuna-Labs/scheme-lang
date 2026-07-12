@@ -367,8 +367,10 @@ Named on the tin so you don't wait for what isn't here:
 
 ## Design notes
 
-- clean palette. 16 colors, warm center, no gradients, no
-  animation.
+- **Clean lines and intent to purpose.** Nothing in excess. The frame
+  frames the frame that frames the code. Bauhaus, IKEA, KDE, Volvo,
+  mid-century modern, brutalist — that discipline. 16 colors, warm
+  center, no gradients, no animation.
 - Every key is decoded from raw bytes — no `readline` dep.
 - Rendering is clear-and-repaint per keystroke; under 1KB/keystroke
   for typical inputs.
