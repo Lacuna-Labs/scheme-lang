@@ -110,12 +110,26 @@ or drop a directory with a dialect.json at one of the search paths
   if (argv.length > 0 && !argv[0].startsWith('-')) {
     const name = argv[0]
     const found = dialects.find(d => d.name === name)
-    if (!found) {
-      process.stderr.write(`scheme-lang: no dialect named '${name}'\n`)
-      process.stderr.write('  installed dialects: ' + dialects.map(d => d.name).join(', ') + '\n')
-      process.exit(2)
-    }
-    return launchDialect(found, argv.slice(1))
+    if (found) return launchDialect(found, argv.slice(1))
+
+    // Not a dialect name — maybe it's a file to run through the default
+    // dialect. This makes shebang scripts work:
+    //   #!/usr/bin/env scheme-lang
+    //   (display "hi") (newline)
+    // Kernel invokes `scheme-lang /path/to/script`; we forward it as
+    // `<default-dialect> run <file>`.
+    try {
+      const { existsSync } = await import('node:fs')
+      const looksLikeFile = name.includes('/') || name.includes('.')
+      if (looksLikeFile && existsSync(name)) {
+        const def = dialects[0]
+        return launchDialect(def, ['run', name, ...argv.slice(1)])
+      }
+    } catch { /* fall through */ }
+
+    process.stderr.write(`scheme-lang: no dialect named '${name}'\n`)
+    process.stderr.write('  installed dialects: ' + dialects.map(d => d.name).join(', ') + '\n')
+    process.exit(2)
   }
 
   // 1 dialect → straight in.
