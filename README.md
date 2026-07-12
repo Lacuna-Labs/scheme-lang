@@ -6,7 +6,19 @@ A small Scheme for humans and AI to program together.
 
 ---
 
-## Try it in 30 seconds
+## Install
+
+One line, zero ceremony:
+
+```
+curl -fsSL https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.sh | sh
+```
+
+That drops a `scheme-lang` command onto your PATH. Type `scheme-lang` and you're in a REPL.
+
+**Requirements:** Node 18+ and `git`. That's it.
+
+**Prefer to see the code first?** Clone it manually and run it in place:
 
 ```
 git clone https://github.com/Lacuna-Labs/scheme-lang
@@ -14,13 +26,47 @@ cd scheme-lang
 ./bin/scheme-lang
 ```
 
-You'll land in a REPL with tab-complete, syntax colors, and a pink cherry-blossom banner. Type `(+ 1 2)`. It says `3`. Type `,help`. Have at it.
+Same REPL either way — the installer just wires the launcher to your PATH so you don't have to `cd`.
+
+**Uninstall:**
+
+```
+rm -rf ~/.scheme-lang $(command -v scheme-lang)
+```
+
+---
+
+## Try it
+
+```
+$ scheme-lang
+       ✿  ✿
+     ✿  ✿  ✿             Sakura Scheme  v1.0
+       ✿  ✿              a language for humans and AI
+         │                to program together
+
+sakura> (+ 1 2)
+3
+
+sakura> ,help map
+map  —  Apply a function to each element of a list.
+Arity:      2 args
+Contract:   ((-> a b) (list a)) -> (list b)
+
+sakura> (map (lambda (x) (* x x)) '(1 2 3 4))
+(1 4 9 16)
+
+sakura> ,exit
+goodnight ✿
+```
+
+Tab-complete, syntax colors, ghost signature hints, Braille graphics, 20+ meta-commands. Full guide at [`docs/REPL.md`](docs/REPL.md).
 
 ---
 
 ## What ships in this repo
 
-- **`bin/scheme-lang`** — the neutral launcher. Discovers installed dialects; runs the base if you have nothing else installed.
+- **`bin/scheme-lang`** — the launcher. Discovers installed dialects; runs the base if you have nothing else installed.
 - **`bin/sakura-scheme`** — the Sakura dialect binary (the base is called "Sakura Scheme" — every fork picks its own name; forks change this line).
 - **`src/`** — the language: reader / interpreter / macros / base primitives / verb registry / dispatcher / REPL / launcher.
 - **`src/adapters.js`** — no-op adapter stubs. Real dialects override with `setAdapters(…)`.
@@ -45,10 +91,16 @@ The gist: fork this repo, rename in `dialect.json`, add your verbs to `verbs/`, 
 
 ## Design principles
 
-1. **Nordic clean.** Solid colors. No animation. If you want fireworks, use something else.
+1. **Nothing in excess.** Every element on screen earns its place by directing your attention somewhere useful. The frame around the code is a frame — nothing more. It exists to guide the eye to the inner frame, which exists to guide the eye to the code. If a layer isn't doing that job, it isn't there.
+
+   Sixteen solid colors. No gradients. No animation. No sunset glow, no shimmer, no ceremony. The kind of restraint that looks plain until you use it for a while and can't remember what you thought was missing.
+
 2. **Not an IDE.** REPL only. Editor lives next to us in a split.
+
 3. **Interface over implementation.** The command is `scheme-lang`; whether Node or Rust is behind it is our business, not yours.
+
 4. **Batteries included, not the kitchen sink.** The 20+ meta-commands cover the 80% every REPL user hits. Exotic features are named on the tin as v1.1.
+
 5. **The persona is dialect-owned.** The launcher is neutral. The banner is a *dialect* choice.
 
 ---
@@ -66,32 +118,6 @@ The gist: fork this repo, rename in `dialect.json`, add your verbs to `verbs/`, 
 - LSP mode (editors get hover-help, arity, contract, source-jump)
 
 Every one of these is discoverable in the REPL today via `,help` — they just respond with a friendly "coming in v1.1" message when invoked.
-
----
-
-## Quick session
-
-```
-$ ./bin/scheme-lang
-       ✿  ✿
-     ✿  ✿  ✿             Sakura Scheme  v1.0
-       ✿  ✿              a language for humans and AI
-         │                to program together
-
-sakura> (+ 1 2)
-3
-
-sakura> ,help map
-map  —  Apply a function to each element of a list.
-Arity:      2 args
-Contract:   ((-> a b) (list a)) -> (list b)
-
-sakura> (map (lambda (x) (* x x)) '(1 2 3 4))
-(1 4 9 16)
-
-sakura> ,exit
-goodnight ✿
-```
 
 ---
 

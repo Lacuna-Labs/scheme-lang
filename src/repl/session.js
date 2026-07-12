@@ -38,7 +38,7 @@ import { parse, Sym } from '../reader.js'
 import { expandProgram } from '../macro.js'
 import { evaluate } from '../interp.js'
 import { schemeFormat } from './richDisplay.js'
-import { role } from './nordic.js'
+import { role } from './palette.js'
 
 /**
  * Record a top-level input on the ctx. Called by repl.js after every

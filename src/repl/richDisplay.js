@@ -9,7 +9,7 @@
 // Everything falls back to `schemeFormat` — the same S-expression printer
 // the CLI already uses — when no richer form fits.
 
-import { role, PALETTE, fg } from './nordic.js'
+import { role, PALETTE, fg } from './palette.js'
 import { renderGraphic } from './braille.js'
 import { renderInline, detectCapabilities, pickProtocol } from './imageRouter.js'
 import { Sym } from '../reader.js'

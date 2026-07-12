@@ -4,7 +4,7 @@
 // Discovers installed Scheme dialects on this machine and either:
 //   • 0 dialects       → prints a helpful "install Sakura" hint
 //   • 1 dialect        → drops straight into its REPL (with its banner)
-//   • N dialects       → nordic menu picker (arrow keys, Enter)
+//   • N dialects       → clean menu picker (arrow keys, Enter)
 //   • name specified   → skips menu, launches that dialect
 //
 // Doesn't ship an engine of its own. Every dialect binary — including the
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { discoverDialects } from '../src/launcher/discover.js'
 import { pickDialect } from '../src/launcher/menu.js'
-import { role, PALETTE, fg } from '../src/repl/nordic.js'
+import { role, PALETTE, fg } from '../src/repl/palette.js'
 
 const LAUNCHER = fileURLToPath(import.meta.url)
 const LAUNCHER_DIR = dirname(LAUNCHER)

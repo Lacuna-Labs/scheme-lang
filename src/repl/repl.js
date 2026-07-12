@@ -23,7 +23,7 @@ import { dispatchMeta, metaCommandNames } from './metaCommands.js'
 import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
 import { completeSymbol, currentToken } from './complete.js'
 import { display } from './richDisplay.js'
-import { role } from './nordic.js'
+import { role } from './palette.js'
 import { recordSessionLine } from './session.js'
 import { Sym } from '../reader.js'
 

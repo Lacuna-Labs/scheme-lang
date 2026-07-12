@@ -9,7 +9,7 @@
 // so we don't paint the middle of a string as a keyword. Unclosed strings /
 // comments are colored optimistically (as if the terminator were coming).
 
-import { PALETTE, fg, role, RAINBOW, isColorEnabled } from './nordic.js'
+import { PALETTE, fg, role, RAINBOW, isColorEnabled } from './palette.js'
 
 // Sakura-Scheme special forms. Kept small — only the syntax-level names.
 const SPECIAL_FORMS = new Set([

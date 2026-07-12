@@ -16,7 +16,7 @@
 // stdin state juggling the LineEditor uses. When we return, the caller
 // restores the prompt.
 
-import { role, CTRL } from './nordic.js'
+import { role, CTRL } from './palette.js'
 import { schemeFormat } from './richDisplay.js'
 import { Sym } from '../reader.js'
 

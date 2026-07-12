@@ -14,7 +14,7 @@
 // we abbreviate.
 
 import { Closure } from '../interp.js'
-import { role } from './nordic.js'
+import { role } from './palette.js'
 import { schemeFormat } from './richDisplay.js'
 
 // Process-scoped state so nested + concurrent traces indent together.

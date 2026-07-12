@@ -11,7 +11,7 @@
 
 import { spawnSync } from 'node:child_process'
 import { writeFileSync, readFileSync } from 'node:fs'
-import { role, PALETTE, fg } from './nordic.js'
+import { role, PALETTE, fg } from './palette.js'
 import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
 import { display, schemeFormat } from './richDisplay.js'
 import { parse } from '../reader.js'

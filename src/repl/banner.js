@@ -1,6 +1,6 @@
 // banner.js — the pink cherry-blossom banner for the Sakura dialect.
 //
-// Nordic-clean: solid pink, muted green stem, cream text. No animation,
+// clean: solid pink, muted green stem, cream text. No animation,
 // no gradient, no frame. Fits in ~10 rows so it doesn't dominate the
 // terminal on first launch.
 //
@@ -8,7 +8,7 @@
 // deliberately not overwrought. Alfred's directive: warm, unmistakable,
 // not clinical. Solid.
 
-import { role, PALETTE, fg, dim } from './nordic.js'
+import { role, PALETTE, fg, dim } from './palette.js'
 
 const BLOSSOM_LINES = [
   //           deeper  main  pale

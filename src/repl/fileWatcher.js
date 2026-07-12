@@ -19,7 +19,7 @@ import { resolve, basename } from 'node:path'
 import { parse, Sym } from '../reader.js'
 import { expandProgram } from '../macro.js'
 import { evaluate } from '../interp.js'
-import { role } from './nordic.js'
+import { role } from './palette.js'
 import { schemeFormat } from './richDisplay.js'
 
 /**

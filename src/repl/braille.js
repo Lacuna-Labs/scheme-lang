@@ -20,7 +20,7 @@
 // `(line ...)`, small plots. For anything richer we defer to sixel or the
 // inline-image protocol (see graphicsRouter.js when written).
 
-import { fg, PALETTE } from './nordic.js'
+import { fg, PALETTE } from './palette.js'
 import { Sym } from '../reader.js'
 
 // Kind can be either a JS string OR a Scheme Sym (the reader creates
