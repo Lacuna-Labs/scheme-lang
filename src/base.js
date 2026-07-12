@@ -343,6 +343,110 @@ export function makeBaseEnv(fuel) {
   def('list->string',       (lst) => lst.join(''))
   def('string-reverse',     (s) => String(s).split('').reverse().join(''))
 
+  // ── string comparison + make-string + string as constructor ─────────
+  def('string<?',    (a, b) => String(a) < String(b))
+  def('string>?',    (a, b) => String(a) > String(b))
+  def('string<=?',   (a, b) => String(a) <= String(b))
+  def('string>=?',   (a, b) => String(a) >= String(b))
+  def('string-copy', (s, start, end) =>
+    String(s).substring(start ?? 0, end ?? String(s).length))
+  def('make-string', (n, fill = ' ') =>
+    String(typeof fill === 'string' ? fill : ' ').charAt(0).repeat(Math.max(0, n | 0)))
+  // (string a b c ...) → concatenation. Standard R7RS behavior on chars,
+  // and works as a friendly (string a b c) constructor when you have
+  // pieces you want joined without a separator.
+  def('string', (...parts) => parts.map(String).join(''))
+
+  // ── symbol ops ──────────────────────────────────────────────────────
+  def('symbol?',        (a) => a instanceof Sym)
+  def('symbol->string', (s) => (s instanceof Sym ? s.name : String(s)))
+  def('string->symbol', (s) => new Sym(String(s)))
+  def('symbol=?',       (a, b) =>
+    a instanceof Sym && b instanceof Sym ? a.name === b.name : false)
+
+  // ── number predicates + more math ───────────────────────────────────
+  def('integer?',  (x) => typeof x === 'number' && Number.isInteger(x))
+  def('real?',     (x) => typeof x === 'number' && Number.isFinite(x))
+  def('rational?', (x) => typeof x === 'number' && Number.isFinite(x))
+  def('exact?',    (x) => typeof x === 'number' && Number.isInteger(x))
+  def('inexact?',  (x) => typeof x === 'number' && !Number.isInteger(x))
+  def('exact',     (x) => Math.trunc(x))
+  def('inexact',   (x) => Number(x) + 0.0)
+  def('exact->inexact', (x) => Number(x) + 0.0)
+  def('inexact->exact', (x) => Math.trunc(x))
+  def('truncate',  (x) => Math.trunc(x))
+  def('exp',       (x) => Math.exp(x))
+  def('log',       (x, base) => (typeof base === 'number' ? Math.log(x) / Math.log(base) : Math.log(x)))
+  def('gcd',       (...a) => {
+    const g = (x, y) => (y === 0 ? Math.abs(x) : g(y, x % y))
+    return a.length === 0 ? 0 : a.reduce((acc, n) => g(acc, n | 0), a[0] | 0)
+  })
+  def('lcm',       (...a) => {
+    const g = (x, y) => (y === 0 ? Math.abs(x) : g(y, x % y))
+    return a.length === 0 ? 1 : a.reduce((acc, n) => Math.abs(acc * n) / g(acc, n) || 0, a[0] | 0)
+  })
+  def('square',    (x) => x * x)
+  def('cube',      (x) => x * x * x)
+
+  // ── list-building + list-navigation ─────────────────────────────────
+  //
+  // (iota n)         → 0 .. n-1
+  // (iota n start)   → start .. start+n-1
+  // (iota n start step) → start, start+step, ...
+  def('iota', (n, start = 0, step = 1) => {
+    const r = []
+    for (let i = 0; i < (n | 0); i++) r.push(start + i * step)
+    return r
+  })
+  def('list-tail', (lst, k) => Array.isArray(lst) ? lst.slice(k | 0) : [])
+  def('list-copy', (lst) => Array.isArray(lst) ? lst.slice() : [])
+  def('last-pair', (lst) => Array.isArray(lst) && lst.length ? [lst[lst.length - 1]] : [])
+  // Deep car/cdr — the R7RS four-deep chain. Standard names; the
+  // interpreter treats a list as an array, so we can express these as
+  // slice + index chains straight into JavaScript.
+  const _c = (lst, ops) => {
+    let x = lst
+    for (const op of ops) {
+      if (!Array.isArray(x)) return undefined
+      if (op === 'a') x = x[0]
+      else x = x.slice(1)
+    }
+    return x
+  }
+  def('caar',   (l) => _c(l, ['a','a']))
+  def('cadr',   (l) => _c(l, ['d','a']))       // second element
+  def('cdar',   (l) => _c(l, ['a','d']))
+  def('cddr',   (l) => _c(l, ['d','d']))
+  def('caaar',  (l) => _c(l, ['a','a','a']))
+  def('caadr',  (l) => _c(l, ['d','a','a']))
+  def('cadar',  (l) => _c(l, ['a','d','a']))
+  def('caddr',  (l) => _c(l, ['d','d','a']))   // third element
+  def('cdaar',  (l) => _c(l, ['a','a','d']))
+  def('cdadr',  (l) => _c(l, ['d','a','d']))
+  def('cddar',  (l) => _c(l, ['a','d','d']))
+  def('cdddr',  (l) => _c(l, ['d','d','d']))
+  def('cadddr', (l) => _c(l, ['d','d','d','a'])) // fourth element
+  def('cddddr', (l) => _c(l, ['d','d','d','d']))
+
+  // ── vectors — arrays underneath, same as lists, but the API name  ───
+  //     is what people reach for from other Schemes. Aliased where it
+  //     doesn't matter (an array IS a vector in our runtime).
+  def('vector',        (...a) => a)
+  def('vector?',       (v) => Array.isArray(v))
+  def('make-vector',   (n, fill = 0) => Array.from({ length: Math.max(0, n | 0) }, () => fill))
+  def('vector-length', (v) => Array.isArray(v) ? v.length : 0)
+  def('vector->list',  (v) => Array.isArray(v) ? v.slice() : [])
+  def('list->vector',  (l) => Array.isArray(l) ? l.slice() : [])
+  def('vector-map',    (fn, v) => v.map((x) => apply(fn, [x], fuel)))
+  def('vector-for-each', (fn, v) => { for (const x of v) apply(fn, [x], fuel); return undefined })
+
+  // ── misc predicates + equality aliases + void ───────────────────────
+  def('eqv?',      (a, b) => a === b || deepEqual(a, b))
+  def('boolean=?', (a, b) => a === b && (a === true || a === false))
+  def('void',      () => undefined)
+  // (identity x) — sometimes convenient as a placeholder function
+  def('identity',  (x) => x)
+
   // ── list-builders the layout carts reach for ────────────────────────
   //
   // bricklay tracks a vector of column bottoms and updates it as cards
