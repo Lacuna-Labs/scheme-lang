@@ -298,6 +298,50 @@ export function makeBaseEnv(fuel) {
   def('list-ref', (a, i) => a[i])
   def('member', (x, lst) => { const i = lst.findIndex((y) => deepEqual(x, y)); return i < 0 ? false : lst.slice(i) })
   def('assoc', (key, alist) => alist.find((pair) => Array.isArray(pair) && deepEqual(pair[0], key)) || false)
+  def('list?', (a) => Array.isArray(a))
+
+  // ── I/O — display / newline / write / print / println / error / exit ─
+  //
+  // Node uses process.stdout.write; browser bundle falls back to
+  // console.log (which adds its own newline, but the browser REPL
+  // captures results separately so this is acceptable).
+  const _write = (s) => {
+    if (typeof process !== 'undefined' && process.stdout && process.stdout.write) {
+      process.stdout.write(s)
+    } else if (typeof console !== 'undefined' && console.log) {
+      console.log(s)
+    }
+  }
+  def('display', (v) => {
+    _write(typeof v === 'string' ? v : _show(v))
+    return undefined
+  })
+  def('newline', () => { _write('\n'); return undefined })
+  def('write', (v) => { _write(_show(v)); return undefined })
+  def('print',   (v) => { _write((typeof v === 'string' ? v : _show(v)) + '\n'); return undefined })
+  def('println', (v) => { _write((typeof v === 'string' ? v : _show(v)) + '\n'); return undefined })
+  def('error', (msg, ...rest) => {
+    const parts = [String(msg ?? ''), ...rest.map((v) => _show(v))]
+    throw new Error(parts.join(' '))
+  })
+  def('exit', (code = 0) => {
+    if (typeof process !== 'undefined' && process.exit) process.exit(code | 0)
+    return undefined
+  })
+
+  // ── extra string ops — the things anyone touching text reaches for ──
+  def('string-upcase',      (s) => String(s).toUpperCase())
+  def('string-downcase',    (s) => String(s).toLowerCase())
+  def('string-trim',        (s) => String(s).trim())
+  def('string-contains?',   (haystack, needle) => String(haystack).includes(String(needle)))
+  def('string-starts-with?',(s, prefix) => String(s).startsWith(String(prefix)))
+  def('string-ends-with?',  (s, suffix) => String(s).endsWith(String(suffix)))
+  def('string-replace',     (s, from, to) => String(s).split(String(from)).join(String(to)))
+  def('string-split',       (s, sep) => String(s).split(String(sep)))
+  def('string-join',        (lst, sep = '') => lst.map(String).join(String(sep)))
+  def('string->list',       (s) => String(s).split(''))
+  def('list->string',       (lst) => lst.join(''))
+  def('string-reverse',     (s) => String(s).split('').reverse().join(''))
 
   // ── list-builders the layout carts reach for ────────────────────────
   //
