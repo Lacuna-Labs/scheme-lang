@@ -28,7 +28,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { highlight, isBalanced } from './highlight.js'
 import { currentToken, completeSymbol, commonPrefix } from './complete.js'
-import { role, PALETTE, fg, dim, CTRL } from './nordic.js'
+import { role, PALETTE, fg, dim, CTRL } from './palette.js'
 import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
 import { metaCommandNames } from './metaCommands.js'
 

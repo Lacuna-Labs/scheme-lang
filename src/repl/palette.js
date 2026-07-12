@@ -1,4 +1,4 @@
-// nordic.js — 16-color Nordic-clean palette + ANSI escape helpers.
+// palette.js — 16-color palette + ANSI escape helpers.
 //
 // The REPL's whole visual identity lives here. Solid, muted, warm-but-cool.
 // No animation, no gradients, no 24-bit true-color surprises — just a small

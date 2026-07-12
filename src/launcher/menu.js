@@ -1,9 +1,9 @@
-// menu.js — nordic-clean dialect picker.
+// menu.js — clean dialect picker.
 //
 // Renders a small vertical menu; arrow keys navigate; Enter picks; q quits.
 // No dependencies — raw TTY reads, same pattern as the REPL line editor.
 
-import { role, PALETTE, fg, CTRL, isColorEnabled } from '../repl/nordic.js'
+import { role, PALETTE, fg, CTRL, isColorEnabled } from '../repl/palette.js'
 
 export function pickDialect(dialects, { title = 'Which language you feelin?' } = {}) {
   return new Promise((resolve) => {

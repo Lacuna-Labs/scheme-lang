@@ -367,7 +367,7 @@ Named on the tin so you don't wait for what isn't here:
 
 ## Design notes
 
-- Nordic-clean palette. 16 colors, warm center, no gradients, no
+- clean palette. 16 colors, warm center, no gradients, no
   animation.
 - Every key is decoded from raw bytes — no `readline` dep.
 - Rendering is clear-and-repaint per keystroke; under 1KB/keystroke
