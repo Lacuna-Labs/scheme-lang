@@ -1,0 +1,177 @@
+#!/usr/bin/env node
+// bin/sakura-scheme — the Sakura Scheme CLI.
+//
+// The user-facing command is EXACTLY `sakura-scheme` — no extension,
+// ever. This file is a Node.js shebang script for the moment; if we
+// ever compile to a real binary (Rust / Go / `bun --compile`), the
+// interface stays the same. Interface is contract, implementation is
+// free (Alfred, 2026-07-12).
+//
+// Commands:
+//   sakura-scheme                  — start the REPL (default)
+//   sakura-scheme repl             — start the REPL (explicit)
+//   sakura-scheme eval "<expr>"    — evaluate a single expression, print
+//   sakura-scheme run <file>       — evaluate a .scm file
+//   sakura-scheme help <verb>      — verb help from doc-table
+//   sakura-scheme --version        — version + short git sha
+//   sakura-scheme --help           — usage summary
+//
+// The REPL machinery lives under scheme-lang/src/repl/. This binary is
+// the thin CLI shell — it routes subcommands and delegates.
+
+import { parse } from '../src/reader.js'
+import { evaluate } from '../src/interp.js'
+import { expandProgram } from '../src/macro.js'
+import { makeBaseEnv } from '../src/base.js'
+import { startRepl } from '../src/repl/repl.js'
+import { verbInfo, CORE_DOCS } from '../src/repl/verbInfo.js'
+import { display, schemeFormat } from '../src/repl/richDisplay.js'
+import { role } from '../src/repl/nordic.js'
+import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const VERSION = '1.0.0'
+const DEFAULT_FUEL = 200000
+
+// ── helpers ──────────────────────────────────────────────────────────
+
+function shortSha() {
+  try {
+    const r = spawnSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: resolve(__dirname, '..'),
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    const sha = (r.stdout || '').trim()
+    if (/^[0-9a-f]{7,40}$/.test(sha)) return sha
+  } catch { /* tarball / no git */ }
+  return 'unknown'
+}
+
+function printValue(v) {
+  process.stdout.write(schemeFormat(v) + '\n')
+}
+
+// ── commands ─────────────────────────────────────────────────────────
+
+function cmdEval(expr) {
+  if (!expr) {
+    process.stderr.write('sakura-scheme: eval needs an expression\n')
+    process.stderr.write('  usage: sakura-scheme eval "(+ 1 2)"\n')
+    process.exit(2)
+  }
+  try {
+    const forms = parse(expr)
+    const { forms: expanded } = expandProgram(forms)
+    const fuel = { n: DEFAULT_FUEL }
+    const env = makeBaseEnv(fuel)
+    let last
+    for (const f of expanded) last = evaluate(f, env, fuel)
+    printValue(last)
+  } catch (err) {
+    process.stderr.write(`sakura-scheme: ${err && err.message ? err.message : String(err)}\n`)
+    process.exit(1)
+  }
+}
+
+function cmdRun(file) {
+  if (!file) {
+    process.stderr.write('sakura-scheme: run needs a file path\n')
+    process.exit(2)
+  }
+  let src
+  try { src = readFileSync(file, 'utf-8') }
+  catch (e) {
+    process.stderr.write(`sakura-scheme: cannot read '${file}': ${e.message}\n`)
+    process.exit(1)
+  }
+  try {
+    const forms = parse(src)
+    const { forms: expanded } = expandProgram(forms)
+    const fuel = { n: DEFAULT_FUEL * 10 }  // roomier budget for whole files
+    const env = makeBaseEnv(fuel)
+    let last
+    for (const f of expanded) last = evaluate(f, env, fuel)
+    if (last !== undefined) printValue(last)
+  } catch (err) {
+    process.stderr.write(`sakura-scheme: ${err && err.message ? err.message : String(err)}\n`)
+    process.exit(1)
+  }
+}
+
+function cmdVerbHelp(name) {
+  if (!name) return cmdHelp()
+  const fuel = { n: DEFAULT_FUEL }
+  const env = makeBaseEnv(fuel)
+  const info = verbInfo(env, name)
+  if (!info) {
+    process.stderr.write(`sakura-scheme: no info for '${name}'\n`)
+    process.exit(1)
+  }
+  process.stdout.write('\n' + role.strong(name) + role.dim(`  · ${info.kind}\n`))
+  if (info.sig) process.stdout.write('  ' + role.fn(info.sig) + '\n')
+  if (info.doc) process.stdout.write('  ' + role.text(info.doc) + '\n')
+  if (info.examples && info.examples.length) {
+    process.stdout.write('\n' + role.dim('  examples:\n'))
+    for (const ex of info.examples) if (ex) process.stdout.write('    ' + role.text(ex) + '\n')
+  }
+  process.stdout.write('\n')
+}
+
+function cmdVersion() {
+  process.stdout.write(`sakura-scheme ${VERSION} (${shortSha()})\n`)
+}
+
+function cmdHelp() {
+  process.stdout.write(`sakura-scheme ${VERSION} — the Sakura Scheme CLI
+
+Usage:
+  sakura-scheme                     start the REPL
+  sakura-scheme repl                start the REPL (explicit)
+  sakura-scheme eval "<expr>"       evaluate an expression, print result
+  sakura-scheme run <file.scm>      evaluate a Scheme file
+  sakura-scheme help <verb>         verb help (arity + doc + examples)
+  sakura-scheme --version           print version + git sha
+  sakura-scheme --help              this help
+
+Examples:
+  sakura-scheme                                       -> REPL
+  sakura-scheme eval "(+ 1 2)"                        -> 3
+  sakura-scheme eval "(map (lambda (x) (* x x)) '(1 2 3))"
+  sakura-scheme help map                              -> verb info
+  sakura-scheme run examples/hello.scm
+
+The Sakura Scheme engine lives in scheme-lang/src/. The reference
+manual, engineering doc, tutorial, and style guide live in
+scheme-lang/docs/. The REPL machinery lives in scheme-lang/src/repl/.
+
+See scheme-lang/README.md and scheme-lang/docs/REPL.md for details.
+`)
+}
+
+// ── main ─────────────────────────────────────────────────────────────
+
+async function main() {
+  const argv = process.argv.slice(2)
+  if (argv.length === 0) {
+    return startRepl({ dialect: 'sakura', version: VERSION })
+  }
+  if (argv[0] === '--help' || argv[0] === '-h') return cmdHelp()
+  if (argv[0] === '--version' || argv[0] === '-v') return cmdVersion()
+  if (argv[0] === 'eval') return cmdEval(argv.slice(1).join(' '))
+  if (argv[0] === 'run') return cmdRun(argv[1])
+  if (argv[0] === 'help') return cmdVerbHelp(argv[1])
+  if (argv[0] === 'repl') return startRepl({ dialect: 'sakura', version: VERSION })
+
+  process.stderr.write(`sakura-scheme: unknown command '${argv[0]}'\n`)
+  process.stderr.write(`try \`sakura-scheme --help\`\n`)
+  process.exit(2)
+}
+
+main().catch(e => {
+  process.stderr.write('sakura-scheme: ' + (e && e.message ? e.message : String(e)) + '\n')
+  process.exit(1)
+})

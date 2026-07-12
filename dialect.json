@@ -1,0 +1,10 @@
+{
+  "name": "sakura",
+  "displayName": "Sakura Scheme",
+  "version": "1.0.0",
+  "core": true,
+  "entrypoint": "./bin/sakura-scheme",
+  "tagline": "a language for humans and AI to program together",
+  "palette": "sakura-pink",
+  "description": "The core dialect: dialect-neutral base vocabulary + Sakura's Brooklynese warmth."
+}
