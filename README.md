@@ -219,21 +219,14 @@ Etsy / eBay / Shopify verbs. Auth-gated — the base REPL surfaces a clean "sign
 ```
 sakura> ,help map
 
-  map · fn
-    (map fn list)
-    Returns a new list — fn applied to each element.
+  map · primitive
+    (map fn lst)
+    Apply fn to each element, return list of results.
 
-  examples:
-    ;; novice
-    (map (lambda (n) (* n 2)) '(1 2 3))       ;; → (2 4 6)
-
-    ;; intermediate
-    ;; titles of each row
-    (map (lambda (row) (assq 'title row)) rows)
-
-    ;; expert
-    ;; per-receipt revenue extraction, summed
-    (sum (map (lambda (r) (assq 'amount r)) receipts))
+    examples:
+      (map (lambda (x) (* x 2)) '(1 2 3))       ;; → (2 4 6)
+      (map car '((a 1) (b 2)))                  ;; → (a b)
+      (map + xs ys)                             ;; parallel
 ```
 
 Add a verb; every downstream tool picks it up. That's the trick.
