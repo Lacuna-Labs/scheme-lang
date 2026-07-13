@@ -1,0 +1,71 @@
+// sakuraEnv.js — the "everything" env for Sakura Scheme.
+//
+// Layers, in order:
+//   L0 CORE  — R7RS + primitives  (base.js: makeBaseEnv)
+//   L1 MEDIA — framebuffer + sound + input  (media.js: registerMedia,
+//              already invoked inside makeBaseEnv)
+//   L2 AI    — cortex + LLM interface       (ai.js)
+//   L3 GAME  — sprites + physics + entities (game.js)
+//   L4 SHOP  — etsy/ebay/shopify/meta/google (commercial.js)
+//
+// The Sakura binary (bin/sakura-scheme) uses `makeSakuraEnv` in place
+// of `makeBaseEnv` — so every commercial verb registers, every AI verb
+// exists, every game verb works out of the box.
+//
+// Non-Sakura callers (Jesse binary, Lacuna Engineering, standalone
+// scheme-lang) keep using `makeBaseEnv` — they get L0 + L1 only.
+
+import { makeBaseEnv } from './base.js'
+import { installAi } from './ai.js'
+import { installGame, makeGameState } from './game.js'
+import { installCommercial } from './commercial.js'
+import { loadAuthFromDisk } from './auth/store.js'
+import { registerReferenceVerbs } from './reference-register.js'
+
+/**
+ * makeSakuraEnv — the full L0 → L4 stack. Returns a ready-to-eval Env.
+ *
+ * Options:
+ *   fuel      — the shared fuel cell (required)
+ *   gameState — optional custom game state (default: fresh)
+ *   loadAuth  — if true, prime the Cortex from ~/.sakura/auth.json
+ *               before commercial verbs go live. Default true.
+ */
+export function makeSakuraEnv(fuel, {
+  gameState = null,
+  loadAuth  = true,
+} = {}) {
+  const env = makeBaseEnv(fuel)
+
+  // L2 AI — cortex + llm interface. Cortex is a stub (in-memory dict);
+  // llm errors cleanly when unwired.
+  installAi(env)
+
+  // L3 GAME — sprites, entities, physics, tile maps. Standalone game
+  // state; adapters can override by passing their own.
+  const game = gameState || makeGameState()
+  installGame(env, game)
+
+  // L4 COMMERCIAL — etsy/ebay/shopify/meta/google. Every verb is
+  // registered; execution is gated by an auth check that reads from
+  // the Cortex.
+  installCommercial(env)
+
+  // Prime the Cortex with any on-disk auth from a prior login. Must
+  // come after installAi (which sets up the Cortex) and before any
+  // commercial verb actually fires.
+  if (loadAuth) {
+    try { loadAuthFromDisk() } catch { /* first-run OK */ }
+  }
+
+  // L5 REFERENCE — every documented verb from SAKURA-SCHEME-REFERENCE.slat.
+  // Curated impls replace stubs; anything without an impl gets a
+  // clean-error stub with the reference contract embedded in the
+  // message. Runs LAST so already-installed L2/L3/L4 impls win over
+  // the reference registrar's stubs.
+  registerReferenceVerbs(env, fuel)
+
+  return env
+}
+
+export default makeSakuraEnv

@@ -13,6 +13,9 @@
 //   sakura-scheme eval "<expr>"    — evaluate a single expression, print
 //   sakura-scheme run <file>       — evaluate a .scm file
 //   sakura-scheme help <verb>      — verb help from doc-table
+//   sakura-scheme login            — Google OAuth device-flow sign-in
+//   sakura-scheme logout           — sign out (clear stored token)
+//   sakura-scheme whoami           — show current auth state
 //   sakura-scheme --version        — version + short git sha
 //   sakura-scheme --help           — usage summary
 //
@@ -22,11 +25,12 @@
 import { parse } from '../src/reader.js'
 import { evaluate } from '../src/interp.js'
 import { expandProgram } from '../src/macro.js'
-import { makeBaseEnv } from '../src/base.js'
+import { makeSakuraEnv } from '../src/sakuraEnv.js'
 import { startRepl } from '../src/repl/repl.js'
 import { verbInfo, CORE_DOCS } from '../src/repl/verbInfo.js'
 import { display, schemeFormat } from '../src/repl/richDisplay.js'
 import { role } from '../src/repl/palette.js'
+import { runLogin, runLogout, runWhoami } from '../src/auth/cli.js'
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -67,7 +71,7 @@ function cmdEval(expr) {
     const forms = parse(expr)
     const { forms: expanded } = expandProgram(forms)
     const fuel = { n: DEFAULT_FUEL }
-    const env = makeBaseEnv(fuel)
+    const env = makeSakuraEnv(fuel)
     let last
     for (const f of expanded) last = evaluate(f, env, fuel)
     printValue(last)
@@ -101,7 +105,7 @@ function cmdRun(file) {
     const forms = parse(src)
     const { forms: expanded } = expandProgram(forms)
     const fuel = { n: DEFAULT_FUEL * 10 }  // roomier budget for whole files
-    const env = makeBaseEnv(fuel)
+    const env = makeSakuraEnv(fuel)
     let last
     for (const f of expanded) last = evaluate(f, env, fuel)
     if (last !== undefined) printValue(last)
@@ -114,7 +118,7 @@ function cmdRun(file) {
 function cmdVerbHelp(name) {
   if (!name) return cmdHelp()
   const fuel = { n: DEFAULT_FUEL }
-  const env = makeBaseEnv(fuel)
+  const env = makeSakuraEnv(fuel)
   const info = verbInfo(env, name)
   if (!info) {
     process.stderr.write(`sakura-scheme: no info for '${name}'\n`)
@@ -143,6 +147,9 @@ Usage:
   sakura-scheme eval "<expr>"       evaluate an expression, print result
   sakura-scheme run <file.scm>      evaluate a Scheme file
   sakura-scheme help <verb>         verb help (arity + doc + examples)
+  sakura-scheme login               sign in with Google (device flow)
+  sakura-scheme logout              sign out
+  sakura-scheme whoami              show current auth state
   sakura-scheme --version           print version + git sha
   sakura-scheme --help              this help
 
@@ -174,6 +181,21 @@ async function main() {
   if (argv[0] === 'run') return cmdRun(argv[1])
   if (argv[0] === 'help') return cmdVerbHelp(argv[1])
   if (argv[0] === 'repl') return startRepl({ dialect: 'sakura', version: VERSION })
+
+  // Auth subcommands — Google device-flow OAuth. `login` blocks until
+  // the operator visits the URL and enters the code (or times out).
+  if (argv[0] === 'login') {
+    const code = await runLogin()
+    process.exit(code || 0)
+  }
+  if (argv[0] === 'logout') {
+    const code = await runLogout()
+    process.exit(code || 0)
+  }
+  if (argv[0] === 'whoami') {
+    const code = await runWhoami()
+    process.exit(code || 0)
+  }
 
   // Bare file argument — if the first arg is a real file (or has a
   // scheme-ish extension), run it. This makes shebang scripts work:
