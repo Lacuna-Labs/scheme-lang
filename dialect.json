@@ -1,7 +1,7 @@
 {
   "name": "sakura",
   "displayName": "Sakura Scheme",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "core": true,
   "entrypoint": "./bin/sakura-scheme",
   "tagline": "a language for humans and AI to program together",

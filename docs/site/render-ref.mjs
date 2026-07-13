@@ -1,24 +1,27 @@
 #!/usr/bin/env node
-// docs/site/render-ref.mjs — render the reference manual to HTML.
+// docs/site/render-ref.mjs — render the reference SLAT to HTML.
 //
-// Input:  docs/SAKURA-SCHEME-1.0.REF.md
+// Input:  docs/SAKURA-SCHEME-REFERENCE.slat  (consolidated SLAT reference)
 // Output: docs/site/dist/reference.html
 //
-// Hand-rolled Markdown-subset renderer tailored to the reference's regular
-// shape. No npm deps. Each fenced ```scheme block gets a Run button that
-// pastes the code into the REPL widget and evaluates it.
+// The reference used to live in a Markdown file (SAKURA-SCHEME-1.0.REF.md);
+// on 2026-07-13 it consolidated into a SLAT (~1,157 verbs + 70 core forms)
+// as the single source of truth. This renderer reads the SLAT via the same
+// loader the REPL uses and emits an HTML page with the same shape the old
+// MD renderer produced: heading anchors, syntax-highlighted code blocks
+// with Run buttons, a sidebar TOC. No npm deps.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
+import { loadReference } from '../../src/reference-loader.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..', '..')
-const REF_PATH = join(REPO_ROOT, 'docs', 'SAKURA-SCHEME-1.0.REF.md')
 const OUT_DIR = join(__dirname, 'dist')
 if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true })
 
-const src = readFileSync(REF_PATH, 'utf-8')
+const ref = loadReference()
 
 // ── Scheme highlighter (mirrors src/repl/highlight.js) ───────────────
 const SPECIAL_FORMS = new Set([
@@ -39,7 +42,7 @@ const KNOWN_FNS = new Set([
 ])
 
 function esc(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 function highlightScheme(source) {
@@ -119,7 +122,7 @@ function highlightScheme(source) {
   return out.join('')
 }
 
-// ── inline rendering (bold, italic, code, links) ─────────────────────
+// ── inline rendering (limited MD subset for prose fields) ────────────
 function renderInline(s) {
   const parts = []
   let last = 0
@@ -145,107 +148,174 @@ function renderInline(s) {
   }).join('')
 }
 
-// ── block rendering ──────────────────────────────────────────────────
+// Render a code sample: highlighted <pre> + Run button.
+function renderCodeBlock(code) {
+  return '<pre class="code scheme"><button class="run-btn" data-run="' +
+    esc(code) + '" title="Send to REPL">Run</button><code>' +
+    highlightScheme(code) + '</code></pre>'
+}
 
-const lines = src.split('\n')
-const out = []
-let i = 0
-const anchors = []
-let anchorCounter = 0
+// Render a doc-body blob (used for core-forms, which carry MD subset).
+// Handles: fenced ```scheme blocks (with Run buttons), plain paragraphs,
+// #### sub-headings, --- horizontal rules, inline `code`.
+function renderDocBody(body) {
+  const out = []
+  const lines = String(body).split('\n')
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    if (/^```/.test(line)) {
+      const lang = line.slice(3).trim() || 'text'
+      const buf = []
+      i++
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++ }
+      i++
+      const code = buf.join('\n')
+      if (lang === 'scheme' || lang === 'scm') {
+        out.push(renderCodeBlock(code))
+      } else {
+        out.push('<pre class="code ' + esc(lang) + '"><code>' + esc(code) + '</code></pre>')
+      }
+      continue
+    }
+    if (/^---\s*$/.test(line)) { out.push('<hr>'); i++; continue }
+    const h = line.match(/^(#{1,6})\s+(.*)$/)
+    if (h) {
+      const level = Math.min(6, h[1].length + 2) // #### in doc body → h6
+      out.push('<h' + level + '>' + renderInline(h[2]) + '</h' + level + '>')
+      i++
+      continue
+    }
+    if (/^\s*$/.test(line)) { i++; continue }
+    const para = []
+    while (i < lines.length && !/^\s*$/.test(lines[i])
+      && !/^```/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i])
+      && !/^---\s*$/.test(lines[i])) {
+      para.push(lines[i])
+      i++
+    }
+    out.push('<p>' + renderInline(para.join(' ')) + '</p>')
+  }
+  return out.join('\n')
+}
 
 function slugify(text) {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
-while (i < lines.length) {
-  const line = lines[i]
+// ── build the page ───────────────────────────────────────────────────
 
-  if (/^```/.test(line)) {
-    const lang = line.slice(3).trim() || 'text'
-    const buf = []
-    i++
-    while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++ }
-    i++
-    const code = buf.join('\n')
-    if (lang === 'scheme' || lang === 'scm') {
-      out.push('<pre class="code scheme"><button class="run-btn" data-run="' + esc(code) + '" title="Send to REPL">Run</button><code>' + highlightScheme(code) + '</code></pre>')
-    } else {
-      out.push('<pre class="code ' + esc(lang) + '"><code>' + esc(code) + '</code></pre>')
-    }
-    continue
-  }
-
-  if (/^---\s*$/.test(line)) {
-    out.push('<hr>')
-    i++
-    continue
-  }
-
-  const h = line.match(/^(#{1,6})\s+(.*)$/)
-  if (h) {
-    const level = h[1].length
-    const raw = h[2].replace(/`/g, '')
-    const id = 'h-' + slugify(raw) + '-' + (anchorCounter++)
-    anchors.push({ level, text: raw, id })
-    out.push('<h' + level + ' id="' + id + '">' + renderInline(h[2]) + '</h' + level + '>')
-    i++
-    continue
-  }
-
-  if (/^>\s?/.test(line)) {
-    const buf = []
-    while (i < lines.length && /^>\s?/.test(lines[i])) {
-      buf.push(lines[i].replace(/^>\s?/, ''))
-      i++
-    }
-    const inner = buf.join('\n').split(/\n\n+/).filter(Boolean).map(p =>
-      '<p>' + renderInline(p.replace(/\n/g, ' ')) + '</p>'
-    ).join('')
-    out.push('<blockquote>' + inner + '</blockquote>')
-    continue
-  }
-
-  if (/^\s*[-*]\s+/.test(line)) {
-    const buf = []
-    while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
-      buf.push(lines[i].replace(/^\s*[-*]\s+/, ''))
-      i++
-    }
-    out.push('<ul>' + buf.map(l => '<li>' + renderInline(l) + '</li>').join('') + '</ul>')
-    continue
-  }
-  if (/^\s*\d+\.\s+/.test(line)) {
-    const buf = []
-    while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
-      buf.push(lines[i].replace(/^\s*\d+\.\s+/, ''))
-      i++
-    }
-    out.push('<ol>' + buf.map(l => '<li>' + renderInline(l) + '</li>').join('') + '</ol>')
-    continue
-  }
-
-  if (/^\s*$/.test(line)) {
-    i++
-    continue
-  }
-
-  const para = []
-  while (i < lines.length && !/^\s*$/.test(lines[i])
-    && !/^```/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i])
-    && !/^---\s*$/.test(lines[i]) && !/^>\s?/.test(lines[i])
-    && !/^\s*[-*]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i])) {
-    para.push(lines[i])
-    i++
-  }
-  out.push('<p>' + renderInline(para.join(' ')) + '</p>')
+const out = []
+const anchors = []
+let anchorCounter = 0
+function anchor(text, level) {
+  const id = 'h-' + slugify(text) + '-' + (anchorCounter++)
+  anchors.push({ level, text: String(text), id })
+  return id
 }
 
+// Page title.
+out.push('<h1 id="' + anchor('Sakura Scheme Reference', 1) + '">Sakura Scheme Reference</h1>')
+out.push('<p><em>Version ' + esc(ref.meta.version || '1.0') + ' — consolidated ' +
+  esc(ref.meta.consolidatedAt || '') + '. ' +
+  ref.verbList.length + ' verbs + ' + ref.coreList.length +
+  ' core language forms.</em></p>')
+out.push('<p>The reference IS the language. Every verb is defined here with a summary, ' +
+  'explanation, three-tier examples (novice / intermediate / expert), caveats, drawbacks, ' +
+  'use-cases, related verbs, and a learning progression.</p>')
+
+// ── Core language forms ─────────────────────────────────────────────
+out.push('<h2 id="' + anchor('Core language forms', 2) + '">Core language forms</h2>')
+for (const cf of ref.coreList) {
+  const id = anchor(cf.name, 3)
+  out.push('<h3 id="' + id + '"><code>' + esc(cf.name) + '</code></h3>')
+  if (cf.signature) {
+    out.push('<p><strong>Signature:</strong> <code>' + esc(cf.signature) + '</code></p>')
+  }
+  if (cf['doc-body']) {
+    out.push(renderDocBody(cf['doc-body']))
+  }
+}
+
+// ── Verbs, grouped by library ───────────────────────────────────────
+out.push('<h2 id="' + anchor('Verbs by library', 2) + '">Verbs by library</h2>')
+
+// Group verbs.
+const byLibrary = new Map()
+for (const v of ref.verbList) {
+  const lib = v.library || 'misc'
+  if (!byLibrary.has(lib)) byLibrary.set(lib, [])
+  byLibrary.get(lib).push(v)
+}
+const libraries = Array.from(byLibrary.keys()).sort()
+
+for (const lib of libraries) {
+  const verbs = byLibrary.get(lib)
+  const libId = anchor('library-' + lib, 3)
+  out.push('<h3 id="' + libId + '">Library <code>' + esc(lib) + '</code> <small>(' +
+    verbs.length + ' verbs)</small></h3>')
+  for (const v of verbs) {
+    const id = anchor(v.name, 4)
+    out.push('<div class="verb">')
+    out.push('<h4 id="' + id + '"><code>' + esc(v.name) + '</code>' +
+      (v.kind ? ' <small class="kind">[' + esc(v.kind) + ']</small>' : '') +
+      '</h4>')
+    if (v.signature) {
+      out.push('<p><strong>Signature:</strong> <code>' + esc(v.signature) + '</code></p>')
+    }
+    if (v.summary) {
+      out.push('<p class="summary">' + renderInline(v.summary) + '</p>')
+    }
+    if (v.explanation) {
+      out.push('<p>' + renderInline(v.explanation) + '</p>')
+    }
+    if (Array.isArray(v.examples) && v.examples.length > 0) {
+      out.push('<div class="examples">')
+      for (const ex of v.examples) {
+        const tier = ex.tier || ''
+        if (tier) out.push('<p class="tier"><strong>' + esc(tier) + '</strong></p>')
+        if (ex.code) out.push(renderCodeBlock(ex.code))
+        if (ex.note) out.push('<p class="note"><em>' + renderInline(ex.note) + '</em></p>')
+      }
+      out.push('</div>')
+    }
+    if (Array.isArray(v.caveats) && v.caveats.length > 0) {
+      out.push('<p><strong>Caveats:</strong></p><ul>' +
+        v.caveats.map(c => '<li>' + renderInline(c) + '</li>').join('') + '</ul>')
+    }
+    if (Array.isArray(v.drawbacks) && v.drawbacks.length > 0) {
+      out.push('<p><strong>Drawbacks:</strong></p><ul>' +
+        v.drawbacks.map(c => '<li>' + renderInline(c) + '</li>').join('') + '</ul>')
+    }
+    if (Array.isArray(v.usecases) && v.usecases.length > 0) {
+      out.push('<p><strong>Use cases:</strong></p><ul>' +
+        v.usecases.map(c => '<li>' + renderInline(c) + '</li>').join('') + '</ul>')
+    }
+    if (Array.isArray(v.related) && v.related.length > 0) {
+      out.push('<p><strong>Related:</strong> ' +
+        v.related.map(r => '<code>' + esc(r) + '</code>').join(', ') + '</p>')
+    }
+    if (v.learn && typeof v.learn === 'object') {
+      const l = v.learn
+      if (l.concept) out.push('<p><strong>Learn:</strong> ' + renderInline(l.concept) + '</p>')
+      if (Array.isArray(l.prerequisites) && l.prerequisites.length > 0) {
+        out.push('<p><em>Prerequisites:</em> ' +
+          l.prerequisites.map(p => '<code>' + esc(p) + '</code>').join(', ') + '</p>')
+      }
+      if (l.progression) out.push('<p><em>Progression:</em> ' + renderInline(l.progression) + '</p>')
+    }
+    out.push('</div>')
+  }
+}
+
+// ── sidebar TOC ─────────────────────────────────────────────────────
 const toc = ['<nav class="ref-toc" aria-label="Reference sidebar">']
 toc.push('<h2>Sections</h2>')
 toc.push('<ol>')
 for (const a of anchors) {
   if (a.level <= 3) {
-    toc.push('<li class="toc-l' + a.level + '"><a href="#' + a.id + '">' + esc(a.text.replace(/`/g, '')) + '</a></li>')
+    toc.push('<li class="toc-l' + a.level + '"><a href="#' + a.id + '">' +
+      esc(a.text.replace(/`/g, '')) + '</a></li>')
   }
 }
 toc.push('</ol>')
@@ -262,3 +332,4 @@ writeFileSync(join(OUT_DIR, 'reference.html'), html, 'utf-8')
 process.stdout.write('built ' + join(OUT_DIR, 'reference.html') + '\n')
 process.stdout.write('  ' + html.length + ' bytes  (' + (html.length / 1024).toFixed(1) + ' KB)\n')
 process.stdout.write('  ' + anchors.length + ' heading anchors\n')
+process.stdout.write('  ' + ref.verbList.length + ' verbs, ' + ref.coreList.length + ' core forms\n')

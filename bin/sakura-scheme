@@ -37,7 +37,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const VERSION = '1.0.0'
+const VERSION = '1.5.0'
 const DEFAULT_FUEL = 200000
 
 // ── helpers ──────────────────────────────────────────────────────────

@@ -14,8 +14,8 @@
 //      the dispatcher uses (loaded from src/registry.js). Optional; only
 //      present for verbs the Curator security layer knows about.
 //
-// The reference manual SLATs are the DEEP source (900+ verbs, 3 examples
-// each — see scheme-lang/docs/SAKURA-SCHEME-1.0.REF.md). Loading the full
+// The reference SLAT is the DEEP source (~1,157 verbs, 3 examples each —
+// see scheme-lang/docs/SAKURA-SCHEME-REFERENCE.slat). Loading the full
 // reference on REPL start would cost startup latency; instead we hand-
 // author short docs for ~120 core verbs here, and `,source <verb>` /
 // `,search <regex>` reach into the reference file on demand.

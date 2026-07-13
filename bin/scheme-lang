@@ -84,7 +84,7 @@ async function main() {
   // sakura's version, not the launcher's).
   if (argv[0] === '--help' || argv[0] === '-h') return printHelp()
   if (argv[0] === '--version' || argv[0] === '-v') {
-    process.stdout.write('scheme-lang 1.0.0\n'); return
+    process.stdout.write('scheme-lang 1.5.0\n'); return
   }
 
   const dialects = discoverDialects({ launcherPath: LAUNCHER })
