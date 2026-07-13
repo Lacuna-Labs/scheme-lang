@@ -132,14 +132,28 @@ say "  $BINDIR/sakura-scheme   ->  $REPO_DIR/bin/sakura-scheme"
 say ""
 
 if [ -n "$NEEDS_PATH_HINT" ]; then
-  say "add $BINDIR to your PATH — this one line in $RC:"
-  say ""
   case "$RC" in
-    *fish*) say "  set -gx PATH \$HOME/.local/bin \$PATH" ;;
-    *)      say "  export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+    *fish*) PATH_LINE="set -gx PATH \$HOME/.local/bin \$PATH" ;;
+    *)      PATH_LINE="export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
   esac
+
+  # Append idempotently to the shell rc so the command is in the user's env
+  # in every new shell. We use a fixed marker line so a second install run
+  # doesn't stack duplicates.
+  MARKER="# added by scheme-lang installer"
+  if [ -f "$RC" ] && grep -Fq "$MARKER" "$RC"; then
+    say "$RC already has our PATH line — leaving as-is."
+  else
+    mkdir -p "$(dirname "$RC")" 2>/dev/null || true
+    {
+      printf '\n%s\n' "$MARKER"
+      printf '%s\n'   "$PATH_LINE"
+    } >> "$RC"
+    say "added $BINDIR to PATH in $RC."
+  fi
+
   say ""
-  say "then reload with:  source $RC   (or open a new terminal)"
+  say "open a new terminal, or run:  source $RC"
   say ""
 fi
 
