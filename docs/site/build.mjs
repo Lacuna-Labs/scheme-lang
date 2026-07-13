@@ -47,6 +47,10 @@ const ORDER = [
   'src/adapters.js',
   'src/interp.js',
   'src/macro.js',
+  'src/framebuffer.js',
+  'src/sound.js',
+  'src/animation.js',
+  'src/media.js',
   'src/base.js',
 ]
 

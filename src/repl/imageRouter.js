@@ -20,6 +20,10 @@
 import { encodePng } from './pngEncoder.js'
 import { renderGraphic } from './braille.js'
 import { Sym } from '../reader.js'
+import { Framebuffer } from '../framebuffer.js'
+import { renderFramebuffer as renderITerm2Fb } from './iterm2.js'
+import { renderFramebuffer as renderKittyFb } from './kitty.js'
+import { renderFramebuffer as renderSixelFb } from './sixel.js'
 
 const kindName = (v) => (typeof v === 'string' ? v : v instanceof Sym ? v.name : null)
 
@@ -293,6 +297,17 @@ export function renderInline(graphic, opts = {}) {
     ? opts.forceProtocol
     : pickProtocol(caps)
   if (protocol === 'braille') return null
+
+  // Framebuffer values (from `(render)`, `(fb-snapshot)`, or a direct
+  // Framebuffer instance) skip the mock-shape rasterization and go
+  // through the palette-preserving adapter path.
+  const fb = coerceFramebuffer(graphic)
+  if (fb) {
+    if (protocol === 'iterm2') return renderITerm2Fb(fb, { scale: opts.scale || 4 })
+    if (protocol === 'kitty')  return renderKittyFb(fb,  { scale: opts.scale || 4 })
+    if (protocol === 'sixel')  return renderSixelFb(fb,  { scale: opts.scale || 2 })
+  }
+
   const raster = rasterize(graphic, { width: opts.width, height: opts.height })
   if (!raster) return null
   if (protocol === 'iterm2') {
@@ -305,6 +320,17 @@ export function renderInline(graphic, opts = {}) {
   }
   if (protocol === 'sixel') {
     return renderSixel(raster)
+  }
+  return null
+}
+
+// Coerce a value into a Framebuffer, or null if it isn't one.
+function coerceFramebuffer(v) {
+  if (v instanceof Framebuffer) return v
+  if (v && typeof v === 'object' && v.kind === 'framebuffer' && Array.isArray(v.pixels)) {
+    const fb = new Framebuffer(v.w, v.h, v.palette)
+    fb.pixels.set(v.pixels)
+    return fb
   }
   return null
 }

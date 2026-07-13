@@ -14,6 +14,7 @@ import {
   bricklayCacheGet,
   bricklayCacheSet,
 } from './adapters.js'
+import { registerMedia } from './media.js'
 
 export function makeBaseEnv(fuel) {
   const e = new Env()
@@ -1152,6 +1153,11 @@ export function makeBaseEnv(fuel) {
     if (cacheKey != null) bricklayCacheSet(cacheKey, out)
     return out
   })
+
+  // ── L1 MEDIA — framebuffer + drawing + sound + animation + input ─
+  // Loaded here so every scheme-lang consumer picks them up. Verbs are
+  // additive; they don't conflict with the pure-math base above.
+  registerMedia(e, fuel)
 
   return e
 }

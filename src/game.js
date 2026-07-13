@@ -361,19 +361,25 @@ export function installGame(env, game) {
     // Old: assign to game.onFrame. Preserve so Curator's tickFrame
     // routine (which pulls game.onFrame) keeps working.
     game.onFrame = fn
-    // New: also push into the L1 media loop's handler list, so the
+    // New: also install into the L1 media loop's handler slot so the
     // scheme-lang animation loop invokes it on setInterval ticks.
-    media.events.frame.push(fn)
+    // Single-slot semantics per the reference — replace, don't push.
+    media.events.frame = [fn]
     media.loop.ensureRunning()
     return undefined
   })
-  // (frame) returns the current tick number. Prefer the media loop's
-  // counter (framebuffer.frame) since it's the one that actually
-  // advances under our own animation loop; sync game.frameNo alongside
-  // so consumers reading it directly still see the right value.
-  def('frame', () => {
+  // (frame) → current tick number. Preserves the L1 media semantics:
+  // zero args → counter; with numeric w+h → composite shape record.
+  // Syncs game.frameNo alongside so Curator's consumers still see the
+  // right value directly.
+  def('frame', (...args) => {
     game.frameNo = media.fb.frame
-    return media.fb.frame
+    if (args.length === 0) return media.fb.frame
+    if (args.length >= 2 && typeof args[0] === 'number' && typeof args[1] === 'number') {
+      const [w, h, ...shapes] = args
+      return { kind: 'graphic', w, h, shapes }
+    }
+    return { kind: 'graphic', shapes: args }
   }, 'read')
   def('stop', () => {
     game.stopped = true

@@ -22,6 +22,8 @@
 
 import { fg, PALETTE } from './palette.js'
 import { Sym } from '../reader.js'
+import { Framebuffer } from '../framebuffer.js'
+import { renderFramebuffer as renderFramebufferDots } from './dots.js'
 
 // Kind can be either a JS string OR a Scheme Sym (the reader creates
 // Sym instances for quoted identifiers). Normalize.
@@ -178,6 +180,11 @@ export function rect(grid, x, y, w, h) {
 export function renderGraphic(value, opts = {}) {
   if (value == null) return null
 
+  // Direct framebuffer instance — hand straight to the dots adapter.
+  if (value instanceof Framebuffer) {
+    return renderFramebufferDots(value, { color: opts.color !== false })
+  }
+
   // Tagged-list form: ['circle', ...] etc. Head may be a JS string or a
   // reader Sym (which is the shape returned by quoting an identifier).
   if (Array.isArray(value) && value.length >= 3) {
@@ -191,6 +198,12 @@ export function renderGraphic(value, opts = {}) {
 
   // JS object form.
   if (value && typeof value === 'object' && !Array.isArray(value)) {
+    // A framebuffer snapshot from (render).
+    if (value.kind === 'framebuffer' && Array.isArray(value.pixels) && value.w && value.h) {
+      const fb = new Framebuffer(value.w, value.h, value.palette)
+      fb.pixels.set(value.pixels)
+      return renderFramebufferDots(fb, { color: opts.color !== false })
+    }
     if (value.kind === 'graphic') {
       return renderComposite(value.shapes || [], opts)
     }
