@@ -49,8 +49,8 @@ export function sakuraBanner({ version = '1.0', tagline } = {}) {
     : '?'
   const rightLines = [
     '',
-    role.strong('Sakura Scheme') + role.dim(`  v${version}`),
-    role.dim('scheme-lang ') + role.text(LANG_VERSION) + role.dim('  ·  node ') + role.text(nodeMajor),
+    role.strong('Sakura Scheme') + role.dim(`   v${version}`),
+    role.dim('scheme-lang      ') + role.text(LANG_VERSION) + role.dim('  ·  node ') + role.text(nodeMajor),
     tagline ? role.dim(tagline) : role.dim('a language for humans and AI'),
     '',
     role.dim(',help') + role.dim('  ·  ') + role.dim(',ask sakura') + role.dim('  ·  ') + role.dim(',exit'),
