@@ -16,6 +16,7 @@
 
 import { loadReference } from './reference-loader.js'
 import { installReferenceImpls } from './reference-impls.js'
+import { setVerbStatus } from './registry.js'
 
 /**
  * registerReferenceVerbs(env, fuel, options?)
@@ -75,7 +76,11 @@ export function registerReferenceVerbs(env, fuel, options = {}) {
       // Preserve the reference contract on the fn for `,help` etc.
       stubFn._sakuraReference = verb
       stubFn._sakuraStub = true
-      env.define(name, stubFn, { perm: 'read' })
+      env.define(name, stubFn, { perm: 'read', status: 'stubbed' })
+      // Registry mirror — the color-coding IDE reads `status` here.
+      setVerbStatus(name, 'stubbed', {
+        stubMessage: `not yet implemented — contract: ${sig}`,
+      })
       missingImpls.push(name)
       stubbed++
     } else {

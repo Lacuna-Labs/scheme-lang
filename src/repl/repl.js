@@ -22,9 +22,10 @@ import { loadConfig } from './config.js'
 import { sakuraBanner, neutralBanner, printBanner } from './banner.js'
 import { dispatchMeta, metaCommandNames } from './metaCommands.js'
 import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
-import { completeSymbol, currentToken } from './complete.js'
+import { completeSymbol, currentToken, fuzzyScore } from './complete.js'
 import { display } from './richDisplay.js'
-import { role } from './palette.js'
+import { role, statusRole } from './palette.js'
+import { classifyVerb } from './verbStatus.js'
 import { recordSessionLine } from './session.js'
 import { Sym } from '../reader.js'
 
@@ -217,7 +218,7 @@ export async function startRepl(options = {}) {
       recordSessionLine(ctx, line, value)
       process.stdout.write(display(value) + '\n')
     } catch (e) {
-      process.stdout.write(role.err('error: ' + (e && e.message ? e.message : String(e))) + '\n')
+      printRuntimeError(env, e)
     }
 
     // Give fuel a top-up between prompts so long sessions don't exhaust it.
@@ -262,7 +263,7 @@ async function runPipedRepl({ ctx, env, fuel, results, rebindResults, prompt }) 
       recordSessionLine(ctx, acc, value)
       process.stdout.write(display(value) + '\n')
     } catch (e) {
-      process.stdout.write(role.err('error: ' + (e && e.message ? e.message : String(e))) + '\n')
+      printRuntimeError(env, e)
     }
     fuel.n = 200000
     acc = ''
@@ -329,4 +330,29 @@ function hasBinding(env, name) {
     e = e.parent
   }
   return false
+}
+
+/**
+ * printRuntimeError — REPL error path. Detects the common
+ * "unbound symbol: <name>" throw and adds a color-coded did-you-mean
+ * block. Any other error prints unchanged.
+ */
+function printRuntimeError(env, err) {
+  const msg = (err && err.message) ? err.message : String(err)
+  process.stdout.write(role.err('error: ' + msg) + '\n')
+  const unbound = /^unbound symbol:\s*(.+)$/i.exec(msg)
+  if (!unbound) return
+  const name = unbound[1].trim()
+  const names = [...allKnownVerbs(env)]
+  const scored = names
+    .map((n) => ({ name: n, score: fuzzyScore(name, n) }))
+    .filter((h) => h.score > 60)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+  if (scored.length === 0) return
+  process.stdout.write(role.dim('  did you mean:') + '\n')
+  for (const s of scored) {
+    const cls = classifyVerb(env, s.name)
+    process.stdout.write('    ' + statusRole(cls.status)(s.name) + role.dim(' · ' + cls.status) + '\n')
+  }
 }

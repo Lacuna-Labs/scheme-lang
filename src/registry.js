@@ -89,6 +89,33 @@ export const CANONICAL_CHIP_KINDS = Object.freeze([
   'look.changed',
 ])
 
+// Canonical verb-status vocabulary — the terminal-IDE / color-coding axis
+// added 2026-07-13 as part of the LANG-SPEC roll-out. `status` answers
+// the question "can I call this right now?" — orthogonal to `perm`
+// (may my tier fire it?) and `powerTier` (may the substrate afford it?).
+//
+//   implemented           — real JS body, contract met, works as documented
+//   stubbed               — registered from the reference SLAT but throws
+//                           a contract-quoted error when invoked. Green
+//                           on the reference lookup, yellow on the IDE.
+//   platform-unsupported  — the impl exists but this platform lacks a
+//                           dependency (Web Audio in Node, iTerm2 image
+//                           escape in a plain xterm, macOS-only surface
+//                           adapter, etc.). Runtime detects and marks.
+//   user-stub             — user-defined placeholder via `(define-stub …)`
+//                           so a work-in-progress cart can declare shape
+//                           before the impl lands.
+//
+// A verb NOT in the registry is NOT-REGISTERED — a typo or a name that
+// no dialect provides. That state has no meta entry; the REPL synthesises
+// it at look-up time (red, did-you-mean).
+export const CANONICAL_VERB_STATUS = Object.freeze([
+  'implemented',
+  'stubbed',
+  'platform-unsupported',
+  'user-stub',
+])
+
 // Derive a sensible powerTier default from the perm when the installer
 // didn't declare one. paint verbs are static draws; animate verbs are
 // tweens/RAF; everything else is safe at any substrate tier.
@@ -196,6 +223,21 @@ export function registerVerbMeta(name, meta) {
     // generator, lint) can steer authors to `aliasFor`.
     deprecated: meta.deprecated === true,
     aliasFor: typeof meta.aliasFor === 'string' ? meta.aliasFor : null,
+    // Verb status — the terminal-IDE color-coding axis. Default is
+    // 'implemented' since a bare env.define with a real function is
+    // by definition implemented. The reference-registrar overrides to
+    // 'stubbed' when it installs a clean-error placeholder; a
+    // platform check may override to 'platform-unsupported'; a
+    // user's (define-stub …) sets 'user-stub'.
+    status: CANONICAL_VERB_STATUS.includes(meta.status) ? meta.status : 'implemented',
+    // Optional platform-support declaration — 'macos', 'browser',
+    // 'iterm', 'kitty', etc. Null means "works everywhere". A verb whose
+    // required platform doesn't match the current runtime gets its
+    // status marked 'platform-unsupported' at registration.
+    platform: typeof meta.platform === 'string' ? meta.platform : null,
+    // Human-friendly note for user-stubs — printed by the REPL's
+    // ,help and the clean-error message.
+    stubMessage: typeof meta.stubMessage === 'string' ? meta.stubMessage : null,
     _inferred: meta._inferred === true,
     _needsExplicitPerm: meta._needsExplicitPerm === true,
   })
@@ -246,6 +288,21 @@ export function validateRegistry({ throwOnFail = true } = {}) {
 }
 
 /**
+ * setVerbStatus — override the status of an already-registered verb.
+ * Called by the reference-registrar to mark installed stubs, by the
+ * REPL to mark platform-unsupported at boot, and by (define-stub …)
+ * to mark user placeholders. Idempotent; no-op if verb unknown.
+ */
+export function setVerbStatus(name, status, extras = {}) {
+  const meta = REGISTRY.get(name)
+  if (!meta) return false
+  if (CANONICAL_VERB_STATUS.includes(status)) meta.status = status
+  if (typeof extras.stubMessage === 'string') meta.stubMessage = extras.stubMessage
+  if (typeof extras.platform === 'string') meta.platform = extras.platform
+  return true
+}
+
+/**
  * snapshotRegistry — copy of the current table for tests / introspection.
  */
 export function snapshotRegistry() {
@@ -267,6 +324,7 @@ export default {
   registerVerbMeta,
   getVerbMeta,
   hasVerb,
+  setVerbStatus,
   validateRegistry,
   snapshotRegistry,
   __resetRegistry,

@@ -194,6 +194,8 @@
   <h2>On this page</h2>
   <ol>
     <li><a href="#what">What's Sakura Scheme?</a></li>
+    <li><a href="#layers">The Layer model (0–4) — what loads when</a></li>
+    <li><a href="#ide">The terminal IDE — REPL, meta-commands, color code</a></li>
     <li><a href="#setup">Setup — where you write</a></li>
     <li><a href="#shape">The four-block cart shape</a></li>
     <li><a href="#atoms">Atoms, verbs, and capability-first names</a></li>
@@ -253,6 +255,216 @@ browser — no install, no sign-in. Press <em>Run</em> to evaluate the
 expression. You can change it; the engine will tell you what it returns.</p>
 
 <scheme-playground starter="(sprite 'blossom 'bow)"></scheme-playground>
+</section>
+
+<!-- ────────────────────────────────────────────────────────── -->
+<section id="layers">
+<h2>1a. The Layer model (0–4) — what loads when</h2>
+
+<p>Sakura Scheme is layered. Every REPL loads <strong>Layer 0</strong>
+unconditionally; higher layers are additive. The <code>sakura-scheme</code>
+binary loads all five; <code>scheme-lang</code> loads L0 + L1 only. A fork
+can pick and choose.</p>
+
+<table>
+  <thead>
+    <tr><th>Layer</th><th>Loads</th><th>What's in it</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>L0 · Core</strong></td>
+      <td><code>src/base.js</code></td>
+      <td>R7RS-small subset: arithmetic, lists, strings, predicates,
+      JSON, regex, dates. About 250 verbs. No side effects on the world.</td>
+    </tr>
+    <tr>
+      <td><strong>L1 · Media</strong></td>
+      <td><code>src/media.js</code></td>
+      <td>Framebuffer, drawing (<code>circle</code>, <code>disc</code>,
+      <code>rect</code>), sound (<code>tone</code>, <code>note</code>,
+      <code>sfx</code>), animation (<code>on-frame</code>), input
+      (<code>on-key</code>). About 80 verbs. Enough for a game.</td>
+    </tr>
+    <tr>
+      <td><strong>L2 · AI</strong></td>
+      <td><code>src/ai.js</code></td>
+      <td>Cortex (per-user memory) and the LLM interface. About 40 verbs.
+      In this build the Cortex is an in-memory dict; LLM verbs error cleanly
+      until a provider is wired.</td>
+    </tr>
+    <tr>
+      <td><strong>L3 · Game</strong></td>
+      <td><code>src/game.js</code></td>
+      <td>Entities, Verlet physics, sprites, tilemaps. About 100 verbs.
+      Written for a fantasy-console feel.</td>
+    </tr>
+    <tr>
+      <td><strong>L4 · Commercial</strong></td>
+      <td><code>src/commercial.js</code></td>
+      <td>Etsy, eBay, Shopify, Meta, Google Analytics. About 60 verbs.
+      Every verb needs an authenticated operator (<code>sakura-scheme
+      login</code>) — until sign-in, they error with a helpful hint.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Type <code>,verbs</code> in the REPL to see counts by status. Type
+<code>,namespace card</code> to see every card-related verb. The
+language surface is discoverable from inside the tool.</p>
+</section>
+
+<!-- ────────────────────────────────────────────────────────── -->
+<section id="ide">
+<h2>1b. The terminal IDE — REPL, meta-commands, color code</h2>
+
+<p>You'll spend most of your time in the REPL. It's a real IDE, not just
+a read-eval-print loop — line editing, structural editing, tab-complete,
+history, sessions, live file watch, inline images.</p>
+
+<h3>Getting in and out</h3>
+
+<pre><code class="scheme">$ sakura-scheme          ;; start the REPL
+sakura> …                ;; you're in
+sakura> ,exit            ;; leave
+</code></pre>
+
+<p><code>Ctrl-D</code> on an empty line also leaves. <code>Ctrl-C</code>
+cancels the current input.</p>
+
+<h3>Line editing</h3>
+
+<p>Emacs-style keys work everywhere: <code>Ctrl-A</code> / <code>Ctrl-E</code>
+for start/end of line, <code>Ctrl-K</code> / <code>Ctrl-U</code> for kill
+to end/start, <code>Ctrl-W</code> to kill the previous word,
+<code>Ctrl-R</code> for reverse history search. <code>Up</code> and
+<code>Down</code> walk the history. <code>Ctrl-L</code> clears the screen.
+<code>Ctrl-O</code> opens the current buffer in <code>$EDITOR</code>.</p>
+
+<p><code>Tab</code> completes the symbol under the cursor. If several
+candidates match, <code>Tab</code> shows them all; <code>Shift-Tab</code>
+cycles through them. <code>F1</code> shows help for the symbol at the
+cursor without pressing Enter.</p>
+
+<h3>Structural editing (paredit)</h3>
+
+<p><code>Ctrl-]</code> or <code>Alt-]</code> — <strong>barf</strong> (pop the
+last child out of the enclosing form).
+<code>Ctrl-\</code> or <code>Alt-S</code> — <strong>slurp</strong> forward
+(pull the next form in).
+<code>Alt-[</code> — slurp backward.
+<code>Alt-K</code> — kill the enclosing form.</p>
+
+<h3>Meta-commands</h3>
+
+<p>Every REPL command starts with a comma. The main ones:</p>
+
+<table>
+  <thead>
+    <tr><th>Command</th><th>What it does</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>,help</code></td><td>Show all commands.</td></tr>
+    <tr><td><code>,help &lt;verb&gt;</code></td><td>Docstring, signature, three-tier examples, and <em>status</em> for a verb.</td></tr>
+    <tr><td><code>,search &lt;regex&gt;</code></td><td>Search verb names, docs, examples.</td></tr>
+    <tr><td><code>,apropos &lt;regex&gt;</code></td><td>Verb names matching the regex, color-coded by status.</td></tr>
+    <tr><td><code>,namespace &lt;prefix&gt;</code></td><td>Every verb in a namespace (e.g. <code>,namespace geom</code>).</td></tr>
+    <tr><td><code>,verbs [status]</code></td><td>Verb-status summary and legend. Optional filter: <code>,verbs stubbed</code>.</td></tr>
+    <tr><td><code>,type &lt;verb&gt;</code></td><td>Type / signature only.</td></tr>
+    <tr><td><code>,doc &lt;verb&gt;</code></td><td>Docstring only.</td></tr>
+    <tr><td><code>,examples &lt;verb&gt;</code></td><td>Three-tier examples (novice / intermediate / expert).</td></tr>
+    <tr><td><code>,source &lt;verb&gt;</code></td><td>File:line location (when known).</td></tr>
+    <tr><td><code>,time &lt;expr&gt;</code></td><td>Wall time + fuel used + memory delta for an expression.</td></tr>
+    <tr><td><code>,expand &lt;form&gt;</code></td><td>Macro-expand once.</td></tr>
+    <tr><td><code>,inspect &lt;val&gt;</code></td><td>Walk into a value with arrow keys.</td></tr>
+    <tr><td><code>,trace &lt;fn&gt;</code></td><td>Print every call to a function.</td></tr>
+    <tr><td><code>,watch &lt;expr&gt;</code></td><td>Reprint <em>expr</em> above every prompt.</td></tr>
+    <tr><td><code>,watch-file &lt;path&gt;</code></td><td>Live-reload defines from a <code>.scm</code> file on save.</td></tr>
+    <tr><td><code>,save &lt;file&gt;</code> / <code>,load &lt;file&gt;</code></td><td>Session save + replay.</td></tr>
+    <tr><td><code>,shell &lt;cmd&gt;</code></td><td>Run a shell command from inside the REPL.</td></tr>
+    <tr><td><code>,image</code></td><td>Which inline-image protocol will the REPL use here?</td></tr>
+    <tr><td><code>,clear</code></td><td>Clear the screen.</td></tr>
+    <tr><td><code>,keys</code></td><td>Print every key binding.</td></tr>
+  </tbody>
+</table>
+
+<h3>Named results — <code>_</code>, <code>_1</code>, <code>_2</code>, …</h3>
+
+<p>Every evaluation remembers the last ten answers. <code>_</code> is the
+last result, <code>_1</code> is the previous, <code>_9</code> is nine ago.
+Handy for pulling a value out of the last thing without re-typing:</p>
+
+<pre><code class="scheme">sakura> (+ 1 2)
+3
+sakura> (* _ 4)
+12
+</code></pre>
+
+<h3>The color code — knowing what a verb is going to do</h3>
+
+<p>Every verb in the REPL is one of five colors. This is the <em>status</em>
+axis added in the 2026-07-13 spec — orthogonal to permissions and to
+substrate power. It answers "can I call this right now?":</p>
+
+<table>
+  <thead>
+    <tr><th>Color</th><th>Status</th><th>Meaning</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span style="color:#7c9c6c">■ green</span></td>
+        <td><code>implemented</code></td>
+        <td>Real body. Works as documented.</td></tr>
+    <tr><td><span style="color:#c2a25a">■ yellow</span></td>
+        <td><code>stubbed</code></td>
+        <td>Registered from the reference SLAT; throws a contract-quoted
+        error on call. The name and signature are correct — the body
+        just isn't wired yet in this build.</td></tr>
+    <tr><td><span style="color:#b06a00">■ orange</span></td>
+        <td><code>platform-unsupported</code></td>
+        <td>Impl exists but this platform lacks a dependency (Web
+        Audio in Node, iTerm2 escape in xterm, macOS-only adapter, …).</td></tr>
+    <tr><td><span style="color:#5c94b0">■ blue</span></td>
+        <td><code>user-stub</code></td>
+        <td>Placeholder you declared with <code>(define-stub 'name
+        "message")</code>. Use this to stub out a verb while you're
+        planning shape.</td></tr>
+    <tr><td><span style="color:#b04440">■ red</span></td>
+        <td><code>missing</code></td>
+        <td>Not registered. Typo, or a name no dialect provides.
+        You'll see this when the REPL prints <em>did you mean:</em>
+        suggestions for an unbound-symbol error.</td></tr>
+  </tbody>
+</table>
+
+<p>Type <code>,verbs</code> to see the counts of each. Type <code>,help
+some-verb</code> and the name at the top of the block will be colored
+by its status — that's your at-a-glance "is this going to work?"</p>
+
+<h3>User stubs — declare shape before you have code</h3>
+
+<p>Sometimes you want to name a verb before you write it. Use
+<code>define-stub</code>:</p>
+
+<pre><code class="scheme">sakura> (define-stub 'inventory-alert "wire this by Friday")
+inventory-alert
+sakura> ,help inventory-alert
+   inventory-alert  · primitive · ◇ user-stub
+      (inventory-alert …)   [primitive — 0 required arg(s)]
+      user-stub — placeholder you defined with (define-stub …)
+      wire this by Friday
+</code></pre>
+
+<p>Any call to a user-stub throws a clean error that quotes the message.
+The rest of your cart can call it without breaking parse; the color
+in <code>,help</code> and <code>,apropos</code> is your reminder that
+the code isn't there yet.</p>
+
+<h3>Sessions</h3>
+
+<p><code>,save my-session.slat</code> writes every define and every
+result to a file. <code>,load my-session.slat</code> replays them.
+Handy for pausing an exploration and picking it up the next morning
+without retyping.</p>
+
 </section>
 
 <!-- ────────────────────────────────────────────────────────── -->

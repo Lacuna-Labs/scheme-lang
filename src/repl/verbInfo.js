@@ -21,6 +21,7 @@
 // `,search <regex>` reach into the reference file on demand.
 
 import { Sym } from '../reader.js'
+import { classifyVerb } from './verbStatus.js'
 
 // ── the static doc-table ─────────────────────────────────────────────
 // Format: name → { sig, doc, examples: [novice, intermediate, expert] }
@@ -305,6 +306,11 @@ export function verbInfo(env, name) {
 
   if (!doc && kind === 'unknown') return null
 
+  // Status classification — 'implemented' / 'stubbed' /
+  // 'platform-unsupported' / 'user-stub' / 'missing'. Registry-first,
+  // env-confirmed. See src/repl/verbStatus.js.
+  const cls = classifyVerb(env, name)
+
   return {
     name,
     kind,
@@ -312,7 +318,9 @@ export function verbInfo(env, name) {
     doc: doc ? doc.doc : '',
     examples: doc && doc.examples ? doc.examples.filter(Boolean) : [],
     bound,
-    meta: null, // filled in by caller if perm registry available
+    meta: cls.meta || null,
+    status: cls.status,
+    stubMessage: (cls.meta && cls.meta.stubMessage) || null,
   }
 }
 

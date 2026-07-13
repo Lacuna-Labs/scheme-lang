@@ -11,8 +11,10 @@
 
 import { spawnSync } from 'node:child_process'
 import { writeFileSync, readFileSync } from 'node:fs'
-import { role, PALETTE, fg } from './palette.js'
+import { role, PALETTE, fg, statusRole, statusLegend } from './palette.js'
 import { verbInfo, allKnownVerbs, CORE_DOCS } from './verbInfo.js'
+import { classifyVerb, statusMarker, colorizeVerb } from './verbStatus.js'
+import { fuzzyScore } from './complete.js'
 import { display, schemeFormat } from './richDisplay.js'
 import { parse } from '../reader.js'
 import { expandProgram } from '../macro.js'
@@ -54,6 +56,7 @@ function cmdHelp(ctx, args) {
     [',namespace <ns>',      'every verb in namespace'],
     [',apropos <regex>',     'symbols whose name matches'],
     [',search <regex>',      'search docs + examples'],
+    [',verbs [status]',      'verb-status summary + color legend'],
     [',time <expr>',         'wall + fuel + memory for expr'],
     [',expand <form>',       'macro-expand once'],
     [',expand-1 <form>',     'one-step expand'],
@@ -90,17 +93,42 @@ function cmdVerbHelp(ctx, args) {
   if (!name) return cmdHelp(ctx, [])
   const info = verbInfo(env, name)
   if (!info) {
-    writeLine(role.warn(`no info for '${name}' in current dialect`))
-    writeLine(role.dim(`  try ,apropos ${name}   ·   or install a dialect that provides it`))
-    // Well-known verb prefixes → dialect hint (dialect-scoped verb visibility per Alfred 2026-07-12).
+    // Not-registered → red + did-you-mean.
+    writeLine(role.statusMissing(name) + role.dim(`  · missing (not registered)`))
+    const suggestions = didYouMean(env, name, 5)
+    if (suggestions.length > 0) {
+      writeLine('')
+      writeLine(role.dim('  did you mean:'))
+      for (const s of suggestions) {
+        writeLine('    ' + statusRole(s.status)(s.name) + role.dim(` · ${s.status}`))
+      }
+    }
     const hint = dialectHintFor(name)
     if (hint) writeLine(role.dim(`  hint: ${hint}`))
+    writeLine('')
     return
   }
+  // Status prominent at top — the color of the name IS the status.
+  const status = info.status || 'implemented'
+  const paint = statusRole(status)
   writeLine('')
-  writeLine(role.strong(name) + role.dim(`  · ${info.kind}`))
+  writeLine(
+    paint(name)
+    + role.dim(`  · ${info.kind}`)
+    + role.dim(`  · ${statusMarker(status)} ${status}`)
+  )
   if (info.sig) writeLine('  ' + role.fn(info.sig))
   if (info.doc) writeLine('  ' + role.text(info.doc))
+  if (status === 'stubbed') {
+    writeLine('  ' + role.warn('stubbed — contract known, no implementation yet'))
+    if (info.stubMessage) writeLine('  ' + role.dim(info.stubMessage))
+  } else if (status === 'platform-unsupported') {
+    writeLine('  ' + role.warn('unsupported on this platform'))
+    if (info.stubMessage) writeLine('  ' + role.dim(info.stubMessage))
+  } else if (status === 'user-stub') {
+    writeLine('  ' + role.hint('user-stub — placeholder you defined with (define-stub …)'))
+    if (info.stubMessage) writeLine('  ' + role.dim(info.stubMessage))
+  }
   if (info.examples && info.examples.length) {
     writeLine('')
     writeLine(role.dim('  examples:'))
@@ -109,6 +137,23 @@ function cmdVerbHelp(ctx, args) {
     }
   }
   writeLine('')
+}
+
+// didYouMean(env, query, k) → ranked candidates
+// Uses the fuzzy scorer from complete.js against the union of known
+// verb names. Filters below a small threshold so an unrelated name
+// doesn't shove nonsense at the user.
+function didYouMean(env, query, k = 5) {
+  const names = [...allKnownVerbs(env)]
+  const scored = names
+    .map((n) => ({ name: n, score: fuzzyScore(query, n) }))
+    .filter((h) => h.score > 60)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, k)
+  return scored.map((h) => ({
+    name: h.name,
+    status: classifyVerb(env, h.name).status,
+  }))
 }
 
 function cmdType(ctx, args) {
@@ -166,9 +211,14 @@ function cmdApropos(ctx, args) {
   const cols = 4
   const cellW = Math.max(...names.map(n => n.length)) + 2
   for (let i = 0; i < names.length; i += cols) {
-    const row = names.slice(i, i + cols).map(n => role.text(n.padEnd(cellW)))
+    const row = names.slice(i, i + cols).map(n => {
+      const cls = classifyVerb(ctx.env, n)
+      return statusRole(cls.status)(n.padEnd(cellW))
+    })
     ctx.writeLine('  ' + row.join(''))
   }
+  ctx.writeLine('')
+  ctx.writeLine('  ' + statusLegend())
 }
 
 function cmdNamespace(ctx, args) {
@@ -177,7 +227,12 @@ function cmdNamespace(ctx, args) {
   const names = [...allKnownVerbs(ctx.env)].filter(n => n.startsWith(ns + '/') || n.startsWith(ns + '-')).sort()
   if (names.length === 0) return ctx.writeLine(role.dim(`(no verbs in namespace '${ns}')`))
   ctx.writeLine(role.section(`${ns}/  (${names.length} verbs)`))
-  for (const n of names) ctx.writeLine('  ' + role.text(n))
+  for (const n of names) {
+    const cls = classifyVerb(ctx.env, n)
+    ctx.writeLine('  ' + statusRole(cls.status)(n))
+  }
+  ctx.writeLine('')
+  ctx.writeLine('  ' + statusLegend())
 }
 
 function cmdSearch(ctx, args) {
@@ -194,9 +249,12 @@ function cmdSearch(ctx, args) {
   }
   if (hits.length === 0) return ctx.writeLine(role.dim('(no matches)'))
   for (const h of hits) {
-    ctx.writeLine(role.strong(h.name) + ' ' + role.fn(h.sig || ''))
+    const cls = classifyVerb(ctx.env, h.name)
+    ctx.writeLine(statusRole(cls.status)(h.name) + ' ' + role.fn(h.sig || ''))
     if (h.doc) ctx.writeLine('  ' + role.dim(h.doc))
   }
+  ctx.writeLine('')
+  ctx.writeLine('  ' + statusLegend())
 }
 
 function cmdTime(ctx, args) {
@@ -436,6 +494,53 @@ function cmdKeys(ctx) {
   writeLine('')
 }
 
+function cmdVerbs(ctx, args) {
+  // ,verbs [status]   — summarise verb-status counts, optionally
+  // listing every verb of one status. Zero-arg call prints just the
+  // legend + tallies, so a beginner sees the color code and how many
+  // of each class exist without a wall of names.
+  const filter = args[0]
+  const names = [...allKnownVerbs(ctx.env)]
+  const buckets = { implemented: [], stubbed: [], 'platform-unsupported': [], 'user-stub': [] }
+  for (const n of names) {
+    const cls = classifyVerb(ctx.env, n)
+    if (buckets[cls.status]) buckets[cls.status].push(n)
+  }
+  ctx.writeLine('')
+  ctx.writeLine(role.section('verb status'))
+  ctx.writeLine('')
+  ctx.writeLine('  ' + statusLegend())
+  ctx.writeLine('')
+  for (const s of ['implemented', 'stubbed', 'platform-unsupported', 'user-stub']) {
+    const paint = statusRole(s)
+    ctx.writeLine(
+      '  ' + paint(statusMarker(s) + ' ' + s.padEnd(22))
+      + role.dim(' · ' + buckets[s].length + ' verb(s)')
+    )
+  }
+  ctx.writeLine('')
+  if (!filter) {
+    ctx.writeLine(role.dim('  ,verbs <status>   list every verb of that status'))
+    ctx.writeLine('')
+    return
+  }
+  const list = buckets[filter]
+  if (!list) {
+    ctx.writeLine(role.warn(`unknown status: ${filter} (implemented|stubbed|platform-unsupported|user-stub)`))
+    return
+  }
+  ctx.writeLine(role.section(`${filter} (${list.length})`))
+  ctx.writeLine('')
+  const paint = statusRole(filter)
+  const cellW = Math.max(...list.map(n => n.length), 8) + 2
+  const cols = 4
+  for (let i = 0; i < list.length; i += cols) {
+    const row = list.slice(i, i + cols).map(n => paint(n.padEnd(cellW)))
+    ctx.writeLine('  ' + row.join(''))
+  }
+  ctx.writeLine('')
+}
+
 function cmdReset(ctx) {
   ctx.writeLine(role.warn('reset: env reset scheduled — restart is safer for now'))
 }
@@ -472,6 +577,7 @@ export const COMMANDS = [
   { names: ['ask'],                        handler: cmdAsk,       doc: 'ask sakura' },
   { names: ['clear', 'cls'],               handler: cmdClear,     doc: 'clear screen' },
   { names: ['keys', 'keybindings'],        handler: cmdKeys,      doc: 'keybindings' },
+  { names: ['verbs'],                      handler: cmdVerbs,     doc: 'verb-status summary' },
   { names: ['reset'],                      handler: cmdReset,     doc: 'reset env' },
   { names: ['exit', 'quit', 'q'],          handler: cmdExit,      doc: 'exit REPL' },
   // Future work — stubbed. Discoverable via ,help + tab-complete; produce

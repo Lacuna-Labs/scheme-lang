@@ -146,6 +146,39 @@ export function makeBaseEnv(fuel) {
   }
   def('inspect', (v) => _show(v))
 
+  // (define-stub 'name "message?") — LANG-SPEC 2026-07-13.
+  //
+  // Register a placeholder verb with the given name. The stub throws
+  // a clean error when invoked (contract-quoted, includes the message
+  // if the caller supplied one). Registry mirror gets :status
+  // 'user-stub' so the terminal-IDE color-codes it blue in help /
+  // apropos / tab-complete.
+  //
+  // Usage:
+  //   (define-stub 'my-verb "not implemented yet")
+  //   (define-stub 'foo)  ; message is generic
+  //
+  // Idempotent: calling twice replaces the previous stub message.
+  // Naming: accepts a Sym (the common `'name` form) OR a bare string
+  // so a cart can build the name dynamically.
+  def('define-stub', (nameArg, message = '') => {
+    const name = nameArg instanceof Sym ? nameArg.name : String(nameArg)
+    if (!name) throw new Error('define-stub: name must be a non-empty symbol or string')
+    const msg = typeof message === 'string' && message.length > 0
+      ? message
+      : `\`${name}\` is a user-defined stub — not yet implemented.`
+    const stub = function userStub(...args) {
+      throw new Error(
+        `Verb \`${name}\` is a user-defined stub.\n  ${msg}\n  ` +
+        `Called with ${args.length} argument(s). Define the real impl with (define ${name} …).`,
+      )
+    }
+    stub._sakuraUserStub = true
+    stub._sakuraStubMessage = msg
+    e.define(name, stub, { perm: 'read', status: 'user-stub', stubMessage: msg })
+    return new Sym(name)
+  })
+
   // ── SRFI 1 essentials (per Dr. Imani's research — what every Scheme
   // author reaches for first; we already have map/filter/reduce/append/
   // reverse/first/last/nth; add the remainder so a cart authored in

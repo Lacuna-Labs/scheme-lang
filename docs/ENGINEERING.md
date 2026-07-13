@@ -103,6 +103,498 @@ in JS, no JIT, no `eval`.
 
 ---
 
+## Lang — the language surface in one section
+
+> **Purpose.** This is where the language specification lives while
+> `docs/LANG-SPEC.md` matures into a standalone standard. Everything
+> below is a **runtime-anchored** map of the language: what the reader
+> reads, what the evaluator evaluates, what the dispatcher gates, how
+> a verb travels from the SLAT reference to a bound name to a color-
+> coded row in the terminal IDE.
+>
+> **Audience.** An engineer changing anything in `src/` should be able
+> to skim this section and know where the change lives. Every
+> subsystem here has a file, a set of key functions, and a "how to
+> extend" line.
+>
+> **Companion.** For the operator-facing "what is Sakura Scheme?"
+> read, see `docs/LANG-SPEC.md`. The two docs share the same universe;
+> LANG-SPEC.md is the shape, this section is the plumbing.
+
+### Lang §L-1. Runtime map
+
+The language is nine subsystems that compose in one direction:
+
+```
+                        source string
+                             ↓
+   reader.js              tokenize + read → AST (JS arrays of Sym + values)
+                             ↓
+   macro.js               expandProgram — hygienic syntax-rules
+                             ↓
+   dispatch.js            walkVerbCalls + five-gate check
+                             ↓
+   interp.js              evalStep (TCO trampoline over Tail/TailCall)
+                             ↓
+   base.js, media.js,     primitive apply — each verb via env.define,
+   ai.js, game.js,        registered in registry.js with perm + status
+   commercial.js
+                             ↓
+   framebuffer.js         side-effects into a pixel grid
+   sound.js               side-effects onto an audio timeline
+   animation.js           on-frame handlers @ 60Hz
+                             ↓
+   repl/*                 terminal render + line editor + meta-commands
+```
+
+Every arrow is one file → next file. There is no ambient `eval`, no
+DOM, no XHR. The runtime map IS the security story.
+
+### Lang §L-2. Reader — `src/reader.js`
+
+**What it does.** Tokenises + parses Scheme source into JS arrays of
+interned `Sym` values, numbers, strings, booleans, and nested arrays.
+The reader is the front of the Scheme Control Interface: the same
+homoiconic text an operator reads is the data the evaluator runs.
+
+**Key functions.**
+
+- `parse(src)` — main entry. Returns an array of top-level forms.
+  Memoized by source string (LRU-ish cache).
+- `parseOnce(src)` — same, but bypasses the cache.
+- `sym(name)` — intern a symbol. Two calls with the same name return
+  the identical `Sym` instance.
+- `posOf(form)` — source position `{line, col}` for a list form.
+- `tagPos(form, pos)` — attach a position (used internally).
+- `clearParseCache()` — test seam.
+
+**Special forms the reader recognises directly.**
+
+- `'x` → `(quote x)`
+- `` `x `` → `(quasiquote x)`
+- `,x` → `(unquote x)`
+- `,@x` → `(unquote-splicing x)`
+- `#;x` — datum comment (skip next form)
+- `[…]` → equivalent to `(…)` — bracket parens for reading Clojure-flavored code
+
+**The R7RS §6.7 string-escape fix.** The reader honours `\n`, `\r`,
+`\t`, `\\`, `\"` in strings and passes unknown escapes through as the
+literal two-character sequence. This lets a beginner paste code from
+other Schemes / JS / cart tutorials without hitting a reader-error
+cliff. See `readString` in `src/reader.js`.
+
+**How to extend.** New reader syntax (say, a `#hash{…}` literal for
+hash-tables) means editing `readAtom` / `readList` — a modification
+touches the whole downstream (`walkVerbCalls`, display, session
+save/restore). We haven't extended the reader since v1.0. If you do,
+document the shape here.
+
+### Lang §L-3. Macros — `src/macro.js`
+
+**What it does.** Expands `syntax-rules` macros hygienically. Runs
+before the dispatcher walk so a macro that rewrites its body into a
+different verb call gets gated on the *expanded* shape, not the
+surface.
+
+**Key functions.**
+
+- `expandProgram(forms, opts)` — walk the top-level forms, expanding
+  every macro invocation. Returns `{ forms, defs }` where `defs` are
+  the `(define-syntax …)` bindings collected on the way through.
+- `defineMacro(name, transformer)` — register a macro. Called by the
+  `(define-syntax …)` handler.
+- `expandOne(form, env, fuel)` — one-step expansion. Powers `,expand-1`.
+
+**Pattern language.** `syntax-rules` supports literal identifiers,
+ellipsis patterns (`x …`), nested templates, and the `(literals …)`
+clause. Hygiene: bindings introduced by a macro are renamed with a
+suffix so they don't capture the callsite's env.
+
+**Macro fuel.** `expandProgram` accepts an optional `{ fuel: { n: N } }`
+so the dispatcher can bound expansion at 100k steps. A fork-bomb
+macro throws "macro fuel exhausted" — surfaced as a parse-class
+rejection, never reaching the runner.
+
+**How to extend.** Adding `syntax-case` or `er-macro-transformer` is a
+non-trivial ratchet. Keep the existing hygiene model as the floor.
+Any new transformer type needs to compose with the existing one.
+
+### Lang §L-4. Evaluator — `src/interp.js`
+
+**What it does.** Walks the AST and returns a value. TCO via
+`Tail` / `TailCall` sentinels — a deep `(loop n …)` is bounded only
+by fuel, not by the JS engine's stack depth.
+
+**Key exports.**
+
+- `evaluate(form, env, fuel)` — the outer trampoline. Public entry
+  point.
+- `evalStep(form, env, fuel)` — the inner evaluator body.
+- `apply(fn, args, fuel)` — invoke a `Closure` or a JS primitive.
+  Rebound at each call so the fuel budget survives.
+- `Env` — the environment class. `Env.vars` is a `Map`; `Env.parent`
+  is the enclosing env. `Env.define(name, val, meta?)` registers a
+  binding and records the verb metadata in the registry.
+- `Env.freeze()` — lock the substrate. Post-freeze, NEW names can be
+  defined (bricklay, lambdas, named-lets), but the frozen substrate
+  names cannot be redefined or `set!`'d.
+- `Closure` — the class user-defined `lambda`s become.
+
+**Tail positions handled.** `if`, `begin`, `when`, `unless`, `cond`,
+`case`, `let`, `let*`, `letrec`, `and`, `or`, function application.
+See `src/interp.js:9-37` for the full list.
+
+**Fuel.** Every evaluation cycle decrements a shared counter. When it
+hits zero, the evaluator throws "fuel exhausted". The REPL tops up
+fuel between prompts (`DEFAULT_FUEL = 200000`) so long sessions
+don't wedge; carts run with their own budget.
+
+**How to extend.** Adding a special form means:
+
+1. Add a case in `evalStep`.
+2. Add the name to `SPECIAL_FORMS` in `src/dispatch.js`.
+3. Document in `docs/LANG-SPEC.md` §3.
+4. Add tests.
+
+### Lang §L-5. Verb registry — `src/registry.js`
+
+**What it does.** One process-wide `Map` keyed by verb name; value is
+a metadata object.
+
+**Metadata shape.**
+
+```
+{
+  perm:        'read' | 'paint' | 'animate' | 'state-change' |
+               'destructive' | 'financial' | 'network' | 'personal-data'
+  confirm:     boolean
+  rateLimit:   string ('1/30s', '10/min') | null
+  schema:      (args) => true | string | null
+  idempotent:  boolean
+  powerTier:   'always' | 'paint' | 'animate' | 'full-power'
+  chip:        'paint.applied' | 'motion.applied' | 'look.changed' | null
+  deprecated:  boolean
+  aliasFor:    string | null
+  status:      'implemented' | 'stubbed' | 'platform-unsupported' | 'user-stub'
+  platform:    string | null
+  stubMessage: string | null
+}
+```
+
+**Key exports.**
+
+- `registerVerbMeta(name, meta)` — record metadata. Called by
+  `Env.define` for every function-valued binding.
+- `getVerbMeta(name)` — dispatcher lookup.
+- `hasVerb(name)` — quick membership test.
+- `setVerbStatus(name, status, extras?)` — override the status of an
+  already-registered verb. Used by:
+  - `reference-register.js` to mark stubs `stubbed`.
+  - The REPL boot path to mark platform-unsupported verbs.
+  - `(define-stub …)` to mark user-stubs.
+- `validateRegistry({ throwOnFail })` — fail-fast startup check. Any
+  state-change-looking verb without an explicit perm throws.
+- `snapshotRegistry()` — copy the full table for tests / introspection.
+- `__resetRegistry()` — test seam.
+
+**Canonical closed sets.** `CANONICAL_PERMS`, `CANONICAL_POWER_TIERS`,
+`CANONICAL_CHIP_KINDS`, `CANONICAL_VERB_STATUS` — each is an exported
+`Object.freeze`d list. New values need a spec change.
+
+### Lang §L-6. Dispatch — `src/dispatch.js`
+
+**What it does.** The five-gate chokepoint every entry-point into
+Scheme execution routes through. See §6 of the main manual for the
+full contract; the summary:
+
+**The five gates, in order.**
+
+1. **Registry** — is the verb name in the registry?
+2. **Perm** — does the caller's tier allow this perm?
+3. **Confirm** — does the verb need `caller.confirmed`?
+4. **Schema** — does the shape of args pass the verb's schema?
+5. **Rate** — under/over the per-tier bucket?
+
+On rejection: return an envelope `{ ok: false, reason, verb, args }`.
+On accept: hand the source to `runner(source)` and return `{ ok: true,
+value, traceId }`.
+
+**Key export.**
+
+- `dispatchScheme(source, caller, runner)` — the entry.
+- `walkVerbCalls(ast)` — walk a parsed AST collecting every verb call
+  site AND every locally-defined name (so `(define (helper …) …)`
+  doesn't trigger unknown-verb rejection).
+- `TIER_PERMS` — the tier → perm-set matrix.
+- `__resetRateBuckets()` — test seam.
+
+### Lang §L-7. Base library — `src/base.js`
+
+**What it does.** Installs the L0 core vocabulary. Pure functions over
+numbers, strings, lists, dates, JSON, regex, etc. Every binding is
+`perm: 'read'`.
+
+**Entry.**
+
+- `makeBaseEnv(fuel)` — build a fresh env with all L0 primitives
+  installed.
+
+**Structure.** The file is one long `def(name, fn)` list. The
+`def` helper is `(n, f, perm = 'read') => e.define(n, f, { perm })`.
+Adding a new base primitive means one line + a SLAT entry.
+
+**Sakura additions.** `=?` (smart equality), `inspect`, `define-stub`.
+The rest is R7RS-shaped.
+
+### Lang §L-8. Media, AI, Game, Commercial layers
+
+These are the L1-L4 layers described in `docs/LANG-SPEC.md` §5. Each is
+one file:
+
+- `src/media.js` — `registerMedia(env)`. Framebuffer, drawing, sound,
+  animation, input. Called from inside `makeBaseEnv`.
+- `src/ai.js` — `installAi(env)`. Cortex (in-memory dict) + LLM
+  interface stubs. LLM verbs throw "needs an LLM provider" on call.
+- `src/game.js` — `installGame(env, state)`. Entities, physics,
+  sprites, tilemaps.
+- `src/commercial.js` — `installCommercial(env)`. Etsy, eBay, Shopify,
+  Meta, Google Analytics. Each verb checks the Cortex for an auth
+  token; missing token → "sign in to use `X`" throw.
+
+**Layer selection.** `bin/sakura-scheme` uses `makeSakuraEnv` which
+loads all layers. `bin/scheme-lang` uses `makeBaseEnv` and gets L0+L1.
+A fork can pick and choose (see §10.2 in `docs/LANG-SPEC.md`).
+
+### Lang §L-9. Reference loader — `src/reference-loader.js` + `src/reference-register.js`
+
+**What they do.**
+
+- `reference-loader.js` parses `docs/SAKURA-SCHEME-REFERENCE.slat` once
+  and caches. Returns `{ verbs: Map, coreForms: Map, verbList, coreList,
+  meta }`. See `src/reference-loader.js` for the entry shape.
+- `reference-register.js` walks every verb in the loaded reference:
+  1. If the env already binds it — count as **implemented**.
+  2. Otherwise — install a clean-error stub carrying the contract in
+     the message. Mark `:status 'stubbed'` in the registry.
+- `reference-impls.js` contains curated JS impls for many reference
+  verbs — pure math / list / string stuff that maps head-on. Runs
+  before the reference registrar so curated impls win over stubs.
+
+**Reverse check.** `findJsImplsMissingFromReference(env)` lists JS
+bindings that are NOT in the reference — candidates for adding to the
+reference or removing. Runs on every CI (see `tests/verbs/reverse-check.test.mjs`).
+
+### Lang §L-10. Framebuffer + adapters — `src/framebuffer.js`, `src/repl/dots.js`, etc.
+
+**What it does.** A pixel buffer (`Uint8Array` indexed 0..15 for the
+palette) that L1 media verbs draw into. Adapters render the buffer to
+different terminals:
+
+- `src/repl/dots.js` — Braille dot rendering for any 256-color terminal.
+- `src/repl/iterm2.js` — iTerm2 inline-image escape (PNG in-band).
+- `src/repl/kitty.js` — Kitty graphics protocol.
+- `src/repl/sixel.js` — Sixel for terminals that support it.
+- `src/repl/browser-canvas.js` — the browser Playground's canvas.
+
+The adapter is picked by `src/repl/imageRouter.js` based on
+`TERM_PROGRAM`, terminal caps, and env vars. Verbs that need a specific
+adapter but don't have it available should mark themselves
+`platform-unsupported` at boot.
+
+**How to extend.** New adapter → new file in `src/repl/`, register in
+`imageRouter.js`.
+
+### Lang §L-11. Sound engine — `src/sound.js`
+
+**What it does.** Schedules tones on a virtual timeline. Two adapters:
+Web Audio (browser) and `node-speaker` (Node). Neither is loaded by
+default — the engine builds a schedule and hands it to whichever
+adapter is available.
+
+**Verbs.** `tone`, `note`, `sfx`, `music`, `silence`, `stop-sound`.
+
+**How to extend.** New adapter → mirror the pattern in `src/sound.js`.
+New verb kind → add to `sfxKinds` and document.
+
+### Lang §L-12. Animation loop — `src/animation.js`
+
+**What it does.** A 60Hz loop that calls every registered
+`on-frame` handler in order, tops up the fuel budget per frame, and
+counts frames.
+
+**Verbs.** `on-frame`, `on-key`, `on-mouse`, `on-gamepad`, `sync`,
+`sleep`, `stop`, `tick-frame`, `fire-*`.
+
+**How to extend.** New input kind → add an `on-*` verb + a `fire-*`
+verb + a handler slot in the loop state.
+
+### Lang §L-13. Game / physics — `src/game.js`
+
+**What it does.** Verlet integration, AABB collisions, entity blackboard,
+sprites, tilemaps. Enough for a fantasy console.
+
+**Verbs.** `entity/*`, `physics/*`, `sprite`, `sprites`, `tilemap/*`.
+See `docs/LANG-SPEC.md` §5.4.
+
+### Lang §L-14. AI stubs — `src/ai.js`
+
+**What it does.** Registers `cortex/*` and `llm/*` verbs. Cortex is
+an in-memory dict. LLM verbs throw "needs an LLM provider" until the
+user wires one.
+
+**Why stub.** Sakura Scheme runs offline out of the box. The AI seam
+exists so a fork or a hosted deployment can plug in without changing
+the language. See `docs/LANG-SPEC.md` §5.3.
+
+### Lang §L-15. Commercial layer — `src/commercial.js`
+
+**What it does.** Registers `etsy/*`, `ebay/*`, `shopify/*`, `meta/*`,
+`google/*` verbs. Every verb checks the Cortex for an auth token
+before making a network call. Missing token → clean throw with a
+`sakura-scheme login` hint.
+
+**Auth.** `src/auth/googleDeviceFlow.js` implements the OAuth device
+flow. `src/auth/store.js` reads/writes `~/.sakura/auth.json`.
+`src/auth/cli.js` is the CLI-side wrapper the binary calls.
+
+### Lang §L-16. REPL — `src/repl/*`
+
+**What it does.** The terminal IDE. Banner, line editor with raw-mode
+input, tab-complete, structural editing (paredit), meta-commands,
+rich display (Braille graphics, tables), session save/restore, live
+file watch.
+
+**Entry.**
+
+- `startRepl({ dialect, banner, prompt, version, tagline })`
+
+**Key modules.**
+
+| File                       | Role                                                     |
+|----------------------------|----------------------------------------------------------|
+| `repl.js`                  | Main loop. Piped + TTY paths.                            |
+| `lineEditor.js`            | Raw-mode line editor with cursor + history.              |
+| `banner.js`                | Sakura banner + neutral fallback.                        |
+| `metaCommands.js`          | Every `,command` handler.                                |
+| `verbInfo.js`              | Doc-table + `verbInfo(env, name)` for `,help`.           |
+| `verbStatus.js`            | Classify a verb by status; palette the name accordingly. |
+| `palette.js`               | 16-color set + ANSI helpers + `statusRole` / `statusLegend`. |
+| `highlight.js`             | Streaming Scheme syntax highlighter.                     |
+| `complete.js`              | Fuzzy tab completion + `fuzzyScore`.                     |
+| `richDisplay.js`           | `display(value)` — pretty-print any Scheme value.        |
+| `history.js`               | Persistent history.                                      |
+| `session.js`               | `,save` / `,load` — session snapshot as .slat.           |
+| `paredit.js`               | Structural edit ops (slurp, barf, splice, kill-form).    |
+| `trace.js`                 | `,trace` / `,untrace` — dynamic call tracing.            |
+| `valueInspector.js`        | Arrow-key value walker for `,inspect`.                   |
+| `fileWatcher.js`           | `,watch-file` — live-reload on save.                     |
+| `imageRouter.js`           | Pick inline-image adapter by terminal caps.              |
+| `braille.js`               | Braille dot rendering.                                   |
+| `iterm2.js` / `kitty.js` / `sixel.js` | Terminal-specific image protocols.             |
+| `pngEncoder.js`            | Inline-PNG encoder for adapters that need it.            |
+
+**Meta commands (partial list).** `,help`, `,type`, `,doc`, `,arity`,
+`,examples`, `,source`, `,namespace`, `,apropos`, `,search`,
+`,verbs`, `,time`, `,expand`, `,expand-1`, `,watch`, `,unwatch`,
+`,trace`, `,untrace`, `,inspect`, `,undo`, `,save`, `,load`,
+`,watch-file`, `,unwatch-file`, `,image`, `,shell`, `,ask sakura`,
+`,clear`, `,keys`, `,reset`, `,exit`.
+
+**Color code the IDE applies (LANG-SPEC §7).**
+
+| Status                 | Role helper                            | Palette entry     |
+|------------------------|----------------------------------------|-------------------|
+| `implemented`          | `role.statusImplemented`               | `PALETTE.moss`    |
+| `stubbed`              | `role.statusStubbed`                   | `PALETTE.amber`   |
+| `platform-unsupported` | `role.statusPlatformUnsupported`       | `PALETTE.ochre`   |
+| `user-stub`            | `role.statusUserStub`                  | `PALETTE.frost`   |
+| `missing`              | `role.statusMissing`                   | `PALETTE.rust`    |
+
+The IDE uses `statusRole(status)(name)` at every render site (help,
+apropos, search, namespace, tab-complete row, did-you-mean). One point
+of truth in `src/repl/palette.js`.
+
+### Lang §L-17. Cart config — `scheme-lang.config.slat`
+
+**What it does.** Declares where carts live and the slug-pairing
+rules. Loaded at REPL boot by `src/repl/config.js`. See the file for
+the exact schema.
+
+### Lang §L-18. Auth — `src/auth/*`
+
+Google OAuth device-flow for the commercial layer. Three files:
+
+- `googleDeviceFlow.js` — the device-code + poll implementation.
+- `store.js` — read/write `~/.sakura/auth.json`.
+- `cli.js` — the `sakura-scheme login` / `logout` / `whoami` handlers.
+
+### Lang §L-19. Extension points
+
+Summary of every extension seam in the runtime:
+
+- **Add a verb.** `env.define(name, fn, { perm, status? })` + SLAT entry.
+- **Add a layer.** New file exporting `installMyLayer(env)`; call it
+  from `sakuraEnv.js`.
+- **Add a special form.** Case in `evalStep` + name in `SPECIAL_FORMS`
+  + LANG-SPEC entry.
+- **Add a reader syntax.** Modify `readAtom` / `readList` in
+  `reader.js`. Careful — this is a downstream-touches-everything change.
+- **Add a meta-command.** Entry in `COMMANDS` table in
+  `metaCommands.js`; handler function.
+- **Add a color / status.** Extend `CANONICAL_VERB_STATUS` in
+  `registry.js`; add a role helper in `palette.js`; teach
+  `verbStatus.js` to classify.
+- **Add an image adapter.** New file in `src/repl/`; register in
+  `imageRouter.js`.
+- **Add a sound adapter.** Mirror the Web Audio / node-speaker pattern
+  in `src/sound.js`.
+- **Add auth for a shop.** Extend `src/auth/*`; register verbs in
+  `src/commercial.js`.
+- **Adapter override.** `setAdapters({...})` in `src/adapters.js` —
+  overrides the base no-op stubs for any subsystem.
+
+### Lang §L-20. Testing
+
+Every subsystem has a test file under `tests/`. Key tests:
+
+- `tests/l234.test.mjs` — L2/L3/L4 smoke.
+- `tests/repl/smoke.test.mjs` — REPL end-to-end.
+- `tests/repl/pages.test.mjs` — REPL pages rendering.
+- `tests/verbs/reference-loader.test.mjs` — SLAT parses cleanly.
+- `tests/verbs/reverse-check.test.mjs` — every JS binding accounted for.
+- `tests/verbs/generated-examples.test.mjs` — every reference example
+  parses and runs (novice tier).
+- `tests/verb-status.test.mjs` — status classification + color coding
+  + `define-stub` + did-you-mean on unbound.
+
+Run everything with:
+
+```
+node --test tests/**/*.test.mjs tests/*.test.mjs
+```
+
+### Lang §L-21. Future ratchets
+
+The Lang section is a live document. Ratchets we know we'll want:
+
+- Move LANG-SPEC.md to a proper standard shape once the language stops
+  moving weekly.
+- `,layers` meta-command listing every layer with counts + status.
+- Extend `,verbs <status>` to accept a regex filter.
+- Move `CORE_DOCS` in `verbInfo.js` into the reference SLAT so the
+  hand-authored doc table stops drifting from the SLAT truth.
+- Hash tables + records as first-class values (`define-record-type`,
+  literal hash syntax).
+- A proper module system with `import` / `library` — reserved names
+  today, undesigned.
+- Full error taxonomy with `with-exception-handler`.
+
+Every ratchet lands with a bump to LANG-SPEC.md and a change to this
+section. The Lang engineering surface is where the specification
+grows before it's ready to graduate.
+
+---
+
 ## §1. Why Scheme
 
 This section names the four properties that decided the language. Each

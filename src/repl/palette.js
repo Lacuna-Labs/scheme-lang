@@ -139,7 +139,43 @@ export const role = Object.freeze({
   err:      (t) => fg(PALETTE.rust, t),
   section:  (t) => bold(fg(PALETTE.rose, t)),
   meta:     (t) => fg(PALETTE.rose, t),
+  // ── verb-status colors (LANG-SPEC, terminal-IDE color-code) ──
+  // green   — implemented (real body, works as documented)
+  // yellow  — stubbed (registered but throws on call)
+  // orange  — platform-unsupported (Web Audio in Node, iTerm2 in xterm)
+  // blue    — user-stub (define-stub placeholder)
+  // red     — not-registered (typo / doesn't exist)
+  statusImplemented:         (t) => fg(PALETTE.moss, t),
+  statusStubbed:             (t) => fg(PALETTE.amber, t),
+  statusPlatformUnsupported: (t) => fg(PALETTE.ochre, t),
+  statusUserStub:            (t) => fg(PALETTE.frost, t),
+  statusMissing:             (t) => fg(PALETTE.rust, t),
 })
+
+// Map a verb-status string to the role helper that colors names in that
+// state. Called by the REPL's help / apropos / search / tab-complete
+// output — one point of truth so a palette tweak flows everywhere.
+export function statusRole(status) {
+  switch (status) {
+    case 'implemented':          return role.statusImplemented
+    case 'stubbed':              return role.statusStubbed
+    case 'platform-unsupported': return role.statusPlatformUnsupported
+    case 'user-stub':            return role.statusUserStub
+    case 'missing':              return role.statusMissing
+    default:                     return role.text
+  }
+}
+
+// One-line legend for `,help` and the `,verbs` verbose header.
+export function statusLegend() {
+  return [
+    role.statusImplemented('■') + role.dim(' implemented'),
+    role.statusStubbed('■') + role.dim(' stubbed'),
+    role.statusPlatformUnsupported('■') + role.dim(' unsupported'),
+    role.statusUserStub('■') + role.dim(' user-stub'),
+    role.statusMissing('■') + role.dim(' missing'),
+  ].join('   ')
+}
 
 export function isColorEnabled() {
   return !(NO_COLOR || NOT_TTY)
