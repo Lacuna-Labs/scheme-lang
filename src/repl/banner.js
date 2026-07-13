@@ -63,7 +63,7 @@ export function sakuraBanner({ version = '1.0', tagline } = {}) {
     const left  = BLOSSOM_LINES[i] || ''
     const right = rightLines[i] || ''
     // Left column is fixed 14 visible chars; ANSI escapes don't count
-    out.push(left.padEnd(14 + (left.length - visibleLength(left))) + '   ' + right)
+    out.push(left.padEnd(9 + (left.length - visibleLength(left))) + '  ' + right)
   }
   return out
 }
