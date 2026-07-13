@@ -100,7 +100,25 @@ export function tokenize(src) {
       let s = ''
       adv() // opening quote
       while (i < n && src[i] !== '"') {
-        if (src[i] === '\\' && i + 1 < n) { s += src[i + 1]; adv(2) }
+        if (src[i] === '\\' && i + 1 < n) {
+          // R7RS §6.7 string escapes. Prior versions only stripped the
+          // backslash and kept the raw next char — which turned "\n"
+          // into a literal "n" and broke every multi-line example in
+          // the reference SLAT. Fixed: interpret the standard escapes.
+          const esc = src[i + 1]
+          switch (esc) {
+            case 'n': s += '\n'; break
+            case 't': s += '\t'; break
+            case 'r': s += '\r'; break
+            case '\\': s += '\\'; break
+            case '"': s += '"'; break
+            case '0': s += '\0'; break
+            case 'a': s += '\x07'; break // bell
+            case 'b': s += '\b'; break
+            default: s += esc // unknown escape → literal next char (keeps prior lenience)
+          }
+          adv(2)
+        }
         else { s += src[i]; adv() }
       }
       if (i >= n) throw new ReadError('unterminated string', L, C)

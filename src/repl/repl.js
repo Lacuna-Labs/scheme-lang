@@ -15,6 +15,7 @@ import { parse } from '../reader.js'
 import { evaluate, apply as applyFn, Env } from '../interp.js'
 import { expandProgram } from '../macro.js'
 import { makeBaseEnv } from '../base.js'
+import { registerReferenceVerbs } from '../reference-register.js'
 import { LineEditor } from './lineEditor.js'
 import { History } from './history.js'
 import { loadConfig } from './config.js'
@@ -59,6 +60,13 @@ export async function startRepl(options = {}) {
   // Engine.
   const fuel = { n: DEFAULT_FUEL }
   const env = makeBaseEnv(fuel)
+  // Register every verb from the Sakura Scheme reference SLAT — real
+  // impls where we have them, clean-error stubs where we don't. This
+  // ensures every documented verb resolves; unimplemented ones fail
+  // with a helpful contract-quoting message instead of an unbound
+  // symbol crash. Silent on TTY (banner already shipped); the summary
+  // is available via `,ref-status`.
+  registerReferenceVerbs(env, fuel)
 
   // Results.
   const results = { last: undefined, list: [] }
