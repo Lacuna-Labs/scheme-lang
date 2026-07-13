@@ -63,15 +63,18 @@ export function sakuraBanner({ version = '1.0', tagline } = {}) {
     const left  = BLOSSOM_LINES[i] || ''
     const right = rightLines[i] || ''
     // Left column is fixed 14 visible chars; ANSI escapes don't count
-    out.push(left.padEnd(9 + (left.length - visibleLength(left))) + '  ' + right)
+    out.push(left.padEnd(10 + (left.length - visibleLength(left))) + ' ' + right)
   }
   return out
 }
 
 // Rough visible-length of a string with ANSI escapes — subtract the
 // escape bytes so padEnd targets the visible-column width.
+// Also account for ✿ which most modern terminals render as double-width.
 function visibleLength(s) {
-  return s.replace(/\x1b\[[0-9;]*m/g, '').length
+  const stripped = s.replace(/\x1b\[[0-9;]*m/g, '')
+  const wide = (stripped.match(/✿/g) || []).length
+  return stripped.length + wide
 }
 
 /**
