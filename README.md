@@ -1,54 +1,70 @@
 # scheme-lang
 
-A small Scheme for humans and AI to program together.
+```
+                    .                  .
+             .   .     ✿     .
+                ✿   .   .    .   ✿
+              .    ✿   ✿   ✿    .
+         .   ✿   ✿   sakura   ✿   ✿    .
+              .    ✿   ✿   ✿    .
+                ✿   .   .    .   ✿
+             .   .     ✿     .
+                    .                  .
+```
+
+**A small Scheme for humans and AI to program together.**
+
+Five layers. 1,157 verbs. One REPL. Runs on any laptop with Node 18+.
 
 **[Try it in your browser →](https://lacuna-labs.github.io/scheme-lang/)** &nbsp;·&nbsp; no install, real interpreter, `Tab` to complete, `,help` for commands.
 
-**One-liner:** the base language + REPL + reference manual + tooling, dialect-neutral, community-forkable.
+---
+
+## What it is, in one screen
+
+```
+  ┌─────────────────────────────────────────────────────────┐
+  │  L4  commercial   shop · cart · auth   (opt-in)         │
+  │  L3  game         entity · physics · steering           │
+  │  L2  ai           cortex/remember · cortex/recall       │
+  │  L1  media        framebuffer · sound · animation       │
+  │  L0  core         reader · interpreter · macros         │
+  └─────────────────────────────────────────────────────────┘
+```
+
+Each layer stacks. You load only what you need. The default `sakura-scheme` binary boots L0 + L1 + L2 + L3 — enough to draw, play, animate, remember. L4 requires `sakura-scheme login` and is off by default. Every verb carries arity, docstring, three tiered examples, and a source position; the REPL, the docs site, and the LLM tool-call schemas all read from one SLAT reference.
+
+If you know Scheme, this will feel small and stable. If you don't, [the Book of Scheme](docs/BOOK-OF-SCHEME.md) will get you pretty good in a weekend.
 
 ---
 
 ## Install
 
-**macOS / Linux** — one line, zero ceremony:
+One line, three platforms.
+
+**macOS / Linux:**
 
 ```
 curl -fsSL https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.sh | sh
 ```
 
-**Windows** — PowerShell one-liner:
+**Windows** (PowerShell):
 
 ```
 iwr -useb https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.ps1 | iex
 ```
 
-Either drops `scheme-lang` + `sakura-scheme` onto your PATH. Type `sakura-scheme` and you're in a REPL.
+**Requirements:** Node 18+ and `git`. Nothing else.
 
-**Requirements:** Node 18+ and `git`. That's it.
-
-### Alternative: npm
-
-If you already use npm and prefer it:
+Prefer npm? Same binaries, works everywhere Node does:
 
 ```
 npm install -g sakura-scheme
 ```
 
-(Same binaries, same behavior. Works on all three platforms.)
+Homebrew tap is coming — `brew install lacuna-labs/tap/sakura-scheme` will land soon.
 
-### Alternative: Homebrew (coming soon)
-
-The tap isn't published yet. When it is:
-
-```
-brew install lacuna-labs/tap/sakura-scheme
-```
-
-Until then, use the shell installer above.
-
-### Prefer to see the code first?
-
-Clone it and run in place:
+Prefer to see the source first? Clone and run in place:
 
 ```
 git clone https://github.com/Lacuna-Labs/scheme-lang
@@ -70,19 +86,31 @@ Windows (PowerShell):
 ```
 Remove-Item -Recurse -Force $env:LOCALAPPDATA\scheme-lang
 ```
-Then remove `%LOCALAPPDATA%\scheme-lang\bin` from your User PATH via
-*Settings → System → About → Advanced system settings → Environment Variables*.
+Then remove `%LOCALAPPDATA%\scheme-lang\bin` from your User PATH.
 
-If you installed via npm:
+npm:
 ```
 npm uninstall -g sakura-scheme
 ```
 
 ---
 
-## Beginner — first ten minutes
+## First ten minutes
 
-Type `scheme-lang`. You'll see a pink cherry-blossom banner and a `sakura>` prompt.
+Type `sakura-scheme`. You'll see a pink cherry-blossom banner and a `sakura>` prompt.
+
+```
+                      ✿
+                    ✿   ✿
+                  ✿  ✿  ✿
+                    ✿   ✿
+                      ✿
+
+  sakura-scheme 1.5.0
+  ,help for commands · Tab to complete · Ctrl-D to leave
+
+  sakura> _
+```
 
 Try:
 
@@ -93,78 +121,128 @@ sakura> (+ 1 2)
 sakura> (* 6 7)
 42
 
-sakura> (- (* 2 21) (/ 84 2))
-0
-```
-
-Numbers, arithmetic, exactly what you'd expect. Now name something:
-
-```scheme
 sakura> (define greeting "hello")
 sakura> greeting
 "hello"
+
+sakura> (map (lambda (x) (* x x)) '(1 2 3 4 5))
+(1 4 9 16 25)
 ```
 
-Lists:
-
-```scheme
-sakura> (list 1 2 3 4)
-(1 2 3 4)
-
-sakura> (car '(1 2 3))
-1
-
-sakura> (cdr '(1 2 3))
-(2 3)
-```
-
-`car` is the head of the list. `cdr` is everything after. Standard Scheme.
-
-Draw something:
+Now draw something:
 
 ```scheme
 sakura> (circle 40 40 15)
 ```
 
-The REPL fills the screen with stars in the shape of a circle. Try `(disc 40 40 15)` — that one's filled in.
+The REPL fills the screen with the shape. Try `(disc 40 40 15)` — that one's filled.
+
+Make it beep:
+
+```scheme
+sakura> (tone 440 0.25)
+```
+
+That's A4 for a quarter second. In a terminal without audio the fallback is a terminal bell; with the `speaker` npm package installed, or in the browser REPL, you hear the actual sine wave.
 
 When you're ready to leave, type `,exit` or press `Ctrl-D`. She'll say `goodnight ✿`.
 
 ---
 
-## Intermediate — the next hour
+## The five layers, briefly
 
-Define a function:
+### Layer 0 — core
 
-```scheme
-sakura> (define (square x) (* x x))
-sakura> (square 12)
-144
+Small, stable Scheme. R7RS-subset: `define`, `lambda`, `let` / `let*` / `letrec`, `cond`, `case`, `if`, `when` / `unless`, `quote`, `quasiquote`, `begin`, `set!`, `and`, `or`. Hygienic macros via `syntax-rules`. First-class functions, closures, proper tail calls. Around 350 primitives — arithmetic, list ops, strings, math, hash tables, financial helpers.
+
+### Layer 1 — media
+
+The pixel canvas + sound + timing.
+
+```
+     framebuffer                          sound
+  ┌──────────────────┐              ┌──────────────────┐
+  │ ● ● ● ● ● ● ● ●  │              │  ▁▂▃▅▆▇▆▅▃▂▁     │
+  │ ●               ●│              │       tone       │
+  │ ●     circle    ●│              │       note       │
+  │ ●    (40,40,15) ●│              │       sfx        │
+  │ ●               ●│              │       music      │
+  │ ● ● ● ● ● ● ● ●  │              │                  │
+  └──────────────────┘              └──────────────────┘
+
+                    animation
+                 ┌──────────────────┐
+                 │  (on-frame ...)  │
+                 │  60Hz driver     │
+                 └──────────────────┘
 ```
 
-Higher-order functions:
+`(circle cx cy r)`, `(disc cx cy r)`, `(line x0 y0 x1 y1)`, `(rect x y w h)` draw into a shared 80×80 framebuffer (adjust with `(set-mode w h)` or `(set-mode 'pico8)`). `(clear c)` wipes it. `(tone freq dur)` plays a sine wave; `(note 'A4)` plays a named pitch. `(on-frame handler)` registers a 60Hz frame callback — that's how you animate.
+
+### Layer 2 — ai
+
+Cortex + LLM primitives. In the standalone REPL, Cortex is an in-memory dictionary you write into and read back out; a real Cortex arrives when the Sakura runtime plugs itself in.
 
 ```scheme
-sakura> (map square '(1 2 3 4 5))
-(1 4 9 16 25)
-
-sakura> (filter (lambda (x) (> x 10)) '(1 5 12 20 3 44))
-(12 20 44)
-
-sakura> (fold + 0 '(1 2 3 4 5 6 7 8 9 10))
-55
+sakura> (cortex/remember 'birthday "July 12")
+#t
+sakura> (cortex/recall 'birthday)
+"July 12"
 ```
 
-**Named results** — every evaluation remembers the last ten answers as `_`, `_1`, `_2`, …, `_9`:
+`(llm/complete ...)` and friends error cleanly ("no LLM connected — configure `:ai-provider` in `scheme-lang.config.slat`") in the base — honest about what's wired.
+
+### Layer 3 — game
+
+Entities, physics, collision, steering behaviors. Every entity is `{ id, x, y, vx, vy, w, h, tags }`; AABB collision; verlet integration with gravity + friction.
 
 ```scheme
-sakura> (+ 1 2)
-3
-sakura> (* _ 10)
-30
+sakura> (entity/make 'ball 40 5 4 4)
+"ball"
+sakura> (entity/set-velocity! 'ball 1 0)
+#t
+sakura> (physics/step)
+sakura> (entity/get 'ball)
+("ball" 41 5.5 1 0.5 4 4)
 ```
 
-**Exploration** — the REPL has meta-commands that start with `,`. The exploration crew:
+### Layer 4 — commercial
+
+Etsy / eBay / Shopify verbs. Auth-gated — the base REPL surfaces a clean "sign in to use" error when you try to call one without `sakura-scheme login`. Real Google device-flow OAuth is the plumbing; a real Google client id is a follow-up.
+
+---
+
+## The reference is the language
+
+`docs/SAKURA-SCHEME-REFERENCE.slat` — one file, 1,157 verbs, 128 core language forms. The REPL reads from it. The docs site reads from it. The LLM tool-call schemas read from it. When you type `,help map` at the REPL you're looking at the same source we're looking at:
+
+```
+sakura> ,help map
+
+  map · fn
+    (map fn list)
+    Returns a new list — fn applied to each element.
+
+  examples:
+    ;; novice
+    (map (lambda (n) (* n 2)) '(1 2 3))       ;; → (2 4 6)
+
+    ;; intermediate
+    ;; titles of each row
+    (map (lambda (row) (assq 'title row)) rows)
+
+    ;; expert
+    ;; per-receipt revenue extraction, summed
+    (sum (map (lambda (r) (assq 'amount r)) receipts))
+```
+
+Add a verb; every downstream tool picks it up. That's the trick.
+
+---
+
+## REPL exploration
+
+Meta-commands start with `,`:
 
 ```
 ,help                       list every command
@@ -180,238 +258,40 @@ sakura> (* _ 10)
                             wall + fuel + memory
 ,expand (let ((x 1)) (+ x 2))
                             macroexpand
+,trace fact                 print every call with nested indent
+,inspect tree               walk a value with arrow keys
+,save my-session.slat       every binding + history to disk
+,load my-session.slat       and back
+,watch-file scratch.scm     live-reload as the file changes
 ```
 
-**Save your session** so you can come back to it:
-
-```
-sakura> ,save my-session.slat
-saved 4 bindings, 12 history entries
-```
-
-Later:
-
-```
-sakura> ,load my-session.slat
-```
-
-Your defines and history come back.
+Full REPL guide: [`docs/REPL.md`](docs/REPL.md).
 
 ---
 
-## Expert — where it gets fun
+## Two books, one language
 
-**Tail-call recursion** — the interpreter has a trampoline, so deep recursion doesn't blow the stack:
+- **[Book of Scheme](docs/BOOK-OF-SCHEME.md)** — the ramp-up. If you've written code before (Python, JS, C, whatever) but never a Lisp, this gets you from "what's a Scheme" to "I can build things" in one careful pass.
+- **[Book of Jesse](docs/BOOK-OF-JESSE.md)** — the translation manual. If you already ship in Fennel, TIC-80, Clojure, or Lua, this maps what you know onto what we do. Same shape, different spelling.
 
-```scheme
-sakura> (define (loop n) (if (= n 0) 'done (loop (- n 1))))
-sakura> (loop 1000000)
-done
-```
-
-**Macros** with `syntax-rules`:
-
-```scheme
-sakura> (define-syntax when
-          (syntax-rules ()
-            ((_ test body ...) (if test (begin body ...) #f))))
-sakura> (when (> 3 2) (display "yes"))
-yes
-```
-
-**Trace a function** — see every call with nested indent:
-
-```scheme
-sakura> (define (fact n) (if (< n 2) 1 (* n (fact (- n 1)))))
-sakura> ,trace fact
-sakura> (fact 5)
-→ fact(5)
-  → fact(4)
-    → fact(3)
-      → fact(2)
-        → fact(1)
-        ← fact = 1
-      ← fact = 2
-    ← fact = 6
-  ← fact = 24
-← fact = 120
-120
-sakura> ,untrace fact
-```
-
-**Inspect a value** — walk into its structure with arrow keys:
-
-```scheme
-sakura> (define tree '((a 1) (b 2) (c (d 3) (e 4)) (f 5)))
-sakura> ,inspect tree
-```
-
-`↑↓` siblings, `→` descend, `←` ascend, Enter binds focus to `_`, `q` quit.
-
-**Live reload** — edit a `.scm` file in another window; the REPL notices:
-
-```
-sakura> ,watch-file ~/experiments/scratch.scm
-watching scratch.scm — reloading on save
-```
-
-**Paredit** — parse-aware structural editing at the prompt:
-
-- `Alt-]` barf-forward (shrink current form on the right)
-- `Alt-\` slurp-forward (grow current form to swallow next form)
-- `Alt-[` slurp-backward (grow current form to swallow previous)
-- `Alt-K` kill-form (delete the current form)
-
-Type `,paredit` for the current bindings.
-
-**Ask Sakura** (when connected):
-
-```
-sakura> ,ask sakura "why is my map returning the wrong shape?"
-```
-
-She reads your current session bindings + the last few evaluations + your question, and answers with runnable code you can Enter to eval. Not connected in the base — waiting for her.
-
-**Graphics as a first-class thing** — the shape verbs are real functions:
-
-```scheme
-sakura> (map (lambda (n) (list 'circle (* n 12) 20 3))
-             '(1 2 3 4 5 6 7 8 9 10))
-```
-
-That returns a list of ten circles the display renders as one image. If you're in iTerm2, WezTerm, kitty, or a Sixel terminal, they render as inline images. Everywhere else, Braille. Type `,image` to see what your terminal supports.
+Both books read the same reference the REPL does.
 
 ---
 
-## Language features
+## Community-forkable
 
-Small, stable, and made for two audiences: humans who know Scheme (or want to) and LLMs learning to compose Scheme for tool calls. Every dialect gets these — they're the base language, not any one product's vocabulary.
-
-### Core language
-
-- **R7RS-subset core.** `define`, `lambda`, `let` / `let*` / `letrec`, `cond`, `case`, `if`, `when` / `unless`, `quote`, `quasiquote` / `unquote` / `unquote-splicing`.
-- **First-class functions + closures.** Every function is a value; lambdas capture their enclosing environment.
-- **Tail-call optimization.** Trampoline underneath. Deep recursion doesn't blow the stack — `(fact 1000000)` works.
-- **Hygienic macros.** `syntax-rules` for pattern-based macros; `define-macro` for classic style.
-- **80+ standard primitives.** Arithmetic, list ops (`car`/`cdr`/`cons`/`append`/`reverse`/`zip`/`take`/`drop`/`first`/`last`/`nth`), string ops, math (`sqrt`, `sin`/`cos`/`tan`, `atan2`, `expt`, `floor`/`ceil`/`round`), higher-order (`map`, `filter`, `fold` / `fold-left` / `fold-right`, `reduce`, `for-each`, `any`, `every`, `count`, `apply`).
-- **Batteries for money + shape.** Financial helpers (`margin`, `markup`, `markdown`, `pct`, `pct-change`, `cagr`, `sma`) and shape verbs (`circle`, `disc`) live in the base so dialects don't reinvent them.
-
-### Structure for programs at scale
-
-- **Verb registry.** Every primitive and every custom verb carries metadata — arity, contract, docstring, tiered examples, source location, permission tier. *One source* powers REPL help, IDE hover, generated docs, and LLM tool-call schemas. Add a verb; everything downstream picks it up.
-- **SLAT — S-expression composition format.** `.slat` files parse with the same reader as `.scm`. Config, records, notebooks, session dumps, training corpora — all sit in one uniform sexp format. Comment-tolerant, round-trip safe, streamable line-by-line. One shape for code and data means every tool that reads one reads the other.
-- **Adapter interface.** Plug your own I/O in one call to `setAdapters(…)` — graphics, audio, network, database, whatever. The base ships with no-op stubs; your dialect overrides them.
-- **Namespaced verbs.** `namespace/action` naming (`shop/list-items`, `cart/run`, `net/fetch`). Tiers gate which verbs run at which permission level. Dispatch is one chokepoint you can inspect, log, or wrap.
-- **Fuel budget.** Every evaluation carries a fuel counter. Runaway computations halt cleanly with a real error, not a hung process.
-
-### For LLMs composing tool calls
-
-Scheme s-expressions are a natural surface for language models to generate. This base is built to make that clean.
-
-- **Uniform syntax.** Small, regular, easy to learn. A model that reads a few hundred examples writes valid programs.
-- **Verbs are strongly-metadata'd.** When a model asks "what does `shop/list-items` take?" the registry returns arity + contract + three tiered examples. That's the tool-call schema, straight from source — no separate JSON to maintain.
-- **Small vocabulary composes into big behavior.** A model doesn't need a thousand functions. It needs `let`, `lambda`, `map`, `fold`, and the verb it wants to call. Real reasoning emerges from those.
-- **Structured error records.** When a call fails, the error is a value with `:kind`, `:message`, `:source-pos`, `:did-you-mean`. A model reads that and fixes its own call on the next turn.
-- **Same reader for code and data.** A tool that emits SLAT records emits the same shape a tool that emits Scheme code emits. No mismatch between "what the model returns" and "what the runtime executes."
-
-### REPL surface
-
-- **Fuzzy tab-complete** — verbs, namespaces, meta-commands. Not just prefix.
-- **Ghost signature hints** — as you type `(map ` the row above dims to show arity + arg names + doc summary.
-- **Rainbow parens + live syntax highlighting.**
-- **Auto-close parens + multi-line editing** — balanced Enter evaluates; unbalanced Enter adds a line.
-- **Rich display** — number lists render as tables, hash-tables as key-value grids, graphics inline where the terminal supports it (iTerm2, WezTerm, kitty, sixel) or Braille everywhere else.
-- **20+ meta-commands** — `,help`, `,type`, `,doc`, `,arity`, `,examples`, `,namespace`, `,apropos`, `,search`, `,time`, `,expand`, `,trace`, `,inspect`, `,watch-file`, `,save` / `,load` session, and more. All discoverable via `,help`.
-- **Ctrl-R fuzzy history search** and **Ctrl-O opens `$EDITOR`** for anything bigger than a line.
-
-Full REPL guide: [`docs/REPL.md`](docs/REPL.md). REPL features doc: [`docs/REPL-FEATURES.md`](docs/REPL-FEATURES.md).
-
-### Community-forkable
-
-- **Every product is a fork.** Fork the repo, rename in `dialect.json`, drop your verbs into `verbs/`, drop your adapters into `adapters/`. The REPL and tooling discover you automatically.
-- **Sakura Scheme is one such fork** — a dialect with shop / cart / animation / persona verbs on top of this base. Same tooling, same tutorial shape, different vocabulary. Yours can be too.
-- **Every fork gets Pages for free.** See [`TEMPLATE-FOR-FORKS-PAGES.md`](TEMPLATE-FOR-FORKS-PAGES.md) for the browser-REPL-and-rendered-docs pattern.
-
----
-
-## Keybindings — emacs default
-
-The default keybindings are emacs-flavored (Ctrl-A, Ctrl-E, Ctrl-K, Ctrl-U, Ctrl-W, Ctrl-R, Ctrl-Y, Alt-B, Alt-F). If you're a vim person, drop this in `~/.scheme-lang/config.slat`:
-
-```
-keybindings: vim
-```
-
-Now the prompt lands you in insert mode; `Esc` puts you in normal mode with hjkl / w / b / 0 / $ / x / i / a / A / I / o / :q. Full vim lives one keystroke away: `Ctrl-O` opens the current buffer in `$EDITOR`.
-
-Config file supports:
-
-```
-;; ~/.scheme-lang/config.slat
-keybindings:       emacs       ;; 'emacs | 'vim | 'default
-theme:             sakura      ;; 'sakura | 'neutral
-auto-close-parens: #t
-show-signature:    #t
-ghost-hints:       #t
-editor:            nvim
-history-max:       5000
-sakura-endpoint:                ;; unset until she's connected
-sakura-token:                   ;; bearer
-```
-
-Unknown keys are preserved (so tomorrow's settings can live there today).
-
----
-
-## What ships in this repo
-
-- **`bin/scheme-lang`** — the launcher. Discovers installed dialects; runs the base if you have nothing else installed.
-- **`bin/sakura-scheme`** — the Sakura dialect binary (the base is called "Sakura Scheme" — every fork picks its own name; forks change this line).
-- **`src/`** — the language: reader / interpreter / macros / base primitives / verb registry / dispatcher / REPL / launcher.
-- **`src/adapters.js`** — no-op adapter stubs. Real dialects override with `setAdapters(…)`.
-- **`docs/`** — reference manual, tutorial, engineering doc, style guide, REPL guide, feature showcase.
-- **`tests/`** — smoke tests. Zero npm deps; runs on plain `node --test`.
-
-## What lives elsewhere
-
-- **Curator's dialect** (card / shop / sprite / world / flower verbs + adapters) — see `Lacuna-Labs/curator`. Cloning this base plus that gets you the Curator surface.
-- **Cross-product engineering docs** (SLAT engineering, WEAVE training procedure, Big Burndown Plan) — see `Lacuna-Labs/lacuna-labs`.
-- **Any dialect from anyone else** — the community forks pattern in `TEMPLATE-FOR-FORKS.md`.
-
-## Make your own dialect
-
-See [`TEMPLATE-FOR-FORKS.md`](TEMPLATE-FOR-FORKS.md). The gist: fork this repo, rename in `dialect.json`, add your verbs to `verbs/`, drop your adapters in `adapters/`, and you're a dialect. The REPL discovers you automatically.
-
-Your fork also gets a **browser REPL + rendered reference on GitHub Pages** for free — see [`TEMPLATE-FOR-FORKS-PAGES.md`](TEMPLATE-FOR-FORKS-PAGES.md). Every fork's README gets its own "Try it →" link at the top pointing at its own Pages URL. Community-forkable ecosystem for free.
+- **Every product is a fork.** Rename in `dialect.json`, drop your verbs into `verbs/`, drop your adapters into `adapters/`. The REPL and tooling discover you automatically. See [`TEMPLATE-FOR-FORKS.md`](TEMPLATE-FOR-FORKS.md).
+- **Every fork gets a browser REPL + rendered reference on GitHub Pages for free.** See [`TEMPLATE-FOR-FORKS-PAGES.md`](TEMPLATE-FOR-FORKS-PAGES.md).
 
 ---
 
 ## Design principles
 
-1. **Nothing in excess.** Every element on screen earns its place by directing your attention somewhere useful. The frame around the code is a frame — nothing more. It exists to guide the eye to the inner frame, which exists to guide the eye to the code. If a layer isn't doing that job, it isn't there.
-
-   Sixteen solid colors. No gradients. No animation. No sunset glow, no shimmer, no ceremony. The kind of restraint that looks plain until you use it for a while and can't remember what you thought was missing.
-
-2. **Not an IDE.** REPL only. Editor lives next to us in a split.
-
-3. **Interface over implementation.** The command is `scheme-lang`; whether Node or Rust is behind it is our business, not yours.
-
+1. **Nothing in excess.** Sixteen solid colors. No gradients. No animation. No shimmer. The kind of restraint that looks plain until you use it for a while and can't remember what you thought was missing.
+2. **Not an IDE.** REPL only. Your editor sits next to it.
+3. **Interface over implementation.** The command is `scheme-lang`. Whether Node or Rust is behind it is our business, not yours.
 4. **Batteries included, not the kitchen sink.** The 20+ meta-commands cover the 80% every REPL user hits. Exotic features get a stub that says "waiting for her" until they arrive.
-
 5. **The persona is dialect-owned.** The launcher is neutral. The banner is a *dialect* choice.
-
----
-
-## What's coming
-
-Some features aren't connected yet. Type them at the REPL and you'll see a Sakura-voiced note — "waiting for her." When she arrives, they light up:
-
-- Notebook mode (`.snb` slat notebook)
-- LSP mode (editors get hover-help, arity, contract, source-jump)
-- Real `,ask sakura` wire — the REPL has the plumbing; the endpoint waits on her
-- More paredit (splice / wrap-round / raise / transpose)
-
-Everything discoverable in the REPL today via `,help`. Nothing crashes when you invoke a stub — you just get told what's still on its way.
 
 ---
 
@@ -429,3 +309,211 @@ MIT. Do whatever you want with it. Make your own dialect. Ship it. Tell us about
 
 Home: [github.com/Lacuna-Labs/scheme-lang](https://github.com/Lacuna-Labs/scheme-lang)
 Made in Brooklyn.
+
+---
+
+## Appendix — copy-paste examples
+
+Everything below is real code from the base you just installed. Every block runs unmodified. Ramp is intentional — the tiers get bigger as you go.
+
+### Level 0 — Scheme basics
+
+```scheme
+;; arithmetic
+(+ 1 2)                                     ;; ⇒ 3
+(* 6 7)                                     ;; ⇒ 42
+(- (* 2 21) (/ 84 2))                       ;; ⇒ 0
+
+;; naming
+(define greeting "hello")
+(define pi 3.14159265)
+
+;; lists
+(list 1 2 3 4)                              ;; ⇒ (1 2 3 4)
+(car '(a b c))                              ;; ⇒ a
+(cdr '(a b c))                              ;; ⇒ (b c)
+(cons 'a '(b c))                            ;; ⇒ (a b c)
+(length '(a b c d))                         ;; ⇒ 4
+(reverse '(1 2 3))                          ;; ⇒ (3 2 1)
+(append '(a b) '(c d))                      ;; ⇒ (a b c d)
+
+;; higher-order
+(map (lambda (x) (* x x)) '(1 2 3 4 5))     ;; ⇒ (1 4 9 16 25)
+(filter (lambda (x) (> x 10)) '(1 5 12 20 3 44))
+                                            ;; ⇒ (12 20 44)
+(reduce + 0 '(1 2 3 4 5 6 7 8 9 10))        ;; ⇒ 55
+
+;; a function
+(define (square x) (* x x))
+(square 12)                                 ;; ⇒ 144
+
+;; hash tables
+(define person (make-hash))
+(hash-set! person 'name "Alfred")
+(hash-set! person 'age  32)
+(hash-ref person 'name)                     ;; ⇒ "Alfred"
+```
+
+### Level 1 — drawing
+
+Type into the REPL, or save any of these blocks as a `.scm` file and run with `sakura-scheme run <file>`.
+
+```scheme
+;; one circle
+(circle 40 40 15)
+
+;; one filled disc
+(disc 40 40 15)
+
+;; a row of circles
+(for-each (lambda (n) (circle (* n 12) 20 3))
+          '(1 2 3 4 5 6 7 8 9 10))
+
+;; a diagonal line
+(line 0 0 79 79)
+
+;; a rectangle
+(rect 10 10 30 20)
+
+;; a wipe + a filled rectangle
+(clear 0)
+(rect-fill 20 20 40 30)
+
+;; pick a color first (0..15 palette index; 14 is petal pink)
+(set-color 14)
+(disc 40 40 20)
+
+;; a whole picture composed from shapes
+(clear 0)
+(disc 40 40 25)                             ;; big pink circle
+(line 0 40 79 40)                           ;; horizon
+(rect 25 45 30 15)                          ;; house body
+(line 25 45 40 30)                          ;; roof left
+(line 40 30 55 45)                          ;; roof right
+```
+
+### Level 2 — animation + sound
+
+Shebang-runnable — save as `bounce.scm`, `chmod +x`, then `./bounce.scm`:
+
+```scheme
+#!/usr/bin/env sakura-scheme
+;; bounce.scm — a small ball bounces around the framebuffer.
+
+(define x 40)
+(define y 40)
+(define vx 2)
+(define vy 1)
+
+(define (frame)
+  (clear 0)
+  (set! x (+ x vx))
+  (set! y (+ y vy))
+  (when (or (< x 4) (> x 76)) (set! vx (- vx)))
+  (when (or (< y 4) (> y 76)) (set! vy (- vy)))
+  (disc x y 3))
+
+(on-frame frame)
+```
+
+Sound — a rising major scale:
+
+```scheme
+#!/usr/bin/env sakura-scheme
+;; scale.scm — a C major scale, one note at a time.
+
+(for-each (lambda (pitch)
+            (note pitch 0.3))
+          '(C4 D4 E4 F4 G4 A4 B4 C5))
+```
+
+Or with raw frequencies — the same thing, unpacked:
+
+```scheme
+#!/usr/bin/env sakura-scheme
+;; scale-raw.scm — same scale, but computed from a base frequency.
+
+(define base 261.63)                        ;; middle C, in Hz
+;; whole-number ratios from the just-intoned major scale, as floats
+(define ratios (list 1.0 1.125 1.25 1.333 1.5 1.667 1.875 2.0))
+
+(for-each (lambda (r) (tone (* base r) 0.3))
+          ratios)
+```
+
+### Level 3 — physics + entities
+
+The bouncing ball on gravity:
+
+```scheme
+#!/usr/bin/env sakura-scheme
+;; bouncing-ball.scm — a ball falls, hits the floor, bounces.
+;;
+;; Runs headless. Prints the ball's position each frame.
+
+(physics/gravity! 0.5)
+(physics/friction! 0.99)
+
+;; the ball
+(entity/make 'ball 40 5 4 4)
+(entity/set-velocity! 'ball 1 0)
+
+;; the floor — static, pinned, tagged
+(entity/make 'floor 0 76 80 4)
+(entity/pin! 'floor)
+(entity/tag! 'floor 'ground)
+
+(define (step n)
+  (if (> n 0)
+      (begin
+        (physics/step)
+        ;; bounce on floor contact — flip vy, dampen slightly
+        (if (entity/collides? 'ball 'floor)
+            (let ((s (entity/get 'ball)))
+              (entity/set-velocity! 'ball
+                                    (list-ref s 3)
+                                    (* -0.7 (list-ref s 4)))))
+        (display "frame ")
+        (display (- 31 n))
+        (display ": ")
+        (display (entity/get 'ball))
+        (newline)
+        (step (- n 1)))))
+
+(step 30)
+(display "done — the ball settled.")
+(newline)
+```
+
+### Level 4 — Cortex, the memory verbs
+
+Cortex is the AI layer's persistent memory. In the standalone REPL it's an in-memory Map; when the Sakura runtime plugs itself in, it becomes real long-term memory.
+
+```scheme
+#!/usr/bin/env sakura-scheme
+;; cortex-demo.scm — write facts, read them back, search across them.
+
+;; store a few things
+(cortex/remember 'birthday "July 12")
+(cortex/remember 'favorite-color "pink")
+(cortex/remember 'wants "a trip to Fiji")
+
+;; read one back
+(display (cortex/recall 'birthday))         ;; "July 12"
+(newline)
+
+;; list every key
+(display (cortex/keys))                     ;; (birthday favorite-color wants)
+(newline)
+
+;; how many facts?
+(display (cortex/size))                     ;; 3
+(newline)
+
+;; forget one
+(cortex/forget 'favorite-color)
+(display (cortex/size))                     ;; 2
+(newline)
+```
+
+Everything on this page runs today. If any block doesn't do what you expect, that's a bug — please open an issue.
