@@ -10,30 +10,72 @@ A small Scheme for humans and AI to program together.
 
 ## Install
 
-One line, zero ceremony:
+**macOS / Linux** — one line, zero ceremony:
 
 ```
 curl -fsSL https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.sh | sh
 ```
 
-That drops a `scheme-lang` command onto your PATH. Type `scheme-lang` and you're in a REPL.
+**Windows** — PowerShell one-liner:
+
+```
+iwr -useb https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.ps1 | iex
+```
+
+Either drops `scheme-lang` + `sakura-scheme` onto your PATH. Type `sakura-scheme` and you're in a REPL.
 
 **Requirements:** Node 18+ and `git`. That's it.
 
-Prefer to see the code first? Clone it and run in place:
+### Alternative: npm
+
+If you already use npm and prefer it:
+
+```
+npm install -g sakura-scheme
+```
+
+(Same binaries, same behavior. Works on all three platforms.)
+
+### Alternative: Homebrew (coming soon)
+
+The tap isn't published yet. When it is:
+
+```
+brew install lacuna-labs/tap/sakura-scheme
+```
+
+Until then, use the shell installer above.
+
+### Prefer to see the code first?
+
+Clone it and run in place:
 
 ```
 git clone https://github.com/Lacuna-Labs/scheme-lang
 cd scheme-lang
-./bin/scheme-lang
+./bin/sakura-scheme
 ```
 
 Same REPL either way.
 
 **Uninstall:**
 
+macOS / Linux:
 ```
-rm -rf ~/.scheme-lang $(command -v scheme-lang)
+rm -rf ~/.scheme-lang
+rm -f ~/.local/bin/scheme-lang ~/.local/bin/sakura-scheme
+```
+
+Windows (PowerShell):
+```
+Remove-Item -Recurse -Force $env:LOCALAPPDATA\scheme-lang
+```
+Then remove `%LOCALAPPDATA%\scheme-lang\bin` from your User PATH via
+*Settings → System → About → Advanced system settings → Environment Variables*.
+
+If you installed via npm:
+```
+npm uninstall -g sakura-scheme
 ```
 
 ---
