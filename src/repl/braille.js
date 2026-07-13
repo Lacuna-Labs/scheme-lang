@@ -212,11 +212,9 @@ function renderTagged(kind, args, opts) {
   if (kind === 'circle' || kind === 'disc') {
     const [cx, cy, r] = args
     const g = new Grid(maxW, maxH)
-    // Center the shape in the grid; scale so 2*r ≈ 0.9 * maxW.
-    const scale = (0.9 * Math.min(maxW, maxH)) / (2 * r)
-    const rr = Math.max(1, Math.round(r * scale))
-    const px = Math.round(maxW / 2)
-    const py = Math.round(maxH / 2)
+    const px = Math.round(cx)
+    const py = Math.round(cy)
+    const rr = Math.max(1, Math.round(r))
     if (kind === 'disc') disc(g, px, py, rr)
     else circle(g, px, py, rr)
     return g.toBraille({ color })
@@ -225,16 +223,9 @@ function renderTagged(kind, args, opts) {
   if (kind === 'line') {
     const [x0, y0, x1, y1] = args
     const g = new Grid(maxW, maxH)
-    // Rescale span to fill grid.
-    const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0)
-    const span = Math.max(dx, dy, 1)
-    const sx = (0.9 * maxW) / span
-    const sy = (0.9 * maxH) / span
-    const ox = maxW * 0.05
-    const oy = maxH * 0.05
     line(g,
-      Math.round(ox + x0 * sx), Math.round(oy + y0 * sy),
-      Math.round(ox + x1 * sx), Math.round(oy + y1 * sy),
+      Math.round(x0), Math.round(y0),
+      Math.round(x1), Math.round(y1),
     )
     return g.toBraille({ color })
   }
@@ -242,10 +233,7 @@ function renderTagged(kind, args, opts) {
   if (kind === 'rect') {
     const [x, y, w, h] = args
     const g = new Grid(maxW, maxH)
-    const scale = Math.min((0.9 * maxW) / w, (0.9 * maxH) / h)
-    const ox = Math.round((maxW - w * scale) / 2)
-    const oy = Math.round((maxH - h * scale) / 2)
-    rect(g, ox, oy, Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale)))
+    rect(g, Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)))
     return g.toBraille({ color })
   }
 

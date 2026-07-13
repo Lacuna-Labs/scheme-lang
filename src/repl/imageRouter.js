@@ -137,29 +137,22 @@ function drawGraphic(v, api) {
   const drawTagged = (kind, args) => {
     if (kind === 'circle' || kind === 'disc') {
       const [cx, cy, r] = args
-      const scale = (0.9 * Math.min(width, height)) / (2 * r)
-      const rr = Math.max(1, Math.round(r * scale))
-      const px = Math.round(width / 2), py = Math.round(height / 2)
+      const px = Math.round(cx), py = Math.round(cy)
+      const rr = Math.max(1, Math.round(r))
       if (kind === 'disc') drawDisc(px, py, rr); else drawCircle(px, py, rr)
       return true
     }
     if (kind === 'line') {
       const [x0, y0, x1, y1] = args
-      const span = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1)
-      const s = (0.9 * Math.min(width, height)) / span
-      const ox = width * 0.05, oy = height * 0.05
       bresenham(
-        Math.round(ox + x0 * s), Math.round(oy + y0 * s),
-        Math.round(ox + x1 * s), Math.round(oy + y1 * s),
+        Math.round(x0), Math.round(y0),
+        Math.round(x1), Math.round(y1),
       )
       return true
     }
     if (kind === 'rect') {
       const [x, y, w, h] = args
-      const s = Math.min((0.9 * width) / w, (0.9 * height) / h)
-      const ox = Math.round((width - w * s) / 2)
-      const oy = Math.round((height - h * s) / 2)
-      drawRect(ox, oy, Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s)))
+      drawRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)))
       return true
     }
     return false

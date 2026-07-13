@@ -1,0 +1,37 @@
+; scheme-lang.config.slat
+; Configuration for the scheme-lang runtime.
+; Read at REPL/interpreter startup.
+;
+; Users can override any setting here or via
+; ~/.scheme-lang/config.slat (user-level override).
+;
+; If no config file is found, scheme-lang looks for adjacent
+; scheme-carts/ (../scheme-carts/ relative to the scheme-lang repo root).
+
+(config
+  :version "1.0"
+
+  ; Where scheme-lang looks for carts.
+  ; Convention: an adjacent scheme-carts/ directory next to scheme-lang/.
+  ; Override to any absolute path if you keep your carts elsewhere.
+  :cart-source "~/code/scheme-carts"
+
+  ; Directory layout expected inside :cart-source
+  :cart-layout
+    (:carts   "carts"       ; .sks scheme cart implementations
+     :docs    "docs"         ; .md / .slat automation descriptions
+     :broken  "broken")      ; broken carts + frozen manifests
+
+  ; Slug pairing: the language associates a .sks with its description
+  ; by matching stems across carts/ and docs/. A .sks named
+  ;   carts/etsy/foo.sks
+  ; is paired with
+  ;   docs/etsy/foo.md   (or foo.slat once migrated)
+  ;
+  ; No embedding index required — pairing is filename-based.
+  :pairing 'slug-by-stem
+
+  ; Layers to load. Each verb entry in the reference carries a :layer tag;
+  ; the runtime only registers verbs whose layer is in this list.
+  ; scheme-lang default binary loads L0 + L1.
+  :layers '(core media))
