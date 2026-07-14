@@ -254,6 +254,43 @@ Full REPL guide: [`docs/REPL.md`](docs/REPL.md).
 
 ---
 
+## Terminal IDE and Web IDE
+
+The REPL is the front door. When you're ready for more surface:
+
+```
+sakura-scheme ide             # terminal IDE, vim bindings
+sakura-scheme ide --emacs     # terminal IDE, emacs bindings
+sakura-scheme --web           # web IDE at http://localhost:3737
+```
+
+**Three-pane VSCode-shape layout.** File explorer on the left, editor in the
+middle, REPL on the right. Tab cycles focus. Ctrl-Enter (Ctrl-J in most
+terminals) runs the current buffer into the REPL. `:w` (vim) or `C-x C-s`
+(emacs) or `Ctrl-S` (web) saves.
+
+**Autocomplete on every verb.** Tab in the editor opens a popup showing
+matching verbs with their contract line. Monaco's completion provider
+does the same in the web IDE. All ~1,200 verbs, live from the reference
+SLAT.
+
+**Ask Sakura.** Ctrl-K opens a modal. Type in natural language. On Enter,
+a suggested Scheme expression inserts at your cursor. v0.0 uses a
+keyword mapping + verb-name matcher; the hosted mini-Sakura swaps in
+later without any interface change.
+
+**Four themes.** `sakura-light`, `sakura-dark`, `high-contrast`, `paper`.
+Swappable at runtime via `:theme <name>` (vim), `M-x theme <name>`
+(emacs), or the dropdown (web).
+
+Both IDEs share the same interpreter as the REPL — one language, three
+surfaces. Web IDE runs the interpreter in a WebWorker so the browser
+stays responsive during heavy compute.
+
+Full IDE guide (in progress): [`docs/IDE.md`](docs/IDE.md).
+
+---
+
 ## Two books, one language
 
 - **[Book of Scheme](docs/BOOK-OF-SCHEME.md)** — the ramp-up. If you've written code before (Python, JS, C, whatever) but never a Lisp, this gets you from "what's a Scheme" to "I can build things" in one careful pass.
@@ -273,7 +310,7 @@ Both books read the same reference the REPL does.
 ## Design principles
 
 1. **Nothing in excess.** Sixteen solid colors. No gradients. No animation. No shimmer. The kind of restraint that looks plain until you use it for a while and can't remember what you thought was missing.
-2. **Not an IDE.** REPL only. Your editor sits next to it.
+2. **REPL first, IDE optional.** The default command is a REPL. `sakura-scheme ide` opens a three-pane terminal IDE (vim or emacs bindings, VSCode-shape layout). `sakura-scheme --web` opens the same layout in a browser at `http://localhost:3737`. Both share the interpreter with the REPL — one language, three surfaces.
 3. **Interface over implementation.** The command is `scheme-lang`. Whether Node or Rust is behind it is our business, not yours.
 4. **Batteries included, not the kitchen sink.** The 20+ meta-commands cover the 80% every REPL user hits. Exotic features get a stub that says "waiting for her" until they arrive.
 5. **The persona is dialect-owned.** The launcher is neutral. The banner is a *dialect* choice.
