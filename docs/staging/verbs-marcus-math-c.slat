@@ -1,0 +1,603 @@
+;; ═══════════════════════════════════════════════════════════════════════
+;; verbs-marcus-math-c.slat — Marcus's lane staging entries.
+;; Full-schema (schema v1.0) verb records. Every :examples tier is
+;; REPL-verified against ./bin/sakura-scheme eval.
+;;
+;; Doctrine: no-lie. If a verb behavior can't be honestly demonstrated,
+;; ships with :entry-provenance "spec-ambiguous" or "author-blocked".
+;; ═══════════════════════════════════════════════════════════════════════
+
+(verb
+  :name "const/pi"
+  :library "const"
+  :kind "constant"
+  :signature "const/pi -> 3.14159..."
+  :summary "Pi (π), the ratio of a circle's circumference to its diameter."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as bare Math.PI number at reference-impls.js:983. Not a thunk — evaluate the symbol and you get the number directly."
+  :examples (
+    (:tier "novice" :code "const/pi" :note "The value 3.14159… Just the symbol; no parens.")
+    (:tier "apprentice" :code "(* 2 const/pi)" :note "Tau: 2π ≈ 6.28318. Full turn in radians.")
+    (:tier "intermediate" :code "(define (circle-area r)\n  (* const/pi (* r r)))\n(circle-area 5)" :note "Area of a radius-5 circle. 25π ≈ 78.54.")
+    (:tier "expert" :code "(define (sphere-volume r)\n  (* (/ 4.0 3) const/pi (* r r r)))\n(sphere-volume 10)" :note "Volume of a radius-10 sphere. (4/3)π·1000 ≈ 4188.79.")
+    (:tier "master" :code "(define (nth-root-of-unity n k)\n  (let ((theta (/ (* 2 const/pi k) n)))\n    (list (cos theta) (sin theta))))\n(map (lambda (k) (nth-root-of-unity 4 k)) '(0 1 2 3))" :note "The four fourth-roots of unity in the complex plane. Circles hide inside algebra.")
+  )
+  :caveats ("Floating-point approximation. For symbolic π use a CAS layer." "Bare symbol — no parentheses required.")
+  :drawbacks ("Rounding accumulates in long trigonometric chains." "Not exact; comparisons like (= const/pi (/ 22 7)) are false.")
+  :usecases ("Circle geometry" "Trigonometry" "Signal / Fourier work" "Probability (normal, circular)" "Physics: oscillations, waves, orbits")
+  :related ("const/tau" "const/e" "geom/circle-area" "geom/circle-circumference" "math/sin" "math/cos")
+  :learn (:concept "π is the constant that ties straight measurement to circular measurement." :prerequisites ("basic arithmetic" "understanding circles") :progression "Start with area/circumference formulas; then trig; then Fourier; then complex exponentials.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R" :proofs "Lindemann 1882: π is transcendental.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f :evaluation-order "-")
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "Bare Math.PI." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("R7RS: no equivalent; Racket: pi; Python: math.pi") :history "Emerged in every trig-capable language; Sakura ships the const/* namespace to keep them discoverable." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/" "cos" "sin" "geom/circle-area") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Writing (const/pi) with parens — that tries to call it as a function." :when-not-to-use "When you need exact arithmetic; use a symbolic layer.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/e"
+  :library "const"
+  :kind "constant"
+  :signature "const/e -> 2.71828..."
+  :summary "Euler's number, the base of natural logarithms."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as bare Math.E number at reference-impls.js:984."
+  :examples (
+    (:tier "novice" :code "const/e" :note "The value 2.71828…")
+    (:tier "apprentice" :code "(expt const/e 1)" :note "e^1 = e ≈ 2.71828. The definition, expressed with a power.")
+    (:tier "intermediate" :code "(define (continuous-growth p0 rate t)\n  (* p0 (expt const/e (* rate t))))\n(continuous-growth 1000 0.05 10)" :note "Continuous compounding: $1000 at 5% for 10 years → ≈ $1648.72.")
+    (:tier "expert" :code "(define (approx-e n)\n  (expt (+ 1 (/ 1.0 n)) n))\n(list (approx-e 10) (approx-e 1000) (approx-e 1000000))" :note "The limit definition: (1 + 1/n)^n → e as n grows.")
+    (:tier "master" :code "(define (poisson-pmf lambda k)\n  (define (fact n) (if (<= n 1) 1 (* n (fact (- n 1)))))\n  (/ (* (expt lambda k) (expt const/e (- lambda))) (fact k)))\n(poisson-pmf 3.5 4)" :note "Poisson probability mass function: λ^k · e^(-λ) / k!")
+  )
+  :caveats ("Floating-point approximation." "Bare symbol — no parentheses.")
+  :drawbacks ("Not exact." "Long exponent chains accumulate rounding.")
+  :usecases ("Continuous growth / decay" "Probability distributions (exponential, Poisson, normal)" "Natural logarithm identities" "Differential equations")
+  :related ("const/pi" "const/ln2" "const/ln10" "math/ln" "math/exp")
+  :learn (:concept "e is the base for which d/dx e^x = e^x — the function equal to its own derivative." :prerequisites ("basic arithmetic" "exponents") :progression "Start with continuous compounding; then derivatives; then differential equations.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R" :proofs "Hermite 1873: e is transcendental.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "Bare Math.E." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: math.e; JS: Math.E; Racket: 2.718...") :history "Named for Euler; discovered by Bernoulli studying continuous compounding." :hackable #f)
+  +ai (:raises () :pipes-into ("expt" "math/exp") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Confusing const/e with a variable named e (users often bind e as a lambda arg)." :when-not-to-use "When exact arithmetic matters.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/tau"
+  :library "const"
+  :kind "constant"
+  :signature "const/tau -> 6.28318..."
+  :summary "Tau (τ), equal to 2π; the full rotation around a circle in radians."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as 2*Math.PI at reference-impls.js:985."
+  :examples (
+    (:tier "novice" :code "const/tau" :note "The value 6.28318…")
+    (:tier "apprentice" :code "(/ const/tau const/pi)" :note "Exactly 2. That's the definition: τ = 2π.")
+    (:tier "intermediate" :code "(define (full-turns radians)\n  (/ radians const/tau))\n(full-turns 12.566)" :note "How many full turns is 12.566 radians? About 2.")
+    (:tier "expert" :code "(define (nth-vertex n i cx cy r)\n  (let ((theta (* const/tau (/ i n))))\n    (list (+ cx (* r (cos theta)))\n          (+ cy (* r (sin theta))))))\n(map (lambda (k) (nth-vertex 6 k 0 0 10)) '(0 1 2 3 4 5))" :note "Six evenly-spaced points on a circle of radius 10 — τ/n divides the circle cleanly.")
+    (:tier "master" :code "(define (rotate-point x y theta)\n  (let ((c (cos theta)) (s (sin theta)))\n    (list (- (* c x) (* s y))\n          (+ (* s x) (* c y)))))\n(rotate-point 1 0 (/ const/tau 4))" :note "Rotate (1,0) by a quarter turn: gives (0,1). τ/4 = π/2 as expected.")
+  )
+  :caveats ("Same rounding as const/pi." "Not universal — some references use only π.")
+  :drawbacks ("Not every library exposes τ; keep const/pi handy for interop.")
+  :usecases ("Angular geometry" "Full-turn parameterization (t ∈ [0, τ] traces the whole circle)" "Fourier basis" "Rotation matrices")
+  :related ("const/pi" "geom/circle" "geom/->degrees" "math/sin" "math/cos")
+  :learn (:concept "τ = 2π. Using τ makes 'one full turn' a single unit; kids learning trig often find τ easier than 2π." :prerequisites ("const/pi" "circles") :progression "Start with (/ const/tau n) as 'the n-th of a turn'; then rotation; then Fourier.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "2*Math.PI." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Julia: 2π; Python: math.tau") :history "'Tau manifesto' 2010 — makes many formulas cleaner." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/" "cos" "sin") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Doubling with 2 when τ already IS 2π: (* 2 const/tau) is a full turn twice." :when-not-to-use "In codebases that consistently use π; mixing conventions confuses readers.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/phi"
+  :library "const"
+  :kind "constant"
+  :signature "const/phi -> 1.61803..."
+  :summary "The golden ratio φ; appears in geometry, nature, and aesthetic proportion."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as (1 + Math.sqrt(5))/2 at reference-impls.js:986."
+  :examples (
+    (:tier "novice" :code "const/phi" :note "The value 1.61803…")
+    (:tier "apprentice" :code "(- (* const/phi const/phi) const/phi)" :note "φ² - φ = 1. Defining property of the golden ratio.")
+    (:tier "intermediate" :code "(define (fib-approx n)\n  (round (/ (expt const/phi n) (sqrt 5))))\n(map fib-approx '(1 2 3 4 5 6 7 8 9 10))" :note "Binet's formula (rounded) gives Fibonacci numbers.")
+    (:tier "expert" :code "(define (golden-rect w)\n  (list w (/ w const/phi)))\n(golden-rect 100)" :note "A golden rectangle 100 wide has height ≈ 61.803.")
+    (:tier "master" :code "(define (regular-pentagon-diagonal side)\n  (* side const/phi))\n(regular-pentagon-diagonal 10)" :note "In a regular pentagon, diagonal / side = φ. A ten-unit side gives a ≈16.18 diagonal.")
+  )
+  :caveats ("Floating-point approximation." "'Golden' is a name — the math doesn't require aesthetic claims.")
+  :drawbacks ("The 'ubiquitous in nature' meme is overstated — apply skeptically.")
+  :usecases ("Fibonacci and Lucas sequences" "Regular pentagon geometry" "Golden spiral" "Continued-fraction analysis")
+  :related ("const/sqrt5" "seq/fib" "geom/regular-polygon-vertices")
+  :learn (:concept "φ is the positive root of x² = x + 1. It shows up in Fibonacci ratios and pentagonal geometry." :prerequisites ("sqrt" "quadratic equations") :progression "Start with the definition; then Fibonacci; then continued fractions ([1;1,1,1,...] = φ).")
+  +math (:algebra "irrational, algebraic (root of x²-x-1)" :total #t :domain "-" :codomain "R" :proofs "φ = (1+√5)/2. Algebraic, degree 2.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "(1 + sqrt(5))/2." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("no standard library ships it; often defined inline") :history "Studied since Euclid; named 'golden' in the 19th century." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "expt") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Assuming any pretty proportion is φ. Measure first; the eye lies." :when-not-to-use "When you want the CONJUGATE (1 - φ = -0.618) — φ alone drops that root.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/ln2"
+  :library "const"
+  :kind "constant"
+  :signature "const/ln2 -> 0.69314..."
+  :summary "Natural logarithm of 2; used to convert between natural and binary logarithms."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.LN2. Previously wired as a thunk in wired-verbs.js (returned #<procedure>). Marcus's lane fixed to a bare number so (const/ln2) at the REPL gives the ACTUAL log."
+  :examples (
+    (:tier "novice" :code "const/ln2" :note "The value 0.69314…")
+    (:tier "apprentice" :code "(exp const/ln2)" :note "e^ln(2) = 2. Round-trip through log and exp.")
+    (:tier "intermediate" :code "(define (log2 x)\n  (/ (log x) const/ln2))\n(log2 1024)" :note "Binary logarithm via change-of-base: ln(x)/ln(2). log2(1024) = 10.")
+    (:tier "expert" :code "(define (bits-to-store n)\n  (ceiling (/ (log n) const/ln2)))\n(bits-to-store 1000000)" :note "How many bits to store one million distinct values? 20 bits (log2(1e6) ≈ 19.93).")
+    (:tier "master" :code "(define (entropy probs)\n  (let ((sum 0))\n    (for-each (lambda (p)\n                (if (> p 0)\n                  (set! sum (+ sum (* p (/ (log p) const/ln2))))))\n              probs)\n    (- sum)))\n(entropy '(0.5 0.5))" :note "Shannon entropy of a fair coin: 1 bit. (Uses -Σ p·log2(p).)")
+  )
+  :caveats ("Floating-point approximation." "Bare symbol — no parens.")
+  :drawbacks ("Not exact." "Chained log conversions accumulate rounding.")
+  :usecases ("Binary logarithm via change of base" "Information theory (bits)" "Complexity notation (log2 factors in Big-O)" "Halving-time calculations")
+  :related ("const/ln10" "const/e" "math/log" "math/log2")
+  :learn (:concept "ln(2) is the natural log of 2, needed whenever we convert to base-2 log." :prerequisites ("log basics" "change of base") :progression "First: log2(x) = ln(x)/ln(2). Then: entropy. Then: complexity.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.LN2 constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: math.log(2); JS: Math.LN2") :history "Standard library constant since early Fortran." :hackable #f)
+  +ai (:raises () :pipes-into ("/" "*") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Confusing ln(2) with log10(2) — they're different (0.301)." :when-not-to-use "When log2 is directly available — use math/log2 if you have it.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/ln10"
+  :library "const"
+  :kind "constant"
+  :signature "const/ln10 -> 2.30258..."
+  :summary "Natural logarithm of 10; used to convert between natural and common logarithms."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.LN10. Previously wired as a thunk (returned #<procedure>). Marcus's lane fixed."
+  :examples (
+    (:tier "novice" :code "const/ln10" :note "The value 2.30258…")
+    (:tier "apprentice" :code "(exp const/ln10)" :note "e^ln(10) = 10. Confirms the definition.")
+    (:tier "intermediate" :code "(define (log10 x)\n  (/ (log x) const/ln10))\n(log10 1000)" :note "Common log via change-of-base: log10(1000) = 3.")
+    (:tier "expert" :code "(define (magnitude-difference a b)\n  (/ (log (/ a b)) const/ln10))\n(magnitude-difference 1000 10)" :note "Two orders of magnitude apart: 1000/10 = 100 = 10^2.")
+    (:tier "master" :code "(define (pH concentration)\n  (- (/ (log concentration) const/ln10)))\n(pH 0.0000001)" :note "pH is -log10 of hydrogen-ion concentration. Neutral water (10^-7 M): pH = 7.")
+  )
+  :caveats ("Floating-point approximation." "Bare symbol.")
+  :drawbacks ("Not exact.")
+  :usecases ("Common logarithms (log10) via change of base" "pH scales" "Decibels" "Richter scale" "Astronomy magnitudes")
+  :related ("const/ln2" "const/e" "math/log" "math/log10")
+  :learn (:concept "ln(10) lets us switch between natural log and common (base-10) log." :prerequisites ("logs" "change of base") :progression "log10 first; then pH / dB / Richter as applications.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.LN10 constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("JS: Math.LN10; Python: math.log(10)") :history "Standard since the earliest scientific libraries." :hackable #f)
+  +ai (:raises () :pipes-into ("/" "*") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Using const/ln10 when you meant log(10) as a call." :when-not-to-use "When log10 is directly available.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/sqrt2"
+  :library "const"
+  :kind "constant"
+  :signature "const/sqrt2 -> 1.41421..."
+  :summary "The square root of 2; the ratio of a square's diagonal to its side."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.SQRT2. Previously wired as a thunk. Marcus's lane fixed."
+  :examples (
+    (:tier "novice" :code "const/sqrt2" :note "The value 1.41421…")
+    (:tier "apprentice" :code "(* const/sqrt2 const/sqrt2)" :note "√2 · √2 = 2. Definition, up to floating-point rounding.")
+    (:tier "intermediate" :code "(define (unit-square-diagonal)\n  const/sqrt2)\n(unit-square-diagonal)" :note "A square of side 1 has diagonal √2. Pythagoras: 1² + 1² = 2.")
+    (:tier "expert" :code "(define (a4-paper-height width)\n  (* width const/sqrt2))\n(a4-paper-height 210)" :note "A-series paper: height/width = √2. A4 (210 mm wide) is ≈ 297 mm tall.")
+    (:tier "master" :code "(define (rms-of-sinusoid amplitude)\n  (/ amplitude const/sqrt2))\n(rms-of-sinusoid 170)" :note "US household outlet: 170 V peak → 120 V RMS. Divide by √2.")
+  )
+  :caveats ("Floating-point — √2 is irrational so it's approximated." "Bare symbol.")
+  :drawbacks ("Repeated multiplication drifts from exact 2.")
+  :usecases ("Diagonal of a square" "A-series paper" "Sinusoid RMS values" "Isosceles right triangles" "Numerical analysis test cases")
+  :related ("const/sqrt3" "geom/pythagoras-hypotenuse")
+  :learn (:concept "√2 is the first irrational number the Greeks discovered — it upset them." :prerequisites ("sqrt" "Pythagoras") :progression "Right triangles → 45° geometry → RMS in electrical.")
+  +math (:algebra "irrational, algebraic (root of x²-2)" :total #t :domain "-" :codomain "R" :proofs "Hippasus's proof: √2 is irrational.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.SQRT2 constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("JS: Math.SQRT2; Python: math.sqrt(2)") :history "Known since antiquity; irrationality proved by the Pythagoreans." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Believing (* const/sqrt2 const/sqrt2) is exactly 2 — it's 2.0000000000000004." :when-not-to-use "When exact arithmetic matters.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/sqrt3"
+  :library "const"
+  :kind "constant"
+  :signature "const/sqrt3 -> 1.73205..."
+  :summary "The square root of 3; appears in regular hexagons and 3D geometry."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.sqrt(3). Previously wired as a thunk. Marcus's lane fixed."
+  :examples (
+    (:tier "novice" :code "const/sqrt3" :note "The value 1.73205…")
+    (:tier "apprentice" :code "(* const/sqrt3 const/sqrt3)" :note "√3 · √3 = 3, up to rounding.")
+    (:tier "intermediate" :code "(define (equilateral-height side)\n  (/ (* side const/sqrt3) 2))\n(equilateral-height 10)" :note "Height of an equilateral triangle: side · √3 / 2. A 10-unit side gives ≈ 8.66.")
+    (:tier "expert" :code "(define (regular-hexagon-area side)\n  (/ (* 6 side side const/sqrt3) 4))\n(regular-hexagon-area 10)" :note "Regular hexagon area: (3√3/2)·s². A side-10 hex has area ≈ 259.81.")
+    (:tier "master" :code "(define (three-phase-line-voltage phase-voltage)\n  (* phase-voltage const/sqrt3))\n(three-phase-line-voltage 120)" :note "Three-phase electrical: line-to-line voltage = phase voltage × √3. 120 V phase → ≈ 207.85 V line.")
+  )
+  :caveats ("Floating-point." "Bare symbol.")
+  :drawbacks ("√3 shows up in electrical + hexagonal geometry so many; less common than √2.")
+  :usecases ("Equilateral triangle geometry" "Regular hexagon area" "Three-phase electrical" "Body-centered cubic lattice")
+  :related ("const/sqrt2" "geom/regular-polygon-area")
+  :learn (:concept "√3 is the second most common irrational after √2 — its geometric home is the hexagon." :prerequisites ("sqrt") :progression "Equilateral triangle → hexagon → three-phase power.")
+  +math (:algebra "irrational, algebraic (root of x²-3)" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.sqrt(3) — JS has no direct constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("JS: Math.sqrt(3); Python: math.sqrt(3)") :history "Known since antiquity via Pythagoras." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Confusing √3 with 3 in electrical formulas — line/phase ratio matters." :when-not-to-use "When you have √3/2 or 3√3/2 baked in — some formulas expect the full ratio.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random"
+  :library "-"
+  :kind "primitive"
+  :signature "(random) -> number"
+  :summary "Returns a uniformly distributed random float in the range [0, 1)."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "Wraps Math.random(). Not cryptographically random — for keys/tokens use crypto/*."
+  :examples (
+    (:tier "novice" :code "(random)" :note "A random float in [0, 1). Different each call.")
+    (:tier "apprentice" :code "(< (random) 0.5)" :note "Coin flip: about half the time #t, half #f.")
+    (:tier "intermediate" :code "(define (throw-die)\n  (+ 1 (floor (* 6 (random)))))\n(throw-die)" :note "Simulate a six-sided die: integer 1..6.")
+    (:tier "expert" :code "(define (jitter x amount)\n  (+ x (* amount (- (random) 0.5))))\n(map (lambda (_) (jitter 100 10)) '(1 2 3 4 5))" :note "Small perturbation for anti-aliasing or stress tests.")
+    (:tier "master" :code "(define (monte-carlo-pi trials)\n  (define (in-circle?)\n    (let ((x (random)) (y (random)))\n      (<= (+ (* x x) (* y y)) 1)))\n  (let loop ((i 0) (hits 0))\n    (if (>= i trials)\n        (* 4.0 (/ hits trials))\n        (loop (+ i 1) (if (in-circle?) (+ hits 1) hits)))))\n(monte-carlo-pi 1000)" :note "Estimate π by throwing darts at the unit square. 1000 trials give ≈3.14 ± 0.05. More trials cut error like 1/√n.")
+  )
+  :caveats ("NOT cryptographic — do not use for secrets, keys, or tokens." "Different runs give different sequences unless you seed.")
+  :drawbacks ("No seed argument — for reproducibility use (with-seed n) or a seeded PRNG library." "Range is [0, 1); the 1.0 boundary is never returned.")
+  :usecases ("Games and simulations" "Statistical tests" "Anti-aliasing jitter" "Monte Carlo estimation")
+  :related ("random-int" "randint" "random-range" "random-pick" "with-seed")
+  :learn (:concept "Uniform [0,1) is the base of all other random draws — transform it to get integers, ranges, choices." :prerequisites () :progression "Basic (random) → coin flips → integer draws → simulations.")
+  +math (:algebra "uniform continuous distribution on [0,1)" :total #t :domain "-" :codomain "[0,1)")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f :special-form #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Math.random() wrapper." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Scheme: (random-real); Python: random.random()") :history "Standard PRNG since the earliest Lisps." :hackable #t)
+  +ai (:raises () :pipes-into ("*" "<" "floor") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Using (random) for cryptographic secrets. Use crypto/random-bytes." :when-not-to-use "Security-sensitive contexts.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random-int"
+  :library "-"
+  :kind "primitive"
+  :signature "(random-int n) -> integer"
+  :summary "Returns a uniformly distributed random integer in [0, n)."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "Math.floor(Math.random() * max(1, n|0)) at base.js:246."
+  :examples (
+    (:tier "novice" :code "(random-int 10)" :note "An integer 0..9.")
+    (:tier "apprentice" :code "(random-int 2)" :note "0 or 1. Poor-man's coin flip.")
+    (:tier "intermediate" :code "(define (random-choice lst)\n  (list-ref lst (random-int (length lst))))\n(random-choice '(red green blue))" :note "Pick a color by index.")
+    (:tier "expert" :code "(define (shuffle lst)\n  ;; Recursive shuffle by picking a random index and recursing on the rest.\n  (if (null? lst) '()\n      (let* ((i (random-int (length lst)))\n             (picked (list-ref lst i))\n             (rest (append (if (> i 0)\n                               (map (lambda (k) (list-ref lst k))\n                                    (let loop ((k 0)) (if (>= k i) '() (cons k (loop (+ k 1))))))\n                               '())\n                           (list-tail lst (+ i 1)))))\n        (cons picked (shuffle rest)))))\n(shuffle '(1 2 3 4 5))" :note "Recursive shuffle: pick one at random, recurse on the rest. Each result is a permutation of the input.")
+    (:tier "master" :code "(define (weighted-choice pairs)\n  (let* ((total (apply + (map car pairs)))\n         (pick (random-int total)))\n    (let loop ((xs pairs) (acc 0))\n      (let ((next (+ acc (car (car xs)))))\n        (if (< pick next) (cadr (car xs))\n            (loop (cdr xs) next))))))\n(weighted-choice '((70 common) (25 uncommon) (5 rare)))" :note "Weighted draw: item drawn with probability weight/total.")
+  )
+  :caveats ("If n <= 0, treated as n = 1 (always returns 0)." "Integer arg is coerced via | 0.")
+  :drawbacks ("Not cryptographic." "Slight modulo bias possible for large n — negligible in practice.")
+  :usecases ("Random indexing" "Shuffling" "Weighted picks" "Dice / cards")
+  :related ("randint" "random" "random-range" "random-pick")
+  :learn (:concept "Integer draws are indexes into collections. Everything else builds on this." :prerequisites ("random") :progression "Index draw → picking from list → shuffle → weighted.")
+  +math (:algebra "uniform discrete on {0,...,n-1}" :total #t :domain "ℕ" :codomain "ℕ")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "floor(random() * max(1, n))." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Scheme: (random n); Python: random.randrange(n)") :history "Idiomatic since early Scheme." :hackable #t)
+  +ai (:raises () :pipes-into ("list-ref" "vector-ref" "if") :consumes-from ("length") :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Passing n=0 and expecting an error — returns 0 instead." :when-not-to-use "When you need a range [a,b) — use randint.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "randint"
+  :library "-"
+  :kind "primitive"
+  :signature "(randint a b) -> integer"
+  :summary "Return a uniformly random integer in the range [a, b), inclusive of a, exclusive of b."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "a + floor(random() * (b - a)) at base.js:242."
+  :examples (
+    (:tier "novice" :code "(randint 1 7)" :note "An integer 1..6. Six-sided die.")
+    (:tier "apprentice" :code "(randint 0 100)" :note "0..99. A percentile.")
+    (:tier "intermediate" :code "(define (rand-year)\n  (randint 2000 2027))\n(rand-year)" :note "A year in [2000, 2027).")
+    (:tier "expert" :code "(define (deal-card)\n  (let ((rank (randint 1 14)) (suit-i (random-int 4)))\n    (list rank (list-ref '(clubs diamonds hearts spades) suit-i))))\n(deal-card)" :note "Draw a card: rank 1..13, suit index 0..3.")
+    (:tier "master" :code "(define (histogram n low high)\n  ;; Count occurrences of each value in [low, high) across n draws.\n  (define (bump alist key)\n    (cond ((null? alist) (list (list key 1)))\n          ((equal? (car (car alist)) key)\n           (cons (list key (+ 1 (cadr (car alist)))) (cdr alist)))\n          (else (cons (car alist) (bump (cdr alist) key)))))\n  (let loop ((i 0) (acc '()))\n    (if (>= i n) acc\n        (loop (+ i 1) (bump acc (randint low high))))))\n(histogram 100 0 10)" :note "Uniformity check via alist counts: 100 draws over 0..9 should give ≈10 per bucket.")
+  )
+  :caveats ("Upper bound b is EXCLUDED. (randint 1 7) yields 1..6, not 1..7." "If b <= a, behavior is 'always a' (0 range yields 0 offset).")
+  :drawbacks ("The exclusive-upper convention differs from Python's random.randint (inclusive). Read carefully.")
+  :usecases ("Dice, coin flips, card draws" "Random years / dates / ports" "Test-data generation")
+  :related ("random-int" "random-range" "random" "random-pick")
+  :learn (:concept "randint is your workhorse for integer draws in an arbitrary range." :prerequisites ("random-int") :progression "Point picks → dates → ranges → histograms.")
+  +math (:algebra "uniform discrete on {a,...,b-1}" :total #t :domain "ℤ×ℤ" :codomain "ℤ")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Simple linear transform of random-int." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: random.randrange(a,b); NumPy: randint low..high-1") :history "Half-open interval convention borrowed from Python's randrange." :hackable #t)
+  +ai (:raises () :pipes-into ("list-ref") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Expecting inclusive upper bound. (randint 1 6) gives 1..5, not 1..6." :when-not-to-use "When you want inclusive [a,b] — use (randint a (+ b 1)).")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random-range"
+  :library "-"
+  :kind "primitive"
+  :signature "(random-range lo hi) -> number"
+  :summary "Returns a uniformly distributed random float in the range [lo, hi)."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "lo + random() * (hi - lo) at base.js:247."
+  :examples (
+    (:tier "novice" :code "(random-range 0 1)" :note "Same as (random). Uniform [0, 1).")
+    (:tier "apprentice" :code "(random-range -1 1)" :note "A float in [-1, 1). Signed noise.")
+    (:tier "intermediate" :code "(define (random-angle-degrees)\n  (random-range 0 360))\n(random-angle-degrees)" :note "Uniform angle for spawning particles.")
+    (:tier "expert" :code "(define (random-point cx cy w h)\n  (list (random-range (- cx (/ w 2)) (+ cx (/ w 2)))\n        (random-range (- cy (/ h 2)) (+ cy (/ h 2)))))\n(random-point 100 100 50 50)" :note "Random point inside a rectangle centered at (cx,cy).")
+    (:tier "master" :code "(define (perlin-like-noise)\n  (- (+ (random-range -1 1)\n        (random-range -0.5 0.5))\n     0.5))\n(map (lambda (_) (perlin-like-noise)) '(1 2 3 4 5))" :note "Layered noise by summing scaled ranges. Real Perlin does interpolation; this is a rough proxy.")
+  )
+  :caveats ("Upper bound hi is EXCLUDED." "hi < lo produces a negative range — result is still uniform, just decreasing.")
+  :drawbacks ("Not cryptographic." "No stride option; use (round …) if you want quantized draws.")
+  :usecases ("Spawn positions" "Angles" "Noise" "Continuous parameter sweeps")
+  :related ("random" "randint" "random-int" "with-seed")
+  :learn (:concept "random-range is (random) with linear rescaling. Every continuous uniform draw reduces to this." :prerequisites ("random") :progression "Center draws → position draws → noise textures.")
+  +math (:algebra "uniform continuous on [lo,hi)" :total #t :domain "ℝ×ℝ" :codomain "ℝ")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Linear map of Math.random()." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: random.uniform(a,b) — INCLUSIVE upper; ours excludes") :history "Standard idiom." :hackable #t)
+  +ai (:raises () :pipes-into ("cos" "sin" "*") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Assuming random.uniform-style inclusive upper — ours excludes." :when-not-to-use "When you need exact endpoints — the upper is never reached.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random-pick"
+  :library "-"
+  :kind "primitive"
+  :signature "(random-pick lst) -> any | null"
+  :summary "Returns a uniformly random element from a list, or null if the list is empty."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "list[floor(random() * list.length)] at base.js:248; returns null if list is empty."
+  :examples (
+    (:tier "novice" :code "(random-pick '(rock paper scissors))" :note "A random hand for the game.")
+    (:tier "apprentice" :code "(random-pick '())" :note "Empty list returns null. Guard for this case.")
+    (:tier "intermediate" :code "(define (bag-of colors)\n  (map (lambda (_) (random-pick colors)) '(1 2 3 4 5)))\n(bag-of '(red green blue))" :note "Five draws with replacement from a color set.")
+    (:tier "expert" :code "(define (random-name)\n  (string-append (random-pick '(\"Ada\" \"Ren\" \"Kira\" \"Marcus\"))\n                 \" \"\n                 (random-pick '(\"Turing\" \"Lovelace\" \"Hopper\"))))\n(random-name)" :note "Combine picks into a compound value.")
+    (:tier "master" :code "(define (weighted-pick pairs)\n  ;; pairs: ((weight item) ...) — expand into flat bag and draw uniformly.\n  (define (expand-bag)\n    (let loop ((ps pairs) (acc '()))\n      (if (null? ps) acc\n          (loop (cdr ps)\n                (append acc\n                        (make-list (car (car ps)) (cadr (car ps))))))))\n  (random-pick (expand-bag)))\n(weighted-pick '((3 common) (1 rare)))" :note "Expand weights into a flat bag and pick uniformly. Simpler than accumulating CDFs, less efficient at scale.")
+  )
+  :caveats ("Empty list returns null (not #f, not '()). Guard with (if x ...)." "Uniform: every element has equal probability.")
+  :drawbacks ("O(1) pick but O(n) if you build the bag inline (see master example)." "Doesn't support weights natively.")
+  :usecases ("Random choice from a set" "Placeholder text" "Test-data seeding" "Games")
+  :related ("random-int" "list-ref" "shuffle")
+  :learn (:concept "random-pick composes: length → random-int → list-ref. The primitive saves you three lines." :prerequisites ("list") :progression "Simple picks → weighted picks → shuffles.")
+  +math (:algebra "uniform discrete on list elements" :total #t :domain "list" :codomain "any | null")
+  +cs (:complexity "O(1) (with random-access lists — Scheme lists are O(n) traversal)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Direct index into JS array." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: random.choice; Ruby: sample") :history "Universal idiom in scripting languages." :hackable #t)
+  +ai (:raises () :pipes-into ("string-append" "list") :consumes-from ("list") :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Not guarding for the empty-list null return." :when-not-to-use "When you need multiple samples without replacement — use shuffle then take.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "rule-conway"
+  :library "-"
+  :kind "pure"
+  :signature "(rule-conway alive n) -> boolean"
+  :summary "Apply Conway's Game of Life rules: return whether a cell survives or is born given its alive state and neighbor count."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "B3/S23 rule: alive cell with 2 or 3 neighbors survives; dead cell with exactly 3 neighbors is born. Truthiness: only Scheme #f (or undefined/null) counts as dead; any non-#f value is alive."
+  :examples (
+    (:tier "novice" :code "(rule-conway #t 2)" :note "Alive cell with 2 neighbors: survives. Returns #t.")
+    (:tier "apprentice" :code "(rule-conway #f 3)" :note "Dead cell with exactly 3 neighbors: born. Returns #t.")
+    (:tier "intermediate" :code "(map (lambda (n) (list n (rule-conway #t n)))\n     '(0 1 2 3 4 5 6 7 8))" :note "Fate of an alive cell across every neighbor count: survives on 2 and 3, dies otherwise.")
+    (:tier "expert" :code "(define (step-cell grid x y)\n  (define (get x y) (if (and (>= x 0) (< x 3) (>= y 0) (< y 3))\n                        (list-ref (list-ref grid y) x)\n                        #f))\n  (define alive (get x y))\n  (define n (+ (if (get (- x 1) (- y 1)) 1 0)\n               (if (get x (- y 1)) 1 0)\n               (if (get (+ x 1) (- y 1)) 1 0)\n               (if (get (- x 1) y) 1 0)\n               (if (get (+ x 1) y) 1 0)\n               (if (get (- x 1) (+ y 1)) 1 0)\n               (if (get x (+ y 1)) 1 0)\n               (if (get (+ x 1) (+ y 1)) 1 0)))\n  (rule-conway alive n))\n(step-cell '((#f #t #f) (#f #t #f) (#f #t #f)) 1 1)" :note "Full 8-neighborhood step of one cell. Center of a vertical blinker (3 alive in a column) survives.")
+    (:tier "master" :code "(define (glider-step)\n  ;; A glider — after one step it moves diagonally.\n  (define g0 '((#f #t #f)\n               (#f #f #t)\n               (#t #t #t)))\n  (define (nth-count x y)\n    (+ (if (and (>= (- y 1) 0) (>= (- x 1) 0)) (if (list-ref (list-ref g0 (- y 1)) (- x 1)) 1 0) 0)\n       (if (and (>= (- y 1) 0)) (if (list-ref (list-ref g0 (- y 1)) x) 1 0) 0)))\n  (rule-conway #t 3))\n(glider-step)" :note "Given the correct neighbor count 3 for a live cell — the rule says survive. The glider is Conway's most famous discovered pattern.")
+  )
+  :caveats ("Neighbor count MUST be in 0..8. Values above 8 always die." "Only #f (or undefined/null) counts as dead; even 0 is alive for this rule.")
+  :drawbacks ("Only implements the standard B3/S23. Other rulesets (Highlife B36/S23, Day&Night, etc.) need separate impls.")
+  :usecases ("Grid-simulation education" "Cellular-automaton demos" "Kid's first fixed-rule dynamical system")
+  :related ("conway-cell?" "grid-cell?")
+  :learn (:concept "Conway's Life illustrates emergence: complex behavior from a tiny local rule." :prerequisites ("boolean logic" "counting") :progression "Rule → single cell → 3×3 grid → glider → still lifes and oscillators.")
+  +math (:algebra "boolean × ℕ -> boolean" :total #t :domain "𝔹×ℕ" :codomain "𝔹" :proofs "Rigby / Berlekamp / Guy / Conway (1982): Life is Turing-complete.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Three-line B3/S23 rule." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Golly: builtin; NetLogo: patch-based") :history "Conway 1970; popularized by Martin Gardner in Scientific American." :hackable #t)
+  +ai (:raises () :pipes-into ("if" "cond" "map") :consumes-from ("+" "list-ref") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Passing negative neighbor counts or values > 8 — the rule silently dies. Validate the count." :when-not-to-use "When you need a full-grid step; write a wrapper that walks the grid.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "num/nintegrate-2d"
+  :library "num"
+  :kind "pure"
+  :signature "(num/nintegrate-2d f x-bounds y-bounds [opts]) -> number"
+  :summary "Compute a double integral over a rectangular region using Simpson's rule."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Composite Simpson's rule. Default 32 subdivisions per axis. opts is a keyword-list; :n sets subdivisions (must be even). Applies the Scheme function f (x y) at (n+1)^2 grid points."
+  :examples (
+    (:tier "novice" :code "(num/nintegrate-2d (lambda (x y) 1) '(0 1) '(0 1))" :note "Integral of the constant 1 over the unit square: area = 1.")
+    (:tier "apprentice" :code "(num/nintegrate-2d (lambda (x y) (* x y)) '(0 1) '(0 1))" :note "∫∫ xy over the unit square = 1/4. Simpson's rule is exact for degree ≤ 3.")
+    (:tier "intermediate" :code "(num/nintegrate-2d\n  (lambda (x y) (+ (* x x) (* y y)))\n  '(0 1) '(0 1))" :note "∫∫ (x²+y²) over unit square = 2/3.")
+    (:tier "expert" :code "(define (circle-area-mc)\n  (num/nintegrate-2d\n    (lambda (x y) (if (<= (+ (* x x) (* y y)) 1) 1 0))\n    '(-1 1) '(-1 1)))\n(circle-area-mc)" :note "Indicator-function integration approximates π (area of unit circle). Simpson's rule handles the discontinuity poorly; expect ≈3.14 with visible error — real Monte Carlo would do better.")
+    (:tier "master" :code "(define (gaussian-2d sigma)\n  (num/nintegrate-2d\n    (lambda (x y)\n      (/ (exp (- (/ (+ (* x x) (* y y)) (* 2 sigma sigma))))\n         (* 2 const/pi sigma sigma)))\n    '(-3 3) '(-3 3)))\n(gaussian-2d 1)" :note "Integral of a 2D Gaussian over ±3σ ≈ 0.997. The tails outside [-3,3] carry ≈0.003.")
+  )
+  :caveats ("f must accept (x y) — a 2-argument lambda." "Bounds are 2-lists (lo hi)." "Simpson's rule is EXACT for polynomials of degree ≤ 3 per variable; higher degrees carry O(h⁴) error." "Discontinuous integrands (indicator functions) give poor results.")
+  :drawbacks ("Fixed grid — no adaptive refinement." "Slow for expensive f (calls f n² times)." "No error estimate returned.")
+  :usecases ("Educational demos of numerical quadrature" "Well-behaved smooth 2D integrals" "Verifying analytic results" "Prototype before switching to specialized libraries")
+  :related ("num/nintegrate-3d" "calc/integrate")
+  :learn (:concept "Simpson's rule fits a parabola through triples of points and sums the exact parabola areas. 2D is the product rule applied twice." :prerequisites ("lambda" "arithmetic") :progression "1D quadrature → 2D → higher dimensions → adaptive methods.")
+  +math (:algebra "linear in f" :total #t :domain "function × 2-list × 2-list × opts" :codomain "ℝ" :proofs "Composite Simpson: error is O(h⁴) for f ∈ C⁴.")
+  +cs (:complexity "O(n²) function evaluations" :effects (none) :pure #t :special-form #f :evaluation-order "left-to-right; f called (n+1)² times")
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Composite Simpson's rule; default n=32 (1089 f-calls)." :permission "read" :latency-class "sync-slow" :since "0.1.0")
+  +hacker (:primitive #t :kin ("SciPy: scipy.integrate.dblquad; Julia: HCubature.hcubature") :history "Simpson's rule dates to Cavalieri / Kepler / Newton / Simpson (1743)." :hackable #t)
+  +ai (:raises () :pipes-into ("list") :consumes-from ("lambda") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Passing bounds as three-element lists or non-numeric bounds — bounds are strictly 2-lists (lo hi)." :when-not-to-use "Discontinuous or oscillatory integrands, or when high accuracy matters — use adaptive quadrature.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "num/nintegrate-3d"
+  :library "num"
+  :kind "pure"
+  :signature "(num/nintegrate-3d f x-bounds y-bounds z-bounds [opts]) -> number"
+  :summary "Compute a triple integral over a rectangular box using Simpson's rule."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "3D composite Simpson's rule. Default 16 subdivisions per axis — n=16 means 4913 f-calls; be conservative on cost. opts :n sets subdivisions (must be even)."
+  :examples (
+    (:tier "novice" :code "(num/nintegrate-3d (lambda (x y z) 1) '(0 1) '(0 1) '(0 1))" :note "Volume of unit cube = 1.")
+    (:tier "apprentice" :code "(num/nintegrate-3d (lambda (x y z) (+ x y z)) '(0 1) '(0 1) '(0 1))" :note "∫∫∫(x+y+z) over unit cube = 3/2. Each variable contributes 1/2 × 1 × 1.")
+    (:tier "intermediate" :code "(num/nintegrate-3d\n  (lambda (x y z) (* x y z))\n  '(0 1) '(0 1) '(0 1))" :note "∫∫∫ xyz over unit cube = 1/8. Product of three 1/2 factors.")
+    (:tier "expert" :code "(define (sphere-volume-8th)\n  (num/nintegrate-3d\n    (lambda (x y z) (if (<= (+ (* x x) (* y y) (* z z)) 1) 1 0))\n    '(0 1) '(0 1) '(0 1)))\n(* 8 (sphere-volume-8th))" :note "Unit sphere volume via first-octant slice × 8. True value: 4π/3 ≈ 4.189. Indicator function → visible error.")
+    (:tier "master" :code "(define (moment-of-inertia)\n  (num/nintegrate-3d\n    (lambda (x y z) (+ (* y y) (* z z)))\n    '(-1 1) '(-1 1) '(-1 1)))\n(moment-of-inertia)" :note "Moment of inertia about x-axis for a unit-density cube: 8·(2/3)+8·(2/3)/3 = 16/3.")
+  )
+  :caveats ("f must accept (x y z) — a 3-argument lambda." "3D COST: n=16 default is (n+1)^3 = 4913 f-calls. n=32 is 35937 — expect ≈1 s of REPL time.")
+  :drawbacks ("Very slow for expensive f." "No adaptive refinement." "Simpson's rule is exact only for polynomials of degree ≤ 3 per variable.")
+  :usecases ("Volume integrals" "Center-of-mass / moment computations" "Educational demos of 3D quadrature" "Prototype before dedicated numeric library")
+  :related ("num/nintegrate-2d" "calc/integrate")
+  :learn (:concept "3D Simpson is the product rule applied thrice. Cost balloons as n³." :prerequisites ("num/nintegrate-2d") :progression "2D → 3D → understand cost curve → know when to use Monte Carlo instead.")
+  +math (:algebra "linear in f" :total #t :domain "function × 3× 2-list × opts" :codomain "ℝ" :proofs "Composite Simpson 3D: O(h⁴) error for f ∈ C⁴.")
+  +cs (:complexity "O(n³) function evaluations" :effects (none) :pure #t :special-form #f :evaluation-order "f called (n+1)³ times")
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "3D nested loop; default n=16." :permission "read" :latency-class "sync-slow" :since "0.1.0")
+  +hacker (:primitive #t :kin ("SciPy: scipy.integrate.tplquad") :history "Newton–Cotes formulas generalize to arbitrary dimension via product rule." :hackable #t)
+  +ai (:raises () :pipes-into () :consumes-from ("lambda") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Setting n high (n=64) without realizing cost is 274625 f-calls." :when-not-to-use "High dimensions (d ≥ 4) — Monte Carlo scales better with dimension.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "rasterize-text"
+  :library "-"
+  :kind "pure"
+  :signature "(rasterize-text text [x] [y] [font] [size] [grid] [supersample] [minAlpha]) -> list"
+  :summary "Converts a text string into a list of dot coordinates and alpha values on a pixel grid."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Minimal 5x7 uppercase-ASCII pixel font shipped inline. Lowercase upper-cases; unknown chars use '?'. Live hosts (browser IDE, game shell) override with real typography. Each dot is a 4-list ('dot x y alpha)."
+  :examples (
+    (:tier "novice" :code "(length (rasterize-text \"A\"))" :note "One letter A has 18 lit dots in the 5x7 default font.")
+    (:tier "apprentice" :code "(car (rasterize-text \"A\"))" :note "First dot: ('dot 1 0 1). Tag 'dot, x=1, y=0, alpha=1.")
+    (:tier "intermediate" :code "(length (rasterize-text \"HI\"))" :note "H (18 dots) plus I (10 dots) = 28 total. Kerning advances one glyph-width per character.")
+    (:tier "expert" :code "(define (text-bounding-height text)\n  (let* ((dots (rasterize-text text))\n         (ys (map (lambda (d) (list-ref d 2)) dots)))\n    (if (null? ys) 0\n        (+ 1 (apply max ys)))))\n(text-bounding-height \"HELLO\")" :note "Compute the pixel height of a rasterized string: 7 for the default 5x7 font.")
+    (:tier "master" :code "(define (rasterize-with-offset text x y)\n  (rasterize-text text x y))\n(car (rasterize-with-offset \"A\" 100 50))" :note "Offset the whole raster: first dot lands at (101, 50). Move the label without redrawing.")
+  )
+  :caveats ("Lowercase is upper-cased before lookup." "Unknown characters (extended ASCII, Unicode) render as '?'." "Default font is 5x7 pixels wide and tall; grid scales dots by NxN cells.")
+  :drawbacks ("Standalone font is intentionally minimal — for real typography, live host overrides." "No kerning table beyond fixed 6-cell advance per glyph." "No anti-aliasing (alpha is 1 or 0).")
+  :usecases ("Rendering labels on a pixel framebuffer" "Retro-style text overlays" "Testing surface-paint-dots without a font system")
+  :related ("surface-paint-text" "surface-paint-dots")
+  :learn (:concept "Text becomes data: each glyph is a bitmap, and every pixel becomes a dot record." :prerequisites ("list" "string") :progression "Single char → whole strings → offset placement → paint via surface-paint-dots.")
+  +math (:algebra "text -> list of (dot x y alpha)" :total #t :domain "string × ℤ × ℤ × …" :codomain "list")
+  +cs (:complexity "O(len(text) · 5 · 7 · grid²)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Inline 5x7 uppercase-ASCII font; grid scales each pixel by NxN cells." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("SDL_ttf; browser canvas.fillText; PIL.ImageFont") :history "Minimal 5x7 fonts date to the earliest LED displays." :hackable #t)
+  +ai (:raises () :pipes-into ("surface-paint-dots" "map" "length") :consumes-from ("string") :cardinality "many" :deterministic #t :cacheable #t :common-mistakes "Expecting proportional widths — every glyph advances 6 cells regardless." :when-not-to-use "Production typography — use a real font renderer via the host.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "zoom-legible?"
+  :library "-"
+  :kind "pure"
+  :signature "(zoom-legible? [scale [designPx]]) -> boolean"
+  :summary "Test whether text at a given design size remains readable at the current (or given) camera zoom."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Threshold: scale * designPx >= 8 device pixels. Default scale=1.0, designPx=12 (tutorial body size). Alfred's tutorial uses ~8 px as the kid-can-read floor."
+  :examples (
+    (:tier "novice" :code "(zoom-legible?)" :note "Default (1.0 zoom, 12 design px) → 12 >= 8 → #t.")
+    (:tier "apprentice" :code "(zoom-legible? 0.5)" :note "At 50% zoom, 12 px shrinks to 6 px → #f (below the 8-pixel floor).")
+    (:tier "intermediate" :code "(zoom-legible? 1.0 6)" :note "6-pixel body at 100% zoom → 6 < 8 → #f. Even at full zoom, tiny type is unreadable.")
+    (:tier "expert" :code "(define (choose-label-size zoom)\n  (cond ((zoom-legible? zoom 10) 10)\n        ((zoom-legible? zoom 14) 14)\n        (else 18)))\n(map choose-label-size '(0.5 1.0 2.0))" :note "Adaptive labeling: at 50% zoom pick 18 px; at 100% pick 10 px.")
+    (:tier "master" :code "(define (visible-labels items zoom)\n  (let ((min-size (if (zoom-legible? zoom 10) 10\n                      (if (zoom-legible? zoom 12) 12 14))))\n    (map (lambda (i) (list (car i) min-size))\n         items)))\n(visible-labels '((\"card-1\") (\"card-2\")) 1.0)" :note "Compute the smallest legible label size for a set of items at the current zoom.")
+  )
+  :caveats ("Threshold is fixed at 8 device pixels — a heuristic, not a psychophysical measurement." "Fonts vary; a narrow 8-px sans-serif is legible; a serif at 8 px is not.")
+  :drawbacks ("Ignores font choice, contrast, and viewing distance." "One number, one threshold.")
+  :usecases ("Level-of-detail rendering" "Hiding labels when they'd be unreadable" "Choosing UI type sizes at different zooms")
+  :related ("zoom" "viewport" "viewport-width")
+  :learn (:concept "Legibility isn't a fact — it's a threshold. Pick the threshold that matches your audience." :prerequisites () :progression "Fixed threshold → per-font tables → user prefs override.")
+  +math (:algebra "scale × designPx -> boolean via 8-px threshold" :total #t :domain "ℝ×ℝ" :codomain "𝔹")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "One-line threshold check." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("CSS min-font-size; iOS UIFontMetrics; Android sp scaling") :history "Cartography 'MinSizeToDisplay' rule; game HUD LOD systems." :hackable #t)
+  +ai (:raises () :pipes-into ("cond" "if") :consumes-from ("zoom") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Assuming the threshold is a physics constant — it's a heuristic." :when-not-to-use "When you have real user-preference data — respect that instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "rows"
+  :library "-"
+  :kind "meta"
+  :signature "(rows) -> number"
+  :summary "Return the number of rows (height) of the surface canvas in cells."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Routes to canvas-height if the framebuffer bound it; otherwise returns 0. Live hosts override with the real surface row count."
+  :examples (
+    (:tier "novice" :code "(rows)" :note "In standalone REPL: 0. In the browser IDE: the surface's row count.")
+    (:tier "apprentice" :code "(zero? (rows))" :note "#t in standalone (no framebuffer bound).")
+    (:tier "intermediate" :code "(define (grid-empty?)\n  (or (zero? (rows)) (zero? (rows))))\n(grid-empty?)" :note "Ask the surface for its dimensions; useful for guard clauses.")
+    (:tier "expert" :code "(define (draw-if-room? need)\n  (if (>= (rows) need) 'yes 'too-small))\n(draw-if-room? 40)" :note "Check surface has room for our layout before painting.")
+    (:tier "master" :code "(define (viewport-summary)\n  (list 'rows (rows)\n        'viewport-width (viewport-width)))\n(viewport-summary)" :note "Compose surface metrics into a diagnostic record.")
+  )
+  :caveats ("Returns 0 in standalone REPL — no framebuffer bound. Live hosts override." "Distinct from `cols` (the width in cells).")
+  :drawbacks ("No units marker — the caller must know 'cells' means cells, not pixels.")
+  :usecases ("Layout guards" "Debugging surface dimensions" "Adapting rendering to canvas size")
+  :related ("cols" "viewport" "viewport-width")
+  :learn (:concept "Every drawing needs to know its canvas. rows and cols are the ruler." :prerequisites ("surface / framebuffer basics") :progression "Read → guard → adapt.")
+  +math (:algebra "no args -> ℕ" :total #t :domain "-" :codomain "ℕ")
+  +cs (:complexity "O(1)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Reads canvas-height from env if present." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("R7RS: no equivalent; canvas.height in browsers") :history "Grid-oriented graphics standard since terminal days." :hackable #t)
+  +ai (:raises () :pipes-into ("<" ">=" "list") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Assuming rows returns pixels — it's cells." :when-not-to-use "When you need pixel counts — use pixels-tall instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+;; ═══════════════════════════════════════════════════════════════════════
+;; DESCRIPTOR-SHAPED VERBS (host-adapter binding)
+;;
+;; These verbs return shaped descriptor lists in standalone REPL. That's
+;; NOT a lie — the descriptor IS the standalone-REPL contract, and a live
+;; host (browser IDE, game shell, shop launcher) substitutes real
+;; semantics. Every entry documents the two paths honestly.
+;;
+;; Examples show the descriptor return AND note the host-binding case.
+;; ═══════════════════════════════════════════════════════════════════════
+
+(verb
+  :name "wait"
+  :library "-"
+  :kind "descriptor"
+  :signature "(wait event [deadline-ms]) -> descriptor"
+  :summary "Pause state execution until a named event fires or an optional deadline expires."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Standalone REPL returns a ('wait seconds) descriptor. A live event scheduler (game loop, animation clock, shop workflow) substitutes real await semantics."
+  :examples (
+    (:tier "novice" :code "(wait 1)" :note "Descriptor ('wait 1). In a running host, pauses one second.")
+    (:tier "apprentice" :code "(wait 0.5)" :note "Half-second pause descriptor.")
+    (:tier "intermediate" :code "(list (wait 0.25) (wait 0.5) (wait 1))" :note "A sequence of pauses — a live host walks them in order.")
+    (:tier "expert" :code "(define (paced-sequence . delays)\n  (map wait delays))\n(paced-sequence 0.25 0.5 1)" :note "Build a paced pattern from a delay list.")
+    (:tier "master" :code "(define (metronome bpm)\n  (define beat (/ 60 bpm))\n  (map (lambda (_) (wait beat)) '(1 2 3 4)))\n(metronome 120)" :note "Four beats at 120 bpm — quarter-second pause each.")
+  )
+  :caveats ("Standalone REPL returns a descriptor; no actual sleeping happens." "Live hosts interpret and enforce the delay.")
+  :drawbacks ("No cancellation from the descriptor — the host layer handles cancel.")
+  :usecases ("Animation timing" "Metronome / pacing" "Event-driven flows")
+  :related ("tempo" "sub-position-per-beat" "with-spacing")
+  :learn (:concept "wait is a HINT to the runtime. The descriptor carries the delay; the host consumes it." :prerequisites () :progression "Single wait → sequences → beat-quantized patterns.")
+  +cs (:complexity "O(1)" :effects (none in standalone; async in host) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Returns ('wait seconds)." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Expecting the REPL to actually sleep — it doesn't; the descriptor is the contract." :when-not-to-use "For real high-precision timing — use the host's scheduler API directly.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "stop"
+  :library "-"
+  :kind "descriptor"
+  :signature "(stop) -> undefined"
+  :summary "Halt the currently running game loop immediately."
+  :impl-status "wired"
+  :impl-file "src/game.js"
+  :impl-notes "In game.js, sets game.stopped = #t and stops the media loop. In standalone REPL without a running loop, returns undefined."
+  :examples (
+    (:tier "novice" :code "(stop)" :note "Returns undefined. In a running game, ends the loop.")
+    (:tier "apprentice" :code "(begin (stop) 'ended)" :note "stop then a value; useful in event handlers.")
+    (:tier "intermediate" :code "(define (on-game-over)\n  (stop)\n  'thanks-for-playing)\n(on-game-over)" :note "Wrapping stop in an end-of-game handler.")
+    (:tier "expert" :code "(define (win-condition? score)\n  (if (>= score 100)\n      (begin (stop) 'you-win)\n      'keep-going))\n(win-condition? 100)" :note "Conditional stop tied to a score threshold.")
+    (:tier "master" :code "(define (guard-loop tick-count max-ticks)\n  (if (>= tick-count max-ticks)\n      (begin (stop) 'timed-out)\n      'continue))\n(guard-loop 1000 1000)" :note "Watchdog: stop the loop if we've run past a safety cap.")
+  )
+  :caveats ("Idempotent — calling stop when nothing is running is a no-op." "Only affects the game/media loop; other state remains.")
+  :drawbacks ("No resume; use start-over to restart.")
+  :usecases ("End-of-game" "Panic stop" "Watchdog guards")
+  :related ("stop-when" "start" "game/stop")
+  :learn (:concept "Every loop needs an exit. stop is the escape valve." :prerequisites ("game loop concept") :progression "Manual stop → conditional → watchdog.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/game.js" :impl-notes "Sets game.stopped and calls media.loop.stop()." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("begin") :consumes-from () :cardinality "void" :deterministic #t :cacheable #f :common-mistakes "Calling stop and expecting the current form to also short-circuit — it doesn't, execution continues in the current form." :when-not-to-use "Inside a loop-body when you want to break just this iteration — use a continuation or a flag.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
