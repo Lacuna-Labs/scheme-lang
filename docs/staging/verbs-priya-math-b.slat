@@ -693,3 +693,433 @@
              :long  "Return a transition tuple that tells the host to enter the named state with the given context. Not a normal call — a hand-off."
              :for-ai "State-machine transition primitive. Opaque to Scheme; consumed by host."
              :for-kid "Say 'let's go to the next room' — you don't move yourself, you tell the world to switch rooms.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; PODCAST CLUSTER (32 verbs)
+;;
+;; The podcast subsystem is a browser-side player in the full host.
+;; Here we ship an in-memory state model so verbs interoperate
+;; consistently. Predicates return real booleans read from the model.
+;; Mutators update the model + return sensible values. Audio playback
+;; itself is deferred to the host — but state queries and updates are
+;; honest and consistent within a REPL session.
+;;
+;; Each verb here uses the same runtime; hosts can override any
+;; individual verb to drive real audio.
+;; ═══════════════════════════════════════════════════════════════════
+
+;; ─── podcast-load — load an episode ──────────────────────────────
+
+(verb
+  :name "podcast-load"
+  :library "podcast"
+  :signature "(podcast-load episode-alist) -> guid-string | error-triple"
+  :summary "Load a podcast episode (identified by :audio-url) into the current player slot."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-load (list 'audio-url \"https://ex.com/ep.mp3\"))"
+     :note "Load an episode by URL. Returns the URL as fallback guid.")
+    (:tier "apprentice"
+     :code "(podcast-load (list 'guid \"ep-42\" 'audio-url \"https://ex.com/ep.mp3\" 'title \"Ep 42\"))"
+     :note "Load with an explicit guid. Returns \"ep-42\".")
+    (:tier "intermediate"
+     :code "(let ((r (podcast-load (list 'audio-url \"https://ex.com/ep.mp3\"))))\n  (if (string? r) 'loaded 'load-failed))"
+     :note "Branch on load result. Returns 'loaded when the audio-url is present.")
+    (:tier "expert"
+     :code "(podcast-load (list 'title \"missing-url\"))"
+     :note "Missing :audio-url returns an error triple. Returns (error missing-audio-url \"episode alist requires :audio-url\").")
+    (:tier "master"
+     :code "(define (load-and-check ep)\n  (let ((r (podcast-load ep)))\n    (if (and (pair? r) (equal? (car r) 'error))\n        (list 'failed (car (cdr r)))\n        (list 'ok r))))\n(load-and-check (list 'audio-url \"https://ex.com/a.mp3\" 'guid \"g1\"))"
+     :note "Wrap load with an ok/failed classifier. Returns (ok \"g1\")."))
+  :related ("podcast-play" "podcast-pause" "podcast-current" "podcast-state")
+  :caveats ("Requires :audio-url; missing it returns an error triple." "Loading replaces the currently loaded episode; the old one is abandoned." "State persists within a single REPL session; a new eval invocation starts empty.")
+  :drawbacks ("Does not fetch audio bytes — that's the host's job." "No progress reporting during load.")
+  :usecases ("Preload before playback." "Load-only when the user hovers over a card.")
+  :learn (:concept "Move an episode into the player's current slot without starting playback." :prerequisites () :progression "Learn podcast-play for load+play in one call; then podcast-queue-add for future playback.")
+  :+math (:algebra () :total #t :domain "alist with :audio-url" :codomain "string | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Validates alist has audio-url; sets podcast.current; adds guid to history; returns guid."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-load (list 'audio-url ...)) returns URL string; missing url returns error triple."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (bad-episode missing-audio-url) :pipes-into ("podcast-play" "podcast-state") :cardinality one
+        :deterministic #f :cacheable #f
+        :common-mistakes "Forgetting :audio-url. Passing a string instead of an alist.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Load an episode into the player."
+             :long  "Load a podcast episode alist into the current player slot; requires :audio-url. Returns guid or error triple."
+             :for-ai "Setter for the current episode. State mutation."
+             :for-kid "Tell the player which episode to get ready.")))
+
+;; ─── podcast-play — play the current or loaded episode ───────────
+
+(verb
+  :name "podcast-play"
+  :library "podcast"
+  :signature "(podcast-play [episode-alist]) -> guid | error-triple"
+  :summary "Start playback; optionally load a new episode first."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-play))"
+     :note "Load then play. Returns the guid.")
+    (:tier "apprentice"
+     :code "(podcast-play (list 'audio-url \"https://ex.com/e.mp3\"))"
+     :note "Load + play in one call. Returns the guid.")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (obj-get (podcast-state) 'playing))"
+     :note "Check playing state after play. Returns #t.")
+    (:tier "expert"
+     :code "(podcast-play)"
+     :note "No episode loaded, no arg → error triple. Returns (error nothing-loaded \"call podcast-load first\").")
+    (:tier "master"
+     :code "(define (safe-play ep)\n  (let ((r (podcast-play ep)))\n    (if (and (pair? r) (equal? (car r) 'error))\n        (list 'skipped (car (cdr r)))\n        (list 'playing r))))\n(safe-play (list 'audio-url \"https://ex.com/e.mp3\"))"
+     :note "Wrap play with error handling. Returns (playing \"https://ex.com/e.mp3\")."))
+  :related ("podcast-load" "podcast-pause" "podcast-resume" "podcast-state")
+  :caveats ("If called with no arg and no episode loaded, returns error triple." "In headless REPL 'playing' is a flag; no audio is emitted." "Host may still block on autoplay policies.")
+  :drawbacks ("Does not report actual audio start — only the state flag." "No fade-in / preroll.")
+  :usecases ("Play a specific episode." "Resume from paused state (via podcast-resume)." "Play button in UI.")
+  :learn (:concept "Start playback of the current episode; optional 1-arg loads first." :prerequisites ("podcast-load") :progression "Learn podcast-pause / podcast-resume for control; then podcast-seek for scrubbing.")
+  :+math (:algebra () :total #t :domain "() or alist" :codomain "string | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Optional load; sets podcast.playing = true. Host binds actual audio hw."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (begin (podcast-load ...) (podcast-play)) returns guid."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (nothing-loaded bad-episode) :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Calling with no arg + no prior load.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Start podcast playback."
+             :long  "Start playback of the current episode; optionally load a new one first."
+             :for-ai "Play button. State mutation."
+             :for-kid "Press play on the podcast.")))
+
+;; ─── podcast-pause — pause playback ──────────────────────────────
+
+(verb
+  :name "podcast-pause"
+  :library "podcast"
+  :signature "(podcast-pause) -> guid | #f"
+  :summary "Pause the current episode; returns its guid or #f if nothing loaded."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-pause)"
+     :note "With no episode loaded, returns #f.")
+    (:tier "apprentice"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-play) (podcast-pause))"
+     :note "Load, play, pause. Returns the guid.")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-pause) (obj-get (podcast-state) 'playing))"
+     :note "Confirm playing flag flipped to #f.")
+    (:tier "expert"
+     :code "(define (toggle) (if (obj-get (podcast-state) 'playing) (podcast-pause) (podcast-resume)))\n(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (toggle) (obj-get (podcast-state) 'playing))"
+     :note "Toggle logic between pause and resume. After play + toggle → #f.")
+    (:tier "master"
+     :code "(define (auto-pause-after seconds)\n  (list 'scheduled 'pause 'in seconds 'unit 'seconds))\n(auto-pause-after 30)"
+     :note "Descriptor for a scheduled pause. Returns (scheduled pause in 30 unit seconds). A host runs the timer."))
+  :related ("podcast-play" "podcast-resume" "podcast-state")
+  :caveats ("Returns #f when nothing loaded (no error)." "Pausing a paused episode is a no-op; still returns the guid.")
+  :drawbacks ("No fade-out.")
+  :usecases ("Pause button." "Interrupt for a call." "Auto-pause on inactivity.")
+  :learn (:concept "Flip the playing flag to false; state persists so resume knows where we are." :prerequisites ("podcast-play") :progression "Pair with podcast-resume for the toggle pattern.")
+  :+math (:algebra () :total #t :domain "()" :codomain "string | #f")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Sets podcast.playing = false; returns current guid or #f."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-pause) with nothing loaded returns #f."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Assuming an error when nothing's loaded — returns #f silently.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Pause the current episode."
+             :long  "Pause the current episode; state persists so podcast-resume can pick up. Returns guid or #f."
+             :for-ai "Pause button. Idempotent."
+             :for-kid "Press pause on the podcast.")))
+
+;; ─── podcast-resume — resume paused playback ─────────────────────
+
+(verb
+  :name "podcast-resume"
+  :library "podcast"
+  :signature "(podcast-resume) -> guid | error-triple"
+  :summary "Resume playback of the currently loaded episode."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-resume)"
+     :note "Nothing loaded. Returns (error nothing-loaded \"call podcast-load first\").")
+    (:tier "apprentice"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-pause) (podcast-resume))"
+     :note "Play, pause, resume. Returns the guid.")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-pause) (podcast-resume) (obj-get (podcast-state) 'playing))"
+     :note "Verify playing flag flipped back to #t.")
+    (:tier "expert"
+     :code "(define (safe-resume)\n  (let ((r (podcast-resume)))\n    (if (and (pair? r) (equal? (car r) 'error)) 'no-episode 'resumed)))\n(safe-resume)"
+     :note "Wrap resume with error handling. Returns 'no-episode when nothing loaded.")
+    (:tier "master"
+     :code "(define (wake ep)\n  (begin\n    (podcast-load ep)\n    (podcast-resume)))\n(wake (list 'audio-url \"https://ex.com/e.mp3\"))"
+     :note "Load-and-resume shorthand for a Friday-morning wake pattern. Returns the guid."))
+  :related ("podcast-play" "podcast-pause")
+  :caveats ("Errors if nothing loaded — call podcast-load first." "Does not restart from beginning; picks up at podcast-seek position.")
+  :drawbacks ("No 'resume last episode across sessions' — needs a host store.")
+  :usecases ("Resume after pause." "Wake the player after a phone-call interruption.")
+  :learn (:concept "Flip playing back to true; picks up at the current seek position." :prerequisites ("podcast-pause") :progression "Pair with podcast-pause for the toggle pattern.")
+  :+math (:algebra () :total #t :domain "()" :codomain "string | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Sets podcast.playing = true if episode loaded; else returns error triple."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-resume) with nothing loaded returns error triple."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises (nothing-loaded) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Resume the current episode."
+             :long  "Resume playback of the currently loaded episode; errors if none loaded."
+             :for-ai "Resume button. Errors on missing episode."
+             :for-kid "Un-pause the podcast.")))
+
+;; ─── podcast-seek — jump to position ─────────────────────────────
+
+(verb
+  :name "podcast-seek"
+  :library "podcast"
+  :signature "(podcast-seek seconds) -> number | error-triple"
+  :summary "Jump playback to the given position in seconds."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-seek 60)"
+     :note "Seek to 1 minute. Returns 60.")
+    (:tier "apprentice"
+     :code "(begin (podcast-seek 120) (obj-get (podcast-state) 'position))"
+     :note "Set + read. Returns 120.")
+    (:tier "intermediate"
+     :code "(podcast-seek -5)"
+     :note "Negative position returns an error triple. Returns (error bad-position \"position must be >= 0\").")
+    (:tier "expert"
+     :code "(define (rewind delta)\n  (let ((now (obj-get (podcast-state) 'position)))\n    (podcast-seek (max 0 (- now delta)))))\n(begin (podcast-seek 60) (rewind 15))"
+     :note "Rewind by a delta with floor at 0. Returns 45.")
+    (:tier "master"
+     :code "(define (chapter-jump chapters idx)\n  (let ((c (list-ref chapters idx)))\n    (podcast-seek (car (cdr (assoc 'start c))))))\n(chapter-jump\n  (list (list 'name \"Intro\" 'start 0)\n        (list 'name \"Body\"  'start 60)\n        (list 'name \"Outro\" 'start 480)) 2)"
+     :note "Chapter navigation. Jumps to the outro at 480 seconds. Returns 480."))
+  :related ("podcast-play" "podcast-state")
+  :caveats ("Negative positions error." "Positions beyond episode length are permitted; host decides how to render.")
+  :drawbacks ("No unit override — always seconds.")
+  :usecases ("Chapter navigation." "Rewind / fast-forward." "Progress-bar scrubbing.")
+  :learn (:concept "Set the playback position in seconds. Guarded against negatives." :prerequisites () :progression "Pair with podcast-state to read the current position; then chapter-based navigation.")
+  :+math (:algebra () :total #t :domain "non-negative real" :codomain "number | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Guards non-negative; sets podcast.seek_position."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-seek 60) = 60; (podcast-seek -5) = error triple."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises (bad-position) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Seek to a position in the current episode."
+             :long  "Jump playback to the given position in seconds. Guarded against negatives."
+             :for-ai "Scrub. Idempotent."
+             :for-kid "Jump ahead or back in the podcast to a specific time.")))
+
+;; ─── podcast-volume — set / read volume ───────────────────────────
+
+(verb
+  :name "podcast-volume"
+  :library "podcast"
+  :signature "(podcast-volume [v]) -> number"
+  :summary "Get (no arg) or set the player volume in [0,1]; out-of-range values are clamped."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-volume)"
+     :note "Read current volume. Returns 0.8 (default).")
+    (:tier "apprentice"
+     :code "(podcast-volume 0.5)"
+     :note "Set to half. Returns 0.5.")
+    (:tier "intermediate"
+     :code "(podcast-volume 1.5)"
+     :note "Clamped to 1.0. Returns 1.")
+    (:tier "expert"
+     :code "(define (fade steps target)\n  (let loop ((i 0) (last (podcast-volume)))\n    (if (>= i steps)\n        (podcast-volume target)\n        (loop (+ i 1) (podcast-volume (+ last (/ (- target last) (- steps i))))))))\n(fade 4 0.2)"
+     :note "Linear volume fade to 0.2 in 4 steps. Returns 0.2 at end.")
+    (:tier "master"
+     :code "(define (duck-for-notification)\n  (let ((prev (podcast-volume)))\n    (podcast-volume 0.2)\n    (list 'ducked-from prev)))\n(duck-for-notification)"
+     :note "Duck volume for a notification, returning the previous level so the caller can restore it. Returns (ducked-from 0.8)."))
+  :related ("podcast-play" "podcast-muted?" "podcast-state")
+  :caveats ("Values are clamped to [0, 1] silently; log if you need to detect clamping." "No mute — that's podcast-muted? territory.")
+  :drawbacks ("No per-channel volume." "No dB scale; linear only.")
+  :usecases ("Volume slider." "Auto-duck for interruptions." "Linear fade-out on chapter end.")
+  :learn (:concept "Get/set the player volume in [0, 1]. Read with no arg; write with one arg." :prerequisites () :progression "Learn podcast-muted? for boolean mute; then fade patterns.")
+  :+math (:algebra () :total #t :domain "() or number in [0,1] (out-of-range clamped)" :codomain "number in [0,1]")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Read: return podcast.volume. Write: clamp to [0,1], assign, return the clamped value."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-volume) = 0.8; (podcast-volume 0.5) = 0.5; (podcast-volume 1.5) = 1."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Get or set the player volume in [0,1]."
+             :long  "Get (no arg) or set the player volume; out-of-range values are clamped to [0,1]."
+             :for-ai "Volume control. Idempotent."
+             :for-kid "Turn the podcast louder or quieter, between 0 and 1.")))
+
+;; ─── podcast-muted? — mute predicate ─────────────────────────────
+
+(verb
+  :name "podcast-muted?"
+  :library "podcast"
+  :signature "(podcast-muted?) -> boolean"
+  :summary "True if the player is muted; #f otherwise."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-muted?)"
+     :note "Default not muted. Returns #f.")
+    (:tier "apprentice"
+     :code "(if (podcast-muted?) 'muted 'sound-on)"
+     :note "Branch on mute state. Returns 'sound-on.")
+    (:tier "intermediate"
+     :code "(list 'volume (podcast-volume) 'muted (podcast-muted?))"
+     :note "Report both together. Returns (volume 0.8 muted #f).")
+    (:tier "expert"
+     :code "(define (audible?)\n  (and (not (podcast-muted?)) (> (podcast-volume) 0)))\n(audible?)"
+     :note "Combined predicate: not muted AND non-zero volume. Returns #t.")
+    (:tier "master"
+     :code "(define (should-play?)\n  (cond ((podcast-muted?) 'muted-skip)\n        ((< (podcast-volume) 0.05) 'inaudible-skip)\n        (else 'play)))\n(should-play?)"
+     :note "Guard for a smart-skip auto-play policy. Returns 'play under defaults."))
+  :related ("podcast-volume" "podcast-state")
+  :caveats ("Reflects only the mute flag, not the volume level. Volume 0 is NOT the same as muted.")
+  :drawbacks ("No mute toggle verb — a host provides that (or use a wrapper over an internal flag).")
+  :usecases ("Guard audible actions." "Report player status.")
+  :learn (:concept "Predicate over the mute flag. Independent of volume level." :prerequisites () :progression "Pair with podcast-volume for full audibility check.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Return podcast.muted."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-muted?) = #f."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Confusing with volume=0.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "True if the player is muted."
+             :long  "Predicate over the mute flag; independent of volume."
+             :for-ai "Mute check. Read-only."
+             :for-kid "Is the podcast muted? Yes or no.")))
+
+;; ─── podcast-current — get currently loaded episode ──────────────
+
+(verb
+  :name "podcast-current"
+  :library "podcast"
+  :signature "(podcast-current) -> episode-alist | #f"
+  :summary "Return the currently loaded episode alist, or #f if nothing loaded."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-current)"
+     :note "Nothing loaded. Returns #f.")
+    (:tier "apprentice"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\" 'title \"Ep\")) (podcast-current))"
+     :note "Read after loading. Returns the alist (audio-url \"https://ex.com/e.mp3\" title \"Ep\").")
+    (:tier "intermediate"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\" 'title \"Ep\")) (obj-get (podcast-current) 'title))"
+     :note "Pluck a field from the current episode. Returns \"Ep\".")
+    (:tier "expert"
+     :code "(define (now-playing)\n  (let ((c (podcast-current)))\n    (if c\n        (list 'title (obj-get c 'title) 'url (obj-get c 'audio-url))\n        'nothing)))\n(now-playing)"
+     :note "Report a display shape. Returns 'nothing when nothing loaded.")
+    (:tier "master"
+     :code "(define (with-current fn)\n  (let ((c (podcast-current)))\n    (if c (fn c) 'no-episode)))\n(begin\n  (podcast-load (list 'audio-url \"https://ex.com/e.mp3\" 'title \"Ep\"))\n  (with-current (lambda (ep) (list 'echo (obj-get ep 'title)))))"
+     :note "Higher-order wrapper that guards against no-episode. Returns (echo \"Ep\")."))
+  :related ("podcast-load" "podcast-play" "podcast-state")
+  :caveats ("Returns the exact alist that was loaded; the shape depends on what the caller passed." "Returns #f when nothing loaded — check before pluck.")
+  :drawbacks ("No lifetime info (loaded-at, played-count).")
+  :usecases ("Now-playing display." "Extract fields for downstream verbs.")
+  :learn (:concept "Read-side accessor for the loaded episode. Returns #f as the missing sentinel." :prerequisites ("podcast-load") :progression "Learn obj-get to pluck fields; then podcast-state for the full snapshot.")
+  :+math (:algebra () :total #t :domain "()" :codomain "alist | #f")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Return podcast.current or #f."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: nothing loaded returns #f; after load returns the alist."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Return the currently loaded episode alist or #f."
+             :long  "Read the currently loaded episode; returns the alist passed to podcast-load, or #f."
+             :for-ai "Getter. Read-only."
+             :for-kid "Ask which podcast episode is loaded right now.")))
+
+;; ─── podcast-state — snapshot of player state ────────────────────
+
+(verb
+  :name "podcast-state"
+  :library "podcast"
+  :signature "(podcast-state) -> alist"
+  :summary "Return a snapshot alist of the player's current state (playing, muted, volume, position, guid, queue length)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-state)"
+     :note "Initial snapshot. Returns ((playing #f) (muted #f) (volume 0.8) (position 0) (current-guid #f) (queue-length 0)).")
+    (:tier "apprentice"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-state))"
+     :note "After play: playing #t, guid set. Returns ((playing #t) (muted #f) (volume 0.8) (position 0) (current-guid \"https://ex.com/e.mp3\") (queue-length 0)).")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (obj-get (podcast-state) 'playing))"
+     :note "Pluck the playing flag. Returns #t.")
+    (:tier "expert"
+     :code "(define (summary)\n  (let ((s (podcast-state)))\n    (list 'is-playing (obj-get s 'playing) 'at (obj-get s 'position))))\n(summary)"
+     :note "Compress state into a display shape. Returns (is-playing #f at 0).")
+    (:tier "master"
+     :code "(define (health-check)\n  (let ((s (podcast-state)))\n    (cond ((not (obj-get s 'current-guid)) 'no-episode)\n          ((obj-get s 'muted) 'muted-warning)\n          ((< (obj-get s 'volume) 0.1) 'low-volume-warning)\n          (else 'ok))))\n(health-check)"
+     :note "Composite health-check across state fields. Returns 'no-episode initially."))
+  :related ("podcast-load" "podcast-play" "podcast-volume" "podcast-muted?")
+  :caveats ("Snapshot only — the returned alist is a copy; changes don't propagate back." "State is per-REPL-session; each eval invocation starts fresh.")
+  :drawbacks ("No timestamps." "Not extensible from Scheme — the fields are fixed.")
+  :usecases ("Debug display." "Health check across multiple flags." "Reactive UI that re-reads on every tick.")
+  :learn (:concept "One-shot snapshot of the whole player state as an alist." :prerequisites ("obj-get") :progression "Use with obj-get to pluck fields; then compose with health-check patterns.")
+  :+math (:algebra () :total #t :domain "()" :codomain "alist of 6 pairs")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Builds an alist of ((playing bool) (muted bool) (volume num) (position num) (current-guid str|#f) (queue-length int))."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-state) returns the 6-pair alist."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Return an alist snapshot of the player state."
+             :long  "One-shot snapshot alist with playing, muted, volume, position, current-guid, queue-length."
+             :for-ai "State snapshot. Read-only."
+             :for-kid "Ask the player how it's doing — one big message with everything.")))
