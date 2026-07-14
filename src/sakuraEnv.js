@@ -21,6 +21,7 @@ import { installGame, makeGameState } from './game.js'
 import { installCommercial } from './commercial.js'
 import { loadAuthFromDisk } from './auth/store.js'
 import { registerReferenceVerbs } from './reference-register.js'
+import { installWiredVerbs } from './wired-verbs.js'
 
 /**
  * makeSakuraEnv — the full L0 → L4 stack. Returns a ready-to-eval Env.
@@ -57,6 +58,14 @@ export function makeSakuraEnv(fuel, {
   if (loadAuth) {
     try { loadAuthFromDisk() } catch { /* first-run OK */ }
   }
+
+  // L4.5 WIRED — additional impls that close the reference→env gap.
+  // Runs BEFORE the reference registrar so its stub pass sees these
+  // as bound and skips them. Covers cortex first-class wrappers,
+  // tick/*, beat/*, note/*, synth/*, ops/*, game/*, alg/* impls, and
+  // shaped descriptors for the long tail (podcast-*, canvas-*, etc.)
+  // so book examples read cleanly in standalone REPL.
+  installWiredVerbs(env, fuel)
 
   // L5 REFERENCE — every documented verb from SAKURA-SCHEME-REFERENCE.slat.
   // Curated impls replace stubs; anything without an impl gets a
