@@ -29,9 +29,10 @@
     ((:verbs-total 1168)
      (:verbs-with-examples 1168)
      (:examples-total 3573)
-     (:pass 2973)
-     (:fail 600)
-     (:pass-rate "83.2%"))
+     (:pass 2970)
+     (:fail 603)
+     (:pass-rate "83.1%")
+     (:note "Numbers drift by ~3 examples between runs — a handful of examples (~12) trip the default fuel budget (200000) nondeterministically depending on JS engine timing. Consider raising DEFAULT_FUEL in the sweep runner if these examples matter."))
 
   :book-fixes-applied
     ((:decision-017-entity-rename
