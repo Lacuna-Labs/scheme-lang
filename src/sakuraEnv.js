@@ -157,6 +157,14 @@ export function makeSakuraEnv(fuel, {
   // marcus-math-c-audit-2026-07-14.slat.
   installWiredVerbsMarcusMathC(env, fuel)
 
+  // L4.9 WIRED-ADA-A-H — Ada's lane (no-namespace a-h). Overrides the
+  // descriptor stubs for done, escalate, eval with real impls (sym
+  // heads and real dynamic evaluation, respectively). See
+  // docs/reports/lanes/ada-math-a-audit-2026-07-14.slat for lane
+  // scope. Rest of the lane stays as descriptor with :impl-status
+  // "deferred" in staging.
+  installWiredVerbsAdaAH(env, fuel)
+
   // L5 REFERENCE — every documented verb from SAKURA-SCHEME-REFERENCE.slat.
   // Curated impls replace stubs; anything without an impl gets a
   // clean-error stub with the reference contract embedded in the

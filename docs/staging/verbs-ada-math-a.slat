@@ -1,0 +1,272 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-ada-math-a.slat — Ada's authored verb entries
+;;
+;; Lane: no-namespace verbs, first letter a-h (95 verbs)
+;; Author: Ada (Lacuna Eng — docs architect + a-h lane)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;   Slices: :general, +math, +cs, +eng, +hacker, +ai, +meta
+;;
+;; Doctrine (Alfred): reference IS the language. We can't lie to people.
+;;   - If a verb's true semantics need a live host, entry ships
+;;     :impl-status "deferred" with :impl-notes explaining what the
+;;     host actually does. Never a lie.
+;;   - Every example REPL-verified via bin/sakura-scheme eval.
+;; ═══════════════════════════════════════════════════════════════
+
+;; ─── done — cadence-control terminal signal ───────────────────────
+
+(verb
+  :name "done"
+  :library "core"
+  :signature "(done [detail...]) -> [symbol . rest]"
+  :summary "Return a completion signal to end the current task or state cleanly."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(done)"
+     :note "The simplest completion signal. Returns the list `(done)` — a single symbol wrapped in a list, ready for the host loop to unwrap.")
+    (:tier "apprentice"
+     :code "(car (done))"
+     :note "Peek at the head — a real Scheme symbol, not a string. `(car (done))` returns the symbol `done`. The kid-from-North-Georgia test: nothing lies about its type.")
+    (:tier "intermediate"
+     :code "(define (handle-ping ctx)\n  (if (eq? (car ctx) 'ping)\n      (done)\n      (escalate 'unknown-message ctx)))\n(handle-ping '(ping 42))"
+     :note "In a state handler: `done` on the happy path, `escalate` when something's off. The two signals are the terminal shapes of the cadence protocol; the host reads their heads to decide what to do next.")
+    (:tier "expert"
+     :code "(define (with-attempts task attempts)\n  (cond ((>= attempts 3) (escalate 'max-retries task))\n        ((eq? task 'ready) (done))\n        (else 'try-again)))\n(with-attempts 'ready 0)"
+     :note "Retry pattern: after N attempts fail, `escalate` a max-retries kind. On the success branch, `done`. Both terminal — the driver stops iterating the cart when either signal is returned.")
+    (:tier "master"
+     :code "(define (unify results)\n  (cond ((null? results) (done))\n        ((eq? 'error (car (car results))) (escalate 'child-failed (car results)))\n        (else (unify (cdr results)))))\n(unify '((ok 1) (ok 2) (ok 3)))"
+     :note "Aggregator: walk a list of child results and decide the top-level cadence. The recursion terminates when the list is empty (done) or when a child reports an error (escalate). This is the shape most orchestration verbs collapse into."))
+  :related ("escalate" "next" "act" "wait")
+  :caveats ("The head of the returned list is a real Scheme symbol — `(car (done))` is `done`, not the string \"done\"."
+            "Terminal: no state runs after `done` returns. Do not put code after a `done` call and expect it to run in the cart's turn."
+            "Optional trailing values are collected into the list; some hosts read them as a result payload.")
+  :drawbacks ("No error information can be attached — use `escalate` for failures."
+              "Once returned, the host retires the cart; you cannot resume from the same point.")
+  :usecases ("End-of-happy-path signal in a cadence state function."
+             "Aggregator's success case after all children complete."
+             "Ping/pong handshake response for a simple protocol.")
+  :learn (:concept "The cadence protocol uses tagged lists to communicate task status back to the driver. `done` is the terminal success shape. `escalate` is the terminal failure shape. `next` is a continuation."
+          :prerequisites ("quote" "list" "car" "eq?")
+          :progression "After this, learn `escalate` for failure paths, then `next` for continuations that reschedule the cart.")
+
+  :+math
+    (:algebra ("Terminal in the cadence-signal monoid — no further composition possible on this branch."
+               "Isomorphic to `Right unit` in a coproduct with `escalate`.")
+     :total #t
+     :domain "zero or more values"
+     :codomain "list of one symbol + optional values")
+
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects ()
+     :pure #t
+     :special-form #f
+     :evaluation-order "applicative")
+
+  :+eng
+    (:impl-file "src/wired-verbs-ada-a-h.js"
+     :impl-notes "def('done', (...args) => [sym('done'), ...args]). Returns a list whose head is the Scheme symbol `done` (produced by sym() from reader.js) followed by any trailing detail values."
+     :permission "read"
+     :latency-class "sync-fast"
+     :tests "REPL-verified all 5 tiers: (done) => (done); (car (done)) => done; state-handler examples yield expected control-list."
+     :since "1.0")
+
+  :+hacker
+    (:primitive #t
+     :kin "Haskell's `pure ()` in a Left/Right monad; Erlang's `{ok, done}` tuple; Go's `return nil, nil`."
+     :history "Sakura cadence protocol (see BOOK-OF-SCHEME.md §cadence). Predates 1.0."
+     :hackable #t
+     :written-in "src/wired-verbs-ada-a-h.js — 1 line def, uses sym('done') for a real symbol head.")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("host driver retires the cart")
+     :consumes-from ("any state handler that reached its terminal branch")
+     :cardinality "one"
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes ("Assuming the head is a string. `(equal? (car (done)) \"done\")` is #f; `(eq? (car (done)) 'done)` is #t."
+                       "Writing code after `(done)` and expecting it to run in the same cart-turn.")
+     :when-not-to-use "When the task encountered a failure — use `escalate` instead.")
+
+  :meta
+    (:entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Return a completion signal to end the current task or state cleanly."))
+
+;; ─── escalate — cadence-control fatal signal ──────────────────────
+
+(verb
+  :name "escalate"
+  :library "core"
+  :signature "(escalate kind detail) -> [symbol symbol value]"
+  :summary "Signal a fatal condition and halt the current cart/task, propagating an error value to the host."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(escalate 'no-config 'shop-id-required)"
+     :note "Minimal shape: kind + detail. Both are symbols. The returned list is `(escalate no-config shop-id-required)` — three atoms, all with proper Scheme-symbol type.")
+    (:tier "apprentice"
+     :code "(let ((r (escalate 'bad-input 42)))\n  (list (car r) (cadr r) (caddr r)))"
+     :note "Destructure by hand. First element = `escalate` marker; second = error kind; third = detail. This is exactly what the driver's error path reads.")
+    (:tier "intermediate"
+     :code "(define (check items)\n  (cond ((null? items) (escalate 'no-items #f))\n        ((> (length items) 100) (escalate 'too-many (length items)))\n        (else 'ok)))\n(check '())"
+     :note "Two kinds of failure, one success. `escalate` communicates both the failure category (`no-items`, `too-many`) and the offending value (or #f when the failure is just an absence).")
+    (:tier "expert"
+     :code "(define (validate-order buyer items)\n  (cond ((null? buyer) (escalate 'missing-buyer #f))\n        ((null? items) (escalate 'missing-items #f))\n        (else (done))))\n(validate-order 'alice '((sku-a . 2)))"
+     :note "Multi-check validator: each cond arm either escalates with a specific kind, or falls through to `done`. This is the reference-quality shape for a state-machine's precondition check.")
+    (:tier "master"
+     :code "(define (process attempt ctx)\n  (cond ((>= attempt 3) (escalate 'max-retries (list 'ctx ctx 'attempts attempt)))\n        ((eq? 'ok (car ctx)) (done))\n        (else 'try-again)))\n(process 3 '(error timeout))"
+     :note "Attaching a rich payload to the failure: the detail can be any value. When the host logs the escalation, both the ctx snapshot AND the attempt count travel with the report."))
+  :related ("done" "next" "act")
+  :caveats ("The kind argument is coerced to a Scheme symbol; passing a string gives a symbol with that name."
+            "Terminal — no state runs after escalate. The cart is retired by the host."
+            "The detail can be any value (symbol, number, list, #f) — it's opaque to the driver.")
+  :drawbacks ("No stack trace attached — the caller is responsible for putting enough info in the detail to diagnose."
+              "Not a JS exception — it's a value the driver interprets. If the caller doesn't check the head, the escalation is silent.")
+  :usecases ("Reporting a validation failure with the offending value attached."
+             "Signalling a missing required resource with its name in the detail."
+             "Ending a retry loop when max-attempts is reached, with a diagnostic payload.")
+  :learn (:concept "The cadence protocol's failure terminal. Where `done` returns success, `escalate` returns failure. The two together are the sum type at the top of every cart's return."
+          :prerequisites ("quote" "list" "cond")
+          :progression "After escalate, learn `next` for continuations that keep the cart running. Then look at the host loop that reads these signals.")
+
+  :+math
+    (:algebra ("Terminal on the failure branch of the cadence-signal coproduct.")
+     :total #t
+     :domain "kind (symbol or string coerced to symbol) x detail (any value)"
+     :codomain "list of [symbol, symbol, value]")
+
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects ()
+     :pure #t
+     :special-form #f
+     :evaluation-order "applicative")
+
+  :+eng
+    (:impl-file "src/wired-verbs-ada-a-h.js"
+     :impl-notes "def('escalate', (kind, detail=null) => [sym('escalate'), (kind instanceof Sym ? kind : sym(String(kind))), detail]). Coerces string kinds to symbols for wire-shape uniformity."
+     :permission "read"
+     :latency-class "sync-fast"
+     :tests "REPL-verified all 5 tiers. (escalate 'k 'd) => (escalate k d) with real symbols. (car (escalate 'x 'y)) => escalate."
+     :since "1.0")
+
+  :+hacker
+    (:primitive #t
+     :kin "Haskell's `Left err` in an Either monad; Erlang's `{error, reason}` tuple; Go's `return nil, fmt.Errorf(...)`."
+     :history "Sakura cadence protocol (see BOOK-OF-SCHEME.md §cadence). Predates 1.0."
+     :hackable #t
+     :written-in "src/wired-verbs-ada-a-h.js — real symbol coercion.")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("host driver's error log, then cart retirement")
+     :consumes-from ("any state handler that hit a fatal precondition")
+     :cardinality "one"
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes ("Assuming escalate throws a JS exception. It doesn't — it returns a list value the driver interprets. A caller that ignores the head can silently drop the failure."
+                       "Passing a string kind and comparing with eq?. The impl coerces to symbol, but a raw string in the argument may or may not compare properly.")
+     :when-not-to-use "When the task can recover — use `next` to schedule another state instead.")
+
+  :meta
+    (:entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Signal a fatal condition and halt the current cart/task, propagating an error value to the host."))
+
+;; ─── eval — dynamic Scheme evaluation ─────────────────────────────
+
+(verb
+  :name "eval"
+  :library "core"
+  :signature "(eval expr [env]) -> value"
+  :summary "Evaluate a quoted Scheme expression dynamically at runtime."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(eval '(+ 1 2))"
+     :note "Evaluate a quoted arithmetic expression. The reader has already parsed the list; eval interprets it in the current environment and returns 3.")
+    (:tier "apprentice"
+     :code "(eval '(map (lambda (x) (* x x)) '(1 2 3 4)))"
+     :note "Evaluate a quoted higher-order form. The lambda is constructed at eval time and applied to each element. Returns (1 4 9 16).")
+    (:tier "intermediate"
+     :code "(define code '(let ((x 10) (y 20)) (+ x y)))\n(eval code)"
+     :note "Store code in a variable, evaluate later. This is the code-is-data principle: the list `(let ...)` is a first-class value that eval turns into computation.")
+    (:tier "expert"
+     :code "(define (build-adder n)\n  (eval (list 'lambda '(x) (list '+ 'x n))))\n((build-adder 5) 10)"
+     :note "Metaprogramming — build a lambda from data (a list) and evaluate it into a real closure. `build-adder` returns a function that adds n. Calling it with 10 returns 15. This is the SICP tower — programs building programs.")
+    (:tier "master"
+     :code "(define code (list 'let (list (list 'x 10))\n                  '(begin (set! x (* x 2))\n                          (set! x (+ x 1))\n                          x)))\n(eval code)"
+     :note "Build and evaluate a whole let-form with a sequence of mutations. This is the shape a code-generator would emit — a first-class value made of symbols and lists that reads as ordinary Scheme when eval'd. Returns 21."))
+  :related ("quote" "quasiquote" "read" "apply")
+  :caveats ("The optional second env argument defaults to the current environment. Passing an alternate env is a full-host feature; the standalone REPL uses the caller's env."
+            "Fuel is shared with the outer evaluation — a runaway eval'd form is bounded by the same budget as the caller."
+            "The expression must be a valid Scheme form (list, symbol, or atom). Passing arbitrary data will error when the interpreter can't dispatch it.")
+  :drawbacks ("Loses static analysis — a form built at runtime cannot be lint-checked before eval."
+              "Can shadow bindings in surprising ways if the code uses variable names that clash with the caller."
+              "Slower than direct evaluation because the interpreter must re-walk the AST.")
+  :usecases ("Building code from data (macros without the macro-expander)."
+             "Interactive REPL — every expression a user types is eval'd."
+             "Code generators — emit a list, then eval it to install the generated function."
+             "Live-coding animations where the definition changes at runtime.")
+  :learn (:concept "The keystone of Lisp: code is data. Any list that looks like a Scheme form can be evaluated to produce its value. This closes the circle from reader → data → evaluator → value."
+          :prerequisites ("quote" "list" "lambda")
+          :progression "After eval, look at `apply` (invoke a fn with a list of args), then macros (compile-time source transformation). Together they form the metaprogramming triad.")
+
+  :+math
+    (:algebra ("Interpreter fixpoint: eval . quote = id (on Scheme forms).")
+     :total #f
+     :domain "Scheme forms (lists, symbols, atoms)"
+     :codomain "Scheme values")
+
+  :+cs
+    (:complexity "time O(size of expr), space O(depth of expr) for the AST walk"
+     :effects (throw state)
+     :pure #f
+     :special-form #f
+     :evaluation-order "applicative — the expression argument is evaluated first (yielding the form), then that form is interpreted")
+
+  :+eng
+    (:impl-file "src/wired-verbs-ada-a-h.js"
+     :impl-notes "def('eval', (expr, evEnv) => ...). If expr is a string, parse via reader.parse and evaluate each form; else pass expr straight to interp.evaluate. Uses the caller's env by default."
+     :permission "read"
+     :latency-class "sync-slow"
+     :tests "REPL-verified all 5 tiers. (eval '(+ 1 2)) => 3; (eval '(map (lambda (x) (* x x)) '(1 2 3))) => (1 4 9)."
+     :since "1.0")
+
+  :+hacker
+    (:primitive #t
+     :kin "R7RS §5.7 eval; Common Lisp eval; Python's exec/eval."
+     :history "Every Lisp since McCarthy 1958 has this. It IS the language."
+     :hackable #t
+     :written-in "src/wired-verbs-ada-a-h.js — calls interp.evaluate directly.")
+
+  :+ai
+    (:raises ("unbound-symbol — if the form references a name not in env"
+              "arity — if a call has wrong arg count"
+              "fuel-exhausted — if the form loops long enough to burn the budget")
+     :pipes-into ("caller's value context")
+     :consumes-from ("quote, quasiquote, read, code generators")
+     :cardinality "one"
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes ("Forgetting to quote the form. `(eval (+ 1 2))` evaluates twice — the inner + runs, producing 3, then eval sees 3 and returns 3 (accidentally OK). But `(eval (list 'car '(1 2)))` differs from `(eval '(car (1 2)))` in ways that matter."
+                       "Sharing state via an eval'd form. The form runs in the same env; a `define` inside eval adds to the caller's env.")
+     :when-not-to-use "When the form is known at compile time — just write it directly. Eval's cost is only worth it for genuinely dynamic code.")
+
+  :meta
+    (:entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Evaluate a quoted Scheme expression dynamically at runtime."))
+
+;; End of pilot batch. Remaining 92 verbs in the a-h lane are tracked
+;; in docs/reports/lanes/ada-math-a-audit-2026-07-14.slat and will be
+;; added here as they get authored + verified. Never a stamp without
+;; a real REPL run.
