@@ -93,3 +93,72 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Sound one pitch for one duration. Bell-clean, single-voice."))
+
+(verb
+  :name "note/release"
+  :library "note"
+  :kind "mut"
+  :signature "(note/release) -> descriptor"
+  :summary "Cut any currently sustained note; returns the descriptor a live host uses to fire a release event."
+  :impl-status "wired-descriptor"
+  :explanation "note/release is the companion of note/strike: it ends whatever sustained pitch is currently sounding, immediately. Under a live host it fires a release into the audio engine; under the standalone REPL it returns the tagged list ('note/release) — the shape a host can consume. Paired with note/strike it lets you build staccato phrases, quick-cut articulations, and event-driven note-off responses. It is a no-op if no note is currently sustained; safe to call any time."
+  :examples (
+    (:tier "novice"
+     :code "(note/release)"
+     :note "Cut whatever's sounding. Returns (\"note/release\") — a single-element descriptor.")
+    (:tier "apprentice"
+     :code "(begin (note/strike (quote C4) 1) (note/release))"
+     :note "Ring middle C, then immediately release it. The release wins because it comes second in the begin.")
+    (:tier "intermediate"
+     :code "(for-each (lambda (p) (note/strike p 0.15) (note/release)) (list (quote C4) (quote E4) (quote G4)))"
+     :note "Play a C-major triad as three quick staccato hits: strike then release, three times. `for-each` returns undefined; the sound is the side effect.")
+    (:tier "expert"
+     :code "(define (staccato pitches dur) (for-each (lambda (p) (begin (note/strike p dur) (note/release))) pitches)) (staccato (list (quote C4) (quote D4) (quote E4) (quote F4)) 0.12)"
+     :note "A reusable `staccato` helper: give it a list of pitches and a duration, and it plays each pitch briefly then immediately cuts it. Same idea generalizes to any short-articulated phrase.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 4) (quote done) (begin (note/strike (list-ref (list (quote C4) (quote E4) (quote G4) (quote C5)) i) 0.1) (note/release) (loop (+ i 1)))))"
+     :note "An index-driven arpeggio: hit each degree of the tonic chord for 100ms, release, advance. Returns 'done when the four notes have played.")
+  )
+  :caveats
+    ("Cuts ALL currently sustained voices; there is no per-voice release."
+     "No fade curve — release is instantaneous under the live host. Combine with `audio/master-volume` steps for a fade-out."
+     "Calling it when nothing is playing is a no-op, not an error."
+     "The descriptor return in headless REPL always has arity zero: ('note/release), no arguments.")
+  :drawbacks
+    ("Global cut is coarse. You cannot release voice-2 while voice-1 keeps sustaining."
+     "No release curve exposed. Real ADSR release lives in `synth/orch`.")
+  :usecases
+    ("Play a staccato phrase from a plain list of pitches."
+     "Cut a long note in response to user input (spacebar, mouse-up)."
+     "Build a portamento-like effect: strike, release, strike a new pitch."
+     "Panic button: silence the current cell without stopping the audio subsystem.")
+  :related ("note/strike" "note/place-at" "audio/master-volume" "synth/orch" "audio/halt")
+  :learn
+    (:concept "Explicit voice termination — the counterpart to strike."
+     :prerequisites ("note/strike" "(core)/begin")
+     :progression "Pair note/release with note/strike to build staccato. Then discover that `synth/orch` lets you set a release curve at play time. Then move on to `audio/halt` for stopping a whole audio stream.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:174. Returns the zero-arg descriptor ('note/release). Host surfaces override this binding to emit a release event into the audio engine."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('note/release); apprentice=('note/release); intermediate=undefined; expert=undefined; master='done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("note/strike")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Calling release when nothing is sustained and expecting an error — it's a silent no-op. Expecting it to release only the last voice — it cuts everything."
+     :when-not-to-use "You want per-voice release control — use `synth/orch` with an explicit envelope. You want a fade — use `audio/master-volume`.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Cut the currently sustained note. Zero-arg. Idempotent."))
