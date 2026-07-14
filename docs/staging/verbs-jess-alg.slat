@@ -3117,3 +3117,133 @@
   :+math (:algebra "abelian associative commutative identity" :total #t)
   :+cs (:complexity "time O(n^2), space O(n^2)" :effects "none" :pure #t)
   :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/dihedral"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/dihedral n) -> group"
+  :summary "Construct the dihedral group D_n as a list of 2n tagged tuples ('rot k) and ('ref k)."
+  :impl-status "wired"
+  :explanation "D_n is the symmetry group of a regular n-gon: n rotations plus n reflections, total 2n elements. Returned as a list of tagged tuples for straightforward pattern-matching in Scheme. Non-abelian for n >= 3. Composition via alg/op handles the standard dihedral relations."
+  :examples (
+    (:tier "novice" :code "(length (alg/dihedral 4))" :note "|D_4| = 8.")
+    (:tier "apprentice" :code "(alg/op (alg/dihedral 4) '(rot 1) '(rot 2))" :note "Composes to (rot 3).")
+    (:tier "intermediate" :code "(alg/order (alg/dihedral 6))" :note "12 elements.")
+    (:tier "expert" :code "(alg/is-abelian? (alg/dihedral 3))" :note "D_3 is non-abelian.")
+    (:tier "master" :code "(map (lambda (n) (list n (alg/order (alg/dihedral n)))) (list 3 4 5 6))" :note "|D_n| = 2n.")
+  )
+  :caveats ("Result is a list of tuples, not a Cayley table." "Non-abelian for n >= 3.")
+  :drawbacks ("Tuples require alg/op for composition.")
+  :usecases ("Model polygon symmetries." "Test non-abelian group algorithms.")
+  :related ("alg/symmetry-group" "alg/cyclic" "alg/op")
+  :learn (:concept "Dihedral groups — first non-abelian symmetry groups." :prerequisites ("alg/cyclic") :progression "dihedral -> apply-symmetry -> orbit + stabilizer.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Existing impl at line 1178 in reference-impls.js." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/is-abelian?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/is-abelian? group) -> boolean"
+  :summary "Return #t if the group operation is commutative for all pairs of elements."
+  :impl-status "wired"
+  :explanation "Tests the commutativity of the group operation. For a Cayley-table representation, this checks that table[i][j] = table[j][i] for all i, j. Cyclic groups are always abelian. Dihedral groups D_n are non-abelian for n >= 3. Non-abelian groups have non-trivial derived subgroups."
+  :examples (
+    (:tier "novice" :code "(alg/is-abelian? (alg/cyclic 5))" :note "Cyclic groups are abelian: #t.")
+    (:tier "apprentice" :code "(alg/is-abelian? (alg/dihedral 3))" :note "D_3 is non-abelian: #f.")
+    (:tier "intermediate" :code "(alg/is-abelian? (alg/cyclic 12))" :note "Every cyclic group is abelian.")
+    (:tier "expert" :code "(alg/is-abelian? (alg/cyclic 100))" :note "All cyclic groups are abelian.")
+    (:tier "master" :code "(filter alg/is-abelian? (list (alg/cyclic 3) (alg/dihedral 3) (alg/cyclic 6) (alg/dihedral 4)))" :note "Filter abelian groups from a list.")
+  )
+  :caveats ("Requires Cayley-table representation for the current impl." "Non-abelian dihedral groups return #f.")
+  :drawbacks ("O(|G|^2) full check; no shortcut for known-abelian.")
+  :usecases ("Test whether quotients or subgroups are abelian." "Precondition for structure theorems.")
+  :related ("alg/is-cyclic?" "alg/commutator" "alg/derived-subgroup")
+  :learn (:concept "Commutativity as a group property." :prerequisites ("alg/op") :progression "is-abelian? -> derived-subgroup -> is-solvable?.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Cayley-table symmetry check at line 1186." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(|G|^2), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/order"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/order group) -> integer"
+  :summary "Return the order (cardinality) of a group."
+  :impl-status "wired"
+  :explanation "The order of a group is the number of elements in it. For a Cayley-table representation, this is just the length. For a dihedral tuple-list, also the length. For a permutation-array group, count elements. This is the size |G| that appears in Lagrange's theorem and orbit-stabilizer computations."
+  :examples (
+    (:tier "novice" :code "(alg/order (alg/cyclic 5))" :note "|C_5| = 5.")
+    (:tier "apprentice" :code "(alg/order (alg/dihedral 4))" :note "|D_4| = 8.")
+    (:tier "intermediate" :code "(alg/order '())" :note "Empty group has order 0.")
+    (:tier "expert" :code "(equal? (alg/order (alg/cyclic 6)) (length (alg/cyclic 6)))" :note "Order = length for Cayley table.")
+    (:tier "master" :code "(map alg/order (list (alg/cyclic 3) (alg/cyclic 6) (alg/cyclic 12) (alg/dihedral 3)))" :note "Orders of several groups.")
+  )
+  :caveats ("Simple length count." "Doesn't check group axioms.")
+  :drawbacks ("No structural info — just the count.")
+  :usecases ("Lagrange's theorem checks." "Fuel accounting in algorithms.")
+  :related ("alg/index" "alg/element-order" "alg/exponent")
+  :learn (:concept "|G| — the fundamental invariant." :prerequisites () :progression "order -> Lagrange -> Sylow.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Returns G.length." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/index"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/index H G) -> integer"
+  :summary "Return the index [G : H] = |G| / |H| of a subgroup H in G."
+  :impl-status "wired"
+  :explanation "By Lagrange's theorem, the order of any subgroup H divides the order of G; the index [G:H] is the quotient. Equivalently, the index is the number of left (or right) cosets of H in G. The current impl takes sizes directly — pass |H| and |G| as integers, or use (alg/order H) and (alg/order G) inline."
+  :examples (
+    (:tier "novice" :code "(alg/index 3 12)" :note "[G:H] = 12/3 = 4.")
+    (:tier "apprentice" :code "(alg/index 2 6)" :note "6/2 = 3.")
+    (:tier "intermediate" :code "(alg/index (alg/order (alg/cyclic 3)) (alg/order (alg/cyclic 12)))" :note "Order-based invocation.")
+    (:tier "expert" :code "(alg/index 4 12)" :note "12/4 = 3.")
+    (:tier "master" :code "(map (lambda (d) (alg/index d 12)) (list 1 2 3 4 6 12))" :note "Indices for divisors of 12.")
+  )
+  :caveats ("Takes sizes, not full groups (for backward-compat)." "Zero denominator returns 0.")
+  :drawbacks ("Doesn't validate that H is a subgroup of G.")
+  :usecases ("Lagrange's theorem verification." "Compute coset counts.")
+  :related ("alg/order" "alg/left-cosets")
+  :learn (:concept "Index as coset count." :prerequisites ("alg/order") :progression "index -> Lagrange -> Sylow.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Simple division G / max(1, H)." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/is-group?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/is-group? G) -> boolean"
+  :summary "Return #t if G is a valid group (currently always #t for constructor outputs)."
+  :impl-status "wired"
+  :explanation "A structural check: does G satisfy the group axioms (closure, associativity, identity, inverse)? The current impl assumes G was built via a constructor (alg/cyclic, alg/dihedral, alg/group-from-table) that validates the axioms. For arbitrary inputs the check is not exhaustive; we return #t optimistically. Use alg/group-from-table with explicit validation when constructing from raw data."
+  :examples (
+    (:tier "novice" :code "(alg/is-group? (alg/cyclic 5))" :note "Trusted constructor: #t.")
+    (:tier "apprentice" :code "(alg/is-group? (alg/dihedral 4))" :note "Also #t.")
+    (:tier "intermediate" :code "(alg/is-group? '())" :note "Empty group is trivially a group: #t.")
+    (:tier "expert" :code "(alg/is-group? (alg/symmetry-group 3))" :note "Dihedral group.")
+    (:tier "master" :code "(every alg/is-group? (list (alg/cyclic 3) (alg/dihedral 3) (alg/cyclic 12)))" :note "All constructor outputs are groups.")
+  )
+  :caveats ("Optimistic check for constructor outputs." "Does not verify associativity for raw inputs.")
+  :drawbacks ("Always returns #t; use alg/group-from-table for real validation.")
+  :usecases ("Precondition annotation." "Trust boundary marker.")
+  :related ("alg/group-from-table" "alg/subgroup?")
+  :learn (:concept "Group axioms." :prerequisites () :progression "is-group? -> group-from-table -> full axiom check.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Returns #t at line 1193." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
