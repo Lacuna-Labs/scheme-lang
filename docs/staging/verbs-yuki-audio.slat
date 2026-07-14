@@ -1112,3 +1112,210 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Cloud speech-to-text. Deferred. Pending-audio in REPL."))
+
+;; ─── synth/* — 9 verbs ───────────────────────────────────────────
+
+(verb
+  :name "synth/808"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/808 part [tune [decay [accent]]]) -> [status info]"
+  :summary "Trigger an 808-style drum voice with optional tuning, decay, and accent."
+  :impl-status "wired-pending"
+  :explanation "synth/808 is a drum voice trigger patterned on the classic Roland TR-808. Give it a voice name (a symbol: 'kick, 'snare, 'tom, 'hihat, 'cowbell, 'clap, etc.) and optionally tune (semitones), decay (seconds), and accent (0..1 velocity). Under a live host it fires the sound through the audio graph. In headless REPL there is no live 808 engine, so it returns [pending-audio {voice part tune decay accent}] — the shape a host consumes. Useful for building beats, rhythm games, and layered percussion."
+  :examples (
+    (:tier "novice"
+     :code "(synth/808 (quote kick))"
+     :note "Trigger a kick drum with defaults. In REPL: returns (pending-audio #<object>) — the shape a live 808 engine consumes.")
+    (:tier "apprentice"
+     :code "(synth/808 (quote snare) 0 0.3 0.8)"
+     :note "Trigger a snare at default tune, 0.3s decay, 0.8 accent. Four positional args build a specific drum hit.")
+    (:tier "intermediate"
+     :code "(map (lambda (v) (synth/808 v)) (list (quote kick) (quote snare) (quote hihat)))"
+     :note "Fire three drums at defaults. Under a live host they overlap; in REPL you get three pending-audio pairs.")
+    (:tier "expert"
+     :code "(define (kick-pattern beats) (for-each (lambda (b) (synth/808 (quote kick) 0 b 1)) beats)) (kick-pattern (list 0.2 0.3 0.2 0.4))"
+     :note "A reusable kick-pattern helper: fire kicks with a list of decay values as an accent envelope.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 4) (quote pattern-done) (begin (synth/808 (list-ref (list (quote kick) (quote snare) (quote kick) (quote snare)) i) 0 0.2 1) (loop (+ i 1)))))"
+     :note "Kick-snare-kick-snare — the fundamental groove. Advance an index, fire each drum in turn. Returns 'pattern-done.")
+  )
+  :caveats
+    ("Voice names are case-sensitive symbols; misspelled names still return pending-audio in REPL."
+     "tune is in semitones from the drum's natural pitch."
+     "decay is in seconds; very short values may click."
+     "Under a live host, requires a warm audio context (audio/listen 'ok).")
+  :drawbacks
+    ("Limited to the preset 808 palette; no custom samples via this verb."
+     "No pattern sequencing built in; you schedule each hit."
+     "Polyphony is host-dependent; overlapping hits may steal voices.")
+  :usecases
+    ("Rhythm games: fire drums on beat or on player input."
+     "Procedural beats: schedule patterns with `on-beat`."
+     "Sound effects: layer drums as impact accents in a game.")
+  :related ("synth/kit" "synth/chord" "synth/play" "on-beat" "audio/onset?")
+  :learn
+    (:concept "Drum-voice trigger with envelope shaping — the basic pattern for all synth/* percussion."
+     :prerequisites ("audio/listen" "(core)/for-each")
+     :progression "Fire one drum. Then combine two into a pattern. Then use `synth/kit` for pattern-string notation. Then move to `synth/play` for whole tracks.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:183-184. Returns [pending-audio {voice: '808', part, tune, decay, accent}]. Host binds to a live 808 emulator."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=(pending-audio #<object>); intermediate=3 pairs; expert=undefined; master='pattern-done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("on-beat" "audio/onset?")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Passing tune expecting a frequency in Hz — it's semitones from natural pitch. Setting decay=0 expecting a click — you get a barely-audible chirp instead."
+     :when-not-to-use "You need a whole track — use synth/play. You need pitched notes — use synth/orch.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "TR-808-style drum voice. Voice + optional tune/decay/accent. pending-audio in REPL."))
+
+(verb
+  :name "synth/kit"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/kit name pattern [voice]) -> [status info]"
+  :summary "Trigger a drum kit with a binary pattern string; each '1' hits, each '0' rests."
+  :impl-status "wired-pending"
+  :explanation "synth/kit is pattern-based percussion. Give it a kit name (a symbol like 'electronic, 'acoustic, 'live), a pattern string of '0' and '1' characters (\"1000100010001000\" for four-on-the-floor), and optionally a voice within the kit. Under a live host it plays the pattern at the current tempo. In REPL it returns [pending-audio {kit pattern voice}] — the shape a host consumes. Composes with synth/808 and synth/chord to build a full arrangement."
+  :examples (
+    (:tier "novice"
+     :code "(synth/kit (quote electronic) \"1000100010001000\" (quote kick))"
+     :note "Four-on-the-floor kick pattern. Returns (pending-audio #<object>) in REPL.")
+    (:tier "apprentice"
+     :code "(let ((r (synth/kit (quote acoustic) \"1010\" (quote snare)))) (car r))"
+     :note "Fire an on-off-on-off snare pattern; extract the status tag. Returns pending-audio.")
+    (:tier "intermediate"
+     :code "(map (lambda (v) (synth/kit (quote electronic) \"1000100010001000\" v)) (list (quote kick) (quote snare) (quote hihat)))"
+     :note "Layer three voices of the same kit with the same pattern; each gets its own trigger.")
+    (:tier "expert"
+     :code "(define (drum-layers kit patterns) (for-each (lambda (p) (synth/kit kit (cdr p) (car p))) patterns)) (drum-layers (quote acoustic) (list (cons (quote kick) \"1000100010001000\") (cons (quote snare) \"0010001000100010\") (cons (quote hihat) \"1010101010101010\")))"
+     :note "A reusable helper: give it a kit name and an alist of (voice . pattern) pairs; layer them all. Complementary rhythms combine to make a groove.")
+    (:tier "master"
+     :code "(let* ((patterns (list \"1000\" \"0010\" \"1010\")) (results (map (lambda (p) (synth/kit (quote electronic) p (quote kick))) patterns))) (list (quote patterns-fired) (length results)))"
+     :note "Fire three patterns sequentially; count the results. Real carts extend this to a live editor that swaps patterns mid-play.")
+  )
+  :caveats
+    ("Pattern is a string of '0'/'1'; other characters are treated as rest."
+     "Timing follows the current audio tempo; changing tempo mid-pattern may drift."
+     "Voice must exist in the kit; unknown voices still return pending-audio in REPL.")
+  :drawbacks
+    ("Binary notation — no velocity or dynamics per hit within the pattern string."
+     "Fixed length by string; no built-in looping."
+     "Cannot query or stop a playing pattern via this verb; use audio/halt if the host exposes a handle.")
+  :usecases
+    ("Rhythm-game backing tracks."
+     "Procedural beat generation."
+     "Layered drum-kit sequencing without manual per-hit scheduling.")
+  :related ("synth/808" "synth/chord" "synth/play" "audio/tempo")
+  :learn
+    (:concept "Pattern-string drum notation — a compact way to write rhythms."
+     :prerequisites ("synth/808")
+     :progression "Fire a single kick pattern. Then layer three voices. Then use `synth/808` for per-hit control. Then move to `synth/play` for full arrangements.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:187-188. Returns [pending-audio {kit, pattern, voice}]. Host binds to a live kit engine."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=pending-audio; intermediate=3 pairs; expert=undefined; master=(patterns-fired 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/tempo")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Using pattern chars other than '0'/'1'. Assuming the pattern loops — it does not; re-issue synth/kit for another cycle."
+     :when-not-to-use "You need per-hit velocity — use synth/808. You need note-level control — use synth/orch.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Pattern-string drum kit. Binary hit/rest notation. pending-audio in REPL."))
+
+(verb
+  :name "synth/chord"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/chord section pitches [duration [dynamic [articulation]]]) -> [status info]"
+  :summary "Play a chord (list of pitches) on a named orchestral section."
+  :impl-status "wired-pending"
+  :explanation "synth/chord plays a simultaneous cluster of pitches on a given section (a symbol: 'strings, 'brass, 'woodwinds, etc.). Pitches can be a list of pitch symbols ('C4 'E4 'G4) or MIDI numbers (60 64 67). Optional duration (seconds), dynamic ('mf, 'f, 'p), and articulation ('legato, 'staccato) shape the voicing. Under a live host it plays the chord through the section's timbre; in REPL it returns [pending-audio {section pitches duration dynamic articulation}]."
+  :examples (
+    (:tier "novice"
+     :code "(synth/chord (quote strings) (list (quote C4) (quote E4) (quote G4)))"
+     :note "C major triad on strings. Returns (pending-audio #<object>).")
+    (:tier "apprentice"
+     :code "(synth/chord (quote brass) (list 60 64 67) 2.0 (quote mf) (quote legato))"
+     :note "Two-second C major on brass, mezzo-forte, legato. All arguments used.")
+    (:tier "intermediate"
+     :code "(map (lambda (c) (synth/chord (quote strings) c 1)) (list (list (quote C4) (quote E4) (quote G4)) (list (quote D4) (quote F4) (quote A4)) (list (quote G3) (quote B3) (quote D4))))"
+     :note "Play three chords in sequence: I - ii - V - a fragment of a diatonic progression.")
+    (:tier "expert"
+     :code "(define (play-progression changes) (for-each (lambda (change) (synth/chord (car change) (cadr change) (caddr change))) changes)) (play-progression (list (list (quote strings) (list (quote C4) (quote E4) (quote G4)) 2) (list (quote brass) (list (quote G3) (quote B3) (quote D4)) 1.5)))"
+     :note "A reusable helper: given a list of (section pitches duration) tuples, play each. Extendable to include dynamics and articulation.")
+    (:tier "master"
+     :code "(let* ((progression (list (list (quote C4) (quote E4) (quote G4)) (list (quote D4) (quote F4) (quote A4)) (list (quote G3) (quote B3) (quote D4)) (list (quote C4) (quote E4) (quote G4)))) (chords-fired (map (lambda (p) (synth/chord (quote strings) p 1)) progression))) (list (quote i-vi-iv-i-fired) (length chords-fired)))"
+     :note "A four-chord loop: I - vi - IV - I on strings. The bread-and-butter of pop harmony. Returns (i-vi-iv-i-fired 4).")
+  )
+  :caveats
+    ("Section names are host-defined; unknown sections still return pending-audio in REPL."
+     "Pitches can be symbols or MIDI numbers; mixing styles in one call works but reads badly."
+     "Empty pitch list may return an error under a live host but pending-audio in REPL.")
+  :drawbacks
+    ("No voice-leading assistance; you specify raw voicings."
+     "Fixed sections; no custom timbres via this verb."
+     "No microtonal support; equal-tempered only.")
+  :usecases
+    ("Underscore composition."
+     "Chord progressions in a music-theory cart."
+     "Layer chords over synth/808 drums for a full arrangement.")
+  :related ("synth/orch" "synth/808" "synth/play" "synth/kit")
+  :learn
+    (:concept "Polyphonic voicing on a named section — the pattern for orchestral chord playback."
+     :prerequisites ("synth/orch")
+     :progression "Play one chord. Then a progression. Then layer with drums.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:185-186. Returns [pending-audio {section pitches duration dynamic articulation}]. Host binds to real section synths."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=(pending-audio #<object>); intermediate=3 pairs; expert=undefined; master=(i-vi-iv-i-fired 4)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Assuming voice-leading is handled — it is not. Passing a scalar pitch expecting an implicit chord."
+     :when-not-to-use "You want a single voice — use synth/orch. You want percussion — use synth/808 or synth/kit.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Chord on an orchestral section. Multi-voice, one-shot. pending-audio in REPL."))
