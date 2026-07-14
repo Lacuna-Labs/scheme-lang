@@ -14761,13 +14761,18 @@
   :name "matrix/+"
   :library "matrix"
   :kind "meta"
-  :signature "(matrix/+ A B) -> matrix | 'dim-mismatch"
-  :summary "Element-wise sum of two matrices of equal dimension; returns their sum, or signals 'dim-mismatch if shapes differ."
-  :explanation "Matrix addition is performed entry by entry: result[i][j] = A[i][j] + B[i][j]. Both matrices must have identical row and column counts. This is the natural notion of adding two linear maps pointwise. Exact arithmetic is preserved."
+  :signature "(matrix/+ A B) -> matrix"
+  :summary "Element-wise sum of two matrices."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Element-wise sum. Missing-cell values from a shorter-column row are treated as 0 (padding). Non-matrix inputs return (). Matrices are lists-of-rows-of-numbers like ((1 2)(3 4))."
+  :explanation "Matrix addition is performed entry by entry: result[i][j] = A[i][j] + B[i][j]. Both matrices must have identical row and column counts. This is adding two linear maps pointwise."
   :examples (
-    (:tier "novice" :code "(matrix/+ '[[1 2] [3 4]] '[[5 6] [7 8]])" :note "Result is [[6 8] [10 12]]; straightforward element-wise addition.")
-    (:tier "intermediate" :code "(let ((identity-2 (matrix/identity 2))\n      (shift '[[0 1] [0 0]]))\n  (matrix/+ identity-2 shift))" :note "Identity plus a shift matrix; demonstrates adding structured matrices.")
-    (:tier "expert" :code "(define (matrix-sum matrices)\n  (fold-left matrix/+ (matrix/identity (length (car matrices))) matrices))\n(matrix-sum '[[[1 0] [0 1]] [[2 0] [0 2]] [[3 0] [0 3]]])" :note "Fold matrix/+ over a list to sum many matrices; reduces to a single result matrix.")
+    (:tier "novice" :code "(matrix/+ '((1 2)(3 4)) '((5 6)(7 8)))" :note "Element-wise sum. Returns ((6 8)(10 12)).")
+    (:tier "apprentice" :code "(matrix/+ (matrix/identity 3) (matrix/identity 3))" :note "Adding identity to itself gives 2·I. Returns ((2 0 0)(0 2 0)(0 0 2)).")
+    (:tier "intermediate" :code "(matrix/+ (matrix/identity 2) '((0 1)(0 0)))" :note "Identity plus a right-shear: ((1 1)(0 1)) — the shear-by-1 matrix.")
+    (:tier "expert" :code "(define (matrix-sum matrices)\n  (let loop ((rest (cdr matrices)) (acc (car matrices)))\n    (if (null? rest) acc\n        (loop (cdr rest) (matrix/+ acc (car rest))))))\n(matrix-sum (list '((1 0)(0 1)) '((2 0)(0 2)) '((3 0)(0 3))))" :note "Fold matrix/+ over a list of matrices. Returns ((6 0)(0 6)) — three identity multiples summing to 6·I.")
+    (:tier "master" :code "(define (weighted-blend As weights)\n  ;; Given a list of matrices and matching scalar weights, return the\n  ;; weighted sum sum_i (w_i * A_i). Requires all A_i have equal shape.\n  (let loop ((rest-A (cdr As))\n             (rest-w (cdr weights))\n             (acc (matrix/scale (car As) (car weights))))\n    (if (null? rest-A) acc\n        (loop (cdr rest-A) (cdr rest-w)\n              (matrix/+ acc (matrix/scale (car rest-A) (car rest-w)))))))\n(weighted-blend (list '((1 0)(0 1)) '((0 1)(1 0))) (list 0.5 0.5))" :note "Weighted matrix blend — the linear-combination pattern. Half identity plus half swap-permutation gives ((0.5 0.5)(0.5 0.5)).")
   )
   :caveats ("Both arguments must have identical dimensions; no broadcasting." "Zero matrix can be obtained via (matrix/scale 0 (matrix/identity n))." "Addition is commutative and associative; order does not affect the result.")
   :drawbacks ("O(n²) time for n×n matrices; slower than in-place updates in imperative code." "Not useful for sparse matrices (every zero is still computed)." "For numeric stability with ill-conditioned matrices, consider linalg/solve or decomposition methods.")
@@ -14779,13 +14784,18 @@
   :name "matrix/-"
   :library "matrix"
   :kind "meta"
-  :signature "(matrix/- A B) -> matrix | 'dim-mismatch"
-  :summary "Element-wise difference of two matrices of equal dimension; returns A − B, or signals 'dim-mismatch if shapes differ."
-  :explanation "Matrix subtraction subtracts each entry: result[i][j] = A[i][j] − B[i][j]. Both matrices must have identical row and column counts. This is the inverse operation to matrix/+, enabling residual and error calculations. Exact arithmetic is preserved."
+  :signature "(matrix/- A B) -> matrix"
+  :summary "Element-wise difference A - B of two matrices."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Element-wise subtract. Missing-cell values pad with 0. Non-matrix inputs return ()."
+  :explanation "Matrix subtraction subtracts each entry: result[i][j] = A[i][j] − B[i][j]. Both matrices must have identical row and column counts. Inverse of matrix/+."
   :examples (
-    (:tier "novice" :code "(matrix/- '[[5 6] [7 8]] '[[1 2] [3 4]])" :note "Result is [[4 4] [4 4]]; straightforward element-wise subtraction.")
-    (:tier "intermediate" :code "(let ((observed '[[10 20] [30 40]])\n      (expected '[[10 18] [32 39]]))\n  (matrix/- observed expected))" :note "Residual matrix: difference between measurements and model; useful for error analysis.")
-    (:tier "expert" :code "(define (matrix-distance A B)\n  (let ((diff (matrix/- A B)))\n    (sqrt (fold-left + 0 (map (lambda (row) (fold-left + 0 (map (lambda (x) (* x x)) row))) diff)))))\n(matrix-distance '[[1 0] [0 1]] '[[1.001 0.01] [0.01 1.001]]))" :note "Frobenius norm via nested fold; measures similarity of two matrices as Euclidean distance.")
+    (:tier "novice" :code "(matrix/- '((5 6)(7 8)) '((1 2)(3 4)))" :note "Element-wise difference. Returns ((4 4)(4 4)).")
+    (:tier "apprentice" :code "(matrix/- (matrix/identity 3) (matrix/identity 3))" :note "A matrix minus itself gives the zero matrix. Returns ((0 0 0)(0 0 0)(0 0 0)).")
+    (:tier "intermediate" :code "(matrix/- '((10 20)(30 40)) '((10 18)(32 39)))" :note "Residual: observation - model. Returns ((0 2)(-2 1)) — small errors around the model.")
+    (:tier "expert" :code "(define (frobenius-sq A B)\n  (let ((diff (matrix/- A B)))\n    (let loop ((rows diff) (s 0))\n      (if (null? rows) s\n          (let inner ((row (car rows)) (rs 0))\n            (if (null? row)\n                (loop (cdr rows) (+ s rs))\n                (inner (cdr row) (+ rs (* (car row) (car row))))))))))\n(frobenius-sq '((1 0)(0 1)) '((1 0.1)(0.1 1)))" :note "Squared Frobenius distance between A and B via manual nested folds. Returns 0.02 (two 0.1² contributions).")
+    (:tier "master" :code "(define (residual-report obs mdl)\n  (let* ((res (matrix/- obs mdl))\n         (max-cell (apply max (apply append res))))\n    (list ':max-residual max-cell ':residual-matrix res)))\n(residual-report '((100 100)(100 100)) '((99 101)(100 100)))" :note "A report record built from the residual matrix. Returns (:max-residual 1 :residual-matrix ((1 -1)(0 0))) — the max cell-error and full residual for later inspection.")
   )
   :caveats ("Both arguments must have identical dimensions; no broadcasting." "Subtraction is not commutative: A − B ≠ B − A (in general)." "Zero matrix as result indicates A and B are identical (under exact equality via matrix/=).")
   :drawbacks ("O(n²) time for n×n matrices." "Does not optimize for sparse matrices." "Not directly useful for solving linear systems; use linalg/solve instead.")
@@ -14798,12 +14808,17 @@
   :library "matrix"
   :kind "meta"
   :signature "(matrix/->string M) -> string"
-  :summary "Convert a matrix to a human-readable string representation in the form \"[[a, b], [c, d]]\"."
-  :explanation "Formats a matrix as nested lists using square brackets and commas, making it readable for display or logging. Each row is wrapped in brackets, and the whole matrix is double-bracketed. Useful for debugging and printing results to the console or UI."
+  :summary "Convert a matrix to a compact parenthesized string of rows."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Formats as \"((r0-c0 r0-c1 ...) (r1-c0 r1-c1 ...) ...)\" — s-expression style, NOT bracket notation. This is intentional; the format round-trips through the reader with a leading quote."
+  :explanation "Formats a matrix as nested lists using parens and spaces, readable for display or logging. Each row is a parenthesized sublist; the whole matrix is one outer paren list."
   :examples (
-    (:tier "novice" :code "(matrix/->string '[[1 2] [3 4]])" :note "Returns the string \"[[1, 2], [3, 4]]\"; direct pretty-printing.")
-    (:tier "intermediate" :code "(display (matrix/->string (matrix/identity 3)))" :note "Prints the 3×3 identity matrix in human form; useful in a REPL or UI feedback.")
-    (:tier "expert" :code "(let ((A '[[1 2] [3 4]])\n      (B '[[5 6] [7 8]]))\n  (display (string-append \"A = \" (matrix/->string A) \"\\nB = \" (matrix/->string B))))" :note "Combines multiple matrices into a labeled report; demonstrates integration with display and string building.")
+    (:tier "novice" :code "(matrix/->string '((1 2)(3 4)))" :note "Returns the string \"((1 2) (3 4))\".")
+    (:tier "apprentice" :code "(matrix/->string (matrix/identity 3))" :note "Format the 3×3 identity for eye inspection. Returns \"((1 0 0) (0 1 0) (0 0 1))\".")
+    (:tier "intermediate" :code "(string-append \"before: \" (matrix/->string '((1 0)(0 1)))\n               \" after: \" (matrix/->string (matrix/scale 2 '((1 0)(0 1)))))" :note "Compose with matrix/scale to show before/after in a single log line.")
+    (:tier "expert" :code "(define (labeled-print label M)\n  (string-append label \" = \" (matrix/->string M)))\n(list (labeled-print \"A\" '((1 2)(3 4)))\n      (labeled-print \"B\" '((5 6)(7 8)))\n      (labeled-print \"A+B\" (matrix/+ '((1 2)(3 4)) '((5 6)(7 8)))))" :note "Named labeled-print helper builds a labeled inspection line per matrix. Composable, feeds into any display sink.")
+    (:tier "master" :code "(define (transcript-record ops)\n  ;; ops = list of (label matrix) pairs. Return a list of formatted lines.\n  (let loop ((rest ops) (acc '()))\n    (if (null? rest)\n        (reverse acc)\n        (let* ((pair (car rest))\n               (line (string-append (car pair) \" = \" (matrix/->string (cadr pair)))))\n          (loop (cdr rest) (cons line acc))))))\n(transcript-record\n  (list (list \"I\" (matrix/identity 2))\n        (list \"2I\" (matrix/scale 2 (matrix/identity 2)))\n        (list \"I+2I\" (matrix/+ (matrix/identity 2) (matrix/scale 2 (matrix/identity 2))))))" :note "Build a full derivation transcript. Three annotated lines documenting a linear-algebra calculation step by step.")
   )
   :caveats ("Output is a string; does not modify the matrix itself." "Entries are printed as-is; no formatting of decimal places or alignment." "Very large matrices produce very long strings; no truncation or summary mode.")
   :drawbacks ("No control over precision or column alignment." "Not suitable for programmatic parsing (use native matrix data structure instead)." "Large matrices become hard to read; consider printing a summary (dimensions, norm) instead.")
@@ -14816,12 +14831,17 @@
   :library "matrix"
   :kind "meta"
   :signature "(matrix/= A B) -> boolean"
-  :summary "Test exact element-wise equality of two matrices; returns true iff all entries match exactly."
-  :explanation "Compares two matrices entry by entry using exact equality (not floating-point tolerance). Returns true only if A and B have identical dimensions and every entry is exactly equal. Useful for testing, assertions, and conditional logic. Does not use approximate equality; use custom tolerance if needed."
+  :summary "Test exact element-wise equality of two matrices."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Dim check on rows and each row's cols, then strict === on every cell. No tolerance. Non-matrix inputs return #f."
+  :explanation "Compares two matrices entry by entry using exact equality (not floating-point tolerance). Returns #t only if A and B have identical dimensions and every entry is exactly equal."
   :examples (
-    (:tier "novice" :code "(matrix/= '[[1 2] [3 4]] '[[1 2] [3 4]])" :note "Returns true; the two matrices are identical.")
-    (:tier "intermediate" :code "(let ((M (matrix/identity 2)))\n  (matrix/= M (matrix/* M M)))" :note "Identity squared equals identity; demonstrates use in assertions.")
-    (:tier "expert" :code "(define (test-matrix-property A B)\n  (if (matrix/= (matrix/* A B) (matrix/* B A))\n      'commutative\n      'non-commutative))\n(test-matrix-property '[[1 0] [0 1]] '[[2 0] [0 2]])" :note "Conditional logic based on matrix equality; tests algebraic properties.")
+    (:tier "novice" :code "(matrix/= '((1 2)(3 4)) '((1 2)(3 4)))" :note "Identical matrices — returns #t.")
+    (:tier "apprentice" :code "(matrix/= '((1 2)(3 4)) '((1 2)(3 5)))" :note "One cell differs — returns #f. All-or-nothing.")
+    (:tier "intermediate" :code "(let ((M (matrix/identity 2)))\n  (matrix/= M (matrix/* M M)))" :note "Identity squared equals identity — the neutral-element property. Returns #t.")
+    (:tier "expert" :code "(define (test-commutativity A B)\n  (if (matrix/= (matrix/* A B) (matrix/* B A))\n      'commutes\n      'does-not-commute))\n(list (test-commutativity (matrix/identity 2) '((2 0)(0 2)))\n      (test-commutativity '((1 1)(0 1)) '((1 0)(1 1))))" :note "Test algebraic property. First pair (diagonal + identity) commutes; second (two shears in different directions) does not. Returns (commutes does-not-commute).")
+    (:tier "master" :code "(define (matrix-fixed-point? f seed max-iter)\n  ;; Return #t if applying f converges to a matrix that equals its own\n  ;; f-image within max-iter steps. Uses matrix/= for termination.\n  (let loop ((cur seed) (i 0))\n    (if (>= i max-iter) #f\n        (let ((next (f cur)))\n          (if (matrix/= next cur) #t\n              (loop next (+ i 1)))))))\n(matrix-fixed-point? (lambda (M) (matrix/* M M)) (matrix/identity 3) 5)" :note "Fixed-point detector: does iterating f eventually stabilize? Identity is a fixed point of matrix squaring, so returns #t on iteration 1.")
   )
   :caveats ("Uses exact equality; floating-point rounding may cause unexpected false results." "Different shapes return false immediately without checking entries." "Empty matrices or zero matrices compare equal iff both are exactly zero.")
   :drawbacks ("No tolerance for numerical error; small rounding differences fail the test." "Not suitable for comparing computed results from linalg operations (use approximate equality instead)." "Inefficient for very large matrices (O(n²) comparison).")
