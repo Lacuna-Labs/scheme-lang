@@ -1209,7 +1209,7 @@ export function makeBaseEnv(fuel) {
   // real impls — the pre-existing split in wired-verbs.js only reached
   // makeSakuraEnv, so the Jesse binary and Lacuna standalone were seeing
   // descriptor lies for alg/nr-P, alg/prime-form, alg/normal-form, etc.
-  installAlg(e)
+  installAlg(e, fuel)
 
   // ── L1.5 TIME — time/* extensions (nao-commerce lane, 2026-07-14).
   // Wall-clock time/delta + FRP-lite clause builders (time/during,

@@ -22,6 +22,7 @@
 // aliases exist for the older references but call through here.
 
 import { Sym } from './reader.js'
+import { apply, Closure } from './interp.js'
 
 const num = (x) => (typeof x === 'number' ? x : Number(x) || 0)
 const nanSym = new Sym('nan')
@@ -257,12 +258,21 @@ function elementInverse(G, x) {
 
 // ── the installer ───────────────────────────────────────────────────
 
-export function installAlg(env) {
+export function installAlg(env, fuel) {
   const def = (n, f, perm = 'read') => {
     // Only define if the name is not already bound (or is a stub).
     const existing = env.vars.get(n)
     if (typeof existing === 'function' && !existing._sakuraStub) return
     env.define(n, f, { perm })
+  }
+
+  // callAct(act, args) — invoke a Scheme callable (Closure or JS fn) with
+  // the given args. Used by verbs that accept a function argument
+  // (alg/orbit, alg/stabilizer, alg/action, alg/homomorphism-related).
+  const callAct = (act, args) => {
+    if (act instanceof Closure) return apply(act, args, fuel)
+    if (typeof act === 'function') return act(...args)
+    return undefined
   }
 
   // ── permutation basics ────────────────────────────────────────────
@@ -607,21 +617,14 @@ export function installAlg(env) {
   def('alg/op', (G, a, b) => algOp(G, a, b))
 
   def('alg/orbit', (G, x, act) => {
-    // BFS from x under act; act is a function (element, point) -> point
-    // that describes the group action.
     if (!Array.isArray(G)) return [x]
     const elements = groupElements(G)
-    // We need to call `act` as a Scheme function. In interp.js apply()
-    // is used, but we don't have direct access here. Simpler: iterate
-    // over group elements and call act as a JS function; the interp
-    // provides act wrapped so it's callable from JS.
     const orbit = [x]
     const seen = new Set([JSON.stringify(x)])
     for (const g of elements) {
       let y
-      try {
-        y = typeof act === 'function' ? act(g, x) : x
-      } catch { y = x }
+      try { y = callAct(act, [g, x]) } catch { y = x }
+      if (y === undefined) y = x
       const key = JSON.stringify(y)
       if (!seen.has(key)) { seen.add(key); orbit.push(y) }
     }
@@ -634,9 +637,8 @@ export function installAlg(env) {
     const out = []
     for (const g of elements) {
       let y
-      try {
-        y = typeof act === 'function' ? act(g, x) : x
-      } catch { y = x }
+      try { y = callAct(act, [g, x]) } catch { y = x }
+      if (y === undefined) y = x
       if (elementEqual(y, x)) out.push(g)
     }
     return out
@@ -1083,16 +1085,21 @@ export function installAlg(env) {
     return subgroupCount === 0
   })
 
+  const callPhi = (phi, arg) => {
+    if (phi instanceof Closure) return apply(phi, [arg], fuel)
+    if (typeof phi === 'function') return phi(arg)
+    return undefined
+  }
+
   def('alg/is-homomorphism?', (G, H, phi) => {
-    // phi is a JS function or a Scheme closure (already coerced by interp).
-    if (typeof phi !== 'function') return false
+    if (!(phi instanceof Closure) && typeof phi !== 'function') return false
     if (!Array.isArray(G) || !Array.isArray(H)) return false
     const elements = groupElements(G)
     for (const a of elements) {
       for (const b of elements) {
         try {
-          const lhs = phi(algOp(G, a, b))
-          const rhs = algOp(H, phi(a), phi(b))
+          const lhs = callPhi(phi, algOp(G, a, b))
+          const rhs = algOp(H, callPhi(phi, a), callPhi(phi, b))
           if (!elementEqual(lhs, rhs)) return false
         } catch { return false }
       }
@@ -1101,13 +1108,13 @@ export function installAlg(env) {
   })
 
   def('alg/kernel', (G, H, phi) => {
-    if (typeof phi !== 'function') return []
+    if (!(phi instanceof Closure) && typeof phi !== 'function') return []
     const elements = groupElements(G)
     const idH = elementIdentity(H)
     const out = []
     for (const g of elements) {
       try {
-        if (elementEqual(phi(g), idH)) out.push(g)
+        if (elementEqual(callPhi(phi, g), idH)) out.push(g)
       } catch { /* skip */ }
     }
     return out
@@ -1119,8 +1126,7 @@ export function installAlg(env) {
   })
 
   def('alg/isomorphism?', (G, H, phi) => {
-    // Bijective homomorphism check.
-    if (typeof phi !== 'function') return false
+    if (!(phi instanceof Closure) && typeof phi !== 'function') return false
     if (!Array.isArray(G) || !Array.isArray(H)) return false
     const gEls = groupElements(G)
     const hEls = groupElements(H)
@@ -1128,17 +1134,16 @@ export function installAlg(env) {
     // Injectivity
     const images = new Set()
     for (const g of gEls) {
-      try {
-        images.add(JSON.stringify(phi(g)))
-      } catch { return false }
+      try { images.add(JSON.stringify(callPhi(phi, g))) }
+      catch { return false }
     }
     if (images.size !== gEls.length) return false
     // Homomorphism check
     for (const a of gEls) {
       for (const b of gEls) {
         try {
-          const lhs = phi(algOp(G, a, b))
-          const rhs = algOp(H, phi(a), phi(b))
+          const lhs = callPhi(phi, algOp(G, a, b))
+          const rhs = algOp(H, callPhi(phi, a), callPhi(phi, b))
           if (!elementEqual(lhs, rhs)) return false
         } catch { return false }
       }
@@ -1154,7 +1159,8 @@ export function installAlg(env) {
     const out = []
     for (const g of elements) {
       let y
-      try { y = typeof act === 'function' ? act(g, x) : x } catch { y = x }
+      try { y = callAct(act, [g, x]) } catch { y = x }
+      if (y === undefined) y = x
       const k = JSON.stringify(y)
       if (!seen.has(k)) { seen.add(k); out.push(y) }
     }

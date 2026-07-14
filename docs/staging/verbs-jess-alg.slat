@@ -1519,3 +1519,270 @@
   :+ai
     (:deterministic #t
      :cacheable #t))
+
+
+;; ─── group constructors + structural queries ─────────────────────
+
+(verb
+  :name "alg/rosette"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/rosette n) -> list"
+  :summary "Computes the n rotation angles of an n-fold rosette (orbit under cyclic group C_n)."
+  :impl-status "wired"
+  :explanation "A rosette pattern with n-fold symmetry has n distinct rotation angles: 0, 2π/n, 4π/n, ..., 2(n-1)π/n. This verb returns the list of angles in radians. Use it to place n copies of a motif around a center, or to enumerate the discrete rotations that preserve an n-fold pattern (equivalent to the elements of the cyclic group C_n acting geometrically)."
+  :examples (
+    (:tier "novice" :code "(alg/rosette 4)"
+     :note "Four-fold rosette: (0 π/2 π 3π/2).")
+    (:tier "apprentice" :code "(length (alg/rosette 8))"
+     :note "An 8-fold rosette has 8 angles.")
+    (:tier "intermediate" :code "(alg/rosette 1)"
+     :note "A 1-fold rosette has one angle: 0. It's the trivial pattern (no rotation).")
+    (:tier "expert" :code "(map (lambda (a) (/ a (* 2 3.141592653589793))) (alg/rosette 6))"
+     :note "Normalize each angle by 2π; result is (0 1/6 2/6 3/6 4/6 5/6) — the fractions of a full turn.")
+    (:tier "master" :code "(define (equilateral-triangle-angles) (alg/rosette 3)) (equilateral-triangle-angles)"
+     :note "The three rotational angles that preserve an equilateral triangle: 0, 120°, 240°.")
+  )
+  :caveats
+    ("Angles are in RADIANS, not degrees."
+     "n = 0 returns the empty list; use n >= 1."
+     "Angles are equally spaced around the circle.")
+  :drawbacks
+    ("Doesn't include the reflection axes of D_n; only rotations."
+     "Returns raw numbers, not a group structure.")
+  :usecases
+    ("Place n copies of a motif around a center in a geometric drawing."
+     "Enumerate discrete rotations of a symmetric shape."
+     "Generate keyframes for an n-fold-symmetric animation.")
+  :related ("alg/dihedral" "alg/symmetry-group" "alg/cyclic")
+  :learn
+    (:concept "Rosette patterns and cyclic-group actions on the plane."
+     :prerequisites ("(core)/*")
+     :progression "rosette -> dihedral (adds reflections) -> wallpaper groups.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Generate 2πi/n for i in [0, n)."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/symmetry-group"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/symmetry-group n) -> dihedral-group"
+  :summary "Constructs the dihedral group D_n, the symmetry group of a regular n-gon."
+  :impl-status "wired"
+  :explanation "The dihedral group D_n is the symmetry group of a regular n-gon: n rotations plus n reflections, for a total of 2n elements. Returned as a list of tagged tuples: ('rot i) for the i-th rotation, ('ref i) for the i-th reflection. This is an alias for alg/dihedral with the same representation. Composition uses alg/op, which handles the dihedral shape."
+  :examples (
+    (:tier "novice" :code "(alg/symmetry-group 4)"
+     :note "The symmetry group of a square: 4 rotations + 4 reflections = 8 elements.")
+    (:tier "apprentice" :code "(length (alg/symmetry-group 6))"
+     :note "|D_6| = 12 — the symmetries of a regular hexagon.")
+    (:tier "intermediate" :code "(alg/order (alg/symmetry-group 3))"
+     :note "D_3 has order 6 — the symmetries of an equilateral triangle, isomorphic to S_3.")
+    (:tier "expert" :code "(alg/is-abelian? (alg/symmetry-group 5))"
+     :note "D_n is non-abelian for n >= 3; should return #f. But #t for n <= 2.")
+    (:tier "master" :code "(define D-orders (map (lambda (n) (list n (alg/order (alg/symmetry-group n)))) (list 1 2 3 4 5 6 7))) D-orders"
+     :note "Table of |D_n| for n = 1..7. Each row: (n |D_n|). Confirms |D_n| = 2n.")
+  )
+  :caveats
+    ("Alias of alg/dihedral; same tuple representation ('rot i) and ('ref i)."
+     "n = 0 returns the empty list — no symmetry to speak of."
+     "For n = 1, |D_1| = 2 (identity + one reflection).")
+  :drawbacks
+    ("Symbol tuples ('rot i) / ('ref i) require alg/op for composition; you can't just use * on them."
+     "Doesn't record the underlying n; consumers may need to infer it from |G|/2.")
+  :usecases
+    ("Enumerate symmetries of a regular polygon."
+     "Feed into alg/orbit or alg/stabilizer for geometric-symmetry analysis."
+     "Test group-theory theorems on non-abelian small groups.")
+  :related ("alg/dihedral" "alg/op" "alg/order" "alg/cyclic")
+  :learn
+    (:concept "Dihedral groups — the simplest non-abelian symmetry groups."
+     :prerequisites ("alg/cyclic")
+     :progression "symmetry-group -> alg/op on dihedral tuples -> full D_n arithmetic.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "List of ['rot',0..n-1] followed by ['ref',0..n-1]."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/op"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/op G a b) -> c"
+  :summary "Compute the product a·b in a group G, where G is a group structure (Cayley table, permutation group, or algebraic group)."
+  :impl-status "wired"
+  :explanation "The group operation, polymorphic over the group's representation. Detects the shape of G at runtime: for a Cayley table (list of lists of integers, e.g. from alg/cyclic), looks up G[a][b]. For a dihedral tuple list (from alg/dihedral or alg/symmetry-group), applies the dihedral composition rules. For an unknown shape, falls back to permutation composition on the operands. This is the primary way to compose group elements in a representation-agnostic way."
+  :examples (
+    (:tier "novice" :code "(alg/op (alg/cyclic 5) 2 3)"
+     :note "In Z/5Z: 2 + 3 = 5 mod 5 = 0. The op is additive because alg/cyclic returns the additive Cayley table.")
+    (:tier "apprentice" :code "(alg/op (alg/dihedral 4) '(rot 1) '(rot 2))"
+     :note "Two rotations compose to (rot 3) in D_4.")
+    (:tier "intermediate" :code "(alg/op (alg/dihedral 4) '(rot 1) '(ref 0))"
+     :note "A rotation followed by a reflection yields (ref 3). Non-abelian: swapping gives (ref 1).")
+    (:tier "expert" :code "(alg/op (alg/dihedral 4) '(ref 0) '(ref 0))"
+     :note "A reflection composed with itself yields the identity rotation (rot 0). Reflections are self-inverse.")
+    (:tier "master" :code "(define (multiply-many G elts) (fold-left (lambda (acc x) (alg/op G acc x)) (list 'rot 0) elts)) (multiply-many (alg/dihedral 4) (list '(rot 1) '(rot 1) '(rot 1) '(rot 1)))"
+     :note "Fold a series of D_4 rotations; 4 quarter-turns should return to identity (rot 0).")
+  )
+  :caveats
+    ("Shape-dispatch: Cayley table (int indices), dihedral (('rot i)/('ref i)), or permutation array."
+     "For Cayley tables, a and b must be VALID indices — no bounds check."
+     "Dihedral composition uses the standard relations; convention is left-to-right composition.")
+  :drawbacks
+    ("Runtime shape detection adds a small constant overhead per call."
+     "Not commutative in general — arg order matters.")
+  :usecases
+    ("Compose group elements without knowing the representation."
+     "Build higher-level group-theory algorithms that work over multiple group types."
+     "Verify closure axiom of a group by checking that alg/op produces group elements.")
+  :related ("alg/cyclic" "alg/dihedral" "alg/inverse" "alg/element-order")
+  :learn
+    (:concept "The group operation, polymorphic across representations."
+     :prerequisites ("alg/cyclic" "alg/dihedral")
+     :progression "alg/op -> alg/element-order -> alg/subgroup-gen -> full group theory.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Dispatch on isDihedral / isCayleyTable / fallback to permutation composition."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "associative"
+     :total #t)
+  :+cs
+    (:complexity "time O(1) for Cayley/dihedral, O(n) for permutation"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/orbit"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/orbit G x act) -> (list ...)"
+  :summary "Compute the orbit of a point x under the action of a group G, where the action is defined by a function act."
+  :impl-status "wired"
+  :explanation "The orbit of a point x under a group action is the set { act(g, x) : g in G }. This verb iterates over the elements of G, applies act to each (g, x), and collects the distinct images. The result is a list — the orbit — with duplicates removed by structural equality. When the action is transitive, the orbit is the whole target space; otherwise it partitions the space into disjoint orbits."
+  :examples (
+    (:tier "novice" :code "(alg/orbit (alg/cyclic 4) 0 (lambda (g x) x))"
+     :note "Trivial action (x is fixed by every g); orbit is (0).")
+    (:tier "apprentice" :code "(alg/orbit (alg/cyclic 4) 0 (lambda (g x) (modulo (+ g x) 4)))"
+     :note "Additive action on Z_4; orbit of 0 is the whole group (0 1 2 3).")
+    (:tier "intermediate" :code "(alg/orbit (alg/cyclic 6) 0 (lambda (g x) (modulo (* g x) 6)))"
+     :note "Multiplicative action on Z_6; orbit of 0 is just (0) since 0 * anything = 0.")
+    (:tier "expert" :code "(length (alg/orbit (alg/cyclic 6) 1 (lambda (g x) (modulo (* g x) 6))))"
+     :note "Orbit of 1 under multiplication in Z_6; that orbit is {0, 1, 2, 3, 4, 5} = full Z_6, so length 6.")
+    (:tier "master" :code "(define (orbit-sizes G act) (map (lambda (x) (length (alg/orbit G x act))) (list 0 1 2 3 4 5))) (orbit-sizes (alg/cyclic 6) (lambda (g x) (modulo (* g x) 6)))"
+     :note "Compute orbit sizes for every point under multiplication in Z_6.")
+  )
+  :caveats
+    ("act is a Scheme function (lambda (g x) -> new-x) — must be callable from JS."
+     "Duplicate detection uses JSON stringification — deep structural equality."
+     "The identity element is implicitly included in G, so x is always in its own orbit.")
+  :drawbacks
+    ("O(|G|) act calls per orbit — expensive for large G."
+     "Silent no-op if act raises: we skip and keep going.")
+  :usecases
+    ("Enumerate the orbit of a point under a group action."
+     "Test transitivity: orbit is the full space iff action is transitive."
+     "Feed into Burnside's lemma via fixed-point counts.")
+  :related ("alg/stabilizer" "alg/action" "alg/op")
+  :learn
+    (:concept "Orbits and the orbit-stabilizer theorem."
+     :prerequisites ("alg/op")
+     :progression "orbit -> stabilizer -> orbit-stabilizer theorem: |G| = |orbit| * |stabilizer|.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Iterate over groupElements(G); call act(g, x); dedupe by JSON key."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|), space O(|orbit|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/stabilizer"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/stabilizer group x) -> group"
+  :summary "Computes the stabilizer subgroup {g ∈ G : g·x = x} (elements that fix x)."
+  :impl-status "wired"
+  :explanation "The stabilizer of a point x under a group action is the set of group elements that leave x fixed. It's always a subgroup of G. By the orbit-stabilizer theorem: |G| = |orbit(x)| * |stabilizer(x)|. So the stabilizer measures 'how many symmetries preserve this point.' In geometric terms, it's the rotational-and-reflective symmetries that map the point to itself."
+  :examples (
+    (:tier "novice" :code "(alg/stabilizer (alg/cyclic 4) 0 (lambda (g x) x))"
+     :note "Trivial action: every g fixes x. Stabilizer is the whole group (0 1 2 3).")
+    (:tier "apprentice" :code "(alg/stabilizer (alg/cyclic 6) 0 (lambda (g x) (modulo (* g x) 6)))"
+     :note "Multiplicative action; stabilizer of 0 is the whole group since 0 * anything = 0.")
+    (:tier "intermediate" :code "(alg/stabilizer (alg/cyclic 6) 3 (lambda (g x) (modulo (* g x) 6)))"
+     :note "Stabilizer of 3 under multiplication in Z_6: {g : 3g mod 6 = 3} = {1, 3, 5}. Multiplying 3 by these gives 3, 9 mod 6 = 3, 15 mod 6 = 3.")
+    (:tier "expert" :code "(length (alg/stabilizer (alg/cyclic 4) 0 (lambda (g x) (modulo (+ g x) 4))))"
+     :note "Additive action on Z_4; stabilizer of 0 is just {0} — only the identity fixes 0.")
+    (:tier "master" :code "(define (verify-orbit-stabilizer G x act) (let* ((orb (length (alg/orbit G x act))) (stab (length (alg/stabilizer G x act)))) (list 'orbit orb 'stab stab 'product (* orb stab) 'G (length G)))) (verify-orbit-stabilizer (alg/cyclic 6) 3 (lambda (g x) (modulo (* g x) 6)))"
+     :note "Verify the orbit-stabilizer theorem: |orbit| * |stabilizer| should equal |G|.")
+  )
+  :caveats
+    ("act must be a Scheme function callable from JS."
+     "Result is always a subgroup of G — closed under composition and inverses.")
+  :drawbacks
+    ("O(|G|) — one act call per element."
+     "Doesn't build a Cayley table for the stabilizer; just returns the elements.")
+  :usecases
+    ("Compute point stabilizers in geometric symmetry problems."
+     "Verify the orbit-stabilizer theorem."
+     "Enumerate elements that preserve a specific feature.")
+  :related ("alg/orbit" "alg/action" "alg/op")
+  :learn
+    (:concept "Stabilizers as subgroups; orbit-stabilizer theorem."
+     :prerequisites ("alg/orbit")
+     :progression "stabilizer -> orbit-stabilizer theorem -> Burnside's lemma.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Iterate over groupElements(G); collect g where elementEqual(act(g, x), x)."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|), space O(|stabilizer|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
