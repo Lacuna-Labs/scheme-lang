@@ -18516,13 +18516,18 @@
   :name "stat/histogram"
   :library "stat"
   :kind "meta"
-  :signature "(stat/histogram data [num-bins]) -> (histogram (bins ((lo hi count) ...)) ...)"
-  :summary "Partition a dataset into equal-width bins, returning a structured histogram."
-  :explanation "Histograms divide numeric data into consecutive ranges (bins) of equal width, counting how many values fall into each range. This verb ingests a flat list of numbers and produces a histogram structure with bin boundaries and counts. Use it to summarize distributions, spot clusters, or prepare data for visualization. The result is an a-list keyed by 'bins' containing triplets of (lower-bound, upper-bound, count)."
+  :signature "(stat/histogram data [num-bins]) -> ((lo hi count) ...)"
+  :summary "Partition a dataset into equal-width bins; return a list of (lo hi count) triples."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "One pass to compute min/max; one pass to bin. Returns a flat list of (lo hi count) triples — NOT the a-list-wrapped 'histogram record older docs claimed. If min==max, returns one all-in-one triple. Default num-bins is 10. Empty input returns ()."
+  :explanation "Divide numeric data into consecutive equal-width bins over [min, max] and count how many values fall into each. Output is a flat list of triples (lo hi count), one per bin, in low-to-high order."
   :examples (
-    (:tier "novice" :code "(stat/histogram (list 1 2 3 4 5 6 7 8 9 10) 3)" :note "Divides 10 values into 3 equal-width bins; outputs bin triplets (lo hi count).")
-    (:tier "intermediate" :code "(let ((data (list 0.5 1.2 1.8 2.1 2.9 3.3 3.7)))\n  (stat/histogram data 4))" :note "Applies histogram to real-valued data; bin edges computed from actual range.")
-    (:tier "expert" :code "(define (summarize-measurements measurements)\n  (let ((hist (stat/histogram measurements 5)))\n    (list 'histogram hist 'counts (stat/histogram-counts hist))))\n(summarize-measurements (list 10 12 11 15 14 13 16 17 18 19))" :note "Combines histogram with histogram-counts accessor to extract just the count column for downstream analysis.")
+    (:tier "novice" :code "(stat/histogram '(1 2 3 4 5 6 7 8 9 10) 3)" :note "Ten values, 3 bins. Returns ((1 4 3) (4 7 3) (7 10 4)) — each bin is (lower upper count).")
+    (:tier "apprentice" :code "(stat/histogram '(5 5 5 5) 3)" :note "All identical values (degenerate). Returns ((5 5 4)) — one bin containing everything.")
+    (:tier "intermediate" :code "(stat/histogram '(0.5 1.2 1.8 2.1 2.9 3.3 3.7) 4)" :note "Real-valued data with 4 bins over [0.5, 3.7]. Returns four triples covering the range in equal-width bins.")
+    (:tier "expert" :code "(define (bin-of h x)\n  ;; Return the (lo hi count) triple whose bin contains x, or #f.\n  (let loop ((rest h))\n    (cond ((null? rest) #f)\n          (else (let* ((tri (car rest)) (lo (car tri)) (hi (cadr tri)))\n                  (if (and (>= x lo) (< x hi))\n                      tri\n                      (loop (cdr rest))))))))\n(bin-of (stat/histogram '(1 2 3 4 5 6 7 8 9 10) 3) 5)" :note "Locate the bin containing a query point. Returns (4 7 3) — 5 falls in the second bin [4, 7).")
+    (:tier "master" :code "(define (empirical-cdf hist)\n  ;; Given a histogram, compute the cumulative-count list — running total\n  ;; of counts per bin. Useful as a discrete CDF for plotting.\n  (let loop ((rest hist) (running 0) (acc '()))\n    (if (null? rest)\n        (reverse acc)\n        (let ((c (caddr (car rest))))\n          (loop (cdr rest) (+ running c) (cons (+ running c) acc))))))\n(empirical-cdf (stat/histogram '(1 2 3 4 5 6 7 8 9 10) 3))" :note "Empirical CDF: cumulative counts per bin. Returns (3 6 10) — running totals of the three bin counts.")
   )
   :caveats ("Bin count must be a positive integer; non-positive or non-integer triggers escalation." "Empty input list → 'nan (undefined mean)." "Bin boundaries are computed to cover [min, max] inclusive; floating-point rounding may affect edge values slightly." "All input values must be numbers; non-numeric data → 'nan.")
   :drawbacks ("Equal-width bins can hide structure when data clusters unevenly; consider stat/quartile for robust quantiles instead." "Bin count choice is manual; no automatic rule (Freedman–Diaconis, Sturges, etc.) is provided here." "Does not preserve original data; use the raw list alongside the histogram if you need both.")
@@ -18534,13 +18539,18 @@
   :name "stat/histogram-counts"
   :library "stat"
   :kind "meta"
-  :signature "(stat/histogram-counts histogram) -> (count ...)"
-  :summary "Extract the count column from a histogram a-list into a flat list."
-  :explanation "A histogram produced by stat/histogram is an a-list whose 'bins entry holds triplets (lo hi count). This verb scans that structure and returns only the counts, in order. It is scan-tolerant, meaning it gracefully handles malformed input by returning 'nan. Use this to access histogram counts for further statistical work (e.g., computing mode, checking bin uniformity, or feeding to plotting functions)."
+  :signature "(stat/histogram-counts data [num-bins]) -> (count ...)"
+  :summary "Return the flat count list produced by binning data into equal-width bins."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "TAKES RAW DATA + BIN COUNT, not a stat/histogram output as older docs claimed. Same signature as stat/histogram but returns only the counts. Empty input returns (). Default num-bins is 10."
+  :explanation "Bin the data into equal-width bins over [min, max] and return only the counts, in low-to-high bin order. This is the 'give me just the histogram bars' form."
   :examples (
-    (:tier "novice" :code "(let ((h (stat/histogram (list 1 2 3 4 5 6 7 8 9 10) 3)))\n  (stat/histogram-counts h))" :note "Pulls counts from the histogram created above; result is (c1 c2 c3) for the three bins.")
-    (:tier "intermediate" :code "(let ((h (stat/histogram (list 10 12 11 15 14 13 16 17 18 19) 4)))\n  (let ((counts (stat/histogram-counts h)))\n    (list 'bin-counts counts 'total (apply + counts))))" :note "Extracts counts, then sums them to verify total equals original dataset size.")
-    (:tier "expert" :code "(define (histogram-mode h)\n  (let ((counts (stat/histogram-counts h)))\n    (if (null? counts) 'nan\n      (apply max counts))))\n(histogram-mode (stat/histogram (list 1 1 1 2 3 4 4 4 4 5) 4))" :note "Uses counts to find the mode (largest bin); demonstrates integration with other stat operations.")
+    (:tier "novice" :code "(stat/histogram-counts '(1 2 3 4 5 6 7 8 9 10) 3)" :note "Three bins over ten values. Returns (3 3 4).")
+    (:tier "apprentice" :code "(stat/histogram-counts '(1 1 1 2 3 4 4 4 4 5) 4)" :note "Skewed data over 10 points with 4 bins spanning [1,5]. Returns (3 1 1 5) — heavy at the low and high ends.")
+    (:tier "intermediate" :code "(let ((counts (stat/histogram-counts '(10 12 11 15 14 13 16 17 18 19) 4)))\n  (list ':counts counts ':total (apply + counts)))" :note "Sum the counts to verify they equal the original sample size (10).")
+    (:tier "expert" :code "(define (modal-bin-count data bins)\n  (apply max (stat/histogram-counts data bins)))\n(modal-bin-count '(1 1 1 2 3 4 4 4 4 5) 4)" :note "Return the count in the largest bin — the 'height' of the mode. Returns 5 (the four 4s plus one 5 in the top bin).")
+    (:tier "master" :code "(define (bin-uniformity? data bins tol)\n  ;; Predicate: is the maximum bin count within tol of the minimum?\n  ;; Useful for smoke-testing that data are roughly uniform.\n  (let ((counts (stat/histogram-counts data bins)))\n    (<= (- (apply max counts) (apply min counts)) tol)))\n(list (bin-uniformity? '(1 2 3 4 5 6 7 8 9 10) 5 1)\n      (bin-uniformity? '(1 1 1 1 1 2 3 4) 4 1))" :note "Uniformity test with a tolerance. First data is nearly uniform (#t); second is heavily front-loaded (#f).")
   )
   :caveats ("Input must be a histogram produced by stat/histogram or with matching structure (a-list with 'bins key)." "Malformed input → 'nan (not an error); always check for this when chaining operations." "Order of counts matches bin order (left to right, low to high).")
   :drawbacks ("Does not return bin boundaries; if you need those, keep the full histogram or extract separately." "Scan-tolerance means silent conversion of bad input to 'nan; harder to debug structural mistakes.")
