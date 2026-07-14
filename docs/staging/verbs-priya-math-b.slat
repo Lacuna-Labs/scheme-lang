@@ -1600,3 +1600,256 @@
   :+ai (:raises (bad-insight) :cardinality one :deterministic #f :cacheable #f)
   :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
           :entry-summary (:short "Publish an insight." :long "Publish an insight (alist or string) to the feed." :for-ai "Append tagged." :for-kid "Share a smart thought about a podcast.")))
+
+;; ─── remaining podcast verbs ──────────────────────────────────────
+
+(verb
+  :name "podcast-episode-actions"
+  :library "podcast"
+  :signature "(podcast-episode-actions guid) -> list-of-actions"
+  :summary "Return recorded actions for a specific episode; empty list if none."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-episode-actions \"ep-42\")" :note "None recorded. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-record-episode-actions \"ep-42\" (list 'click 'skip)) (podcast-episode-actions \"ep-42\"))" :note "Read after record. Returns (click skip).")
+    (:tier "intermediate" :code "(begin (podcast-record-episode-actions \"a\" (list 'click)) (length (podcast-episode-actions \"a\")))" :note "Length. Returns 1.")
+    (:tier "expert"    :code "(begin (podcast-record-episode-actions \"a\" (list 'click 'skip 'like)) (member 'skip (podcast-episode-actions \"a\")))" :note "Membership. Returns (skip like).")
+    (:tier "master"    :code "(define (has-action? guid action) (and (member action (podcast-episode-actions guid)) #t)) (begin (podcast-record-episode-actions \"a\" (list 'like)) (has-action? \"a\" 'like))" :note "Predicate wrapper. Returns #t."))
+  :related ("podcast-record-episode-actions" "podcast-dismiss-episode-actions")
+  :caveats ("Returns () when guid unknown.")
+  :drawbacks ("No filter-by-action-type built in.")
+  :usecases ("Analytics." "UI state.")
+  :learn (:concept "Read per-episode action list." :prerequisites () :progression "Learn record + dismiss.")
+  :+math (:algebra () :total #t :domain "guid" :codomain "list of symbols")
+  :+cs (:complexity "O(1) lookup + O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return episode_actions[guid] || []."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Get recorded actions for an episode." :long "Return the list of actions logged against a guid." :for-ai "Read." :for-kid "See what happened with a podcast episode.")))
+
+(verb
+  :name "podcast-record-episode-actions"
+  :library "podcast"
+  :signature "(podcast-record-episode-actions guid actions) -> length"
+  :summary "Record a list of action symbols against an episode; overwrites prior."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-record-episode-actions \"ep-42\" (list 'click))" :note "One action. Returns 1.")
+    (:tier "apprentice" :code "(podcast-record-episode-actions \"ep-42\" (list 'click 'skip 'like))" :note "Multiple. Returns 3.")
+    (:tier "intermediate" :code "(begin (podcast-record-episode-actions \"a\" (list 'x)) (podcast-record-episode-actions \"a\" (list 'y 'z)) (podcast-episode-actions \"a\"))" :note "Overwrite. Returns (y z).")
+    (:tier "expert"    :code "(podcast-record-episode-actions \"a\" 'not-a-list)" :note "Non-list clamped to []. Returns 0.")
+    (:tier "master"    :code "(define (log-actions guid . acts) (podcast-record-episode-actions guid acts)) (log-actions \"e1\" 'skip 'like 'save)" :note "Variadic wrapper. Returns 3."))
+  :related ("podcast-episode-actions" "podcast-dismiss-episode-actions")
+  :caveats ("Overwrite semantics — prior actions lost." "Non-list argument silently becomes empty list.")
+  :drawbacks ("No append-mode variant.")
+  :usecases ("Analytics logging." "UI-triggered action recording.")
+  :learn (:concept "Overwrite the action list for a guid." :prerequisites () :progression "Learn read + dismiss.")
+  :+math (:algebra () :total #t :domain "guid + list" :codomain "count")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "episode_actions[guid] = list.slice()."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Record actions on an episode." :long "Overwrite the action list for a guid." :for-ai "Overwrite." :for-kid "Write down what you did with a podcast episode.")))
+
+(verb
+  :name "podcast-dismiss-episode-actions"
+  :library "podcast"
+  :signature "(podcast-dismiss-episode-actions guid) -> boolean"
+  :summary "Dismiss recorded actions for an episode; return #t if there were any."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-dismiss-episode-actions \"missing\")" :note "None to dismiss. Returns #f.")
+    (:tier "apprentice" :code "(begin (podcast-record-episode-actions \"a\" (list 'x)) (podcast-dismiss-episode-actions \"a\"))" :note "Had them. Returns #t.")
+    (:tier "intermediate" :code "(begin (podcast-record-episode-actions \"a\" (list 'x)) (podcast-dismiss-episode-actions \"a\") (podcast-episode-actions \"a\"))" :note "After dismiss. Returns ().")
+    (:tier "expert"    :code "(define (dismiss-all guids) (map podcast-dismiss-episode-actions guids)) (begin (podcast-record-episode-actions \"a\" (list 'x)) (dismiss-all (list \"a\" \"b\")))" :note "Bulk. Returns (#t #f).")
+    (:tier "master"    :code "(define (dismiss-and-report guid) (list guid 'had? (podcast-dismiss-episode-actions guid))) (dismiss-and-report \"nothing\")" :note "Report. Returns (\"nothing\" had? #f)."))
+  :related ("podcast-record-episode-actions" "podcast-episode-actions")
+  :caveats ("Returns #f when nothing to dismiss.")
+  :drawbacks ("No selective dismiss.")
+  :usecases ("Cleanup UI state." "Reset analytics for a guid.")
+  :learn (:concept "Delete actions for a guid; return whether any existed." :prerequisites ("podcast-record-episode-actions") :progression "Learn record + read.")
+  :+math (:algebra () :total #t :domain "guid" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Check existence; delete; return had-existence."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Dismiss episode actions." :long "Delete recorded actions; return whether there were any." :for-ai "Delete." :for-kid "Clear what you did with a podcast episode.")))
+
+(verb
+  :name "podcast-set-show-tier"
+  :library "podcast"
+  :signature "(podcast-set-show-tier show-id tier) -> tier"
+  :summary "Set the tier for a show (e.g., 'free, 'premium); returns the new tier."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-set-show-tier 'daily-tech 'premium)" :note "Set. Returns \"premium\".")
+    (:tier "apprentice" :code "(begin (podcast-set-show-tier 'a 'free) (podcast-set-show-tier 'a 'premium))" :note "Overwrite. Returns \"premium\".")
+    (:tier "intermediate" :code "(begin (podcast-set-show-tier 'a 'premium) (podcast-resolve-tier 'a))" :note "Round trip. Returns premium.")
+    (:tier "expert"    :code "(define (upgrade-all shows) (map (lambda (s) (podcast-set-show-tier s 'premium)) shows)) (upgrade-all (list 'a 'b 'c))" :note "Bulk. Returns (\"premium\" \"premium\" \"premium\").")
+    (:tier "master"    :code "(define (grant-tier user shows) (map (lambda (s) (list s (podcast-set-show-tier s (obj-get user 'tier)))) shows)) (grant-tier (list 'tier 'gold) (list 'a 'b))" :note "Per-user tier grant. Returns ((a \"gold\") (b \"gold\"))."))
+  :related ("podcast-resolve-tier")
+  :caveats ("Overwrites prior.")
+  :drawbacks ("No tier hierarchy.")
+  :usecases ("Paywall management." "User onboarding.")
+  :learn (:concept "Idempotent set of show → tier." :prerequisites () :progression "Learn resolve-tier for the read side.")
+  :+math (:algebra () :total #t :domain "show-id + tier" :codomain "tier-string")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "show_tiers[show-id] = tier."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Set the tier for a show." :long "Idempotent set of show → tier symbol." :for-ai "Set." :for-kid "Say what tier a podcast belongs to (like free or paid).")))
+
+(verb
+  :name "podcast-resolve-tier"
+  :library "podcast"
+  :signature "(podcast-resolve-tier show-id) -> tier-symbol"
+  :summary "Return the tier for a show; defaults to 'free if unset."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-resolve-tier 'unknown)" :note "Default. Returns free.")
+    (:tier "apprentice" :code "(begin (podcast-set-show-tier 'a 'premium) (podcast-resolve-tier 'a))" :note "After set. Returns premium.")
+    (:tier "intermediate" :code "(begin (podcast-set-show-tier 'a 'gold) (list (podcast-resolve-tier 'a) (podcast-resolve-tier 'b)))" :note "Mix. Returns (gold free).")
+    (:tier "expert"    :code "(define (require-tier show wanted) (equal? (podcast-resolve-tier show) wanted)) (begin (podcast-set-show-tier 'a 'premium) (require-tier 'a 'premium))" :note "Guard. Returns #t.")
+    (:tier "master"    :code "(define (unlock? show user-tier) (or (equal? user-tier 'premium) (equal? (podcast-resolve-tier show) 'free))) (unlock? 'random 'free)" :note "Tier compare. Returns #t (assuming random defaults to free)."))
+  :related ("podcast-set-show-tier")
+  :caveats ("Defaults to 'free.")
+  :drawbacks ("No tier hierarchy.")
+  :usecases ("Paywall gate.")
+  :learn (:concept "Read-side resolver." :prerequisites () :progression "Learn set + resolve pair.")
+  :+math (:algebra () :total #t :domain "show-id" :codomain "tier symbol")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return show_tiers[show-id] as Sym or Sym('free')."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Resolve tier for a show." :long "Return tier symbol; defaults to 'free." :for-ai "Read." :for-kid "See what tier a podcast belongs to.")))
+
+(verb
+  :name "podcast-sleep"
+  :library "podcast"
+  :signature "(podcast-sleep [seconds]) -> seconds | #f"
+  :summary "Set a sleep timer; nil / negative / zero clears; returns the timer or #f."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-sleep 600)" :note "10-minute sleep. Returns 600.")
+    (:tier "apprentice" :code "(begin (podcast-sleep 60) (podcast-sleep))" :note "Clear via no-arg. Returns #f.")
+    (:tier "intermediate" :code "(podcast-sleep 0)" :note "Zero clears. Returns #f.")
+    (:tier "expert"    :code "(podcast-sleep -5)" :note "Negative clears. Returns #f.")
+    (:tier "master"    :code "(define (snooze n) (podcast-sleep (* n 60))) (snooze 15)" :note "Minutes wrapper. Returns 900."))
+  :related ("podcast-pause")
+  :caveats ("Timer state is per-REPL session.")
+  :drawbacks ("No cancel-with-notification.")
+  :usecases ("Bedtime auto-pause.")
+  :learn (:concept "Set sleep timer; zero / nil clears." :prerequisites () :progression "Pair with pause.")
+  :+math (:algebra () :total #t :domain "() or number" :codomain "seconds | #f")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Set/clear sleep_timer; return current."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Set sleep timer." :long "Set or clear the sleep timer in seconds." :for-ai "Set." :for-kid "Tell the podcast to stop after some time.")))
+
+(verb
+  :name "podcast-save-brief"
+  :library "podcast"
+  :signature "(podcast-save-brief brief-alist) -> new-count | error-triple"
+  :summary "Save a brief (summary alist) into the briefs list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-save-brief (list 'guid \"a\" 'summary \"tldr\"))" :note "Save. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-save-brief (list 'guid \"a\")) (podcast-save-brief (list 'guid \"b\")))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(podcast-save-brief \"bad\")" :note "Bad type. Returns error triple.")
+    (:tier "expert"    :code "(define (brief-current tldr) (let ((c (podcast-current))) (if c (podcast-save-brief (list 'guid (obj-get c 'audio-url) 'summary tldr)) 'no-episode))) (begin (podcast-load (list 'audio-url \"https://x\")) (brief-current \"quick summary\"))" :note "Brief current. Returns 1.")
+    (:tier "master"    :code "(define (auto-brief-all guids summary) (map (lambda (g) (podcast-save-brief (list 'guid g 'summary summary))) guids)) (auto-brief-all (list \"a\" \"b\") \"todo\")" :note "Batch brief. Returns (1 2)."))
+  :related ("podcast-save-mini-pod")
+  :caveats ("Bad type returns error triple.")
+  :drawbacks ("No dedup.")
+  :usecases ("LLM-generated summaries.")
+  :learn (:concept "Append summary artifact." :prerequisites () :progression "Learn save-mini-pod as sibling.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-brief) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Save a brief." :long "Append a brief (summary alist) to briefs." :for-ai "Append." :for-kid "Save a quick summary of a podcast.")))
+
+(verb
+  :name "podcast-save-mini-pod"
+  :library "podcast"
+  :signature "(podcast-save-mini-pod mini-pod-alist) -> new-count | error-triple"
+  :summary "Save a mini-pod (short-form derived clip) into the mini-pods list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-save-mini-pod (list 'from \"a\" 'duration 30))" :note "Save. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-save-mini-pod (list 'from \"a\")) (podcast-save-mini-pod (list 'from \"b\")))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(podcast-save-mini-pod \"bad\")" :note "Bad type. Returns error triple.")
+    (:tier "expert"    :code "(define (mini-of guid dur) (podcast-save-mini-pod (list 'from guid 'duration dur))) (mini-of \"a\" 45)" :note "Wrapped. Returns 1.")
+    (:tier "master"    :code "(define (auto-minis guids dur) (map (lambda (g) (podcast-save-mini-pod (list 'from g 'duration dur))) guids)) (auto-minis (list \"a\" \"b\") 30)" :note "Batch. Returns (1 2)."))
+  :related ("podcast-save-brief")
+  :caveats ("Bad type returns error triple.")
+  :drawbacks ("No dedup.")
+  :usecases ("Sharable short-form.")
+  :learn (:concept "Append mini-pod artifact." :prerequisites () :progression "Learn save-brief as sibling.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-mini-pod) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Save a mini-pod." :long "Append a mini-pod (short-form clip) to the collection." :for-ai "Append." :for-kid "Save a short version of a podcast.")))
+
+(verb
+  :name "podcast-voice-overlay-enable"
+  :library "podcast"
+  :signature "(podcast-voice-overlay-enable [enable]) -> boolean"
+  :summary "Enable (or disable, if #f passed) the voice overlay feature."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-voice-overlay-enable)" :note "Enable. Returns #t.")
+    (:tier "apprentice" :code "(podcast-voice-overlay-enable #f)" :note "Disable. Returns #f.")
+    (:tier "intermediate" :code "(begin (podcast-voice-overlay-enable) (podcast-voice-overlay-enable #f))" :note "Toggle. Returns #f.")
+    (:tier "expert"    :code "(define (v-overlay-on?) (podcast-voice-overlay-enable)) (v-overlay-on?)" :note "Wrap. Returns #t.")
+    (:tier "master"    :code "(define (with-overlay enabled thunk) (podcast-voice-overlay-enable enabled) (thunk)) (with-overlay #t (lambda () (list 'go)))" :note "Scoped enable. Returns (go)."))
+  :related ()
+  :caveats ("Enable persists until changed.")
+  :drawbacks ("No granular per-episode setting.")
+  :usecases ("Feature toggle.")
+  :learn (:concept "Boolean state flip." :prerequisites () :progression "Learn other flag verbs.")
+  :+math (:algebra () :total #t :domain "() or boolean" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Set podcast.voice_overlay; return current."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Enable voice overlay." :long "Toggle the voice overlay feature." :for-ai "Toggle." :for-kid "Turn the voice overlay on or off.")))
+
+(verb
+  :name "podcast-active-constellations"
+  :library "podcast"
+  :signature "(podcast-active-constellations) -> list-of-alists"
+  :summary "Return the list of active listening constellations."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-active-constellations)" :note "Empty. Returns ().")
+    (:tier "apprentice" :code "(length (podcast-active-constellations))" :note "Length. Returns 0.")
+    (:tier "intermediate" :code "(map (lambda (c) (obj-get c 'name)) (podcast-active-constellations))" :note "Map over. Returns ().")
+    (:tier "expert"    :code "(define (any-active?) (> (length (podcast-active-constellations)) 0)) (any-active?)" :note "Predicate. Returns #f.")
+    (:tier "master"    :code "(define (constellation-report) (list 'active (length (podcast-active-constellations)))) (constellation-report)" :note "Report. Returns (active 0)."))
+  :related ()
+  :caveats ("Read-only snapshot.")
+  :drawbacks ("No filter.")
+  :usecases ("UI display.")
+  :learn (:concept "Read-side snapshot of active constellations." :prerequisites () :progression "Learn other query verbs.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of alists")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return active_constellations.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return active constellations." :long "Snapshot of currently active listening constellations." :for-ai "List." :for-kid "See which listening groups are active.")))
