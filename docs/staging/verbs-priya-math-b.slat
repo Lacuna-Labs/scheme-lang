@@ -237,3 +237,154 @@
         :long  "Return the total width of the drawing surface in pixels. Reads the current framebuffer; default REPL is 80x80, hosts vary."
         :for-ai "Read-only accessor of the framebuffer width. O(1). Not deterministic across hosts."
         :for-kid "Ask how wide the drawing canvas is right now. In your REPL it's 80.")))
+
+;; ─── pixels-tall — canvas height ───────────────────────────────────
+
+(verb
+  :name "pixels-tall"
+  :library "media"
+  :signature "(pixels-tall) -> number"
+  :summary "Return the total height of the drawing surface in pixels."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(pixels-tall)"
+     :note "Returns 80 in the default REPL — the framebuffer defaults to 80x80.")
+    (:tier "apprentice"
+     :code "(let ((h (pixels-tall))) (list 'half (/ h 2) 'full h))"
+     :note "Compute the vertical midpoint. Returns (half 40 full 80) with default dims.")
+    (:tier "intermediate"
+     :code "(let ((h (pixels-tall)))\n  (map (lambda (y) (list 'row y)) (list 0 (/ h 4) (/ h 2) (- h 1))))"
+     :note "Sample four y-positions: top, quarter, middle, bottom. Returns ((row 0) (row 20) (row 40) (row 79)).")
+    (:tier "expert"
+     :code "(define (is-in-bounds? x y)\n  (and (>= x 0) (< x (pixels-wide))\n       (>= y 0) (< y (pixels-tall))))\n(list (is-in-bounds? 5 5) (is-in-bounds? 100 5) (is-in-bounds? 5 -1))"
+     :note "Compose with pixels-wide for a total bounds check. Returns (#t #f #f). Common shape for a sprite's on-screen predicate.")
+    (:tier "master"
+     :code "(define (spawn-ladder count)\n  (let* ((h (pixels-tall))\n         (step (quotient h (+ count 1))))\n    (map (lambda (i) (list 'rung i (* i step)))\n         (range 1 (+ count 1)))))\n(spawn-ladder 4)"
+     :note "Evenly space N points vertically inside the surface. Returns ((rung 1 16) (rung 2 32) (rung 3 48) (rung 4 64)). Feed to (world/spawn ...) for a ladder."))
+  :related ("pixels-wide" "camera-frame" "card-screen-rect" "viewport")
+  :caveats ("Reads current framebuffer; hosts may resize between calls." "Default REPL fb is 80x80; browser and iOS may differ." "Returns 0 if no framebuffer is attached.")
+  :drawbacks ("No cache; hoist into a let for tight loops." "Not writable from Scheme; the host owns the value.")
+  :usecases ("Vertical centering." "Bounds check compositions with pixels-wide." "Evenly spacing N points along the vertical.")
+  :learn (:concept "Query the height of the current drawing surface in pixels. Read-only." :prerequisites () :progression "Pair with pixels-wide; then viewport for the visible portion under a camera transform.")
+  :+math
+    (:algebra ()
+     :total #t :domain "()"
+     :codomain "non-negative integer")
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects (state)
+     :pure #f)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Reads getMediaState().fb.h. Returns 0 if no fb."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (pixels-tall) = 80."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Confusing pixels with logical rows (divide by SUB for logical)."
+     :when-not-to-use "You need the logical row count.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Return the total height of the drawing surface in pixels."
+        :long  "Return the total height of the drawing surface in pixels. Reads the current framebuffer; default REPL is 80x80."
+        :for-ai "Read-only accessor of framebuffer height. O(1)."
+        :for-kid "Ask how tall the drawing canvas is right now.")))
+
+;; ─── interrupted — event-loop interruption predicate ──────────────
+
+(verb
+  :name "interrupted"
+  :library "core"
+  :signature "(interrupted) -> boolean"
+  :summary "True if the current handler has been interrupted by a higher-priority event; #f in a headless REPL."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(interrupted)"
+     :note "In a headless REPL, no interruption source exists. Returns #f.")
+    (:tier "apprentice"
+     :code "(if (interrupted)\n    'yielding\n    'keep-going)"
+     :note "Branch on interruption. In the REPL this always evaluates to 'keep-going. In a live host, a higher-priority event can flip it.")
+    (:tier "intermediate"
+     :code "(define (long-loop n)\n  (if (or (= n 0) (interrupted))\n      'done\n      (long-loop (- n 1))))\n(long-loop 100)"
+     :note "A cooperative loop that yields on interruption. Returns 'done. In headless REPL the interruption never fires so it runs to n=0.")
+    (:tier "expert"
+     :code "(define (checkpoint work)\n  (if (interrupted)\n      (list 'paused-at work)\n      (list 'completed work)))\n(map checkpoint (list 'step-1 'step-2 'step-3))"
+     :note "Attach the interruption state to each work unit. In headless REPL every element resolves to 'completed. In a host the state can toggle between calls.")
+    (:tier "master"
+     :code "(define (safe-fold fn init lst)\n  (define (go acc rest)\n    (cond ((null? rest) acc)\n          ((interrupted) (list 'partial acc rest))\n          (else (go (fn acc (car rest)) (cdr rest)))))\n  (go init lst))\n(safe-fold + 0 (list 1 2 3 4 5 6 7 8 9 10))"
+     :note "A fold that can be interrupted between elements, returning the partial accumulator plus remaining input. Returns 55 in the REPL; in a live host returns (partial <sum> <rest>) at the point of interruption."))
+  :related ("input-may-i?" "system/interrupt" "on-frame" "on-tick")
+  :caveats ("In headless REPL always returns #f; a live host wires it to an event source." "Not a real yield — merely a query. You still must return to yield control." "Value may change between calls in a live host; do not cache.")
+  :drawbacks ("No way to consume the interruption — you can only read it." "Not throttled; polling in a tight loop is legal but wasteful.")
+  :usecases ("Cooperative long-running loops that yield when a higher-priority event fires." "Chunked processing with checkpoint semantics.")
+  :learn (:concept "A read-only predicate that reports whether the current handler was interrupted. Cooperative — the handler decides what to do about it." :prerequisites ("if" "cond") :progression "Learn how to yield (return early with a partial result); then look at the event-loop docs for what triggers interruption.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs  (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "def('interrupted', () => false). Honest #f in a headless REPL where no interruption source exists."
+         :permission "read-only"
+         :latency-class "sync-fast"
+         :tests "REPL-verified: (interrupted) = #f."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Caching the result across ticks. It can flip between calls in a live host."
+        :when-not-to-use "You need to know WHY interruption happened — this only says whether.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "True if the current handler was interrupted by a higher-priority event."
+             :long  "True if the current handler was interrupted; #f in a headless REPL. Cooperative — the handler decides what to do."
+             :for-ai "Poll to check for pending interruption; return early to yield."
+             :for-kid "Ask if something more important came up. If yes, maybe stop what you're doing and check.")))
+
+;; ─── in-formation — character-formation state predicate ──────────
+
+(verb
+  :name "in-formation"
+  :library "motion"
+  :signature "(in-formation) -> boolean"
+  :summary "True if characters are currently arranged in a named formation; #f in headless REPL."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(in-formation)"
+     :note "In headless REPL no live characters exist. Returns #f.")
+    (:tier "apprentice"
+     :code "(if (in-formation) 'ready-to-march 'still-gathering)"
+     :note "Guard a march command on formation state. Returns 'still-gathering in the REPL.")
+    (:tier "intermediate"
+     :code "(define (start-parade)\n  (if (in-formation)\n      (list 'action 'march)\n      (list 'action 'wait 'reason 'not-in-formation)))\n(start-parade)"
+     :note "Formation-gated action. Returns (action wait reason not-in-formation).")
+    (:tier "expert"
+     :code "(define (formation-check retries)\n  (cond ((in-formation) 'go)\n        ((<= retries 0) 'give-up)\n        (else (formation-check (- retries 1)))))\n(formation-check 5)"
+     :note "Retry loop; in the REPL this always exhausts retries and returns 'give-up.")
+    (:tier "master"
+     :code "(define (choreograph steps)\n  (map (lambda (step)\n         (list step 'formation? (in-formation)))\n       steps))\n(choreograph (list 'assemble 'align 'march 'disperse))"
+     :note "Log formation state at each choreography step. In the REPL every entry pairs with #f; in a live host the state should progress from #f to #t to #f."))
+  :related ("motion-anchor-to-input" "motion-follow-input" "make-character" "on-frame")
+  :caveats ("Headless REPL has no live characters; always #f." "A live host wires this to the current character-registry snapshot." "Not throttled.")
+  :drawbacks ("No way to know WHICH formation." "No named-formation query — only the binary is/isn't.")
+  :usecases ("Gate parade / drill / choreography commands on formation state." "Log formation state at choreography checkpoints.")
+  :learn (:concept "Predicate over live-host character-formation state; #f in a headless REPL." :prerequisites () :progression "Learn make-character and the motion-* verbs; then look at how formations are declared and tracked in a full host.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs  (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "def('in-formation', () => false). Headless REPL has no live formation."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (in-formation) = #f."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Expecting true in the REPL. Live host required.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "True if characters are in formation; #f headless."
+             :long  "True if characters are currently arranged in a named formation. Headless REPL always returns #f."
+             :for-ai "Poll before triggering formation-gated actions."
+             :for-kid "Ask if everyone is in place. In your REPL nobody's there so it's always no.")))
