@@ -174,7 +174,7 @@ function renderIndex() {
       border: 1px solid var(--border); border-radius: 4px;
       padding: 3px 8px; font-family: var(--font); font-size: 12px; cursor: pointer; }
     #save-btn:hover { border-color: var(--accent); color: var(--accent); }
-    #save-btn::before { content: '\1F4BE'; margin-right: 4px; opacity: 0.7; }
+    #save-btn::before { content: '\\1F4BE'; margin-right: 4px; opacity: 0.7; }
     #app { display: grid; grid-template-columns: 220px 1fr 380px;
       grid-row: 2; height: 100%; overflow: hidden; }
     .pane { border-right: 1px solid var(--border); overflow: hidden; position: relative; }
