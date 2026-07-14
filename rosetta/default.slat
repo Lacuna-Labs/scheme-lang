@@ -1,0 +1,195 @@
+;; rosetta/default.slat
+;; Rosetta v0.0 — the canonical type registry + transformation rules.
+;; Ships with sakura-scheme. Fork it via ~/.config/sakura-scheme/rosetta.slat
+;; or <project>/.sakura/rosetta.slat or --rosetta <file>. We ignore your fork.
+
+(rosetta-version "0.0")
+
+;; ─────────────────────────────────────────────────────────────────────
+;; The type registry.  Every type used anywhere — in a filename, in a
+;; (:kind ...) field, in a rule — MUST be declared here or the reader
+;; rejects at load with a clear error.
+;; ─────────────────────────────────────────────────────────────────────
+
+(rosetta-types
+  ;; SOURCE types — what things ARE.
+  :book        "a curator scheme-book chapter or manifest"
+  :cart        "a cart — installable, runnable via act/dispatch"
+  :cortex      "a cortex slice — memories or knowledge"
+  :dewey       "a books.dewey entry — Sakura's card catalog"
+  :manifest    "book-level or repo-level metadata"
+  :corpus      "training corpus manifest (Merkle-signed)"
+  :mailbox     "supervisor / lane mailbox stream"
+  :log         "log-shape line-delimited events"
+  :style       "style-kit definitions"
+
+  ;; TARGET types — what things become after transformation.
+  :training    "SFT-pair-shaped extraction for model training"
+  :html        "HTML DOM tree intermediate form"
+  :terminal    "ANSI terminal render intermediate form"
+  :search      "search-index shape"
+  :llm-chunk   "chunked for RAG or fine-tune ingest"
+  :epub        "epub packaging intermediate"
+  :pdf-source  "print-ready SLAT for pdf pipeline")
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Canonical :kind palette.  Every book file may only carry these :kind
+;; values (unless in the :custom/* user namespace, which is passthrough).
+;; ─────────────────────────────────────────────────────────────────────
+
+(rosetta-kinds
+  ;; scheme-book kinds
+  :chapter         "the chapter shell"
+  :example         "runnable Scheme code (REPL cell)"
+  :code            "illustrative code, not runnable"
+  :cart-embed      "installable cart (Install button)"
+  :verb-doc        "verb spec — name, contract, arity, examples, tier, perm"
+  :repl-transcript "recorded REPL session for playback"
+  :output          "captured output paired with a preceding example"
+
+  ;; prose-book kinds
+  :prose           "paragraph (Sakura's voice or narrative)"
+  :sakura-says     "her direct-address callout box"
+  :dialogue        "training pair or exchange"
+  :quote           "attributed passage"
+  :question        "reflection prompt"
+
+  ;; shared
+  :figure          "diagram / image with :src or :data or :svg"
+  :cross-ref       "link to another book / chapter / verb"
+  :warning         "gotcha, common mistake, anti-pattern"
+  :aside           "optional deep-dive / softer commentary"
+
+  ;; living-page kinds (Part Two)
+  :hello-surface-96    "thumbnail-scale HelloSurface (96×96)"
+  :hello-surface-256   "medium-scale HelloSurface (256×256)"
+  :hello-surface-1024  "full-page hero HelloSurface (1024×1024)"
+  :sakura-chat         "chat widget slot"
+  :animation-hook      "tag-driven Sakura Scheme animates target element"
+  :interpreter         "embedded runtime slot"
+  :game-input          "capture kid input for a game"
+  :notes               "sidebar notes / ambient commentary"
+  :subtext             "softer aside / footnote-shape"
+  :title               "book / chapter title"
+  :subtitle            "sub-anything")
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Rosetta rules.  Each (rosetta '<target> ...) block declares how each
+;; :kind maps to the target shape.  Last-declaration-wins on conflict.
+;; ─────────────────────────────────────────────────────────────────────
+
+;; ────── TARGET: html ─────────────────────────────────────────────────
+;; Enough tag kinds handled to render a full book page as HTML.
+
+(rosetta 'html
+  (from :chapter          → (element "article" :class "chapter"
+                              :fields (:title → h1, :prose → prose-md-block)))
+  (from :prose            → (element "section" :class "prose" :md-to-html #t))
+  (from :sakura-says      → (element "blockquote" :class "sakura-says"))
+  (from :example          → (element "div" :class "repl-cell"
+                              :attrs (:data-lang :data-runnable)
+                              :children ((code-block :body) (button "Run") (pre :class "output"))))
+  (from :code             → (element "pre" :class "code" :attrs (:data-lang)))
+  (from :cart-embed       → (element "div" :class "cart-card"
+                              :attrs (:data-cart-id :data-installable)
+                              :children ((header "cart: {cart-id}") (code-block :body) (button "Install") (button "Run once"))))
+  (from :output           → (element "pre" :class "output"))
+  (from :verb-doc         → (element "section" :class "verb-doc"
+                              :fields (:name → code-inline, :contract → pre, :doc → prose-md, :examples → cascade)))
+  (from :figure           → (element "figure"
+                              :children ((img :src) (figcaption :caption))))
+  (from :cross-ref        → (element "a" :class "xref" :attrs (:data-target)))
+  (from :warning          → (element "aside" :class "warning"))
+  (from :aside            → (element "aside" :class "aside"))
+  (from :quote            → (element "blockquote" :class "quote"))
+  (from :question         → (element "aside" :class "question"))
+  (from :dialogue         → (element "div" :class "dialogue"
+                              :children ((div :user) (div :assistant))))
+  (from :title            → (element "h1" :class "book-title"))
+  (from :subtitle         → (element "h2" :class "book-subtitle"))
+  (from :subtext          → (element "aside" :class "subtext"))
+  (from :notes            → (element "aside" :class "notes"))
+  (from :hello-surface-96    → (element "div" :class "hs hs-96"    :attrs (:data-scope :data-seed :data-storage-key)))
+  (from :hello-surface-256   → (element "div" :class "hs hs-256"   :attrs (:data-scope :data-seed :data-storage-key)))
+  (from :hello-surface-1024  → (element "div" :class "hs hs-1024"  :attrs (:data-scope :data-seed :data-storage-key)))
+  (from :sakura-chat         → (element "div" :class "sakura-chat" :attrs (:data-model :data-context :data-position)))
+  (from :animation-hook      → (element "script" :type "text/sakura-anim" :attrs (:data-target :data-on)))
+  (from :interpreter         → (element "div" :class "interp" :attrs (:data-level)))
+  (from :game-input          → (element "div" :class "game-input" :attrs (:data-capture)))
+  (from :custom/*            → (element "div" :class "custom" :attrs (:data-custom-kind)))
+  (unknown                → (skip :log-once :warn)))
+
+;; ────── TARGET: training ─────────────────────────────────────────────
+;; SFT-pair extraction from books.  Books ≠ training at source;
+;; Rosetta does the shaping.
+
+(rosetta 'training
+  (from :chapter          → (skip))
+  (from :prose            → (as :training-record :chunkable-as :paragraph :weight 1))
+  (from :sakura-says      → (as :training-record :chunkable-as :whole      :weight 2))
+  (from :example          → (as :sft-pair
+                              :input  (compose-prompt current-chapter)
+                              :output (as-is :body)
+                              :weight 1))
+  (from :dialogue         → (as :sft-pair
+                              :input  :user
+                              :output :assistant
+                              :weight 1))
+  (from :cart-embed       → (as :cart :cart-id :cart-id :body :body))
+  (from :verb-doc         → (as :verb-fact :fields (:name :contract :doc)))
+  (from :warning          → (as :training-record :chunkable-as :whole :weight 1.5))
+  (from :code             → (skip))    ; not runnable, not training
+  (from :output           → (skip))
+  (from :figure           → (skip))
+  (from :cross-ref        → (skip))
+  (from :aside            → (as :training-record :chunkable-as :paragraph :weight 0.5))
+  (from :quote            → (skip))    ; attributed — do not use as her voice
+  (from :question         → (skip))
+  (from :hello-surface-*  → (skip))    ; interactive UI, not text
+  (from :sakura-chat      → (skip))
+  (from :animation-hook   → (skip))
+  (from :interpreter      → (skip))
+  (from :game-input       → (skip))
+  (from :custom/*         → (skip))
+  (unknown                → (skip)))
+
+;; ────── TARGET: terminal (skeleton for v0.1) ─────────────────────────
+
+(rosetta 'terminal
+  (from :chapter          → (box :double-line :title-bar #t))
+  (from :prose            → (indent 2 :wrap 78))
+  (from :sakura-says      → (indent 4 :prefix "  ✿ " :color :magenta))
+  (from :example          → (box :ansi-scheme-highlight :run-hint "type ,run to execute"))
+  (from :cart-embed       → (box :ansi :install-hint "type ,install to add"))
+  (from :warning          → (indent 2 :prefix "  ⚠ " :color :yellow))
+  (from :aside            → (indent 4 :dim #t))
+  (from :figure           → (skip :note "figure not rendered in terminal"))
+  (from :hello-surface-*  → (skip :note "hello-surface not available in terminal"))
+  (from :sakura-chat      → (skip))
+  (unknown                → (skip)))
+
+;; ────── TARGET: search (skeleton) ────────────────────────────────────
+
+(rosetta 'search
+  (from :chapter          → (index :title :prose-preview))
+  (from :prose            → (index :text :chapter-ref))
+  (from :example          → (index :body :chapter-ref :lang))
+  (from :cart-embed       → (index :cart-id :body :chapter-ref))
+  (from :verb-doc         → (index :name :contract :doc))
+  (from :sakura-says      → (index :text :chapter-ref))
+  (from :dialogue         → (index :user :assistant :chapter-ref))
+  (unknown                → (skip)))
+
+;; ────── TARGET: llm-chunk (skeleton) ─────────────────────────────────
+
+(rosetta 'llm-chunk
+  (from :chapter          → (chunk :header :section))
+  (from :prose            → (chunk :paragraph))
+  (from :example          → (chunk :whole :tag :code))
+  (from :sakura-says      → (chunk :whole :tag :voice))
+  (from :dialogue         → (chunk :whole :tag :turn))
+  (from :verb-doc         → (chunk :whole :tag :fact))
+  (unknown                → (skip)))
+
+;; ─────────────────────────────────────────────────────────────────────
+;; end of Rosetta v0.0 default.slat
