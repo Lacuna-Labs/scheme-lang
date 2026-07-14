@@ -582,3 +582,277 @@
      :progression "Compute C at a few (A, c). Then invert. Then combine with ops/mmc for the full time-in-queue picture.")
   :entry-provenance "authored")
 
+
+;; ─── Scheduling ────────────────────────────────────────────────────
+
+(verb
+  :name "ops/spt"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/spt tasks) -> ordered-tasks"
+  :summary "Shortest processing time first: sort tasks ascending by processing time."
+  :impl-status "wired"
+  :explanation "Given a list of tasks — each a scalar processing time or a list with processing time as its first element — returns the same tasks sorted by processing time ascending. SPT minimizes average flow time (equivalently, average completion time) on a single machine when all tasks are ready at time zero and preemption is disallowed. Also minimizes work-in-progress. This is one of the two or three most useful facts in operations scheduling: doing the short jobs first is not laziness, it's optimality."
+  :examples (
+    (:tier "novice"
+     :code "(ops/spt (list 5 2 8 1 4))"
+     :note "Sort by ascending processing time → (1 2 4 5 8). Do the 1-minute job first.")
+    (:tier "apprentice"
+     :code "(let ((tasks (list 10 3 7 1 5 8 2))) (ops/spt tasks))"
+     :note "Same idea with a longer list. The sort is stable so ties preserve input order.")
+    (:tier "intermediate"
+     :code "(ops/spt (list (list 5 (quote a)) (list 2 (quote b)) (list 8 (quote c)) (list 1 (quote d))))"
+     :note "Tasks with labels: each is (processing-time id). Result: (1,d)(2,b)(5,a)(8,c) — sorted by first element.")
+    (:tier "expert"
+     :code "(let* ((tasks (list (list 5 (quote job1)) (list 2 (quote job2)) (list 8 (quote job3)) (list 1 (quote job4)))) (sorted (ops/spt tasks)) (metrics (ops/sequence-metrics sorted))) (list (quote schedule) sorted (quote metrics) metrics))"
+     :note "Full pipeline: sort tasks by SPT, then compute makespan / total flow / max lateness. SPT minimizes total flow.")
+    (:tier "master"
+     :code "(define (compare-heuristics tasks) (let* ((spt-order (ops/spt tasks)) (edd-order (ops/edd tasks)) (spt-metrics (ops/sequence-metrics spt-order)) (edd-metrics (ops/sequence-metrics edd-order))) (list (quote spt) spt-metrics (quote edd) edd-metrics))) (compare-heuristics (list (list 4 10) (list 2 5) (list 6 8) (list 3 12)))"
+     :note "Head-to-head: SPT vs EDD on the same tasks. SPT wins on average flow, EDD wins on max lateness — the classic scheduling tradeoff.")
+  )
+  :caveats
+    ("Non-list inputs return the empty list."
+     "Tasks may be scalars (interpreted as processing time) or lists (first element = processing time)."
+     "Sort is stable, so ties preserve input order — useful when secondary tiebreakers matter."
+     "SPT is optimal for AVERAGE flow only, not for maximum lateness — for that use ops/edd.")
+  :drawbacks
+    ("Requires all tasks to be available at time zero; if release times differ, need a dynamic algorithm."
+     "No consideration of due dates — a critical late job may still get scheduled last."
+     "Does not model precedence constraints.")
+  :usecases
+    ("Prioritize a queue of short customer requests to minimize average response time."
+     "Pre-order jobs on a single-machine shop when average flow is the KPI."
+     "Baseline heuristic before adding due-date or precedence complexity.")
+  :related ("ops/edd" "ops/johnson" "ops/sequence-metrics" "ops/assign")
+  :learn
+    (:concept "The single-machine average-flow-optimum: sort by processing time ascending."
+     :prerequisites ("(core)/sort")
+     :progression "Sort by processing time. Then feed into ops/sequence-metrics. Then compare against ops/edd.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/edd"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/edd jobs) -> ordered-jobs"
+  :summary "Earliest due date first: sort jobs ascending by due date — minimizes maximum lateness on a single machine."
+  :impl-status "wired"
+  :explanation "Given a list of jobs where each job is a list (processing-time due-date …), returns them sorted ascending by due date. On a single machine with all jobs available at time zero and no preemption, EDD minimizes maximum lateness Lmax = max_i (completion_i − due_i). This is Jackson's theorem — one of the earliest results in scheduling. EDD does NOT minimize average flow time (that's SPT); it optimizes the tail of the lateness distribution."
+  :examples (
+    (:tier "novice"
+     :code "(ops/edd (list (list 3 10) (list 2 5) (list 4 7)))"
+     :note "Sort by due date → ((2 5) (4 7) (3 10)). The most urgent job goes first regardless of length.")
+    (:tier "apprentice"
+     :code "(let ((jobs (list (list 5 20) (list 3 8) (list 7 15) (list 2 6)))) (ops/edd jobs))"
+     :note "Four jobs sorted by due-date ascending. First column is proc-time, second is due.")
+    (:tier "intermediate"
+     :code "(let* ((jobs (list (list 4 15) (list 3 12) (list 5 20) (list 2 8))) (ordered (ops/edd jobs)) (metrics (ops/sequence-metrics ordered))) (list (quote order) ordered (quote max-lateness) (caddr metrics)))"
+     :note "Schedule by EDD, then read max-lateness from ops/sequence-metrics. EDD minimizes exactly that number.")
+    (:tier "expert"
+     :code "(define (edd-report jobs) (let* ((ordered (ops/edd jobs)) (m (ops/sequence-metrics ordered))) (list (quote schedule) ordered (quote makespan) (car m) (quote total-flow) (cadr m) (quote max-lateness) (caddr m)))) (edd-report (list (list 6 25) (list 4 10) (list 3 8) (list 5 20)))"
+     :note "Full EDD scheduling report — schedule, makespan, total flow, max-lateness. Business-facing.")
+    (:tier "master"
+     :code "(define (compare-orders jobs) (let* ((edd-o (ops/edd jobs)) (spt-o (ops/spt jobs)) (edd-m (ops/sequence-metrics edd-o)) (spt-m (ops/sequence-metrics spt-o))) (list (quote edd-max-late) (caddr edd-m) (quote spt-max-late) (caddr spt-m) (quote edd-flow) (cadr edd-m) (quote spt-flow) (cadr spt-m)))) (compare-orders (list (list 4 10) (list 2 5) (list 6 8) (list 3 12)))"
+     :note "EDD wins on max-lateness, SPT wins on total flow. The classic single-machine tradeoff — see both numbers side by side.")
+  )
+  :caveats
+    ("Jobs without a due date are treated as due-date 0 by the sort — put them first."
+     "Non-list inputs return the empty list."
+     "Sort is stable; ties preserve input order.")
+  :drawbacks
+    ("Does not minimize average flow — SPT does. Pick your objective."
+     "Requires known due dates; if a due date arrives late (dynamic), use a rolling EDD.")
+  :usecases
+    ("Meet-the-deadline scheduling on a single machine."
+     "Prioritize customer orders by promised ship date."
+     "Compare against SPT to educate an operator on the multi-objective nature of scheduling.")
+  :related ("ops/spt" "ops/johnson" "ops/sequence-metrics")
+  :learn
+    (:concept "Jackson's rule: EDD minimizes maximum lateness on a single machine."
+     :prerequisites ("(core)/sort" "understanding due dates + completion times")
+     :progression "Sort by EDD. Feed into ops/sequence-metrics. Compare with SPT.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/sequence-metrics"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/sequence-metrics tasks) -> (makespan total-flow max-lateness)"
+  :summary "Compute makespan, total flow time, and max lateness for a given single-machine sequence."
+  :impl-status "wired"
+  :explanation "Given a list of tasks in the intended processing order — each task a list (processing-time due-date) or a scalar processing time — computes three metrics. Makespan = total time to finish everything (sum of processing times, since there's one machine). Total flow = sum of completion times (proxy for average flow). Max lateness = max_i (completion_i − due_i); positive when jobs finish after their due dates. This is the universal scheduling scoreboard: feed any sequence in, get three numbers out."
+  :examples (
+    (:tier "novice"
+     :code "(ops/sequence-metrics (list (list 3 5) (list 2 8) (list 4 6)))"
+     :note "Process in order: complete at 3, 5, 9. Total flow 17. Lateness (3-5,5-8,9-6)=max=3. Makespan 9.")
+    (:tier "apprentice"
+     :code "(let ((sched (list (list 5 12) (list 3 8) (list 4 15) (list 2 10)))) (ops/sequence-metrics sched))"
+     :note "Four tasks in the given order. Makespan 14, total flow 32, max-lateness varies by due date alignment.")
+    (:tier "intermediate"
+     :code "(let* ((jobs (list (list 5 20) (list 3 8) (list 7 15) (list 2 6))) (edd (ops/edd jobs)) (metrics (ops/sequence-metrics edd))) (list (quote edd-sequence) edd (quote makespan) (car metrics) (quote max-lateness) (caddr metrics)))"
+     :note "EDD order then evaluate. Shows the sequencing decision separated from the metric evaluation.")
+    (:tier "expert"
+     :code "(define (best-of-two jobs) (let* ((spt (ops/sequence-metrics (ops/spt jobs))) (edd (ops/sequence-metrics (ops/edd jobs))) (spt-lmax (caddr spt)) (edd-lmax (caddr edd))) (if (< edd-lmax spt-lmax) (list (quote pick) (quote edd) edd) (list (quote pick) (quote spt) spt)))) (best-of-two (list (list 4 10) (list 6 8) (list 2 5)))"
+     :note "Pick the better of SPT and EDD by max-lateness. Simple two-heuristic ensemble.")
+    (:tier "master"
+     :code "(let* ((jobs (list (list 4 10) (list 2 5) (list 6 8) (list 3 12) (list 5 15))) (schedules (list (ops/spt jobs) (ops/edd jobs))) (metrics (map ops/sequence-metrics schedules))) (list (quote spt-metrics) (car metrics) (quote edd-metrics) (cadr metrics)))"
+     :note "Two-schedule dashboard: SPT vs EDD on the same job set. All three metrics for each. Business decides which to run.")
+  )
+  :caveats
+    ("Tasks are processed in the given input order — this verb does NOT reorder them."
+     "If a task has no due date, treated as due at +infinity (never late)."
+     "Assumes a single machine, no preemption, all tasks ready at time zero.")
+  :drawbacks
+    ("Says nothing about the OPTIMAL sequence — that's ops/spt / ops/edd / ops/johnson."
+     "Single machine only.")
+  :usecases
+    ("Score any candidate sequence with the same three numbers."
+     "Compare heuristics head-to-head."
+     "Compute the cost of a manually-imposed schedule (e.g. one dictated by external constraints).")
+  :related ("ops/spt" "ops/edd" "ops/johnson")
+  :learn
+    (:concept "Separate the scheduling decision (which order?) from the scoring (how good is it?)."
+     :prerequisites ("(core)/list" "understanding completion time = cumulative processing")
+     :progression "Compute metrics on a manual order. Then compare against SPT and EDD.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/johnson"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/johnson jobs m1-times m2-times) -> job-sequence"
+  :summary "Johnson's rule: optimal job sequence for a two-machine flow shop that minimizes makespan."
+  :impl-status "wired"
+  :explanation "The two-machine flow shop: every job passes through machine 1 first, then machine 2, in the same order for both. Johnson's rule (1954) finds the sequence that minimizes total makespan. Rule: split jobs into two sets — those where m1-time ≤ m2-time (Set A) go first in ascending m1-time order; those where m1-time > m2-time (Set B) go last in descending m2-time order. Concatenate A then B. This is the earliest polynomial-time result in scheduling and is genuinely optimal — not a heuristic."
+  :examples (
+    (:tier "novice"
+     :code "(ops/johnson (list (quote J1) (quote J2) (quote J3)) (list 4 8 2) (list 5 3 6))"
+     :note "Three jobs; Johnson orders (J3 J1 J2) — short m1 first, long m1 (with short m2) last.")
+    (:tier "apprentice"
+     :code "(let ((jobs (list (quote A) (quote B) (quote C) (quote D))) (m1 (list 5 2 7 3)) (m2 (list 3 8 4 6))) (ops/johnson jobs m1 m2))"
+     :note "Four jobs with mixed m1/m2 times. The result concatenates Set A (m1 ≤ m2, ascending m1) then Set B (m1 > m2, descending m2).")
+    (:tier "intermediate"
+     :code "(let* ((jobs (list 1 2 3 4)) (m1 (list 6 2 8 4)) (m2 (list 4 7 3 5)) (seq (ops/johnson jobs m1 m2))) (list (quote optimal-order) seq))"
+     :note "Numeric job ids — the algorithm doesn't care whether ids are symbols or numbers. The sequence is optimal for makespan.")
+    (:tier "expert"
+     :code "(define (makespan-2machine seq m1 m2) (let loop ((remaining seq) (t1 0) (t2 0)) (if (null? remaining) t2 (let* ((j (car remaining)) (i (- j 1)) (start1 t1) (end1 (+ start1 (list-ref m1 i))) (start2 (max end1 t2)) (end2 (+ start2 (list-ref m2 i)))) (loop (cdr remaining) end1 end2))))) (makespan-2machine (ops/johnson (list 1 2 3 4) (list 6 2 8 4) (list 4 7 3 5)) (list 6 2 8 4) (list 4 7 3 5))"
+     :note "Simulate the flow shop under Johnson's sequence to get the actual minimum makespan. Watch how m2 waits for m1 initially.")
+    (:tier "master"
+     :code "(let* ((jobs (list (quote alpha) (quote beta) (quote gamma) (quote delta) (quote epsilon))) (m1 (list 3 8 5 2 6)) (m2 (list 7 4 3 9 5)) (order (ops/johnson jobs m1 m2))) (list (quote jobs) jobs (quote m1) m1 (quote m2) m2 (quote johnson-order) order))"
+     :note "Full 5-job dashboard with named jobs. Show inputs alongside the Johnson-optimal sequence — the sequence tells you when to run each job.")
+  )
+  :caveats
+    ("Requires m1-times, m2-times to be parallel to jobs — length must match."
+     "Assumes both machines process one job at a time; buffer between machines is unlimited."
+     "Optimal for TWO machines only; three or more is NP-hard and needs a different approach.")
+  :drawbacks
+    ("No preemption, no priority classes."
+     "No blocking constraints — assumes unlimited buffer between the two machines."
+     "Cannot handle machine-specific processing times that violate the same-order constraint.")
+  :usecases
+    ("Bakery: mix (m1) then bake (m2). Which order to prep?"
+     "Fabrication: cut (m1) then finish (m2)."
+     "Classic OR curriculum example — the first optimal polynomial scheduling result.")
+  :related ("ops/spt" "ops/edd" "ops/sequence-metrics")
+  :learn
+    (:concept "Johnson's rule: the two-set split that yields a provably-optimal makespan for two-machine flow shops."
+     :prerequisites ("understanding of a flow shop with two stages")
+     :progression "Compute Johnson's order. Then simulate. Then compare against arbitrary orders — Johnson wins.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/assign"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/assign cost-matrix) -> assignment-vector"
+  :summary "Hungarian algorithm: minimum-cost bipartite matching for a square cost matrix (O(n³))."
+  :impl-status "wired"
+  :explanation "Solves the assignment problem: given an n × n cost matrix where cost[i][j] is the cost of assigning worker i to task j, find the bijection (each worker to exactly one task, each task to exactly one worker) that minimizes total cost. Uses the Kuhn-Munkres (Hungarian) algorithm with O(n³) time complexity. Returns a vector where assign[i] = j means worker i is assigned to task j. Nonsquare matrices return the sentinel 'nonsquare. The Hungarian algorithm is genuinely optimal — no heuristic approximation."
+  :examples (
+    (:tier "novice"
+     :code "(ops/assign (list (list 4 1 3) (list 2 0 5) (list 3 2 2)))"
+     :note "3-worker, 3-task problem. Optimal: worker 0→task 1 (cost 1), worker 1→task 0 (cost 2), worker 2→task 2 (cost 2). Total 5.")
+    (:tier "apprentice"
+     :code "(let ((costs (list (list 10 5 7) (list 6 8 4) (list 3 9 2)))) (ops/assign costs))"
+     :note "3×3 with different structure. Result gives the min-cost matching directly.")
+    (:tier "intermediate"
+     :code "(let* ((costs (list (list 10 5 7) (list 6 8 4) (list 3 9 2))) (assign (ops/assign costs)) (total (ops/assign-cost costs assign))) (list (quote assignment) assign (quote total-cost) total))"
+     :note "Combine ops/assign with ops/assign-cost to see both the matching and its total cost.")
+    (:tier "expert"
+     :code "(define (assign-workers costs) (let* ((assignment (ops/assign costs)) (total (ops/assign-cost costs assignment)) (pairs (let loop ((i 0) (a assignment) (acc (quote ()))) (if (null? a) (reverse acc) (loop (+ i 1) (cdr a) (cons (list (quote worker) i (quote task) (car a)) acc)))))) (list (quote optimal-assignment) pairs (quote total-cost) total))) (assign-workers (list (list 15 10 9 12) (list 9 15 10 11) (list 10 12 8 20) (list 7 12 13 15)))"
+     :note "4×4 problem with human-friendly labels: walk assignment and worker index in lockstep via a named-let (multi-list map in this Scheme uses only the first list).")
+    (:tier "master"
+     :code "(let* ((costs (list (list 12 8 9 15) (list 7 11 6 14) (list 10 5 12 8) (list 14 9 11 6))) (optimal (ops/assign costs)) (greedy (list 0 1 2 3)) (opt-cost (ops/assign-cost costs optimal)) (greedy-cost (ops/assign-cost costs greedy))) (list (quote optimal) opt-cost (quote greedy-diagonal) greedy-cost (quote savings) (- greedy-cost opt-cost)))"
+     :note "Optimal vs naive-diagonal: how much does the Hungarian save over just assigning worker i to task i? For a well-mixed cost matrix, quite a lot.")
+  )
+  :caveats
+    ("Requires SQUARE cost matrix. Nonsquare returns 'nonsquare — pad with large costs to force squareness."
+     "Costs may be negative — the Hungarian handles that."
+     "May be multiple optimal assignments; this returns one."
+     "Uses potentials internally; numerically stable for reasonable magnitudes.")
+  :drawbacks
+    ("O(n³) — impractical beyond n ≈ 500 in a single-cell REPL."
+     "Requires the full cost matrix in memory; no streaming."
+     "Does not handle soft constraints or 'preferences' — costs are hard.")
+  :usecases
+    ("Assign delivery drivers to routes minimizing distance."
+     "Match students to project topics minimizing preference disutility."
+     "Assign packing stations to orders minimizing walking distance."
+     "Warehouse: match SKUs to bin slots.")
+  :related ("ops/assign-cost" "ops/lp-solve" "ops/knapsack")
+  :learn
+    (:concept "Bipartite matching with dual variables; each worker + task gets a potential, and the reduced cost graph reveals the match."
+     :prerequisites ("understanding of a cost matrix" "bipartite graph intuition")
+     :progression "Solve small instances by hand. Then use ops/assign. Then combine with ops/assign-cost to verify.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/assign-cost"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/assign-cost cost-matrix assignment) -> total-cost"
+  :summary "Total cost of a given worker→task assignment under the cost matrix."
+  :impl-status "wired"
+  :explanation "Given the same n × n cost matrix as ops/assign plus an assignment vector (where assign[i] is the task assigned to worker i), sums cost[i][assign[i]] across all workers. Useful for evaluating any assignment — an optimal one from ops/assign, a heuristic one, a manually-imposed one, or a pre-existing one you want to score. Also accepts a list of (worker task) pairs as an alternative assignment format. Never validates that the assignment is a valid bijection; garbage in, garbage out. Companion to ops/assign, but useful on its own."
+  :examples (
+    (:tier "novice"
+     :code "(ops/assign-cost (list (list 4 1 3) (list 2 0 5) (list 3 2 2)) (list 1 1 2))"
+     :note "Assignment 0→1, 1→1, 2→2. Costs 1+0+2 = 3. (This assignment is invalid — task 1 has two workers — but we still sum honestly.)")
+    (:tier "apprentice"
+     :code "(let ((costs (list (list 5 8 3) (list 6 4 7) (list 9 2 5))) (assign (list 2 1 0))) (ops/assign-cost costs assign))"
+     :note "Diagonal-flip assignment 0→2, 1→1, 2→0. Costs 3+4+9 = 16.")
+    (:tier "intermediate"
+     :code "(let ((costs (list (list 4 1 3) (list 2 0 5) (list 3 2 2)))) (let ((opt (ops/assign costs)) (naive (list 0 1 2))) (list (quote opt-cost) (ops/assign-cost costs opt) (quote naive-cost) (ops/assign-cost costs naive))))"
+     :note "Compare optimal Hungarian assignment against the naive diagonal. Optimal wins.")
+    (:tier "expert"
+     :code "(define (score-candidates costs candidates) (map (lambda (c) (list (quote assign) c (quote cost) (ops/assign-cost costs c))) candidates)) (score-candidates (list (list 3 5 1) (list 6 2 4) (list 7 3 5)) (list (list 0 1 2) (list 2 1 0) (list 1 0 2)))"
+     :note "Score multiple candidate assignments against the same cost matrix. Useful when a downstream system suggests a few options and you want to pick.")
+    (:tier "master"
+     :code "(let* ((costs (list (list 8 6 4 2) (list 5 3 7 1) (list 9 4 2 6) (list 3 8 5 7))) (opt (ops/assign costs)) (opt-cost (ops/assign-cost costs opt)) (naive (list 0 1 2 3)) (naive-cost (ops/assign-cost costs naive)) (savings (- naive-cost opt-cost)) (savings-pct (/ (* 100 savings) naive-cost))) (list (quote optimal) opt-cost (quote naive) naive-cost (quote savings-pct) savings-pct))"
+     :note "Full report: optimal vs naive, absolute savings, percentage savings. This is what a project scheduler sees when they run the optimizer for the first time.")
+  )
+  :caveats
+    ("Does NOT validate assignment as a bijection — allows duplicates or missing tasks."
+     "Assignment vector length should match worker count; extra entries beyond that are ignored, missing entries are treated as (row not counted)."
+     "Also accepts (worker task) pairs as an alternative shape.")
+  :drawbacks
+    ("Purely evaluative — cannot optimize. Use ops/assign for that."
+     "No feasibility diagnosis; won't warn about invalid assignments.")
+  :usecases
+    ("Score an assignment produced by ops/assign."
+     "Score a heuristic assignment against the optimal."
+     "Score a manually-crafted assignment (e.g., 'senior worker X must handle task Y')."
+     "Sensitivity: score the optimal assignment under perturbed cost matrices.")
+  :related ("ops/assign" "ops/lp-value")
+  :learn
+    (:concept "Separate the optimizer from the evaluator; ops/assign-cost is the score function on which ops/assign operates."
+     :prerequisites ("(core)/map" "understanding cost matrix indexing")
+     :progression "Score a fixed assignment. Then compare optimal vs heuristic. Then use in a sensitivity loop.")
+  :entry-provenance "authored")
+
+
