@@ -2148,3 +2148,440 @@
   :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
   :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
           :entry-summary (:short "Move character to a point." :long "Direct a character to move toward (x, y)." :for-ai "Descriptor." :for-kid "Tell a character to walk somewhere.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; ALREADY-REAL (game loop, input) — entries only, no impl work
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "on-frame"
+  :library "game"
+  :signature "(on-frame handler) -> undefined"
+  :summary "Register a procedure to be called once per animation frame."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(on-frame (lambda () 'tick))" :note "Register a no-op tick. Returns undefined; the callback fires per frame.")
+    (:tier "apprentice" :code "(define counter 0) (on-frame (lambda () (set! counter (+ counter 1))))" :note "Increment counter each frame.")
+    (:tier "intermediate" :code "(on-frame (lambda () (if (key? 'ArrowRight) (display \"right\"))))" :note "Input-driven per-frame reaction.")
+    (:tier "expert"    :code "(define pos 0) (on-frame (lambda () (if (key? 'ArrowRight) (set! pos (+ pos 2))) (if (key? 'ArrowLeft) (set! pos (- pos 2)))))" :note "Position tracking with two keys.")
+    (:tier "master"    :code "(define (game-loop state-ref) (on-frame (lambda () (let ((old (car state-ref))) (set-car! state-ref (+ old 1)))))) (game-loop (list 0))" :note "Full state-updating loop pattern."))
+  :related ("frame" "on-key" "on-tick" "stop" "key?")
+  :caveats ("Handler must be 0-arg procedure." "Throwing inside handler stops the loop and surfaces the error." "Fuel budget is per-frame; complex logic may exhaust it.")
+  :drawbacks ("No return value used." "Single handler slot; register replaces prior.")
+  :usecases ("Game main loop." "Continuous animation.")
+  :learn (:concept "Per-frame callback hook." :prerequisites () :progression "Learn key?, frame, on-key.")
+  :+math (:algebra () :total #t :domain "procedure" :codomain "undefined")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/game.js" :impl-notes "Registers handler with media loop; fires each tick."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: registration returns undefined." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Per-frame callback." :long "Register a procedure to be called once per animation frame." :for-ai "Register." :for-kid "Give the game a job to do every frame.")))
+
+(verb
+  :name "on-key"
+  :library "game"
+  :signature "(on-key handler) -> clause"
+  :summary "Register a keyboard event handler that receives (state, key) and returns new-state."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(on-key (lambda (s k) s))" :note "No-op handler. Returns clause descriptor.")
+    (:tier "apprentice" :code "(on-key (lambda (s k) (if (equal? k \"r\") 0 s)))" :note "Reset on 'r'.")
+    (:tier "intermediate" :code "(define (move-player state key) (cond ((equal? key \"ArrowUp\") (+ state 1)) ((equal? key \"ArrowDown\") (- state 1)) (else state))) (on-key move-player)" :note "Basic keyboard control.")
+    (:tier "expert"    :code "(define (handle-input state key) (let ((action (cond ((equal? key \"w\") 'up) ((equal? key \"s\") 'down) (else 'none)))) (if (equal? action 'none) state (list 'moved state action)))) (on-key handle-input)" :note "Action decoding.")
+    (:tier "master"    :code "(define (game-controller state key) (cond ((equal? key \"q\") 'quit) ((equal? key \"p\") (list 'pause state)) (else (list 'running state)))) (on-key game-controller)" :note "Full game controller pattern."))
+  :related ("on-frame" "on-tick" "key?" "big-bang")
+  :caveats ("Handler receives (state, key)." "Handler must return new state." "Runs after on-tick each frame.")
+  :drawbacks ("Multi-key per frame delivers each individually; only final state retained.")
+  :usecases ("Player input handlers." "Reset / pause / menu keys.")
+  :learn (:concept "Key-event handler with state passing." :prerequisites () :progression "Learn on-tick as the sibling.")
+  :+math (:algebra () :total #t :domain "procedure of 2 args" :codomain "clause descriptor")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/media.js" :impl-notes "Registers handler with media loop; state carried across frames."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: registration returns clause." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Register key handler." :long "Register a keyboard event handler that receives (state, key)." :for-ai "Register." :for-kid "Tell the game what to do when a key is pressed.")))
+
+(verb
+  :name "on-tick"
+  :library "game"
+  :signature "(on-tick handler) -> clause"
+  :summary "Register a per-frame state update function taking (state) -> new-state."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(on-tick (lambda (s) (+ s 1)))" :note "Increment. Returns clause descriptor.")
+    (:tier "apprentice" :code "(on-tick (lambda (s) s))" :note "Identity. Returns clause descriptor.")
+    (:tier "intermediate" :code "(define (update s) (list 'x (+ (car (cdr (assoc 'x s))) 1))) (on-tick update)" :note "Alist-based state update.")
+    (:tier "expert"    :code "(define (physics state) (let* ((vel (obj-get state 'vel)) (grav -0.2)) (list 'vel (+ vel grav)))) (on-tick physics)" :note "Physics step.")
+    (:tier "master"    :code "(define (game-tick state) (let ((score (obj-get state 'score))) (list 'score (+ score 1) 'ticks (+ (obj-get state 'ticks) 1)))) (on-tick game-tick)" :note "Composite update."))
+  :related ("on-key" "on-frame" "big-bang")
+  :caveats ("Handler runs before on-key each frame." "Return nil / #f halts the loop.")
+  :drawbacks ("Heavy computation can lag frame rate.")
+  :usecases ("Game state ticks." "Physics.")
+  :learn (:concept "State-passing per-frame tick." :prerequisites () :progression "Learn on-key.")
+  :+math (:algebra () :total #t :domain "procedure of 1 arg" :codomain "clause")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Descriptor factory; big-bang consumes."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Per-frame state update." :long "Register a state update function running once per frame." :for-ai "Register." :for-kid "Give the game a function that changes the state every frame.")))
+
+(verb
+  :name "note"
+  :library "music"
+  :signature "(note pitch [dur] [velocity]) -> result"
+  :summary "Emit a note event: pitch (symbol), duration (default 'quarter), velocity (default 0.8)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(note 'C4 'quarter 0.8)" :note "Middle C, quarter-note, 80% velocity. Returns undefined; event emitted.")
+    (:tier "apprentice" :code "(begin (note 'C4 'quarter 0.8) (note 'E4 'quarter 0.8) (note 'G4 'half 0.9))" :note "Three-note chord sequence.")
+    (:tier "intermediate" :code "(define (chord notes dur vel) (for-each (lambda (n) (note n dur vel)) notes)) (chord (list 'C4 'E4 'G4) 'quarter 0.7)" :note "Chord helper.")
+    (:tier "expert"    :code "(define (arpeggio root notes dur vel) (for-each (lambda (n) (note n dur vel)) notes)) (arpeggio 'C4 (list 'C4 'E4 'G4 'B4) 'sixteenth 0.75)" :note "Arpeggio pattern.")
+    (:tier "master"    :code "(define (scale-up root notes dur) (map (lambda (n) (note n dur 0.7)) notes)) (scale-up 'C4 (list 'C4 'D4 'E4 'F4 'G4 'A4 'B4 'C5) 'eighth)" :note "Scale."))
+  :related ("note-dots" "note-place" "note-strike" "synth/play" "audio/play")
+  :caveats ("Pitch must be valid music notation symbol." "Duration defaults to 'quarter; velocity defaults to 0.8.")
+  :drawbacks ("Rapid successive calls may overlap in host.")
+  :usecases ("Chord playback." "Arpeggios.")
+  :learn (:concept "Emit a scheduled note event." :prerequisites () :progression "Learn note-dots for duration calc.")
+  :+math (:algebra () :total #t :domain "pitch symbol" :codomain "undefined | error tuple")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/media.js" :impl-notes "Parses pitch, schedules event via audio subsystem."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-pitch) :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Emit a note." :long "Play a pitch for a duration at a given velocity." :for-ai "Emit note event." :for-kid "Play a musical note.")))
+
+(verb
+  :name "key?"
+  :library "game"
+  :signature "(key? symbol) -> boolean"
+  :summary "True if the named key is currently pressed; #f in headless REPL."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(key? 'ArrowRight)" :note "Not pressed. Returns #f.")
+    (:tier "apprentice" :code "(list (key? 'ArrowUp) (key? 'ArrowDown))" :note "Both. Returns (#f #f).")
+    (:tier "intermediate" :code "(if (key? 'Space) 'jump 'idle)" :note "Guard. Returns 'idle.")
+    (:tier "expert"    :code "(define (input-vector) (list (if (key? 'ArrowLeft) -1 0) (if (key? 'ArrowRight) 1 0))) (input-vector)" :note "Direction vector. Returns (0 0).")
+    (:tier "master"    :code "(define (check-any keys) (fold (lambda (acc k) (or acc (key? k))) #f keys)) (check-any (list 'w 'a 's 'd))" :note "Fold over keys. Returns #f."))
+  :related ("on-key" "input/pressed?" "input-may-i?" "on-frame")
+  :caveats ("Key name must match KeyboardEvent.key case-sensitively." "Snapshot at frame boundary; no press/release detection.")
+  :drawbacks ("Headless REPL always returns #f.")
+  :usecases ("Input polling." "Movement handlers.")
+  :learn (:concept "Snapshot input predicate." :prerequisites () :progression "Learn on-key for event-driven input.")
+  :+math (:algebra () :total #t :domain "key symbol" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Returns #f in headless; host overrides."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: #f." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Is this key pressed?" :long "True if the named key is pressed; #f in headless REPL." :for-ai "Poll." :for-kid "Is the arrow key pressed right now?")))
+
+(verb
+  :name "input-may-i?"
+  :library "input"
+  :signature "(input-may-i?) -> boolean"
+  :summary "Legacy alias for input/may-i?: returns whether the host permits input reads."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(input-may-i?)" :note "No live input. Returns #f.")
+    (:tier "apprentice" :code "(if (input-may-i?) 'allowed 'denied)" :note "Branch. Returns 'denied.")
+    (:tier "intermediate" :code "(define (safe-read) (if (input-may-i?) 'read-ok 'read-blocked)) (safe-read)" :note "Wrapped. Returns 'read-blocked.")
+    (:tier "expert"    :code "(define (poll-buttons btns) (if (input-may-i?) (map (lambda (b) (list b 'pressed)) btns) 'blocked)) (poll-buttons (list 'a 'b))" :note "Guarded poll. Returns 'blocked.")
+    (:tier "master"    :code "(define (init-input) (if (input-may-i?) 'input-ready 'input-denied-init-fallback)) (init-input)" :note "Init check. Returns 'input-denied-init-fallback."))
+  :related ("input/may-i?" "key?")
+  :caveats ("Legacy alias; prefer input/may-i? in new code.")
+  :drawbacks ("Coarse-grained.")
+  :usecases ("Legacy code.")
+  :learn (:concept "Legacy input permission gate." :prerequisites () :progression "Use input/may-i? instead.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Returns #f in headless."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Legacy input permission check." :long "Alias for input/may-i?." :for-ai "Read." :for-kid "Ask if you're allowed to read the buttons.")))
+
+(verb
+  :name "on-canvas-trace"
+  :library "game"
+  :signature "(on-canvas-trace handler) -> descriptor"
+  :summary "Register a handler for canvas stroke events (pen moves)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(on-canvas-trace (lambda (pt) 'stroke))" :note "Descriptor. Returns (\"on-canvas-trace\" ...).")
+    (:tier "apprentice" :code "(on-canvas-trace (lambda (pt) (display pt)))" :note "Log points.")
+    (:tier "intermediate" :code "(define (record-stroke pt) (list 'stroke pt)) (on-canvas-trace record-stroke)" :note "Structured record.")
+    (:tier "expert"    :code "(define points (list)) (on-canvas-trace (lambda (pt) (set! points (cons pt points))))" :note "Collect points.")
+    (:tier "master"    :code "(define (draw-listener) (lambda (pt) (list 'x (car pt) 'y (cadr pt)))) (on-canvas-trace (draw-listener))" :note "Structured listener."))
+  :related ("on-frame" "on-key" "paint-cell")
+  :caveats ("Requires host with canvas subsystem.")
+  :drawbacks ("Headless REPL emits descriptor only.")
+  :usecases ("Drawing tools." "Gesture recognition.")
+  :learn (:concept "Canvas stroke event hook." :prerequisites () :progression "Learn paint-* for drawing side.")
+  :+math (:algebra () :total #t :domain "procedure" :codomain "descriptor")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Register canvas stroke handler." :long "Register a handler for pen-move events." :for-ai "Register." :for-kid "Watch for someone drawing on the screen.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; note-* CLUSTER (4 more)
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "note-strike"
+  :library "music"
+  :signature "(note-strike pitch [velocity]) -> descriptor"
+  :summary "Strike (start) a note; use with note-release for held notes."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-strike 'C4)" :note "Strike middle C. Returns descriptor.")
+    (:tier "apprentice" :code "(note-strike 'C4 0.9)" :note "Louder strike. Returns descriptor.")
+    (:tier "intermediate" :code "(map note-strike (list 'C4 'E4 'G4))" :note "Chord onset. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (chord-on notes vel) (map (lambda (n) (note-strike n vel)) notes)) (chord-on (list 'C4 'E4 'G4) 0.8)" :note "Wrapped. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (glissando start end vel) (map (lambda (n) (note-strike n vel)) (list start (+ start 1) (+ start 2) end))) (glissando 'C4 'F4 0.7)" :note "Structured. Returns 4 descriptors."))
+  :related ("note-release" "note-place" "note")
+  :caveats ("Requires note-release to close.")
+  :drawbacks ("Host must manage note lifecycle.")
+  :usecases ("Sustained notes." "Attack-decay envelopes.")
+  :learn (:concept "Note onset." :prerequisites () :progression "Learn note-release.")
+  :+math (:algebra () :total #t :domain "pitch" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Strike a note." :long "Start a note; use note-release to end." :for-ai "Note onset." :for-kid "Start playing a musical note.")))
+
+(verb
+  :name "note-release"
+  :library "music"
+  :signature "(note-release pitch) -> descriptor"
+  :summary "Release a struck note."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-release 'C4)" :note "Release. Returns descriptor.")
+    (:tier "apprentice" :code "(begin (note-strike 'C4) (note-release 'C4))" :note "Full note.")
+    (:tier "intermediate" :code "(map note-release (list 'C4 'E4 'G4))" :note "Chord off. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (chord-off notes) (map note-release notes)) (chord-off (list 'C4 'E4 'G4))" :note "Wrapped.")
+    (:tier "master"    :code "(define (play-hold notes hold-frames) (list (map note-strike notes) 'hold hold-frames (map note-release notes))) (play-hold (list 'C4 'E4) 60)" :note "Held chord."))
+  :related ("note-strike" "note")
+  :caveats ("Match a prior note-strike for the same pitch.")
+  :drawbacks ("Silent no-op if no matching strike.")
+  :usecases ("Note lifecycle end.")
+  :learn (:concept "Note offset." :prerequisites ("note-strike") :progression "Learn strike mirror.")
+  :+math (:algebra () :total #t :domain "pitch" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Release a note." :long "End a struck note." :for-ai "Note offset." :for-kid "Stop playing a note.")))
+
+(verb
+  :name "note-place"
+  :library "music"
+  :signature "(note-place pitch position) -> descriptor"
+  :summary "Place a note at a beat position in the current pattern."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-place 'C4 0)" :note "Place at start. Returns descriptor.")
+    (:tier "apprentice" :code "(note-place 'E4 2)" :note "Beat 2. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (p) (note-place 'C4 p)) (list 0 1 2 3))" :note "Beat sequence. Returns 4 descriptors.")
+    (:tier "expert"    :code "(define (pattern notes) (map (lambda (i) (note-place (list-ref notes (modulo i (length notes))) i)) (range 0 4))) (pattern (list 'C4 'E4 'G4))" :note "Repeating.")
+    (:tier "master"    :code "(define (write-melody notes bar) (map (lambda (i) (note-place (list-ref notes i) (* i (/ 1 bar)))) (range 0 (length notes)))) (write-melody (list 'C4 'D4 'E4) 8)" :note "Fractional beats."))
+  :related ("note-place-at" "note-strike" "note")
+  :caveats ("Position is beat-relative.")
+  :drawbacks ("No pitch validation.")
+  :usecases ("Pattern-based composition.")
+  :learn (:concept "Pattern-relative note placement." :prerequisites () :progression "Learn note-place-at for absolute time.")
+  :+math (:algebra () :total #t :domain "pitch + position" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Place a note in a pattern." :long "Add a note at a beat position." :for-ai "Pattern step." :for-kid "Put a note in the song at a beat.")))
+
+(verb
+  :name "note-place-at"
+  :library "music"
+  :signature "(note-place-at pitch time-position) -> descriptor"
+  :summary "Place a note at an absolute time position."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-place-at 'C4 0.5)" :note "At 0.5 seconds. Returns descriptor.")
+    (:tier "apprentice" :code "(note-place-at 'A4 1.0)" :note "At 1 second. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (t) (note-place-at 'C4 t)) (list 0 0.5 1.0 1.5))" :note "4-tick sequence. Returns 4 descriptors.")
+    (:tier "expert"    :code "(define (drum-pattern beat-times) (map (lambda (t) (note-place-at 'C2 t)) beat-times)) (drum-pattern (list 0 0.5 1.0 1.5))" :note "Kick drum pattern.")
+    (:tier "master"    :code "(define (schedule-melody notes-and-times) (map (lambda (nt) (note-place-at (car nt) (cadr nt))) notes-and-times)) (schedule-melody (list (list 'C4 0) (list 'E4 0.25) (list 'G4 0.5)))" :note "Melody schedule."))
+  :related ("note-place" "note")
+  :caveats ("Time in seconds relative to song start.")
+  :drawbacks ("No pitch bend.")
+  :usecases ("Absolute-time composition." "Wall-clock sync.")
+  :learn (:concept "Absolute time placement." :prerequisites () :progression "Learn note-place for beat-relative.")
+  :+math (:algebra () :total #t :domain "pitch + time-seconds" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Place a note at absolute time." :long "Add a note at a specific time in the song." :for-ai "Absolute schedule." :for-kid "Put a note at exactly this moment.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; misc no-namespace verbs (6)
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "imagine"
+  :library "media"
+  :signature "(imagine word-or-symbol [:seconds N]) -> descriptor"
+  :summary "Generate a dream / visualization for a concept; optional duration."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(imagine \"forest\")" :note "Dream of a forest. Returns descriptor.")
+    (:tier "apprentice" :code "(imagine 'ocean)" :note "Symbol input. Returns descriptor.")
+    (:tier "intermediate" :code "(map imagine (list 'sun 'moon 'stars))" :note "Multiple. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (dream-cycle topics) (map imagine topics)) (dream-cycle (list 'city 'ocean 'desert))" :note "Cycle. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (bedtime-dream topic) (list 'dream (imagine topic))) (bedtime-dream 'mountain)" :note "Structured. Returns (dream (\"imagine\" mountain))."))
+  :related ("scene/imagine" "surface/spotlight" "with-seed")
+  :caveats ("Requires host with visualization subsystem." "Duration semantics host-defined.")
+  :drawbacks ("Opaque result — cannot inspect the dream.")
+  :usecases ("Dream sequences." "Title cards.")
+  :learn (:concept "Visualization emit." :prerequisites () :progression "Learn scene/imagine for structured version.")
+  :+math (:algebra () :total #t :domain "word or symbol" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "async-quick" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Imagine a scene." :long "Generate a visualization of a concept." :for-ai "Descriptor." :for-kid "Have the computer dream of something.")))
+
+(verb
+  :name "layout-bricklay!"
+  :library "layout"
+  :signature "(layout-bricklay! id) -> descriptor"
+  :summary "Layout a card using the bricklay algorithm; caches result."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(layout-bricklay! 'my-card)" :note "Bricklay a card. Returns descriptor.")
+    (:tier "apprentice" :code "(layout-bricklay! 'gallery)" :note "Layout a gallery. Returns descriptor.")
+    (:tier "intermediate" :code "(map layout-bricklay! (list 'a 'b 'c))" :note "Bulk. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (relayout ids) (map layout-bricklay! ids)) (relayout (list 'p1 'p2))" :note "Wrapped.")
+    (:tier "master"    :code "(define (rebuild-all page-ids) (list 'layouts (map layout-bricklay! page-ids))) (rebuild-all (list 'home 'about 'contact))" :note "Batch rebuild."))
+  :related ("measure-content" "layout")
+  :caveats ("Requires live card renderer.")
+  :drawbacks ("Cache invalidation host-managed.")
+  :usecases ("Responsive layout." "Gallery / grid.")
+  :learn (:concept "Bricklay layout emit." :prerequisites () :progression "Learn measure-content.")
+  :+math (:algebra () :total #t :domain "card id" :codomain "descriptor")
+  :+cs (:complexity "O(n) in card children" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-slow" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Bricklay layout." :long "Layout a card with the bricklay algorithm." :for-ai "Layout." :for-kid "Arrange the items on a card like bricks.")))
+
+(verb
+  :name "make-character"
+  :library "character"
+  :signature "(make-character source [opts]) -> descriptor"
+  :summary "Promote a visual source (sprite / note / prop) to a first-class character."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(make-character 'hero-sprite)" :note "Descriptor. Returns (\"make-character\" hero-sprite).")
+    (:tier "apprentice" :code "(make-character 'villain-sprite)" :note "Second character. Returns descriptor.")
+    (:tier "intermediate" :code "(map make-character (list 'a 'b 'c))" :note "Bulk. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (spawn-party members) (map make-character members)) (spawn-party (list 'leader 'member1 'member2))" :note "Party.")
+    (:tier "master"    :code "(define (populate-scene sprites) (list 'scene (map make-character sprites))) (populate-scene (list 's1 's2 's3))" :note "Structured populate."))
+  :related ("motion-anchor-to-input" "motion-move-to" "make-character")
+  :caveats ("Character id host-allocated.")
+  :drawbacks ("No inspection.")
+  :usecases ("Character-driven games.")
+  :learn (:concept "Character promotion emit." :prerequisites () :progression "Learn motion-* verbs.")
+  :+math (:algebra () :total #t :domain "source [opts]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Make a character." :long "Promote a sprite / note / prop into a character." :for-ai "Promote." :for-kid "Turn a sprite into a character in the story.")))
+
+(verb
+  :name "move-card"
+  :library "card"
+  :signature "(move-card id dx dy) -> descriptor"
+  :summary "Move a card by (dx, dy) pixels."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(move-card 'my-card 10 0)" :note "Move right 10. Returns descriptor.")
+    (:tier "apprentice" :code "(move-card 'photo 0 -20)" :note "Move up 20. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (move-card c 5 0)) (list 'a 'b))" :note "Bulk shift. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (shift-row cards dx) (map (lambda (c) (move-card c dx 0)) cards)) (shift-row (list 'p1 'p2 'p3) 10)" :note "Wrapped.")
+    (:tier "master"    :code "(define (parallax layers speed) (map (lambda (i) (move-card (list-ref layers i) (* speed (+ i 1)) 0)) (range 0 (length layers)))) (parallax (list 'far 'mid 'near) 2)" :note "Parallax scroll."))
+  :related ("orient-card" "layout-bricklay!" "make-character")
+  :caveats ("Relative motion; use absolute methods for exact positioning.")
+  :drawbacks ("Host-side animation may differ.")
+  :usecases ("Card animation." "Parallax.")
+  :learn (:concept "Relative card motion." :prerequisites () :progression "Learn orient-card.")
+  :+math (:algebra () :total #t :domain "id + deltas" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Move a card." :long "Move a card by (dx, dy) pixels." :for-ai "Move." :for-kid "Move a card around.")))
+
+(verb
+  :name "nav-map"
+  :library "layout"
+  :signature "(nav-map id) -> descriptor"
+  :summary "Show a navigation map for the given card."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(nav-map 'home)" :note "Descriptor. Returns (\"nav-map\" home).")
+    (:tier "apprentice" :code "(nav-map 'gallery)" :note "Descriptor.")
+    (:tier "intermediate" :code "(map nav-map (list 'p1 'p2))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (open-nav) (list 'nav (nav-map 'root))) (open-nav)" :note "Wrapped.")
+    (:tier "master"    :code "(define (breadcrumb path) (map nav-map path)) (breadcrumb (list 'home 'products 'item))" :note "Breadcrumb."))
+  :related ("move-card" "layout-bricklay!")
+  :caveats ("Host renders the map.")
+  :drawbacks ("No structural query.")
+  :usecases ("Navigation UI.")
+  :learn (:concept "Nav map emit." :prerequisites () :progression "Learn layout-bricklay!.")
+  :+math (:algebra () :total #t :domain "card id" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Show a nav map." :long "Show a navigation map for the given card." :for-ai "Nav." :for-kid "Show the map to move around cards.")))
+
+(verb
+  :name "orient-card"
+  :library "card"
+  :signature "(orient-card id direction) -> descriptor"
+  :summary "Orient a card to a compass direction (north/south/east/west)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(orient-card 'my-card 'north)" :note "Descriptor. Returns (\"orient-card\" my-card north).")
+    (:tier "apprentice" :code "(orient-card 'gallery 'east)" :note "Descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (orient-card c 'north)) (list 'a 'b))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (all-north cards) (map (lambda (c) (orient-card c 'north)) cards)) (all-north (list 'p1 'p2 'p3))" :note "Wrapped.")
+    (:tier "master"    :code "(define (compass cards) (map (lambda (i c) (orient-card c (list-ref (list 'north 'east 'south 'west) (modulo i 4)))) (range 0 (length cards)) cards)) (compass (list 'a 'b 'c 'd))" :note "Compass rotation."))
+  :related ("move-card" "layout-bricklay!")
+  :caveats ("Direction symbol semantics host-defined.")
+  :drawbacks ("No arbitrary angle.")
+  :usecases ("Card rotation for game boards.")
+  :learn (:concept "Orient by cardinal direction." :prerequisites () :progression "Learn move-card.")
+  :+math (:algebra () :total #t :domain "id + direction" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Orient a card." :long "Point a card at a compass direction." :for-ai "Orient." :for-kid "Point a card in a direction.")))
