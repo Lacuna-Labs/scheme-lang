@@ -1096,6 +1096,458 @@ export function installWiredVerbsHanaMath(env, fuel) {
     }
     return out
   })
+
+  // ═════════════════════════════════════════════════════════════════
+  // Descriptor-shape sweep additions (2026-07-14). REAL-IMPL bucket
+  // from docs/reports/descriptor-shape-sweep-2026-07-14.slat — verbs
+  // that were previously returning descriptor lies from
+  // reference-impls.js and topo.js. Every impl below is a real
+  // numerical algorithm following the same conventions as the calc/*
+  // block above.
+  // ═════════════════════════════════════════════════════════════════
+
+  // calc/partial-derivative — alias for calc/partial with a 1-based
+  // index for readability. Kept 0-indexed to match calc/partial.
+  def('calc/partial-derivative', (fn, i, args) => {
+    if (!Array.isArray(args)) return NaN
+    return partialAt(fn, args.map(num), num(i) | 0, fuel)
+  })
+
+  // calc/critical-points — same as calc/critical-points-1d.
+  // Convenience alias without the -1d suffix.
+  def('calc/critical-points', (fn, a, b, samples) => {
+    // Delegate to already-defined critical-points-1d via env.
+    const target = env.vars.get('calc/critical-points-1d')
+    if (typeof target === 'function') return target(fn, a, b, samples)
+    return []
+  })
+
+  // calc/local-extrema — return only min/max (not saddles/inflections).
+  def('calc/local-extrema', (fn, a, b, samples) => {
+    const target = env.vars.get('calc/extrema-1d')
+    if (typeof target !== 'function') return []
+    const all = target(fn, a, b, samples)
+    if (!Array.isArray(all)) return []
+    return all.filter(pair => {
+      const kind = pair[1]
+      const kn = kind instanceof Sym ? kind.name : kind
+      return kn === 'min' || kn === 'max'
+    })
+  })
+
+  // calc/global-extrema — scan [a,b] and return the argmin/argmax.
+  def('calc/global-extrema', (fn, a, b, samples) => {
+    const A = num(a), B = num(b)
+    const N = samples === undefined ? 200 : Math.max(4, num(samples) | 0)
+    let xMin = A, yMin = callNum(fn, [A], fuel)
+    let xMax = A, yMax = yMin
+    for (let i = 1; i <= N; i++) {
+      const x = A + (B - A) * i / N
+      const y = callNum(fn, [x], fuel)
+      if (Number.isFinite(y)) {
+        if (y < yMin) { xMin = x; yMin = y }
+        if (y > yMax) { xMax = x; yMax = y }
+      }
+    }
+    return [[xMin, yMin, new Sym('min')], [xMax, yMax, new Sym('max')]]
+  })
+
+  // calc/inflection — find x where f'' changes sign.
+  def('calc/inflection', (fn, a, b, samples) => {
+    const A = num(a), B = num(b)
+    const N = samples === undefined ? 200 : Math.max(4, num(samples) | 0)
+    const h = DEFAULT_H
+    const fpp = (x) => (callNum(fn, [x + h], fuel) - 2 * callNum(fn, [x], fuel) + callNum(fn, [x - h], fuel)) / (h * h)
+    const points = []
+    let prevX = A, prevS = fpp(A)
+    for (let i = 1; i <= N; i++) {
+      const x = A + (B - A) * i / N
+      const s = fpp(x)
+      if (Number.isFinite(prevS) && Number.isFinite(s) && prevS * s < 0) {
+        // Bisect to refine.
+        let lo = prevX, hi = x, sLo = prevS
+        for (let k = 0; k < 30; k++) {
+          const mid = 0.5 * (lo + hi)
+          const sm = fpp(mid)
+          if (sLo * sm <= 0) { hi = mid } else { lo = mid; sLo = sm }
+        }
+        points.push(0.5 * (lo + hi))
+      }
+      prevX = x; prevS = s
+    }
+    return points
+  })
+
+  // calc/integrate2 — Simpson's rule on 2D rectangle [a1,b1] x [a2,b2].
+  // fn takes a 2-element list [x,y]. Composite Simpson with N subs.
+  def('calc/integrate2', (fn, a1, b1, a2, b2, N) => {
+    const NN = Math.max(2, (num(N) | 0) || 20)
+    const NX = NN + (NN % 2), NY = NN + (NN % 2)   // even required for Simpson
+    const A1 = num(a1), B1 = num(b1), A2 = num(a2), B2 = num(b2)
+    const hx = (B1 - A1) / NX, hy = (B2 - A2) / NY
+    const wx = (i) => (i === 0 || i === NX ? 1 : (i % 2 ? 4 : 2))
+    const wy = (j) => (j === 0 || j === NY ? 1 : (j % 2 ? 4 : 2))
+    let s = 0
+    for (let i = 0; i <= NX; i++) {
+      for (let j = 0; j <= NY; j++) {
+        s += wx(i) * wy(j) * callNum(fn, [[A1 + i * hx, A2 + j * hy]], fuel)
+      }
+    }
+    return s * hx * hy / 9
+  })
+
+  // calc/integrate3 — Simpson's rule on 3D box.
+  def('calc/integrate3', (fn, a1, b1, a2, b2, a3, b3, N) => {
+    const NN = Math.max(2, (num(N) | 0) || 12)
+    const NX = NN + (NN % 2), NY = NN + (NN % 2), NZ = NN + (NN % 2)
+    const A1 = num(a1), B1 = num(b1), A2 = num(a2), B2 = num(b2), A3 = num(a3), B3 = num(b3)
+    const hx = (B1 - A1) / NX, hy = (B2 - A2) / NY, hz = (B3 - A3) / NZ
+    const w = (i, N) => (i === 0 || i === N ? 1 : (i % 2 ? 4 : 2))
+    let s = 0
+    for (let i = 0; i <= NX; i++) {
+      for (let j = 0; j <= NY; j++) {
+        for (let k = 0; k <= NZ; k++) {
+          s += w(i, NX) * w(j, NY) * w(k, NZ)
+             * callNum(fn, [[A1 + i * hx, A2 + j * hy, A3 + k * hz]], fuel)
+        }
+      }
+    }
+    return s * hx * hy * hz / 27
+  })
+
+  // calc/midpoint-rule — midpoint quadrature.
+  def('calc/midpoint-rule', (fn, a, b, n) => {
+    const N = Math.max(1, (num(n) | 0) || 10)
+    const A = num(a), B = num(b)
+    const h = (B - A) / N
+    let s = 0
+    for (let i = 0; i < N; i++) s += callNum(fn, [A + (i + 0.5) * h], fuel)
+    return s * h
+  })
+
+  // calc/normal-line — line perpendicular to y=f(x) at x=x0.
+  // Returns [slope, y-intercept]. When f'(x0)=0 the normal is vertical
+  // and we return the special symbol 'vertical with the x-coordinate.
+  def('calc/normal-line', (fn, x0) => {
+    const xx = num(x0)
+    const slope = (callNum(fn, [xx + DEFAULT_H], fuel) - callNum(fn, [xx - DEFAULT_H], fuel)) / (2 * DEFAULT_H)
+    const y = callNum(fn, [xx], fuel)
+    if (Math.abs(slope) < 1e-12) {
+      return [new Sym('vertical'), xx]
+    }
+    const m = -1 / slope
+    const b = y - m * xx
+    return [m, b]
+  })
+
+  // calc/maclaurin — Taylor series around 0.
+  def('calc/maclaurin', (fn, degree) => {
+    const target = env.vars.get('calc/taylor')
+    if (typeof target === 'function') return target(fn, 0, degree)
+    return []
+  })
+
+  // calc/series-sum — sum a_n from n=0 to N-1 (partial sum).
+  //   termFn takes n and returns the n-th term.
+  def('calc/series-sum', (termFn, N) => {
+    const NN = Math.max(0, (num(N) | 0))
+    let s = 0
+    for (let n = 0; n < NN; n++) s += callNum(termFn, [n], fuel)
+    return s
+  })
+
+  // calc/interval-of-convergence — from a coefficient list, use
+  // radius-of-convergence R and return [-R, R] as the naive interval.
+  // Endpoint behavior needs individual convergence tests; we return
+  // the open interval and note the endpoints separately.
+  def('calc/interval-of-convergence', (coeffs) => {
+    const target = env.vars.get('calc/radius-of-convergence')
+    if (typeof target !== 'function') return []
+    const R = target(coeffs)
+    if (!Number.isFinite(R)) return [new Sym('all-reals')]
+    if (R === 0) return [0]
+    return [-R, R, new Sym('endpoints-not-checked')]
+  })
+
+  // ── curve/* — differential geometry basics ────────────────────────
+  //
+  // curve verbs treat a parametric curve r(t) → R^n as a Scheme fn
+  // taking t and returning a list of coordinates. Finite-difference
+  // derivatives; symbolic diff-geometry is out of scope for this
+  // substrate. Every verb here is honest — real numerical computation
+  // with documented precision limits.
+
+  const curveEval = (curve, t) => {
+    const y = callAny(curve, [num(t)], fuel)
+    if (Array.isArray(y)) return y.map(num)
+    return [num(y)]
+  }
+  const curveDeriv = (curve, t, h = 1e-4) => {
+    const yp = curveEval(curve, t + h)
+    const ym = curveEval(curve, t - h)
+    const out = new Array(yp.length)
+    for (let i = 0; i < yp.length; i++) out[i] = (yp[i] - ym[i]) / (2 * h)
+    return out
+  }
+  const curveDeriv2 = (curve, t, h = 1e-4) => {
+    const yp = curveEval(curve, t + h)
+    const y0 = curveEval(curve, t)
+    const ym = curveEval(curve, t - h)
+    const out = new Array(yp.length)
+    for (let i = 0; i < yp.length; i++) out[i] = (yp[i] - 2 * y0[i] + ym[i]) / (h * h)
+    return out
+  }
+  const vecNorm = (v) => Math.sqrt(v.reduce((s, x) => s + x * x, 0))
+  const vecScale = (v, s) => v.map(x => x * s)
+  const vecSub = (a, b) => a.map((x, i) => x - b[i])
+  const vecDot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0)
+  const vecCross3 = (a, b) => [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ]
+
+  // curve/velocity — first derivative r'(t) (tangent vector).
+  def('curve/velocity', (curve, t) => curveDeriv(curve, t))
+
+  // curve/accel — second derivative r''(t).
+  def('curve/accel', (curve, t) => curveDeriv2(curve, t))
+
+  // curve/speed — |r'(t)|.
+  def('curve/speed', (curve, t) => vecNorm(curveDeriv(curve, t)))
+
+  // curve/unit-tangent — r'/|r'|.
+  def('curve/unit-tangent', (curve, t) => {
+    const v = curveDeriv(curve, t)
+    const s = vecNorm(v)
+    if (s < 1e-12) return v.map(() => 0)
+    return vecScale(v, 1 / s)
+  })
+
+  // curve/arc-length — Simpson's rule on |r'(t)| over [a, b].
+  def('curve/arc-length', (curve, a, b, N) => {
+    const NN = Math.max(2, (num(N) | 0) || 32)
+    const NX = NN + (NN % 2)  // even for Simpson
+    const A = num(a), B = num(b)
+    const h = (B - A) / NX
+    const w = (i) => (i === 0 || i === NX ? 1 : (i % 2 ? 4 : 2))
+    let s = 0
+    for (let i = 0; i <= NX; i++) {
+      const v = curveDeriv(curve, A + i * h)
+      s += w(i) * vecNorm(v)
+    }
+    return s * h / 3
+  })
+
+  // curve/curvature-2d — signed curvature of a 2D parametric curve.
+  //   kappa = (x' y'' - y' x'') / (x'^2 + y'^2)^(3/2).
+  def('curve/curvature-2d', (curve, t) => {
+    const v = curveDeriv(curve, t)
+    const a = curveDeriv2(curve, t)
+    if (v.length < 2 || a.length < 2) return NaN
+    const denom = Math.pow(v[0] * v[0] + v[1] * v[1], 1.5)
+    if (denom < 1e-12) return NaN
+    return (v[0] * a[1] - v[1] * a[0]) / denom
+  })
+
+  // curve/curvature — for 3D: |r' x r''| / |r'|^3.
+  // For 2D falls back to |curvature-2d|.
+  def('curve/curvature', (curve, t) => {
+    const v = curveDeriv(curve, t)
+    const a = curveDeriv2(curve, t)
+    if (v.length >= 3 && a.length >= 3) {
+      const c = vecCross3(v, a)
+      const denom = Math.pow(vecNorm(v), 3)
+      if (denom < 1e-12) return NaN
+      return vecNorm(c) / denom
+    }
+    if (v.length >= 2 && a.length >= 2) {
+      const denom = Math.pow(v[0] * v[0] + v[1] * v[1], 1.5)
+      if (denom < 1e-12) return NaN
+      return Math.abs(v[0] * a[1] - v[1] * a[0]) / denom
+    }
+    return NaN
+  })
+
+  // curve/normal — principal normal N = (dT/dt) / |dT/dt|.
+  def('curve/normal', (curve, t) => {
+    const h = 1e-4
+    const Tp = env.vars.get('curve/unit-tangent')(curve, t + h)
+    const Tm = env.vars.get('curve/unit-tangent')(curve, t - h)
+    const dT = Tp.map((x, i) => (x - Tm[i]) / (2 * h))
+    const n = vecNorm(dT)
+    if (n < 1e-12) return dT.map(() => 0)
+    return vecScale(dT, 1 / n)
+  })
+
+  // curve/binormal — B = T x N (3D only).
+  def('curve/binormal', (curve, t) => {
+    const T = env.vars.get('curve/unit-tangent')(curve, t)
+    const N = env.vars.get('curve/normal')(curve, t)
+    if (T.length < 3 || N.length < 3) return {
+      __sakuraError: true,
+      kind: 'domain-error',
+      verb: 'curve/binormal',
+      message: 'binormal requires a 3D curve; got dim ' + T.length,
+    }
+    return vecCross3(T, N)
+  })
+
+  // curve/torsion — tau = (r' x r'') · r''' / |r' x r''|^2.
+  def('curve/torsion', (curve, t) => {
+    const h = 1e-3
+    const v = curveDeriv(curve, t)
+    const a = curveDeriv2(curve, t)
+    // 3rd derivative via central difference of 2nd derivatives.
+    const ap = curveDeriv2(curve, t + h)
+    const am = curveDeriv2(curve, t - h)
+    const j = ap.map((x, i) => (x - am[i]) / (2 * h))
+    if (v.length < 3 || a.length < 3 || j.length < 3) return NaN
+    const c = vecCross3(v, a)
+    const denom = vecDot(c, c)
+    if (denom < 1e-12) return NaN
+    return vecDot(c, j) / denom
+  })
+
+  // curve/frenet-frame — (T N B) as a list of vectors.
+  def('curve/frenet-frame', (curve, t) => {
+    const T = env.vars.get('curve/unit-tangent')(curve, t)
+    const N = env.vars.get('curve/normal')(curve, t)
+    if (T.length >= 3) {
+      const B = vecCross3(T, N)
+      return [T, N, B]
+    }
+    return [T, N]
+  })
+
+  // curve/osculating-circle — center + radius = 1/kappa in normal
+  // direction. Returns (list center-point radius).
+  def('curve/osculating-circle', (curve, t) => {
+    const p = curveEval(curve, t)
+    const kappa = env.vars.get('curve/curvature')(curve, t)
+    if (!Number.isFinite(kappa) || kappa < 1e-12) return [p, Infinity]
+    const N = env.vars.get('curve/normal')(curve, t)
+    const r = 1 / kappa
+    const center = p.map((x, i) => x + r * (N[i] || 0))
+    return [center, r]
+  })
+
+  // curve/slope-angle — atan of dy/dx (2D).
+  def('curve/slope-angle', (curve, t) => {
+    const v = curveDeriv(curve, t)
+    if (v.length < 2) return 0
+    return Math.atan2(v[1], v[0])
+  })
+
+  // curve/gradient — for a scalar field f: R^n -> R, ∇f at a point.
+  // Argument shape: (curve/gradient f point) with point a list.
+  def('curve/gradient', (fn, point) => {
+    if (!Array.isArray(point)) return []
+    const pt = point.map(num)
+    const out = new Array(pt.length)
+    for (let i = 0; i < pt.length; i++) {
+      const plus = pt.slice(); plus[i] = pt[i] + DEFAULT_H
+      const minus = pt.slice(); minus[i] = pt[i] - DEFAULT_H
+      out[i] = (callNum(fn, plus, fuel) - callNum(fn, minus, fuel)) / (2 * DEFAULT_H)
+    }
+    return out
+  })
+
+  // curve/cycloid — parametric cycloid: r(t) = (a(t - sin t), a(1 - cos t)).
+  // Returns a fresh curve fn (a JS callable that Scheme treats as a
+  // proc).
+  def('curve/cycloid', (a) => {
+    const A = num(a)
+    return (t) => [A * (t - Math.sin(t)), A * (1 - Math.cos(t))]
+  })
+
+  // curve/spline-length — arc length of a piecewise-linear polyline.
+  def('curve/spline-length', (points) => {
+    if (!Array.isArray(points) || points.length < 2) return 0
+    let s = 0
+    for (let i = 1; i < points.length; i++) {
+      const p = points[i - 1], q = points[i]
+      s += vecNorm(vecSub(q.map(num), p.map(num)))
+    }
+    return s
+  })
+
+  // curve/spline-resample — resample a polyline to N equally-spaced
+  // points along its arc-length.
+  def('curve/spline-resample', (points, N) => {
+    if (!Array.isArray(points) || points.length < 2) return []
+    const NN = Math.max(2, (num(N) | 0))
+    const pts = points.map(p => p.map(num))
+    const segLens = []
+    let total = 0
+    for (let i = 1; i < pts.length; i++) {
+      const L = vecNorm(vecSub(pts[i], pts[i - 1]))
+      segLens.push(L); total += L
+    }
+    if (total < 1e-12) return pts.slice(0, 1)
+    const out = [pts[0]]
+    for (let k = 1; k < NN - 1; k++) {
+      const target = (k / (NN - 1)) * total
+      let acc = 0
+      for (let i = 0; i < segLens.length; i++) {
+        if (acc + segLens[i] >= target) {
+          const t = (target - acc) / segLens[i]
+          const p = pts[i], q = pts[i + 1]
+          out.push(p.map((x, j) => x + t * (q[j] - x)))
+          break
+        }
+        acc += segLens[i]
+      }
+    }
+    out.push(pts[pts.length - 1])
+    return out
+  })
+
+  // curve/fall-line — 2D: negative-gradient direction at a point on
+  // a scalar height field. Returns unit vector.
+  def('curve/fall-line', (field, point) => {
+    const g = env.vars.get('curve/gradient')(field, point)
+    if (!Array.isArray(g) || g.length === 0) return []
+    const n = vecNorm(g)
+    if (n < 1e-12) return g.map(() => 0)
+    return vecScale(g, -1 / n)
+  })
+
+  // curve/surface-normal — for a scalar field f(x, y) = z, the outward
+  // unit normal at (x, y) is proportional to (-∂z/∂x, -∂z/∂y, 1).
+  def('curve/surface-normal', (field, point) => {
+    if (!Array.isArray(point) || point.length < 2) return []
+    const grad = env.vars.get('curve/gradient')(field, point)
+    const n = [-grad[0], -grad[1], 1]
+    const mag = vecNorm(n)
+    return vecScale(n, 1 / mag)
+  })
+
+  // curve/first-form — first fundamental form matrix [[E,F],[F,G]] for
+  // a parameterized surface r(u,v) = (x, y, z). Input: fn returning
+  // 3-vec, point (u,v).
+  def('curve/first-form', (surf, point) => {
+    if (!Array.isArray(point) || point.length < 2) return null
+    const h = 1e-4
+    const [u, v] = point.map(num)
+    const rP = (uu, vv) => {
+      const y = callAny(surf, [[uu, vv]], fuel)
+      return Array.isArray(y) ? y.map(num) : [num(y)]
+    }
+    const ru = rP(u + h, v).map((x, i) => (x - rP(u - h, v)[i]) / (2 * h))
+    const rv = rP(u, v + h).map((x, i) => (x - rP(u, v - h)[i]) / (2 * h))
+    return [[vecDot(ru, ru), vecDot(ru, rv)], [vecDot(ru, rv), vecDot(rv, rv)]]
+  })
+
+  // curve/surface-graph — turn a scalar field f(x,y) into a
+  // parameterized surface (x, y, f(x,y)).
+  def('curve/surface-graph', (field) => {
+    return (uv) => {
+      const [x, y] = uv.map(num)
+      const z = num(callAny(field, [[x, y]], fuel))
+      return [x, y, z]
+    }
+  })
 }
 
 // ── small utility helpers used by plot impls ───────────────────────
