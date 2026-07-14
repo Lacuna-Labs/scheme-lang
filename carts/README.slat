@@ -107,4 +107,16 @@
     (:path "carts/music/scales.scm"
      :summary "seven modes of the major scale from C.")
     (:path "carts/music/random-melody.scm"
-     :summary "a random walk through the C minor pentatonic.")))
+     :summary "a random walk through the C minor pentatonic.")
+
+    ;; ── data ──
+    (:path "carts/data/csv-summarize.scm"
+     :summary "parse a CSV, compute sum/mean/min/max, find top row.")
+    (:path "carts/data/log-tail.scm"
+     :summary "log lines → filter ERRORs, tally by severity.")
+    (:path "carts/data/word-count.scm"
+     :summary "clean, tokenize, tally, sort — Zipf on a passage.")
+    (:path "carts/data/json-explore.scm"
+     :summary "json-parse and dig around inside — hash-ref, map.")
+    (:path "carts/data/histogram.scm"
+     :summary "1000 samples from N(0,1) bucketed and drawn as bars.")))
