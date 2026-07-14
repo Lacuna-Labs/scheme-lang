@@ -20446,11 +20446,16 @@
   :kind "meta"
   :signature "(vec/dim v) -> number"
   :summary "Return the dimension (component count) of a vector."
-  :explanation "Returns the number of components in the vector as a non-negative integer. A vector with components [a, b, c] has dimension 3. This is an O(1) introspection operation that does not modify the vector. Essential for writing dimension-polymorphic code and for validation before operations like vec/+ that require matching dimensions."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Length lookup on the underlying list. Non-list inputs coerce to a 1-element list (dim 1); the empty list gives 0."
+  :explanation "Returns the number of components in the vector as a non-negative integer. A vector with components [a, b, c] has dimension 3. This is O(1) introspection that does not modify the vector. Essential for dimension-polymorphic code and for validation before vec/+ that require matching dimensions."
   :examples (
-    (:tier "novice" :code "(define v (vec/make (list 5 10 15 20)))\n(vec/dim v)" :note "A 4-component vector; vec/dim returns 4.")
-    (:tier "intermediate" :code "(define (same-size? u v)\n  (= (vec/dim u) (vec/dim v)))\n(define a (vec/make (list 1 2 3)))\n(define b (vec/make (list 4 5)))\n(same-size? a b)" :note "Checks whether two vectors have the same dimension before attempting addition.")
-    (:tier "expert" :code "(define (vec-from-list lst)\n  (let ((v (vec/make lst)))\n    (list 'vector (vec/dim v) (vec/->string v))))\n(define (batch-sum vecs)\n  (if (null? vecs) (escalate 'empty-batch null)\n    (let ((d (vec/dim (car vecs))))\n      (if (every (lambda (v) (= (vec/dim v) d)) vecs)\n        (fold-left vec/+ (car vecs) (cdr vecs))\n        (escalate 'dimension-mismatch (list 'expected d 'got (map vec/dim vecs)))))))\n(batch-sum (list (vec/make (list 1 0)) (vec/make (list 0 1))))" :note "Uses vec/dim to validate that all vectors in a batch are compatible for summation.")
+    (:tier "novice" :code "(vec/dim '(1 2 3 4))" :note "A 4-component vector. Returns 4.")
+    (:tier "apprentice" :code "(vec/dim '())" :note "Empty list has dimension 0. Valid, if uncommon — often signals an intermediate calculation ran out of components.")
+    (:tier "intermediate" :code "(define (same-size? u v)\n  (= (vec/dim u) (vec/dim v)))\n(list (same-size? '(1 2 3) '(4 5 6)) (same-size? '(1 2) '(1 2 3)))" :note "Predicate for pre-checking vec/+ compatibility. Returns (#t #f).")
+    (:tier "expert" :code "(define (safe-vec-op u v op)\n  (if (= (vec/dim u) (vec/dim v))\n      (op u v)\n      'dim-mismatch))\n(list (safe-vec-op '(1 2 3) '(4 5 6) vec/+)\n      (safe-vec-op '(1 2) '(1 2 3) vec/+))" :note "Guarded op: apply only when dims agree, else return the sentinel. Returns ((5 7 9) dim-mismatch).")
+    (:tier "master" :code "(define (all-same-dim? vecs)\n  (cond ((null? vecs) #t)\n        (else\n         (let ((d (vec/dim (car vecs))))\n           (let loop ((rest (cdr vecs)))\n             (cond ((null? rest) #t)\n                   ((= (vec/dim (car rest)) d) (loop (cdr rest)))\n                   (else #f)))))))\n(list (all-same-dim? (list '(1 0) '(0 1) '(1 1)))\n      (all-same-dim? (list '(1 2 3) '(4 5))))" :note "Validate a whole batch: only proceed with (vec/+) or its friends if every vector in the list has matching dim. Returns (#t #f).")
   )
   :caveats ("Returns the logical dimension; an empty vector (dimension 0) is valid but uncommon." "Dimension is immutable once the vector is constructed; you cannot resize a vector in place." "Two vectors with the same dimension may still fail operations like vec/cross if dimension ≠ 3.")
   :drawbacks ("Not necessary for vectors created and used inline; useful mainly for validation in polymorphic contexts." "Should not be called in tight loops if you already know the dimension; cache it instead.")
