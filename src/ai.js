@@ -213,6 +213,93 @@ export function installAi(env) {
     return state.llm.tokens(String(text))
   }, 'network')
 
+  // ── AI verbs (Sakura's Scheme-facing thinking surface) ─────────────
+  //
+  // These sit above llm/* and cortex/*. They're what a cart calls when
+  // it wants "classify this", "embed this", "summarize this" — without
+  // caring which model or store. Each verb routes to state.llm, so
+  // when no provider is wired the missing-LLM stub throws a clean
+  // "requires provider" error. Alfred: "We can't lie to people." The
+  // error IS the honest answer when the sidecar isn't wired.
+  //
+  // ai/embed is the ONE exception — a deterministic hash-vector
+  // fallback is provided so REPL scripts can still get a stable,
+  // reproducible vector for testing. The vector is :low-fidelity and
+  // the docs say so.
+
+  const sidecar = (verb, hint) => () => {
+    throw new Error(
+      `(${verb} …) requires-python-ml-sidecar. ` +
+      `${hint} ` +
+      `Set :ai-provider in scheme-lang.config.slat, ` +
+      `or call setAiProvider({ llm: … }) at startup.`
+    )
+  }
+
+  // Deterministic FNV-1a-flavored 32-dim hash vector. Not an embedding
+  // in any semantic sense — a stable per-string fingerprint suitable
+  // for tests and REPL demos only. Labeled low-fidelity in the docs.
+  const hashVector = (text) => {
+    const s = String(text)
+    const dims = 32
+    const out = new Array(dims).fill(0)
+    let h = 2166136261 >>> 0
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i)
+      h = Math.imul(h, 16777619) >>> 0
+      out[i % dims] = ((out[i % dims] + (h & 0xff)) % 1000) / 1000
+    }
+    return out
+  }
+
+  // (ai/embed text) — return an embedding vector.
+  //   Wired: routes through the configured LLM provider.
+  //   Standalone fallback: 32-dim deterministic hash vector, :low-fidelity.
+  def('ai/embed', (text) => {
+    try {
+      return state.llm.embed(String(text))
+    } catch (_) {
+      // No LLM provider — use the hash-vector fallback so REPL scripts
+      // and tests don't blow up. Documented as :low-fidelity.
+      return hashVector(text)
+    }
+  }, 'network')
+
+  // (ai/classify text [labels]) — assign a label to text.
+  //   Requires an LLM sidecar; graceful error otherwise.
+  def('ai/classify', sidecar('ai/classify',
+    'Classification requires a running ML sidecar; no local fallback.'), 'network')
+
+  // (ai/generate prompt [options]) — generate text from a prompt.
+  //   Requires an LLM sidecar; graceful error otherwise.
+  def('ai/generate', sidecar('ai/generate',
+    'Text generation requires a running LLM sidecar; no local fallback.'), 'network')
+
+  // (ai/summarize text [options]) — summarize text.
+  //   Requires an LLM sidecar; graceful error otherwise.
+  def('ai/summarize', sidecar('ai/summarize',
+    'Summarization requires a running LLM sidecar; no local fallback.'), 'network')
+
+  // (ai/translate text target-lang [source-lang]) — translate text.
+  //   Requires an LLM sidecar; graceful error otherwise.
+  def('ai/translate', sidecar('ai/translate',
+    'Translation requires a running LLM sidecar; no local fallback.'), 'network')
+
+  // (ai/rank query candidates) — rank candidates by relevance.
+  //   Requires an embedding sidecar; graceful error otherwise.
+  def('ai/rank', sidecar('ai/rank',
+    'Ranking requires an embedding sidecar; no local fallback (order would be arbitrary).'), 'network')
+
+  // (ai/rerank query candidates) — rerank an existing list.
+  //   Requires an embedding sidecar; graceful error otherwise.
+  def('ai/rerank', sidecar('ai/rerank',
+    'Reranking requires a cross-encoder sidecar; no local fallback.'), 'network')
+
+  // (ai/vector-search query [k]) — search a vector index.
+  //   Requires a vector store; graceful error otherwise.
+  def('ai/vector-search', sidecar('ai/vector-search',
+    'Vector search requires an indexed embedding store; no local fallback.'), 'network')
+
   return env
 }
 
