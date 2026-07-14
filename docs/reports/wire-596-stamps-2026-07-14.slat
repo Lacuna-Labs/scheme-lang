@@ -26,3 +26,4 @@
 (fail :verb "obj-get" :lane "priya-math-b" :verified-at "2026-07-14T19:35:52.877Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (stamp :verb "audio/listen" :lane "yuki-audio" :verified-at "2026-07-14T19:35:53.860Z" :examples-passed 5 :required-fields-present #t)
 (fail :verb "pixels-wide" :lane "priya-math-b" :verified-at "2026-07-14T19:36:40.698Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "comb/multinomial" :lane "rin-topo-comb" :verified-at "2026-07-14T19:37:27.487Z" :examples-passed 0 :reason "missing fields: kind,explanation")

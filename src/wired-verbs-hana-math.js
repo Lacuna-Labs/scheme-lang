@@ -388,13 +388,22 @@ export function installWiredVerbsHanaMath(env, fuel) {
     const N = samples === undefined ? 200 : Math.max(4, num(samples) | 0)
     const h = DEFAULT_H
     const fp = (x) => (callNum(fn, [x + h], fuel) - callNum(fn, [x - h], fuel)) / (2 * h)
+    const zeroTol = 1e-8
     const points = []
     let prevX = A, prevD = fp(A)
+    // Handle A itself as a critical point if derivative is ~0.
+    if (Number.isFinite(prevD) && Math.abs(prevD) < zeroTol) points.push(A)
     for (let i = 1; i <= N; i++) {
       const x = A + (B - A) * i / N
       const d = fp(x)
-      if (Number.isFinite(prevD) && Number.isFinite(d) && prevD * d < 0) {
-        // sign change — refine with 40 rounds of bisection
+      if (!Number.isFinite(prevD) || !Number.isFinite(d)) {
+        prevX = x; prevD = d; continue
+      }
+      // If d is (nearly) zero, x itself is a critical point.
+      if (Math.abs(d) < zeroTol) {
+        points.push(x)
+      } else if (prevD * d < 0) {
+        // Sign change strictly across the interval — bisect refine.
         let lo = prevX, hi = x, dLo = prevD
         for (let k = 0; k < 40; k++) {
           const mid = 0.5 * (lo + hi)
@@ -416,13 +425,20 @@ export function installWiredVerbsHanaMath(env, fuel) {
     const h = DEFAULT_H
     const fp  = (x) => (callNum(fn, [x + h], fuel) - callNum(fn, [x - h], fuel)) / (2 * h)
     const fpp = (x) => (callNum(fn, [x + h], fuel) - 2 * callNum(fn, [x], fuel) + callNum(fn, [x - h], fuel)) / (h * h)
+    const zeroTol = 1e-8
     // First find critical points (inlined bisection).
     const crit = []
     let prevX = A, prevD = fp(A)
+    if (Number.isFinite(prevD) && Math.abs(prevD) < zeroTol) crit.push(A)
     for (let i = 1; i <= N; i++) {
       const x = A + (B - A) * i / N
       const d = fp(x)
-      if (Number.isFinite(prevD) && Number.isFinite(d) && prevD * d < 0) {
+      if (!Number.isFinite(prevD) || !Number.isFinite(d)) {
+        prevX = x; prevD = d; continue
+      }
+      if (Math.abs(d) < zeroTol) {
+        crit.push(x)
+      } else if (prevD * d < 0) {
         let lo = prevX, hi = x, dLo = prevD
         for (let k = 0; k < 40; k++) {
           const mid = 0.5 * (lo + hi)
@@ -498,26 +514,44 @@ export function installWiredVerbsHanaMath(env, fuel) {
     return best / count
   })
 
-  // Series convergence test — evaluate partial sums of a term-fn
-  // over [0..N] and check whether they stabilize.
+  // Series convergence test. Alfred: "We can't lie to people."
+  // Numeric convergence is undecidable in general; we return a
+  // best-effort heuristic based on (a) partial-sum plateau against
+  // an octave-earlier partial sum and (b) ratio-test threshold.
+  // We report #t when strong evidence of convergence is present,
+  // #f otherwise. Ambiguous cases return #f rather than guessing.
   def('calc/series-converges?', (termFn, N) => {
-    const NN = N === undefined ? 200 : num(N) | 0
-    let s = 0, prev = 0, stableCount = 0
+    const NN = N === undefined ? 2000 : num(N) | 0
+    // Sample partial sums at n = NN/4, NN/2, NN. If the tail from
+    // NN/2 to NN adds a fraction of what NN/4 to NN/2 added, the
+    // series is stabilizing — a signature of convergence.
+    let s = 0
+    let s_quarter = null, s_half = null
+    const q = Math.max(4, Math.floor(NN / 4))
+    const h = Math.max(8, Math.floor(NN / 2))
     for (let n = 0; n <= NN; n++) {
       const t = callNum(termFn, [n], fuel)
       if (!Number.isFinite(t)) return false
       s += t
       if (!Number.isFinite(s)) return false
-      if (n > 20 && Math.abs(s - prev) < 1e-8) {
-        stableCount++
-        if (stableCount > 5) return true
-      } else {
-        stableCount = 0
-      }
-      prev = s
+      if (n === q) s_quarter = s
+      if (n === h) s_half = s
     }
-    // If we got here without stabilizing, it likely diverges.
-    return false
+    if (s_quarter === null || s_half === null) return false
+    // Compare tail contributions.
+    const tailMid   = Math.abs(s_half    - s_quarter)   // from q to h
+    const tailFinal = Math.abs(s         - s_half)      // from h to NN
+    // Convergent: tail contribution shrinks octave-over-octave.
+    //   1/n (harmonic, divergent): tailFinal/tailMid → 1.
+    //   1/n^2 (convergent):        tailFinal/tailMid → 1/2.
+    //   1/n^3 (convergent):        tailFinal/tailMid → 1/4.
+    //   geometric r^n:             tailFinal/tailMid → 0.
+    //   constant (divergent):      tailFinal/tailMid → 1.
+    // Threshold 0.7 draws a clean line: 1/n^p converges iff p>1,
+    // and 1/n^{1.5} gives ~1/sqrt(2) ≈ 0.707 (borderline — we bias
+    // false, honest about the numerical limit).
+    if (tailMid < 1e-12) return true  // early plateau
+    return tailFinal < tailMid * 0.7
   })
 
   // ── integration ────────────────────────────────────────────────
