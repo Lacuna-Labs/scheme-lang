@@ -63,6 +63,7 @@ works lives here — and every load-bearing claim is anchored to a real
 - [§18. Glossary](#18-glossary)
 - [§19. References](#19-references)
 - [§20. Approval](#20-approval)
+- [§22. Decisions and Conventions](#22-decisions-and-conventions)
 
 ---
 
@@ -2400,6 +2401,124 @@ Scheme verbs (registered in VerbRegistry):
 - `(cortex/set namespace key value confidence)` — write a fact with versioning
 - `(cortex/inject)` — returns the formatted injection block for system prompt
 - `(cortex/facts namespace)` — list all current facts in a namespace
+
+---
+
+## §22. Decisions and Conventions
+
+Sakura Scheme is a small R7RS-flavored Scheme with a handful of
+deliberate deviations. Every place we depart from R7RS-small is logged
+in a decisions file with the WHY. Every positive convention — what we
+DO — is logged in a companion conventions file.
+
+> **Alfred, 2026-07-14:** "Here's what we did and here's why. Here's
+> what we did and here's why. Here's what we did and here's why. If we
+> come up with a better idea, we can see why we made that poor choice
+> earlier on."
+
+> **Alfred, on the taste:** "They've tried things and talked about it
+> longer than I have, so I trust their judgment." — Scheme is our
+> default. We break only when the implementation demands it. When we
+> break, we log what we did and why.
+
+> **Alfred, on locking:** "The minute people start using it, we lock
+> it in." Decisions matter. Document them so we can revisit.
+
+### §22.1 The two documents
+
+- **`docs/ENGINEERING-DECISIONS.slat`** — the log of deliberate
+  deviations from R7RS-small. Each entry names WHAT we did, WHY, what
+  ALTERNATIVES we rejected, and cross-references the R7RS section or
+  SRFI number the deviation touches.
+
+- **`docs/CONVENTION.slat`** — the positive statement of what our
+  conventions ARE. Every rule cross-refs its authority — an R7RS
+  section, an SRFI number, or a decision-id.
+
+Read them together. If a rule in `CONVENTION.slat` breaks from R7RS,
+you can find the WHY under the decision-id it cross-references.
+
+### §22.2 The decision-entry format
+
+Every entry in `ENGINEERING-DECISIONS.slat` is a single `(decision ...)`
+record with these fields:
+
+```scheme
+(decision
+  :id                    "NNN"       ; stable, monotonic, string
+  :what                  "..."       ; one-sentence summary
+  :why                   "..."       ; one-paragraph reasoning
+  :date                  "YYYY-MM-DD"
+  :status                "active"    ; or "superseded" or "reversed"
+  :alternatives-rejected ((name reason) (name reason) ...)
+  :convention            "..."       ; what we do instead
+  :examples              ((:pre "...") (:post-* "...") ...)
+  :affects               "..."       ; scope of the deviation
+  :author                "..."
+  :cross-refs            ("R7RS §N.N" "SRFI-NN" ...)
+  :supersedes            "NNN"       ; if this entry reverses an old one
+  :superseded-by         "NNN")      ; if a later entry reverses this one
+```
+
+**Only `:id`, `:what`, `:why`, `:date`, and `:status` are required.**
+The rest are strongly encouraged. The point of `:alternatives-rejected`
+is that a future maintainer who thinks "why didn't we just do X" will
+find the entry naming X and the reason we didn't.
+
+### §22.3 The reversal pattern — never delete, never renumber
+
+When we change our minds:
+
+1. **Add a new decision entry** with a fresh, monotonic `:id`.
+2. **Name the id it replaces** via `:supersedes "NNN"`.
+3. **Edit the old entry** to add `:status "superseded"` and
+   `:superseded-by "MMM"` pointing at the new one.
+4. **Do not delete the old entry.** Do not renumber. The history
+   of the reasoning is the point.
+
+Example already in the log: decision-008 (no hash tables / vectors /
+records) was reversed by decision-009 (adopt SRFI-9, SRFI-69, R7RS
+vectors). The old entry is still there, tagged superseded, cross-linked
+forward. A reader in 2028 wondering why we started austere and
+expanded will find the whole arc in the log.
+
+### §22.4 Proposing a new decision
+
+If you find yourself about to deviate from R7RS-small — or you find an
+existing deviation that isn't logged — the workflow is:
+
+1. **Write the entry** in `docs/ENGINEERING-DECISIONS.slat` with the
+   next `:id`. Include the `:alternatives-rejected` block honestly —
+   listing alternatives you considered and why they lost. If you
+   can't name a rejected alternative, that's a smell.
+2. **Add the positive rule** to `docs/CONVENTION.slat` cross-referencing
+   the new decision-id.
+3. **Open a PR.** Discuss. Land. The log is the record.
+
+If the deviation is not yet blessed, do not merge the code. Un-logged
+deviations are bugs, not features.
+
+### §22.5 The guiding doctrine — in Alfred's words
+
+> **Stay close to Scheme. Break only when the implementation demands
+> it. When we break, log what we did and why.**
+
+The full 16 seeded decisions in `ENGINEERING-DECISIONS.slat` cover: no
+keyword-arg syntax (decision-001); no polymorphic `get` (decision-002);
+Lisp-1 namespace (decision-003); no `call/cc` (decision-004); no
+`eval`/`read` from string (decision-005); immutable pair cells
+(decision-006); one-level quasiquote (decision-007); alist-only v1
+(decision-008, superseded); SRFI-9 records + SRFI-69 hash tables + R7RS
+vectors adopted (decision-009); no ports, all I/O verb-gated
+(decision-010); no numerical tower (decision-011); practical hygiene
+(decision-012); kebab-case/`/`-namespace/`!`-mutation/`?`-predicate
+(decision-013); return values match `:signature` (decision-014);
+trampolined TCO (decision-015); R7RS §6.7 string-escape reader
+(decision-016).
+
+The 12 seeded convention areas in `CONVENTION.slat` cover: signatures,
+accessors, records, collections, error handling, immutability, control
+flow, macros, documentation, IO, numbers, and naming.
 
 ---
 

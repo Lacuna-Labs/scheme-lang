@@ -1,41 +1,361 @@
 ;; ═══════════════════════════════════════════════════════════════
 ;; SAKURA SCHEME — ENGINEERING DECISIONS
 ;;
-;; Deliberate deviations from R7RS-small, and the reasons for them.
+;; Every place we deviate from R7RS-small Scheme, we record the
+;; decision here with the WHY.
 ;;
-;; Doctrine: "They've tried things and talked about it longer than I
-;; have, so I trust their judgment." — Alfred, 2026-07-14
+;; Alfred: "Here's what we did and here's why. Here's what we did
+;; and here's why. Here's what we did and here's why. If we come up
+;; with a better idea, we can see why we made that poor choice
+;; earlier on."
 ;;
-;; We stay close to R7RS-small unless an implementation-level reason
-;; justifies a deviation. Where we deviate, we log why here. Any
-;; deliberate break lives in this file. If it isn't logged, it isn't
-;; a decision — it's a bug.
+;; Alfred, on the guiding taste: "They've tried things and talked
+;; about it longer than I have, so I trust their judgment." — Scheme
+;; is our default. We break only when the implementation demands it.
 ;;
-;; Format: SLAT, one (decision ...) record per entry.
+;; Alfred, on locking: "The minute people start using it, we lock it
+;; in." Decisions matter. Document them so we can revisit.
 ;;
-;; Companion: docs/reports/convention-sweep-*.slat lists the
-;; findings that motivated (or contradict) each decision.
+;; ─── Rules of the log ────────────────────────────────────────────
+;;
+;; The order is stable. New decisions get incrementing :id.
+;; Old decisions do not get renumbered.
+;; Reversals are new decisions that supersede — they name the id
+;;   they replace via :supersedes, and the old entry gets :status
+;;   "superseded" and :superseded-by pointing forward.
+;; Never delete an entry. History is the point.
+;;
+;; If a deviation from R7RS-small is not logged here, it is not a
+;; decision — it is a bug. File it, or fix it.
+;;
+;; ─── Format ──────────────────────────────────────────────────────
+;;
+;; File format: SLAT (line-delimited s-expressions). One record per
+;; (decision ...). Comments start with `;`. UTF-8.
+;;
+;; Field key:
+;;   :id                    stable identifier, monotonic, string "NNN"
+;;   :what                  one-sentence summary of the deviation
+;;   :why                   one-paragraph reasoning
+;;   :date                  ISO-8601 date the decision landed
+;;   :status                "active" | "superseded" | "reversed"
+;;   :alternatives-rejected list of (name reason) pairs we considered
+;;   :convention            positive statement of what we do instead
+;;   :examples              (:pre ...) (:post-* ...) code samples
+;;   :affects               scope — which verbs/files/subsystems
+;;   :author                who made the call
+;;   :cross-refs            R7RS sections + SRFI numbers + our docs
+;;   :supersedes            id of a decision this reverses (if any)
+;;   :superseded-by         id of a later decision that reverses this
+;;
+;; Companion: docs/CONVENTION.slat is the positive statement of what
+;; our conventions ARE. Read them together.
+;;
+;; Companion: docs/reports/convention-sweep-*.slat catalog findings
+;; that motivated (or contradict) each decision.
 ;; ═══════════════════════════════════════════════════════════════
 
 (decision
   :id "001"
-  :what "Positional args, no keyword-arg syntax in interp"
-  :why "R7RS-small does not have keyword args. Adopting them would fork the interp. Property-list is Scheme-idiomatic for many-arg verbs; positional is idiomatic for few-arg verbs."
+  :what "Positional args in verb signatures; no keyword-arg syntax in the interpreter"
+  :why "R7RS-small has no keyword args. Adopting :key value syntax would extend the reader and fork the interpreter. Property lists are Scheme-idiomatic for many-arg configurations, and positional args are idiomatic for few-arg verbs. We refuse to fork the reader for a nicety."
   :date "2026-07-14"
+  :status "active"
   :alternatives-rejected
-    (("interp keyword args" "Would extend the reader; deviation from R7RS.")
-     ("SRFI-88 keyword objects" "Not universally supported; adds surface area."))
-  :affects "Verb signatures that currently use :key value syntax in their :signature or :examples fields"
-  :author "Alfred")
+    (("Add :key value self-eval to the interp"
+       "Would fork the reader. Not R7RS. Users familiar with Scheme would be surprised.")
+     ("Adopt SRFI-88 keyword objects"
+       "Not universally supported across Scheme dialects. Adds surface area.")
+     ("Adopt SRFI-89 optional/keyword parameters"
+       "Same surface-area cost. Same non-universal-support problem."))
+  :convention "Verbs with less-than-or-equal-to 5 params use positional args. Verbs with more take a single alist or hash-table as the last arg."
+  :examples
+    ((:pre "(motion/move-to target x y :ms 500 :curve 'ease-in-quad)")
+     (:post-positional "(motion/move-to target x y 500 'ease-in-quad)")
+     (:post-plist "(motion/move-to target x y '((ms . 500) (curve . ease-in-quad)))"))
+  :affects "About 50 verb signatures across motion/*, cadence/*, radio/*, cine/*"
+  :author "Alfred"
+  :cross-refs ("R7RS §4 (expressions)" "SRFI-88 (keyword objects)" "SRFI-89 (optional and keyword parameters)"))
 
 (decision
   :id "002"
   :what "No polymorphic `get` verb"
-  :why "Clojure-ism, not Scheme. Scheme accessors are shape-specific by design — hash-ref, vector-ref, assoc, record accessors."
+  :why "`get` is a Clojure-ism. Scheme accessors are shape-specific by design — the type is part of the call. Adding `get` would hide type information and set a precedent for further Clojure-ward drift."
   :date "2026-07-14"
+  :status "active"
   :alternatives-rejected
-    (("Add (get x k)" "Would hide type info; contra R7RS explicit-shape idiom."))
-  :affects "Reference entries that currently call (get x 'field)"
-  :author "Alfred")
+    (("Add (get x k) as a polymorphic dispatch"
+       "Hides type. Non-standard. Sets precedent for further Clojure-isms.")
+     ("Add (getf x k) alias to hash-ref for alists"
+       "Same problem — hides the shape of the accessed structure."))
+  :convention "Use shape-specific accessors: hash-ref, hash-table-ref, assoc/assq/assv, vector-ref, list-ref, record accessors."
+  :examples
+    ((:pre "(get card 'title)")
+     (:post-hash "(hash-ref card 'title)")
+     (:post-alist "(cdr (assq 'title card))"))
+  :affects "5 reference entries: motion/cadence, motion/drop, motion/arc, motion/with-feel, motion/with-pace"
+  :author "Alfred"
+  :cross-refs ("R7RS §6.4 (pairs and lists)" "R7RS §6.8 (vectors)" "SRFI-69 (basic hash tables)"))
 
-;; End of decisions. Append future entries below with monotonic :id.
+(decision
+  :id "003"
+  :what "Lisp-1 namespace (functions and values share the environment)"
+  :why "R7RS-small permits either Lisp-1 or Lisp-2. We picked Lisp-1 because the cart-writing surface is prompt-authored — Sakura and operators write short programs where distinct value+function slots would double the surface area users have to reason about. One name, one slot."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Lisp-2 with separate function slot"
+       "Doubles the mental model at the prompt-author's expense. Not the affordance we want."))
+  :convention "One name, one binding. `(define foo …)` shadows any prior binding for `foo`, whether it was a value or a procedure."
+  :examples
+    ((:post "(define map 42) ; shadows the procedure; that is intentional and visible")
+     (:cross-check "See interp.js env-lookup: single slot per name."))
+  :affects "Whole interpreter"
+  :author "Alfred"
+  :cross-refs ("R7RS §5.3 (variable definitions)" "docs/ENGINEERING.md §2.1"))
+
+(decision
+  :id "004"
+  :what "No call-with-current-continuation (call/cc) and no continuations"
+  :why "The verb dispatcher relies on a structural gate-walk: a program is scanned, gate decisions are made, then the dispatcher runs. A first-class continuation could capture state before a gate decision and re-enter after — bypassing every safety property the gate enforces. Continuations would break the safety architecture, not just complicate it."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Escape-only continuations (dynamic-wind + delimited)"
+       "Even one-shot escapes complicate reasoning about pre-flight gate decisions. Deferred until a concrete need appears.")
+     ("Exceptions only (raise + guard)"
+       "This is what we picked instead. See :convention."))
+  :convention "Non-local exit is done with raise + guard (R7RS §6.11). Every verb declares what it :raises in the reference entry."
+  :examples
+    ((:pre "(call/cc (lambda (k) …))")
+     (:post "(guard (exn ((match? exn 'oops) (recover exn))) (raise 'oops))"))
+  :affects "Whole interpreter"
+  :author "Alfred"
+  :cross-refs ("R7RS §6.10 (control features)" "R7RS §6.11 (exceptions)" "docs/ENGINEERING.md §2.2"))
+
+(decision
+  :id "005"
+  :what "No `eval` and no `read` from string"
+  :why "The dispatcher's gate makes decisions statically over a source form. If a running program could re-enter with arbitrary new source, the gate would need to re-run during dispatch — losing its atomicity guarantee. The `apply()` seam re-enters Scheme with values, not text. That is enough."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("`eval` restricted to a sandbox env"
+       "The point of the gate is that new source is not encountered during dispatch. Sandboxing does not solve the atomicity break.")
+     ("`read` returning a data list"
+       "We do have `quote`, `quasiquote`, and data literals. Runtime parsing is unnecessary for the surface we serve."))
+  :convention "Programs are Scheme source at author-time. Values pass through `apply()` at runtime. Source does not re-enter the interp at runtime."
+  :examples
+    ((:pre "(eval `(+ ,x ,y))")
+     (:post "((lambda (a b) (+ a b)) x y)"))
+  :affects "Whole interpreter"
+  :author "Alfred"
+  :cross-refs ("R7RS §6.12 (environments and eval)" "docs/ENGINEERING.md §2.2"))
+
+(decision
+  :id "006"
+  :what "Immutable pair cells (cons/car/cdr produce immutable JS arrays)"
+  :why "Mutable list structure is a footgun at author scale — a shared tail can cause action-at-a-distance bugs in cart payloads that are read by many consumers. Mutation via `set!` on a name is enough. Carts never mutate cons cells."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Full R7RS mutable pairs with set-car! and set-cdr!"
+       "Author-scale bug surface exceeds any performance win. We are not writing a system Scheme."))
+  :convention "Rebind with `set!`. Build new lists via `cons` / `list` / `append`. No `set-car!`, no `set-cdr!`."
+  :examples
+    ((:pre "(set-car! xs 42)")
+     (:post "(set! xs (cons 42 (cdr xs)))"))
+  :affects "Whole interpreter; every list-producing verb"
+  :author "Alfred"
+  :cross-refs ("R7RS §6.4 (pairs and lists)" "docs/ENGINEERING.md §2.2"))
+
+(decision
+  :id "007"
+  :what "Quasiquote nests one level deep only"
+  :why "Full R7RS quasiquote nesting is expensive to implement and the cart-authoring surface has not needed it in a year of use. One-level expansion — where nested quasiquotes drop a level per nesting — is sufficient for cart data payloads. If a cart needs deeper nesting today, restructure the template."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Full R7RS quasiquote nesting"
+       "Deferred, not rejected. The implementation cost has not paid for itself yet. See interp.js:507-509 for the deferred-work marker."))
+  :convention "Use one level of quasiquote. Restructure when tempted to nest."
+  :examples
+    ((:pre "``(a ,(b ,c))          ; drops to `(a (b ,c)) — probably not what you meant")
+     (:post "`(a ,b) then `(x ,y)  ; two separate templates, one level each"))
+  :affects "reader.js, interp.js quasiExpand"
+  :author "Alfred"
+  :cross-refs ("R7RS §4.2.8 (quasiquotation)" "docs/ENGINEERING.md §2.2, §AE.5"))
+
+(decision
+  :id "008"
+  :what "No hash tables, vectors, or records as first-class Scheme values (initially)"
+  :why "Cart payloads use alists plus symbols. The JS host owns any mutable structured state that needs to cross the seam. This keeps the Scheme surface small enough to hold in one head and lets the host be the source of truth for structured data."
+  :date "2026-07-14"
+  :status "reversed"
+  :superseded-by "009"
+  :alternatives-rejected
+    (("SRFI-9 records + SRFI-69 hash tables from day one"
+       "We wanted the Scheme surface small at v1. This turned out to be too austere — see decision-009."))
+  :convention "(historical) Use alists. Symbols as keys. Host owns mutable structured state."
+  :examples
+    ((:v1 "(define card '((title . \"Hello\") (mint . 5))) ; alist")
+     (:v1-access "(cdr (assq 'title card))"))
+  :affects "Whole interpreter (as originally shipped)"
+  :author "Alfred"
+  :cross-refs ("SRFI-9 (records)" "SRFI-69 (basic hash tables)" "R7RS §6.8 (vectors)" "docs/ENGINEERING.md §2.2"))
+
+(decision
+  :id "009"
+  :what "Adopt SRFI-9 records, SRFI-69 hash tables, and R7RS vectors as first-class values"
+  :why "Author experience with alist-only payloads showed the missing structures caused more code duplication (hand-rolled record accessors, quadratic lookups over long alists) than the small-surface aesthetic saved. Records are the shape people reach for; hash tables are the shape lookups want. Vectors were already needed for framebuffer + sound buffers. Ship them with the standard SRFI shapes so we stay Scheme."
+  :date "2026-07-14"
+  :status "active"
+  :supersedes "008"
+  :alternatives-rejected
+    (("Records only, no hash tables"
+       "Long-alist lookup is a real cost. Both, or neither.")
+     ("Host-owned tables via a `table/*` verb library"
+       "Fine for interop, insufficient for author-time ergonomics. We want (hash-ref t k) at author time, not a verb dispatch."))
+  :convention "Use define-record-type for records (SRFI-9). Use make-hash-table / hash-ref / hash-set! for hash tables (SRFI-69). Use vector / vector-ref / vector-set! for vectors (R7RS §6.8). Mutating operations end in `!`."
+  :examples
+    ((:record "(define-record-type card (make-card title mint) card?  (title card-title) (mint card-mint))")
+     (:hash "(define t (make-hash-table)) (hash-set! t 'title \"Hello\") (hash-ref t 'title)")
+     (:vector "(define v (vector 1 2 3)) (vector-ref v 0)"))
+  :affects "interp.js, primitives, reference entries; expands the surface area of the language"
+  :author "Alfred"
+  :cross-refs ("SRFI-9 (records)" "SRFI-69 (basic hash tables)" "R7RS §6.8 (vectors)" "decision-008"))
+
+(decision
+  :id "010"
+  :what "No file I/O primitives, no ports; all I/O is verb-gated"
+  :why "Every I/O path in Sakura Scheme has to be observable, meterable, and permission-checked at the dispatcher. Ports would smuggle I/O past the gate. Instead each I/O capability is a registered verb — the gate sees it, the audit log records it, the operator can be billed for it."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("(open-input-file …) + read"
+       "Bypasses the gate. Fatal for the meter+audit invariants.")
+     ("Sandbox with a restricted port surface"
+       "Still requires re-implementing the gate at the port layer. Cleaner to route through the verb registry the gate already understands."))
+  :convention "I/O = registered verb. If you want to read a file, register a verb (`fs/read` or similar) with a permission, a latency-class, and an audit-trail. The verb registry is the ONLY door."
+  :examples
+    ((:pre "(with-input-from-file \"cart.sks\" read)")
+     (:post "(fs/read \"cart.sks\")  ; verb — declared permission + audit"))
+  :affects "Whole interpreter; every I/O-touching subsystem"
+  :author "Alfred"
+  :cross-refs ("R7RS §6.13 (input and output)" "docs/ENGINEERING.md §2.2, §6 (verb dispatcher)"))
+
+(decision
+  :id "011"
+  :what "No numerical tower — JS Number for everything"
+  :why "The JS runtime does not have native bignums or exact rationals; we are willing to live inside IEEE-754 double precision for the surface Sakura Scheme serves (framebuffers, sound, animation, marketplaces). Bringing in a bignum library would triple bundle size for a v1 feature we have not needed. Deferred, not rejected."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Full R7RS numerical tower (integer, rational, real, complex, exact/inexact)"
+       "Bundle-size cost + implementation-time cost + a surface we do not need yet.")
+     ("BigInt-only for integer overflow"
+       "BigInt exists but crossing the JS Number / BigInt boundary in author code would be a footgun. All-or-nothing tower, or nothing. We pick nothing for v1."))
+  :convention "All numbers are JS doubles. Integer operations that could overflow at the double boundary (about 2^53) are not guaranteed. If bignum arithmetic becomes needed, escalate — do not silently drift to BigInt."
+  :examples
+    ((:careful "(expt 2 60)  ; imprecise past 2^53; that is a known limit"))
+  :affects "Whole interpreter, every arithmetic verb"
+  :author "Alfred"
+  :cross-refs ("R7RS §6.2 (numbers)" "docs/ENGINEERING.md §2.2"))
+
+(decision
+  :id "012"
+  :what "Practical hygiene, not full R7RS hygiene"
+  :why "Full R7RS syntax-rules hygiene requires syntactic closures or explicit-renaming machinery. In practice, the two capture holes that bite are binder positions in `let`/`lambda`/`letrec`/`define` — those we close by alpha-renaming template binders to fresh gensyms. A macro that introduces a free reference to a use-site name is by design NOT renamed; that is the cooperative-discipline hatch our dialect macros rely on."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Full R7RS explicit-renaming or syntactic-closures hygiene"
+       "Implementation cost has not paid for itself. Two-hole practical hygiene has held for a year of use.")
+     ("No hygiene at all"
+       "The two binder-capture holes actually bite. Not viable."))
+  :convention "Bind names cleanly. If you write a macro that references a free name at the use site, do it deliberately and document it. See macro.js:14-22 for the alpha-renaming pass."
+  :examples
+    ((:hygienic-let "(let ((x 1)) (my-macro-that-binds x-inside)) ; safe — x-inside is gensym'd")
+     (:cooperative "(let ((it 1)) (aif condition body body)) ; if aif introduces `it`, it is NOT renamed — cooperative"))
+  :affects "macro.js"
+  :author "Alfred"
+  :cross-refs ("R7RS §4.3 (macros)" "docs/ENGINEERING.md §2.3"))
+
+(decision
+  :id "013"
+  :what "Kebab-case naming, `/` for namespace, `!` for mutation, `?` for predicate"
+  :why "Scheme convention. Every one of these choices is boring by design. Kebab-case reads left-to-right in prose. `/` for namespace matches many extant Schemes' library conventions. `!` and `?` are R7RS-standard suffixes for mutating and predicate procedures."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("camelCase (JS-style)"
+       "We are Scheme. Kebab-case reads better in Scheme sources.")
+     ("`.` for namespace separator (like SRFI-97 library-part-part)"
+       "SRFI-97 uses `-` between parts. Slash reads more clearly for a two-part namespace/verb pair.")
+     ("No suffix conventions"
+       "Loses free information at the call site."))
+  :convention "Verb names are kebab-case. Namespace and verb are separated by `/`. Mutating verbs end in `!`. Predicates end in `?`."
+  :examples
+    ((:namespace "card/open, hash-table-set!, pair?")
+     (:mutation "(vector-set! v 0 42)  ; ! signals mutation")
+     (:predicate "(null? xs)          ; ? signals predicate"))
+  :affects "Every verb name"
+  :author "Alfred"
+  :cross-refs ("R7RS §1.3.5 (naming conventions)" "SRFI-97 (SRFI Libraries)"))
+
+(decision
+  :id "014"
+  :what "Verbs return values that match their declared :signature; no tagged-list descriptor lies"
+  :why "A verb's :signature is a contract. If the signature says the return is a symbol and the implementation returns a tagged list, the contract is broken and every downstream consumer (Sakura's help, dispatcher's type-check, the operator's own scripts) is lied to. We caught this happening in the convention sweep and made it a hard rule."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Allow verbs to return richer shapes than :signature declares"
+       "Loses static reasoning. Any consumer that trusts :signature will break. Rejected."))
+  :convention "Return values match the :signature declared type exactly. If you want to return more, widen the signature."
+  :examples
+    ((:pre "(:signature \"(fetch id) -> symbol\") ; but returns '(fetched id \"ok\")")
+     (:post "(:signature \"(fetch id) -> (symbol symbol string)\") ; contract now matches"))
+  :affects "About 40 reference entries flagged by the convention sweep"
+  :author "Alfred"
+  :cross-refs ("docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat" "docs/reports/convention-sweep-*.slat"))
+
+(decision
+  :id "015"
+  :what "Tail-call optimization via trampolined sentinels, not native VM tail calls"
+  :why "The JS host does not guarantee proper tail calls across engines. Named-let is the cart's iteration idiom — we cannot afford to blow the stack on a loop. The interp threads Tail/TailCall sentinels through apply() so a tail position returns a thunk the interpreter unwraps in a while-loop. This is R7RS-compliant in observable behavior, non-standard in implementation."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Rely on the JS engine's TCO"
+       "V8 does not implement it; Safari once did, does not now. Not portable.")
+     ("CPS transform the whole program"
+       "Would change the reader's output shape; would collide with the gate's structural walk. Too invasive."))
+  :convention "Tail positions are optimized. Named-let is the loop idiom. See interp.js:9-37 and interp.js:226-248 for the Tail sentinel."
+  :examples
+    ((:loop "(let loop ((n 0)) (if (>= n 1000000) n (loop (+ n 1))))  ; safe — TCO applies"))
+  :affects "interp.js"
+  :author "Alfred"
+  :cross-refs ("R7RS §3.5 (proper tail recursion)" "docs/ENGINEERING.md §2.1"))
+
+(decision
+  :id "016"
+  :what "String-escape reader honors R7RS §6.7 escapes explicitly"
+  :why "Early versions of the reader silently accepted whatever the underlying JS parser did with backslash escapes. That produced non-portable strings (JS-only \\v, missing \\a). We fixed it: the reader honors \\n, \\r, \\t, \\a, \\b, \\\\, \\\", \\|, and \\xHH; anything else is a reader error. This is a bug-fix toward standards, not a deviation."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Silently pass-through unknown escapes"
+       "Non-portable, silently wrong. Rejected."))
+  :convention "Use R7RS §6.7 string escapes. Reader errors on unknown escape sequences."
+  :examples
+    ((:ok "\"line one\\nline two\"")
+     (:error "\"\\q\"  ; reader error — no such escape"))
+  :affects "reader.js"
+  :author "Alfred"
+  :cross-refs ("R7RS §6.7 (strings)" "docs/ENGINEERING.md line 180"))
+
+;; End of seeded decisions. Append new entries below with monotonic :id.
+;; When reversing an old decision, add a NEW entry that names :supersedes,
+;; and edit the old entry to add :status "superseded" + :superseded-by.
+;; Never delete. Never renumber.

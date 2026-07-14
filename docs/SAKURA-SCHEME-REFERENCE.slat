@@ -18720,12 +18720,17 @@
   :library "stat"
   :kind "meta"
   :signature "(stat/sd dataset) -> number"
-  :summary "Calculate the population standard deviation, the square root of variance: √(Σ(x−μ)²/n)."
-  :explanation "Standard deviation measures how far data points typically deviate from the mean. It has the same units as the original data (unlike variance, which is squared), making it intuitive to interpret. The population form (dividing by n) is used when you have the entire population; for a sample, use stat/sd-sample (which divides by n−1 to correct for bias). A single-point dataset returns 0; an empty dataset returns 'nan."
+  :summary "Population standard deviation: sqrt(sum((x-mu)^2)/n)."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Two-pass computation: mean, then sqrt of mean of squared deviations. Empty list returns 0 (NOT 'nan). Single-point returns 0. Uses POPULATION divisor n; for sample SD use stat/sd-sample (divisor n-1)."
+  :explanation "SD measures how far data points typically deviate from the mean. Same units as the raw data. Population form (n divisor). Use stat/sd-sample for sample SD (n-1 divisor)."
   :examples (
-    (:tier "novice" :code "(stat/sd (list 2 4 6 8 10))" :note "Returns ~2.83; measure of typical deviation from the mean (6)")
-    (:tier "intermediate" :code "(let ((factory-a (list 99 100 101 102 100))\n      (factory-b (list 95 100 110 105 90)))\n  (list 'factory-a-sd (stat/sd factory-a)\n        'factory-b-sd (stat/sd factory-b)))" :note "Factory A (SD ≈0.9) has consistent output; Factory B (SD ≈7.9) is much more variable")
-    (:tier "expert" :code "(let ((measurements (list 10.1 10.2 10.0 9.9 10.3 10.1 10.2)))\n  (let ((mu (stat/mean measurements))\n        (sigma (stat/sd measurements)))\n    (let ((z-score (lambda (x) (/ (- x mu) sigma))))\n      (map z-score (list 10.0 10.3)))))" :note "Standardizes measurements for z-score computation; sigma enables unit-free comparison")
+    (:tier "novice" :code "(stat/sd '(2 4 6 8 10))" :note "Returns ~2.83. Mean is 6, so deviations squared and averaged, root-taken.")
+    (:tier "apprentice" :code "(stat/sd '(5 5 5 5 5))" :note "All identical values. Returns 0 — zero spread, degenerate case.")
+    (:tier "intermediate" :code "(let ((factory-a '(99 100 101 102 100))\n      (factory-b '(95 100 110 105 90)))\n  (list ':a (stat/sd factory-a) ':b (stat/sd factory-b)))" :note "Factory A tighter (SD ~1.02) than Factory B (~7.07). SD as a consistency metric.")
+    (:tier "expert" :code "(define (z-of data x)\n  (let ((mu (stat/mean data)) (sig (stat/sd data)))\n    (if (= sig 0) 0 (/ (- x mu) sig))))\n(let ((measurements '(10.1 10.2 10.0 9.9 10.3 10.1 10.2)))\n  (list ':z-10.0 (z-of measurements 10.0)\n        ':z-10.3 (z-of measurements 10.3)))" :note "z-score helper using stat/sd for the denominator. Returns z-values indicating how many SDs each point is from the mean.")
+    (:tier "master" :code "(define (spread-comparison groups)\n  ;; Given a list of (name data) pairs, return one (name sd) record per group,\n  ;; sorted from tightest to widest spread.\n  (let ((pairs (map (lambda (g) (list (car g) (stat/sd (cadr g)))) groups)))\n    (sort pairs (lambda (a b) (< (cadr a) (cadr b))))))\n(spread-comparison\n  (list (list 'a '(99 100 101 102 100))\n        (list 'b '(95 100 110 105 90))\n        (list 'c '(100 100 100 100 100))))" :note "Rank groups by consistency. Returns ((c 0) (a 1.02) (b 7.07)) — group c is perfectly consistent, then a, then b.")
   )
   :caveats ("Empty dataset returns 'nan; guard with stat/count." "This is POPULATION standard deviation (divides by n); use stat/sd-sample for samples." "Single-point dataset returns 0 (zero spread)." "Sensitive to outliers; an extreme value inflates SD more than it does range.")
   :drawbacks ("Assumes continuous or interval data; misleading for categorical or ordinal data." "Interpretation depends on the distribution shape; for non-normal data, stat/iqr is more robust." "Computationally more expensive than stat/range; use range for quick checks." "Often misinterpreted: most data do NOT lie within 1·SD (that depends on distribution shape).")
