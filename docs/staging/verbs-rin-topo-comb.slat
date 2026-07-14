@@ -674,3 +674,201 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Alias for comb/binomial-coeffs. Returns the n-th Pascal row."))
+
+(verb
+  :name "comb/pascal-triangle"
+  :library "comb"
+  :signature "(comb/pascal-triangle n) -> list-of-list-of-integer"
+  :summary "Return the first n+1 rows of Pascal's triangle as a list of lists."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/pascal-triangle 3)"
+     :note "Returns ((1) (1 1) (1 2 1) (1 3 3 1)) — the first four rows.")
+    (:tier "apprentice"
+     :code "(comb/pascal-triangle 0)"
+     :note "Returns ((1)) — just the apex, one row containing one entry.")
+    (:tier "intermediate"
+     :code "(map length (comb/pascal-triangle 6))"
+     :note "Returns (1 2 3 4 5 6 7): the i-th row has i+1 entries. Same pattern as (comb/binomial-coeffs i) is n+1 long.")
+    (:tier "expert"
+     :code "(define (row-sums n)\n  (map (lambda (row) (apply + row)) (comb/pascal-triangle n)))\n(list ':expected (map (lambda (i) (expt 2 i)) (list 0 1 2 3 4 5))\n      ':actual (row-sums 5))"
+     :note "Row-sum identity across the triangle: row i sums to 2^i. Returns (:expected (1 2 4 8 16 32) :actual (1 2 4 8 16 32)). Verified for six rows.")
+    (:tier "master"
+     :code "(define (fibonacci-via-diagonals n)\n  ;; sum of C(n-k, k) for k = 0..floor(n/2) — Fibonacci from Pascal diagonals\n  (define (helper k acc)\n    (let ((upper (- n k)))\n      (if (< upper k) acc\n          (helper (+ k 1) (+ acc (comb/choose upper k))))))\n  (helper 0 0))\n(map fibonacci-via-diagonals (list 0 1 2 3 4 5 6 7 8 9 10))"
+     :note "Domain: Fibonacci numbers hidden in Pascal's diagonals. Sum of shallow diagonals of Pascal's triangle produces the Fibonacci sequence. Returns (1 1 2 3 5 8 13 21 34 55 89) — F(0) through F(10). This is Fibonacci = sum C(n-k, k) for k = 0..floor(n/2)."))
+
+  :related ("comb/binomial-coeffs" "comb/pascal-row" "comb/choose")
+  :caveats ("Materializes ALL n+1 rows; O(n^2) memory." "Result has n+1 rows (rows 0 through n)." "Very large n runs out of numeric precision in the last rows (same limit as comb/choose).")
+  :drawbacks ("Not lazy — cannot stream row by row." "No memoization." "For scanning specific coefficients, prefer comb/choose (O(k)) per query.")
+  :usecases ("Displaying Pascal's triangle for teaching combinatorics or probability." "Batch-computing binomial coefficients when you know you'll need many rows." "Reference table for Fibonacci-via-diagonals and hockey-stick-identity demonstrations.")
+  :learn (:concept "Pascal's triangle — the geometric arrangement of binomial coefficients. Every entry is the sum of the two above it. Contains Fibonacci, powers of 2, triangular numbers, and much more." :prerequisites ("comb/binomial-coeffs" "map") :progression "Study the hidden identities: hockey-stick, row-sums = 2^n, diagonal-sums = Fibonacci, sum of squares of a row = middle entry of the double-length row.")
+
+  :+math
+    (:algebra "Row n is the sequence of C(n,k) for k = 0..n. Pascal's identity: T[n][k] = T[n-1][k-1] + T[n-1][k]. Fibonacci from shallow diagonals: F(n) = sum(k=0..floor(n/2)) C(n-k, k)."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "list of lists — outer length n+1, inner lengths 1..n+1"
+     :proofs "Pascal's identity by cases on 'was element n in the subset'.")
+
+  :+cs
+    (:complexity "Time O(n^2), space O(n^2). Uses n+1 calls to comb/binomial-coeffs (each O(n))."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Nested loop: for i = 0..n build row i by calling binom(i, k) for k = 0..i. Result is a fresh list of fresh lists."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: length pattern (1 2 3 ...), row sums equal 2^n, Fibonacci-via-diagonals identity checks."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("map" "apply")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the output has n rows — it has n+1 (rows 0 through n). Requesting a huge triangle when one row (comb/pascal-row) would do."
+     :when-not-to-use "You need only one row — use comb/pascal-row / comb/binomial-coeffs. You need only one entry — use comb/choose.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "The first n+1 rows of Pascal's triangle as list-of-lists."))
+
+(verb
+  :name "comb/permute"
+  :library "comb"
+  :signature "(comb/permute xs) -> list-of-list"
+  :summary "Enumerate all permutations of the list xs in lexicographic order."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/permute '(1 2 3))"
+     :note "Returns ((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1)) — the six permutations of (1 2 3) in lex order.")
+    (:tier "apprentice"
+     :code "(comb/permute '())"
+     :note "Returns (()) — exactly one permutation, the empty one. Not the empty list; a list containing the empty list.")
+    (:tier "intermediate"
+     :code "(comb/permute '(a))"
+     :note "Returns ((a)) — one permutation of a single-element list.")
+    (:tier "expert"
+     :code "(define (verify-count-matches-factorial xs)\n  (equal? (length (comb/permute xs))\n          (comb/factorial (length xs))))\n(list ':empty (verify-count-matches-factorial '())\n      ':one   (verify-count-matches-factorial '(a))\n      ':three (verify-count-matches-factorial '(a b c))\n      ':five  (verify-count-matches-factorial '(a b c d e)))"
+     :note "Cross-check: |permutations(xs)| == length(xs)! Returns (:empty #t :one #t :three #t :five #t). The identity holds for all list sizes.")
+    (:tier "master"
+     :code "(define (traveling-salesman-brute cities distance)\n  ;; smallest total-distance tour visiting every city exactly once\n  (define tours (comb/permute cities))\n  (define (tour-length tour)\n    (let loop ((remaining tour) (total 0))\n      (if (or (null? remaining) (null? (cdr remaining))) total\n          (loop (cdr remaining) (+ total (distance (car remaining) (cadr remaining)))))))\n  (fold-left min 999999 (map tour-length tours)))\n(traveling-salesman-brute '(a b c d)\n  (lambda (x y)\n    (cond ((and (eq? x 'a) (eq? y 'b)) 1) ((and (eq? x 'b) (eq? y 'c)) 2)\n          ((and (eq? x 'c) (eq? y 'd)) 1) ((and (eq? x 'a) (eq? y 'c)) 3)\n          ((and (eq? x 'a) (eq? y 'd)) 4) ((and (eq? x 'b) (eq? y 'd)) 2)\n          (else 5))))"
+     :note "Domain: brute-force traveling-salesman on 4 cities. Enumerate all 24 tours, sum edge weights, take the min. This example is the FIRST use-case people reach for after learning permute — TSP is O(n!), so comb/permute is only tractable for tiny n but demonstrates the pattern."))
+
+  :related ("comb/factorial" "comb/choose" "comb/multichoose")
+  :caveats ("**Not memory-safe for large lists**: (comb/permute xs) allocates length(xs)! lists. n = 10 is 3.6 million lists; n = 12 is 479 million (do not run)." "Order is lexicographic — stable across calls, useful for tests." "For duplicate elements in xs, duplicates appear in the output (not deduplicated).")
+  :drawbacks ("Materializes the whole set; cannot stream." "No lazy variant." "For with-replacement, use tuple enumeration; for k-permutations of an n-set, no direct verb — pull comb/permute + comb/choose in combination.")
+  :usecases ("Small-n brute-force search (traveling salesman, task assignment, code-golf enumerations)." "Test scaffolding: generate all orderings of a small input to check invariants." "Teaching factorial growth by displaying permutations for small n.")
+  :learn (:concept "Enumerate all orderings. Count is n!. Grows explosively — safe only for n < 10." :prerequisites ("comb/factorial" "list operations") :progression "For very small n use as brute-force enumerator. For larger n, learn algorithms that avoid full enumeration (branch-and-bound, dynamic programming).")
+
+  :+math
+    (:algebra "Enumerate the symmetric group S_n as a list. Cardinality of the output is n!. Lex-order is total, well-defined for any list whose elements support <."
+     :total #t
+     :domain "list of any elements (empty list allowed)"
+     :codomain "list of lists — outer length n!, each inner a permutation of xs"
+     :proofs "Standard recursive-insertion enumeration: to permute (x . xs), permute xs and insert x at every position. Correct by induction on length.")
+
+  :+cs
+    (:complexity "Time O(n · n!), space O(n · n!) for the returned list-of-lists. Do not run for n > 10."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Iterative recursion: for each i, take arr[i], recurse on arr without arr[i], concat. Output ordering is lex when the input is sorted."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/permute '(1 2 3)) has 6 entries in lex order, (comb/permute '()) = (()), count = n! for n up to 5."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "for-each" "fold-left")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Calling on lists longer than 9 or 10 — memory/time explode. Assuming duplicates are deduped — they're not (list is treated positionally)."
+     :when-not-to-use "n > 10 — will exhaust memory. You need lazy iteration — no lazy variant here; pull element-by-element via a custom generator.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Enumerate all permutations of a list in lex order. Safe for n <= 9. O(n · n!)."))
+
+(verb
+  :name "comb/stirling2"
+  :library "comb"
+  :signature "(comb/stirling2 n k) -> integer"
+  :summary "Stirling number of the second kind S(n,k): count of ways to partition n distinct items into exactly k non-empty unlabeled subsets."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/stirling2 4 2)"
+     :note "Returns 7: partitions of {a,b,c,d} into 2 non-empty groups. {{a},{b,c,d}}, {{b},{a,c,d}}, {{c},{a,b,d}}, {{d},{a,b,c}}, {{a,b},{c,d}}, {{a,c},{b,d}}, {{a,d},{b,c}}.")
+    (:tier "apprentice"
+     :code "(comb/stirling2 5 5)"
+     :note "Returns 1: only one way to partition 5 items into 5 singleton groups — each item alone. Same is true of S(n,n) for all n >= 1.")
+    (:tier "intermediate"
+     :code "(map (lambda (k) (comb/stirling2 5 k)) (list 1 2 3 4 5))"
+     :note "Returns (1 15 25 10 1) — the full Stirling row for n=5. Peaks in the middle, tapers to 1 at both ends. Row-sum is Bell(5) = 52.")
+    (:tier "expert"
+     :code "(define (bell-via-stirling n)\n  (define (helper k acc)\n    (if (> k n) acc\n        (helper (+ k 1) (+ acc (comb/stirling2 n k)))))\n  (helper 0 0))\n(map (lambda (n) (list n ':stirling-sum (bell-via-stirling n) ':bell (comb/bell n)))\n     (list 1 3 5 7))"
+     :note "Verify Bell-Stirling row-sum identity: Bell(n) = sum(k) S(n,k). Returns ((1 :stirling-sum 1 :bell 1) (3 :stirling-sum 5 :bell 5) (5 :stirling-sum 52 :bell 52) (7 :stirling-sum 877 :bell 877)). Identity holds for n >= 1.")
+    (:tier "master"
+     :code "(define (partition-students n groups) (comb/stirling2 n groups))\n(list ':6-into-3-teams (partition-students 6 3)\n      ':10-into-4-teams (partition-students 10 4)\n      ':10-into-2-teams (partition-students 10 2))"
+     :note "Domain: teacher partitions n students into exactly k unlabeled teams (each team non-empty). Returns (:6-into-3-teams 90 :10-into-4-teams 34105 :10-into-2-teams 511). Contrast with comb/bell (allow ANY number of teams) and comb/multinomial (labeled teams of fixed sizes)."))
+
+  :related ("comb/bell" "comb/partition-count" "comb/choose" "comb/multinomial")
+  :caveats ("k must be provided — (comb/stirling2 n) silently returns 0. Full signature is (n k) both required." "**Impl boundary bug**: (comb/stirling2 0 0) returns 0 but mathematically S(0,0) = 1 (empty set has exactly one partition into 0 blocks). The row-sum identity Bell(n) = sum S(n,k) therefore fails at n=0 (Bell(0) = 1, sum returns 0). Rin recommends the impl gate be changed from `k <= 0` to `k < 0 && n < 0`. Documented, not corrected in this lane (impl-fix belongs to a separate cleanup)." "Grows fast: S(20, 10) ≈ 5.9e12, near safe-int limit.")
+  :drawbacks ("Full O(n·k) DP allocated fresh per call — no memoization." "Does not enumerate the partitions themselves." "S(n,k) = 0 for k > n by definition; impl honors this correctly.")
+  :usecases ("Counting ways to partition distinguishable items into a specific number of unlabeled groups (teams, clusters, equivalence classes)." "Building block for Bell numbers (row-sum)." "Counting surjective functions from an n-set to a k-set (S(n,k) · k!)." "Analysis of clustering algorithms and equivalence relations.")
+  :learn (:concept "Stirling numbers of the second kind: partition n distinct items into exactly k non-empty unlabeled groups." :prerequisites ("comb/choose" "comb/bell") :progression "Sum a Stirling row to get Bell(n). Multiply S(n,k) by k! to get the count of surjections from n-set to k-set. Compare with comb/partition-count for integer partitions (a completely different structure).")
+
+  :+math
+    (:algebra "Recurrence: S(n,k) = k·S(n-1,k) + S(n-1,k-1). Explicit formula: S(n,k) = (1/k!) sum(j=0..k) (-1)^j C(k,j) (k-j)^n. Boundary: S(n,0) = 0 for n >= 1, S(0,0) = 1 (by convention — impl bug: returns 0 here)."
+     :total #t
+     :domain "non-negative integers n and k"
+     :codomain "non-negative integer"
+     :proofs "Recurrence proof: to partition n items into k blocks, either item n forms its own block (S(n-1, k-1) ways for the rest) or item n joins one of the k existing blocks (k · S(n-1, k) ways).")
+
+  :+cs
+    (:complexity "Time O(n·k), space O(n·k) via the standard DP table. Space could drop to O(k) with a two-row rolling table."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Full 2D DP: S[i][j] = j·S[i-1][j] + S[i-1][j-1] with base S[0][0] = 1, others zero. Impl guards `k <= 0` which incorrectly zeros out S(0,0) — this is the documented boundary bug."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: S(4,2)=7, S(5,·) row = (1 15 25 10 1), Bell = sum S row verified for n = 1, 3, 5, 7."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/bell" "*" "+")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing with Stirling numbers of the FIRST kind (unsigned or signed) — those count permutations by cycle count, not partitions. Assuming (comb/stirling2 n) with no k works — it returns 0. Assuming S(0,0) = 0 based on the impl — it's 1 by convention; impl is bugged here."
+     :when-not-to-use "You need Stirling of the FIRST kind (cycle counts). You need labeled groups — use comb/multinomial. You need partition into ANY number of groups — use comb/bell.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Stirling number of the second kind. Recurrence S(n,k)=k·S(n-1,k)+S(n-1,k-1). Boundary bug: S(0,0) returns 0 (should be 1) — documented."))
