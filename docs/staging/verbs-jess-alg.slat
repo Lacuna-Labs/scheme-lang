@@ -3377,3 +3377,133 @@
   :+math (:total #t)
   :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
   :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/conjugacy-classes"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/conjugacy-classes group) -> list-of-lists"
+  :summary "Return the conjugacy classes of G — placeholder."
+  :impl-status "wired"
+  :explanation "The conjugacy classes partition G by the equivalence relation g ~ h iff g = xhx^-1 for some x. Class structure is a fundamental invariant of a group. The current impl in reference-impls.js is a placeholder returning empty. Full impl would enumerate pairs and orbit-partition via conjugation."
+  :examples (
+    (:tier "novice" :code "(alg/conjugacy-classes (alg/cyclic 4))" :note "Placeholder: ().")
+    (:tier "apprentice" :code "(alg/conjugacy-classes (alg/dihedral 3))" :note "Also empty.")
+    (:tier "intermediate" :code "(length (alg/conjugacy-classes (alg/cyclic 6)))" :note "0 from placeholder.")
+    (:tier "expert" :code "(equal? (alg/conjugacy-classes (alg/cyclic 5)) '())" :note "#t.")
+    (:tier "master" :code "(alg/conjugacy-classes '())" :note "().")
+  )
+  :caveats ("Placeholder returns ()." "For real conjugacy classes, iterate + partition.")
+  :drawbacks ("Not useful in current state.")
+  :usecases ("Placeholder for future implementation.")
+  :related ("alg/perm-conjugate" "alg/centralizer")
+  :learn (:concept "Conjugacy classes as invariants." :prerequisites ("alg/perm-conjugate") :progression "conjugacy-classes -> class equation -> Sylow theorems.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Placeholder at line 1222." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/cycles->perm"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/cycles->perm cycles) -> perm"
+  :summary "Build a permutation from a list of disjoint cycles."
+  :impl-status "wired"
+  :explanation "Given a list of cycles, each cycle a list of moved elements, construct the permutation. A cycle (a b c) means a->b, b->c, c->a. Unlisted elements are fixed. Inverse of alg/perm->cycles. The degree is inferred from the maximum element mentioned in the cycles."
+  :examples (
+    (:tier "novice" :code "(alg/cycles->perm (list (list 0 1)))" :note "Swap 0 and 1: (1 0).")
+    (:tier "apprentice" :code "(alg/cycles->perm (list (list 0 1 2)))" :note "3-cycle: (1 2 0).")
+    (:tier "intermediate" :code "(alg/cycles->perm (list (list 0 1) (list 2 3)))" :note "Product of two transpositions: (1 0 3 2).")
+    (:tier "expert" :code "(alg/cycles->perm '())" :note "Empty cycles: empty permutation.")
+    (:tier "master" :code "(equal? (alg/perm->cycles (alg/cycles->perm (list (list 0 1 2)))) (list (list 0 1 2)))" :note "Round-trip.")
+  )
+  :caveats ("Cycles must be disjoint." "Unlisted elements are fixed.")
+  :drawbacks ("Doesn't validate disjointness.")
+  :usecases ("Build permutations from readable cycle notation." "Inverse of perm->cycles.")
+  :related ("alg/perm->cycles" "alg/perm-order")
+  :learn (:concept "Cycle notation for permutations." :prerequisites ("alg/perm->cycles") :progression "cycles->perm -> full permutation manipulation.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Build image array by walking each cycle." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(sum cycle lengths), space O(max element + 1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/apply-symmetry"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/apply-symmetry sym point) -> point"
+  :summary "Apply a symmetry to a 2D point — placeholder."
+  :impl-status "wired"
+  :explanation "Given a dihedral element (represented by a bitwise integer in older reference conventions), apply the symmetry to a 2D point. The current impl in reference-impls.js is a placeholder that returns the point unchanged. A full impl would decode the symmetry index (rotation or reflection) and apply the corresponding linear transformation."
+  :examples (
+    (:tier "novice" :code "(alg/apply-symmetry 1 (list 1 0))" :note "Placeholder returns (1 0) unchanged.")
+    (:tier "apprentice" :code "(alg/apply-symmetry 0 (list 3 4))" :note "Also unchanged.")
+    (:tier "intermediate" :code "(equal? (alg/apply-symmetry 2 (list 5 6)) (list 5 6))" :note "#t from placeholder.")
+    (:tier "expert" :code "(alg/apply-symmetry 0 (list 0 0))" :note "Origin: (0 0).")
+    (:tier "master" :code "(map (lambda (s) (alg/apply-symmetry s (list 1 0))) (list 0 1 2 3))" :note "All return (1 0) — placeholder.")
+  )
+  :caveats ("Placeholder returns point unchanged.")
+  :drawbacks ("Not useful in current state; documented for API completeness.")
+  :usecases ("Placeholder in code awaiting real symmetry-apply impl.")
+  :related ("alg/dihedral" "alg/orbit")
+  :learn (:concept "Group actions on points." :prerequisites ("alg/dihedral") :progression "apply-symmetry -> alg/orbit + alg/stabilizer.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Placeholder at line 1238." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/group-from-table"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/group-from-table tbl) -> group"
+  :summary "Wrap a raw Cayley table into a group — currently a passthrough."
+  :impl-status "wired"
+  :explanation "Given a raw Cayley table (list of lists of integers), return it as a group. The current impl is a passthrough — it does not validate the axioms. Downstream verbs (alg/op, alg/order) work directly on the table. For explicit axiom validation, add a wrapper that checks closure + identity row + inverses."
+  :examples (
+    (:tier "novice" :code "(alg/group-from-table '((0 1) (1 0)))" :note "Z_2 table: passes through.")
+    (:tier "apprentice" :code "(alg/order (alg/group-from-table '((0 1) (1 0))))" :note "Order 2.")
+    (:tier "intermediate" :code "(alg/op (alg/group-from-table '((0 1 2) (1 2 0) (2 0 1))) 1 2)" :note "In Z_3: 1 + 2 = 0.")
+    (:tier "expert" :code "(alg/group-from-table (alg/cyclic 4))" :note "Wrap an existing Cayley table.")
+    (:tier "master" :code "(equal? (alg/group-from-table (alg/cyclic 5)) (alg/cyclic 5))" :note "Passthrough: table unchanged.")
+  )
+  :caveats ("Does NOT validate group axioms." "Trust the caller.")
+  :drawbacks ("No axiom check — use with care.")
+  :usecases ("Wrap externally-provided Cayley tables." "Build custom groups.")
+  :related ("alg/op" "alg/order")
+  :learn (:concept "Cayley tables as group representations." :prerequisites ("alg/op") :progression "group-from-table -> is-group? -> validation.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Returns input unchanged." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/interval-vector"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/interval-vector pcs) -> list"
+  :summary "Return the interval vector of a pitch-class set (music theory)."
+  :impl-status "wired"
+  :explanation "The interval vector of a pitch-class set counts, for each interval class (1 through 6, modulo octave), how many pairs of pitch classes span that interval. Result is a list of 6 integers. Interval vectors are invariant under transposition and inversion, so they classify pcsets up to the T/I-equivalence."
+  :examples (
+    (:tier "novice" :code "(alg/interval-vector '(0 4 7))" :note "C major triad — interval vector (0 0 1 1 1 0).")
+    (:tier "apprentice" :code "(alg/interval-vector '(0 3 7))" :note "C minor triad — same interval vector as major (up to inversion).")
+    (:tier "intermediate" :code "(alg/interval-vector '(0 1 2))" :note "Chromatic cluster: (2 1 0 0 0 0).")
+    (:tier "expert" :code "(alg/interval-vector '())" :note "Empty pcset: (0 0 0 0 0 0).")
+    (:tier "master" :code "(equal? (alg/interval-vector '(0 4 7)) (alg/interval-vector '(3 7 10)))" :note "Interval vector invariant under transposition: #t.")
+  )
+  :caveats ("Six integers, one per interval class 1..6." "Invariant under T_n and I.")
+  :drawbacks ("Doesn't distinguish Z-related pcsets (rare pairs with same vector but different set-class).")
+  :usecases ("Classify pcsets up to T/I equivalence." "Analyze harmonic content.")
+  :related ("alg/pcset" "alg/prime-form")
+  :learn (:concept "Interval vector as pcset invariant." :prerequisites ("alg/pcset") :progression "interval-vector -> prime-form -> Forte set-class catalogue.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Pairwise interval counting mod 12." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(n^2), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
