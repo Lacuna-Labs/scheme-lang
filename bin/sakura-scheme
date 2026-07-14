@@ -10,6 +10,9 @@
 // Commands:
 //   sakura-scheme                  — start the REPL (default)
 //   sakura-scheme repl             — start the REPL (explicit)
+//   sakura-scheme ide              — start the terminal IDE (vim mode)
+//   sakura-scheme ide --emacs      — start the terminal IDE (emacs mode)
+//   sakura-scheme --web            — start the web IDE (local browser)
 //   sakura-scheme eval "<expr>"    — evaluate a single expression, print
 //   sakura-scheme run <file>       — evaluate a .scm file
 //   sakura-scheme help <verb>      — verb help from doc-table
@@ -144,6 +147,9 @@ function cmdHelp() {
 Usage:
   sakura-scheme                     start the REPL
   sakura-scheme repl                start the REPL (explicit)
+  sakura-scheme ide [file] [opts]   start the terminal IDE (vim mode)
+  sakura-scheme ide --emacs         start the terminal IDE (emacs mode)
+  sakura-scheme --web [--port N]    start the web IDE at http://localhost:3737
   sakura-scheme eval "<expr>"       evaluate an expression, print result
   sakura-scheme run <file.scm>      evaluate a Scheme file
   sakura-scheme help <verb>         verb help (arity + doc + examples)
@@ -152,6 +158,11 @@ Usage:
   sakura-scheme whoami              show current auth state
   sakura-scheme --version           print version + git sha
   sakura-scheme --help              this help
+
+IDE options:
+  --vim | --emacs                   modal editor (default: vim)
+  --theme <sakura-dark|sakura-light|high-contrast|paper>
+                                    color theme (default: sakura-dark)
 
 Examples:
   sakura-scheme                                       -> REPL
@@ -181,6 +192,31 @@ async function main() {
   if (argv[0] === 'run') return cmdRun(argv[1])
   if (argv[0] === 'help') return cmdVerbHelp(argv[1])
   if (argv[0] === 'repl') return startRepl({ dialect: 'sakura', version: VERSION })
+
+  // Terminal IDE
+  if (argv[0] === 'ide') {
+    const { startIde } = await import('../src/ide/terminal-ide.js')
+    const wantEmacs = argv.includes('--emacs')
+    const wantVim = argv.includes('--vim')
+    const themeIdx = argv.indexOf('--theme')
+    const theme = themeIdx > 0 && argv[themeIdx + 1] ? argv[themeIdx + 1] : 'sakura-dark'
+    const openFile = argv.slice(1).find(a => !a.startsWith('-') && a !== theme) || null
+    return startIde({
+      dialect: 'sakura',
+      version: VERSION,
+      mode: wantEmacs ? 'emacs' : (wantVim ? 'vim' : 'vim'),
+      theme,
+      openFile,
+    })
+  }
+
+  // Web IDE — starts a local dev server at http://localhost:3737
+  if (argv[0] === '--web' || argv[0] === 'web') {
+    const { startWebIde } = await import('../src/web-ide/serve.js')
+    const portIdx = argv.indexOf('--port')
+    const port = portIdx > 0 && argv[portIdx + 1] ? parseInt(argv[portIdx + 1], 10) : 3737
+    return startWebIde({ port })
+  }
 
   // Auth subcommands — Google device-flow OAuth. `login` blocks until
   // the operator visits the URL and enters the code (or times out).
