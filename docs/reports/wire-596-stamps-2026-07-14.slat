@@ -154,3 +154,6 @@
 (stamp :verb "synth/load-score" :lane "yuki-audio" :verified-at "2026-07-14T19:48:29.433Z" :examples-passed 5 :required-fields-present #t)
 (stamp :verb "synth/onset-tap" :lane "yuki-audio" :verified-at "2026-07-14T19:48:30.522Z" :examples-passed 5 :required-fields-present #t)
 (stamp :verb "synth/sp1200" :lane "yuki-audio" :verified-at "2026-07-14T19:48:31.602Z" :examples-passed 5 :required-fields-present #t)
+(fail :verb "topo/f-vector" :lane "rin-topo-comb" :verified-at "2026-07-14T19:49:18.392Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "topo/euler-char" :lane "rin-topo-comb" :verified-at "2026-07-14T19:49:18.393Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "topo/euler-genus" :lane "rin-topo-comb" :verified-at "2026-07-14T19:49:18.393Z" :examples-passed 0 :reason "missing fields: kind,explanation")
