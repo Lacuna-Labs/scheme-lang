@@ -1487,3 +1487,135 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Simplicial closure: enumerate all faces of a set of simplices."))
+
+(verb
+  :name "topo/orientable?"
+  :library "topo"
+  :signature "(topo/orientable? complex-or-faces) -> #t | #f | 'unknown-for-high-dim | 'non-manifold"
+  :summary "Return #t iff the (surface) complex admits a consistent orientation of its 2-simplices."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/orientable? '((a b c)))"
+     :note "Returns #t: a single triangle is trivially orientable.")
+    (:tier "apprentice"
+     :code "(topo/orientable? '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns #t: the hollow tetrahedron (a triangulated 2-sphere) is orientable. Sphere is orientable, genus-0 surface.")
+    (:tier "intermediate"
+     :code "(topo/orientable? '((a b) (b c) (c d)))"
+     :note "Returns #t by convention: a 1-dim complex (edges only) has no 2-simplices to orient, vacuously orientable.")
+    (:tier "expert"
+     :code "(topo/orientable? '((a b c d)))"
+     :note "Returns unknown-for-high-dim: a solid tetrahedron is a 3-simplex; this impl only handles surface (2-dim) orientability. Honest 'unknown signal, not a lie.")
+    (:tier "master"
+     :code "(define (surface-type faces)\n  (let ((chi (topo/euler-char faces))\n        (o (topo/orientable? faces)))\n    (cond ((not (eq? o #t)) (list 'not-a-simple-surface o))\n          ((= chi 2) 'sphere)\n          ((= chi 0) 'torus)\n          ((< chi 0) (list 'orientable-genus (/ (- 2 chi) 2)))\n          (else (list 'other-chi chi)))))\n(list ':sphere (surface-type '((a b c) (a b d) (a c d) (b c d)))\n      ':disk (surface-type '((a b c) (a c d)))\n      ':tet-solid (surface-type '((a b c d))))"
+     :note "Domain: classify a triangulated surface by orientability + Euler char. Returns (:sphere sphere :disk (other-chi 1) :tet-solid (not-a-simple-surface unknown-for-high-dim)). The solid tet honestly reports 'not a simple surface via the unknown signal."))
+
+  :related ("topo/euler-char" "topo/euler-genus" "topo/complex")
+  :caveats ("Only handles surface complexes (max face size 3). Higher-dim inputs return 'unknown-for-high-dim." "Non-manifold complexes (any edge shared by more than 2 triangles) return 'non-manifold." "Constructing a Möbius strip in ABSTRACT simplicial form is subtle — the impl handles it correctly given a proper representation (many 'Möbius-like' abstract structures are actually cylinders topologically).")
+  :drawbacks ("Only 2-dim." "Non-orientable examples must be crafted with care — abstract simplicial form does not automatically encode a twist.")
+  :usecases ("Verify a triangulated surface preserves orientation after mesh operations." "Combine with topo/euler-char for closed-surface classification." "Detect non-manifold edges (edge in >2 triangles).")
+  :learn (:concept "Surface orientability via consistent-orientation propagation across shared edges. Non-orientable = there exists a cycle where orientation must reverse." :prerequisites ("topo/euler-char") :progression "Study topo/euler-genus for the genus formula (only valid on closed orientable), then look up the classification of closed surfaces.")
+
+  :+math
+    (:algebra "A surface is orientable iff its second Stiefel-Whitney class vanishes; equivalently, iff the mod-2 homology H_2 = Z/2 (for closed connected). Combinatorially: iff triangles admit consistent orientations."
+     :total #t
+     :domain "list of maximal simplices (surfaces = max face size 3), or (complex ...) tagged"
+     :codomain "#t, #f, Sym('unknown-for-high-dim'), Sym('non-manifold')"
+     :proofs "BFS across triangle-adjacency. Consistency check on cycles is implicit via the propagation: if you re-visit an oriented triangle with an incompatible desired orientation, the surface is non-orientable.")
+
+  :+cs
+    (:complexity "Time O(T + E) where T is number of triangles and E is number of edges shared. Space O(T)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Builds edge-to-triangle map. Detects non-manifold (edge in >2 triangles). Assigns orientation to a starting triangle, BFS-propagates via shared edges, checks cyclic-permutation match on re-encounter."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: single triangle #t, hollow-tet-sphere #t, 1-dim complex #t (vacuous), 3-simplex 'unknown-for-high-dim'."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("eq?" "cond" "topo/euler-genus")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Reading the result as a plain boolean — this verb can return four kinds of values. Guard with (eq? … #t) or explicit cond over #t/#f/unknown/non-manifold. Assuming an abstract simplex list 'automatically' encodes a Möbius — it doesn't; abstract form is orientation-agnostic."
+     :when-not-to-use "You need orientability of 3-manifolds (dim >= 3) — this impl returns 'unknown for those. You need to know WHICH orientation was assigned — this impl only tests existence.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Surface orientability via orientation-propagation BFS. Returns #t/#f/'unknown-for-high-dim/'non-manifold. Only handles 2-dim."))
+
+(verb
+  :name "topo/planar?"
+  :library "topo"
+  :signature "(topo/planar? graph-or-edges) -> #t | #f | 'unknown-beyond-bound"
+  :summary "Is the graph planar? Uses Euler-inequality + K_5/K_{3,3} exhaustive check for |V| <= 8, honest 'unknown-beyond-bound for larger graphs."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/planar? '((a b) (b c) (c a)))"
+     :note "Returns #t: a 3-cycle is planar. Any graph with <= 4 vertices is planar (K_4 is the maximum-density example and is planar).")
+    (:tier "apprentice"
+     :code "(topo/planar? '())"
+     :note "Returns #t: the empty graph is vacuously planar.")
+    (:tier "intermediate"
+     :code "(topo/planar? '((a b) (a c) (a d) (a e) (b c) (b d) (b e) (c d) (c e) (d e)))"
+     :note "Returns #f: this is K_5, the complete graph on 5 vertices. Kuratowski's theorem: K_5 is one of the two forbidden subgraphs for planarity.")
+    (:tier "expert"
+     :code "(topo/planar? '((a b) (a c) (a d) (b e) (b f) (c e) (c f) (d e) (d f)))"
+     :note "Returns #f: this graph contains K_{3,3} as a subgraph with parts {b c d} × {a e f} (all 9 cross-edges present, no within-part edges). K_{3,3} is one of Kuratowski's two forbidden subgraphs for planarity.")
+    (:tier "master"
+     :code "(define (check-planarity graph-edges)\n  (let ((p (topo/planar? graph-edges)))\n    (cond ((eq? p #t) 'provably-planar)\n          ((eq? p #f) 'provably-not-planar)\n          (else (list 'unknown p)))))\n(list ':cycle-3 (check-planarity '((a b) (b c) (c a)))\n      ':k5 (check-planarity '((a b) (a c) (a d) (a e) (b c) (b d) (b e) (c d) (c e) (d e)))\n      ':big-cycle (check-planarity '((v1 v2) (v2 v3) (v3 v4) (v4 v5) (v5 v6) (v6 v7) (v7 v8) (v8 v9) (v9 v1))))"
+     :note "Domain: three-valued planarity oracle. Returns (:cycle-3 provably-planar :k5 provably-not-planar :big-cycle (unknown unknown-beyond-bound)). The 9-vertex cycle is planar in truth but this impl honestly reports 'unknown because |V| > 8 exceeds the bounded-exact check. NEVER a silent #f for large graphs."))
+
+  :related ("topo/graph")
+  :caveats ("For |V| > 8, returns 'unknown-beyond-bound honestly rather than lying with #f. Exact planarity testing (Boyer-Myrvold) is out of scope for this lane." "Euler-inequality catches all NOT-planar cases when |E| > 3|V| - 6." "K_5 and K_{3,3} SUBGRAPH detection (not full minor detection) — a graph containing a K_5 SUBDIVISION but no K_5 subgraph will slip through and get #t or 'unknown.")
+  :drawbacks ("Not a complete planarity test; only bounded-domain exact + Euler." "Exhaustive K_5/K_{3,3} search is O(n^5) — okay for n <= 8, ballooning quickly." "Doesn't distinguish subdivisions from subgraphs.")
+  :usecases ("Quick planarity check for small graphs (Sudoku-solver dependencies, small game trees)." "Sanity-check that a graph is definitely NOT planar (via Euler inequality)." "Placeholder in workflows that will substitute a full planarity library later.")
+  :learn (:concept "Planarity is a Kuratowski property: a graph is planar iff it contains no K_5 or K_{3,3} minor. Full test is polynomial-time but nontrivial." :prerequisites ("topo/graph") :progression "Learn Boyer-Myrvold for the full linear-time planarity test; then explore planar embeddings and drawings.")
+
+  :+math
+    (:algebra "Planar iff no K_5 or K_{3,3} minor (Kuratowski/Wagner). Euler inequality: for a simple planar graph, |E| <= 3|V| - 6."
+     :total #t
+     :domain "graph or raw edge list"
+     :codomain "#t | #f | Sym('unknown-beyond-bound')"
+     :proofs "Euler's formula V - E + F = 2 for connected planar graph, plus 2E >= 3F (each face has at least 3 edges).")
+
+  :+cs
+    (:complexity "Time O(n^5) worst case for the K_5/K_{3,3} subgraph search. Only runs for n <= 8; larger n returns 'unknown immediately."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Three-tier check: (1) n <= 4 → planar. (2) Euler inequality |E| > 3n - 6 → not planar. (3) n <= 8 → exhaustive K_5 + K_{3,3} SUBGRAPH detection. (4) else → 'unknown-beyond-bound."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-cycle #t, empty #t, K_5 #f, K_{3,3} #f, 9-vertex cycle 'unknown-beyond-bound."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("eq?" "cond")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Treating the return as a plain boolean — it's THREE-VALUED. Guard with (eq? … #t) / (eq? … #f) / else-clause. Assuming n > 8 gives #t or #f — it gives 'unknown honestly."
+     :when-not-to-use "You need planarity for graphs with more than 8 vertices — this impl returns 'unknown honestly. You need a planar embedding — this only tests existence.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Bounded-exact planarity test. Euler-bound + K_5/K_{3,3} subgraph detection for |V| <= 8. Honest 'unknown for larger graphs."))
