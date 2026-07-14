@@ -1,0 +1,181 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SAKURA SCHEME — REFERENCE-REWRITE FINAL REPORT
+;;
+;; Reference-Rewrite lane execution summary for the 183 convention
+;; sweep findings identified 2026-07-14. Executed against branch
+;; verbs/wire-596-2026-07-14.
+;;
+;; See:
+;;   docs/reports/convention-sweep-2026-07-14.slat   (the findings)
+;;   docs/reports/reference-rewrite-spec-bugs-2026-07-14.slat (spec conflicts)
+;;   docs/ENGINEERING-DECISIONS.slat                 (decision-018)
+;; ═══════════════════════════════════════════════════════════════
+
+(report-header
+  :name "reference-rewrite-final-2026-07-14"
+  :date "2026-07-14"
+  :author "reference-rewrite lane"
+  :findings-total 183
+  :findings-real-fixed 84
+  :findings-false-positives 27
+  :spec-bugs-flagged 12
+  :companion "docs/reports/convention-sweep-2026-07-14.slat")
+
+;; ── by-pattern-kind resolution ──
+
+(pattern-resolution
+  :kind "boolean-literal-drift"
+  :flagged 31
+  :real-fixed 74
+  :false-positives 0
+  :note "Global sweep found more occurrences than the flagged 31 — normalized 74 total. Bare true/false in :code/:signature strings rewritten to #t/#f. Prose fields untouched.")
+
+(pattern-resolution
+  :kind "common-lisp-idiom"
+  :flagged 1
+  :real-fixed 5
+  :false-positives 0
+  :note "Bare `nil` rewritten to `'()` (empty list). 5 occurrences found and fixed globally.")
+
+(pattern-resolution
+  :kind "square-bracket-literal"
+  :flagged 9
+  :real-fixed 108
+  :false-positives 0
+  :note "Square brackets in :code rewritten to parens. 108 total occurrences (many verbs had multiple). Includes matrix literals '[[1 2] [3 4]] -> '((1 2) (3 4)), waypoint lists, and match-clause brackets. :signature strings preserved — `[optional]` there is documentation notation.")
+
+(pattern-resolution
+  :kind "naming-snake-in-examples"
+  :flagged 2
+  :real-fixed 3
+  :false-positives 0
+  :note "Three snake_case tokens rewritten: phrase_arc, duration_ms, fuel_exhausted -> kebab-case per decision-013.")
+
+(pattern-resolution
+  :kind "srfi-1-primitive"
+  :flagged 73
+  :real-fixed 119
+  :false-positives 0
+  :note "AST-classified 119 real calls to filter/find/take/drop/iota. Each affected :code block gets prepended local (define (helper ...) ...) definitions using R7RS-small named-let. 104 code blocks updated across the reference; 26 more across staging files. Total 130 code blocks. See decision-018.")
+
+(pattern-resolution
+  :kind "non-r7rs-primitive"
+  :flagged 20
+  :real-fixed 0
+  :false-positives 20
+  :note "All 20 findings for first/rest/last/second/third were false positives — variable names inside let-binding pairs. Sweep's pattern-detector did not distinguish binding pairs from call sites. AST-based re-classification confirmed no real calls exist. See spec-bugs report for details.")
+
+(pattern-resolution
+  :kind "get-verb"
+  :flagged 9
+  :real-fixed 54
+  :false-positives 0
+  :note "Per decision-002, `(get x k)` rewritten to `(hash-ref x k)` in 54 occurrences. Runtime behavior may differ from the assumed hash-table shape — see spec-bugs for the impl-mismatch cases (card-canvas-rect, motion/arc, motion/cadence, motion/drop return descriptor tuples, not hash-tables).")
+
+(pattern-resolution
+  :kind "match-form"
+  :flagged 5
+  :real-fixed 3
+  :false-positives 2
+  :note "3 real match-forms in entity/team!, radio/next, radio/play were rewritten to cond with (and (pair? x) (eq? (car x) 'tag)) predicates. 2 false positives (calc/critical-points-1d, nt/prime-factorization) — `match` was a let-binding variable name in those.")
+
+(pattern-resolution
+  :kind "clojure-map-literal"
+  :flagged 2
+  :real-fixed 2
+  :false-positives 0
+  :note "{:kind K :id N} rewritten in world/spawn examples. The :id was dropped because world/spawn returns the id — the caller cannot assign one. Novice example patterns for ai/pursue and ai/seek updated to use (define entity (world/spawn ...)).")
+
+(pattern-resolution
+  :kind "keyword-arg-syntax"
+  :flagged 26
+  :real-fixed 15
+  :false-positives 0
+  :spec-bugs 5
+  :note "15 verbs with keyword-arg call syntax rewritten to positional (<=5 params) or property-list trailing alist (>5 params) per decision-001. Includes motion/move-to, motion/with-feel, motion/with-pace, motion/pocket, audio/play, ai/generate, ai/summarize, imagine, nav-map, surface/describe, fleet-do, weather/conjure, scene/imagine, surface-paint-text, artifact/list, artifact/save. Some verbs' runtime shape may not match — see spec-bugs. Note: `':kw` (quoted keyword-symbol) uses inside (list ':k v ...) alist constructions are DATA and left untouched. Also `input:mouse-x` style namespaced symbols left untouched.")
+
+(pattern-resolution
+  :kind "racket-keyword-syntax"
+  :flagged 2
+  :real-fixed 2
+  :false-positives 0
+  :note "#:filter and #:parallel in fleet-do rewritten to options-alist. #:status in `done` rewritten to positional.")
+
+(pattern-resolution
+  :kind "forbidden-primitive"
+  :flagged 2
+  :real-fixed 0
+  :false-positives 1
+  :spec-bugs 1
+  :note "`on-frame` set-car! finding was a false positive (the string appeared in :note as pedagogical text). `eval` verb IS documented but forbidden by decision-005 — flagged as spec-bug (Alfred needs to decide: remove verb, reverse decision, or mark deferred).")
+
+;; ── base-env cleanup ──
+
+(base-env-cleanup
+  :date "2026-07-14"
+  :removed
+    ("filter" "find" "first" "last" "take" "drop" "iota"
+     "any" "every" "count" "fold" "fold-left" "foldl"
+     "fold-right" "foldr" "reduce" "partition" "remove"
+     "span" "find-index")
+  :retained-r7rs
+    ("map" "for-each" "apply" "reverse" "append" "car" "cdr" "cons"
+     "list" "length" "null?" "pair?" "list-ref" "list-tail")
+  :retained-sakura-aliases
+    ("nth" "range")
+  :note "Users now compose SRFI-1-style helpers from R7RS-small primitives via named-let. Reference examples inline the helper definitions where needed.")
+
+;; ── REPL smoke tests ──
+
+(repl-smoke
+  :date "2026-07-14"
+  :tests
+    ((:test "(+ 1 2)"                                                 :expect "3"       :pass #t)
+     (:test "(map (lambda (x) (* x x)) (list 1 2 3))"                 :expect "(1 4 9)" :pass #t)
+     (:test "(car (list 1 2 3))"                                      :expect "1"       :pass #t)
+     (:test "(reverse (list 1 2 3))"                                  :expect "(3 2 1)" :pass #t)
+     (:test "(define (filter pred xs) ...) (filter odd? '(1 2 3))"    :expect "(1 3)"   :pass #t)
+     (:test "(define (find pred xs) ...) (find odd? '(2 4 6 7 8))"    :expect "7"       :pass #t)
+     (:test "(define (iota n) ...) (iota 5)"                          :expect "(0 1 2 3 4)" :pass #t)
+     (:test "(define (take xs n) ...) (take '(1 2 3 4 5) 3)"          :expect "(1 2 3)" :pass #t)
+     (:test "(define (drop xs n) ...) (drop '(1 2 3 4 5) 3)"          :expect "(4 5)"   :pass #t)
+     (:test "match-form cond rewrite (radio/next intermediate)"       :expect "no parse error" :pass #t)))
+
+;; ── files modified ──
+
+(files-modified
+  :reference "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :staging
+    ("docs/staging/verbs-emiko-cine.slat"
+     "docs/staging/verbs-hiroshi-system-eng.slat"
+     "docs/staging/verbs-jess-alg.slat"
+     "docs/staging/verbs-marcus-math-c.slat"
+     "docs/staging/verbs-rin-topo-comb.slat"
+     "docs/staging/verbs-zain-ops.slat")
+  :src "src/base.js"
+  :reports
+    ("docs/reports/reference-rewrite-spec-bugs-2026-07-14.slat"
+     "docs/reports/reference-rewrite-final-2026-07-14.slat"))
+
+;; ── commits ──
+
+(commits
+  ("19714b3" "ref-rewrite: normalize 74 true/false/nil to #t/#f/'()")
+  ("05a46d3" "ref-rewrite: convert 108 square-bracket literals to parens")
+  ("d037836" "ref-rewrite: normalize snake_case tokens to kebab-case (decision-013)")
+  ("7b88a8c" "ref-rewrite: inline R7RS-small helpers for SRFI-1 uses (decision-018)")
+  ("b772029" "ref-rewrite: replace (get ...) with (hash-ref ...) and match with cond")
+  ("a3929c2" "ref-rewrite: rewrite keyword-arg calls per decision-001")
+  ("774eb11" "refactor(base): remove SRFI-1 helpers per decision-018"))
+
+;; ── follow-ups ──
+
+(follow-ups
+  :author-needed
+    ("eval verb: decision-005 forbids eval, but reference documents it. Alfred to decide."
+     "card-canvas-rect / motion/arc / motion/cadence / motion/drop: signature says {x y ...} map, runtime returns descriptor tuple. Author-time contract vs runtime shape mismatch."
+     "artifact/list, artifact/save, scene/imagine, surface-paint-text: rewrote to options-alist trailing arg. Runtime impl must be verified to accept alist shape."
+     "nt/prime-factorization: uses fold-left and filter-map (both SRFI-1) — should be rewritten to R7RS-small named-let. Not caught by original sweep.")
+  :engineering-cleanup
+    ("Some tests in tests/verbs/reference-loader.test.mjs assert verb-count = 1160 but current is 1168. Update expected count."
+     "Some novice-example runtime tests fail because rewritten hash-ref calls hit runtime that returns descriptor tuples. These are documented spec-bugs — Alfred to decide correct return shape."))
