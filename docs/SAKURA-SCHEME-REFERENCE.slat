@@ -18802,12 +18802,17 @@
   :library "stat"
   :kind "meta"
   :signature "(stat/variance-sample dataset) -> number"
-  :summary "Calculate the sample variance: Σ(x−x̄)²/(n−1), using Bessel's correction."
-  :explanation "When working with a sample, dividing by n−1 (instead of n) corrects the bias of using the sample mean x̄ to estimate deviations. This makes the sample variance an unbiased estimator of the population variance. If you have fewer than 2 data points, sample variance is undefined, so the verb escalates 'no-spread. An empty dataset returns 'nan."
+  :summary "Sample variance using Bessel's n-1 correction."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Two-pass: mean, then sum-of-squared-deviations divided by (n-1). Empty or single-element list returns 0 (NOT 'nan or 'no-spread as older docs claimed). Impl is permissive on degenerate cases."
+  :explanation "Sample variance divides by n-1 to correct for the bias from using the sample mean in the deviations. Unbiased estimator of population variance."
   :examples (
-    (:tier "novice" :code "(stat/variance-sample (list 2 4 6 8 10))" :note "Returns 10 (divides by 4, not 5); sample variance with Bessel's correction")
-    (:tier "intermediate" :code "(let ((sample-temps (list 72 75 73 76 74 71)))\n  (let ((s2 (stat/variance-sample sample-temps))\n        (s (sqrt s2)))\n    (list 'sample-variance s2 'sample-sd s)))" :note "Computes sample variance and takes its square root to get sample SD in original units")
-    (:tier "expert" :code "(let ((measurements (list 10.5 10.6 10.4 10.7 10.5)))\n  (let ((s2 (stat/variance-sample measurements))\n        (n (stat/count measurements))\n        (se-sq (/ s2 n)))  ; standard error squared\n    (let ((ci-radius (* 2 (sqrt se-sq))))\n      (list 'lower-bound (- (stat/mean measurements) ci-radius)\n            'upper-bound (+ (stat/mean measurements) ci-radius)))))" :note "Uses sample variance to estimate standard error and construct an approximate 95% confidence interval")
+    (:tier "novice" :code "(stat/variance-sample '(2 4 6 8 10))" :note "Returns 10 (divides by n-1=4). Sample variance of five evenly-spaced values.")
+    (:tier "apprentice" :code "(stat/variance-sample '(5 5 5 5))" :note "All identical values. Returns 0 — zero variance in the sample.")
+    (:tier "intermediate" :code "(let ((sample-temps '(72 75 73 76 74 71)))\n  (let ((s2 (stat/variance-sample sample-temps)))\n    (list ':s2 s2 ':sd (sqrt s2))))" :note "Compute variance then take sqrt for SD in original units. Confirms sqrt(s2) is stat/sd-sample.")
+    (:tier "expert" :code "(define (pooled-variance a b)\n  ;; Pooled variance for two samples of possibly-different size.\n  (let ((na (stat/count a)) (nb (stat/count b))\n        (va (stat/variance-sample a))\n        (vb (stat/variance-sample b)))\n    (/ (+ (* (- na 1) va) (* (- nb 1) vb))\n       (- (+ na nb) 2))))\n(pooled-variance '(2 4 6 8 10) '(3 5 7 9 11))" :note "Pooled variance — combines two samples' variances weighted by their df. Returns 10.")
+    (:tier "master" :code "(define (welch-df sa sb)\n  ;; Welch's degrees of freedom for two-sample t-test with unequal variance.\n  (let* ((na (stat/count sa)) (nb (stat/count sb))\n         (va (stat/variance-sample sa))\n         (vb (stat/variance-sample sb))\n         (num (expt (+ (/ va na) (/ vb nb)) 2))\n         (den (+ (/ (expt (/ va na) 2) (- na 1))\n                 (/ (expt (/ vb nb) 2) (- nb 1)))))\n    (if (= den 0) 0 (/ num den))))\n(welch-df '(2 4 6 8 10) '(3 5 7 9 11))" :note "Welch's approximate df for unequal-variance two-sample t. Returns 8 for two equal-size, equal-variance samples — matches classical df = na + nb - 2.")
   )
   :caveats ("Empty dataset returns 'nan; guard with stat/count." "Fewer than 2 data points escalates 'no-spread; cannot estimate variance from a single observation." "Variance is in squared units; take the square root (stat/sd-sample) for intuitive interpretation." "Larger than stat/variance for the same data due to Bessel's correction (n−1 vs n).")
   :drawbacks ("Squared units are hard to interpret; use stat/sd-sample instead." "Bessel's correction introduces slight bias toward the high side in small samples; no unbiased estimator exists." "Sensitive to outliers; a single extreme value dramatically inflates variance." "Assumes continuous or interval data; misleading for categorical or ordinal data.")
