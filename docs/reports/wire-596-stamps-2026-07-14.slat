@@ -11,7 +11,7 @@
 ;; Alfred: every module adopts the new schema, not just the previously
 ;; unimplemented ones).
 
-(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 43)
+(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 52)
 (fail :verb "comb/bell" :lane "rin-topo-comb" :verified-at "2026-07-14T19:26:34.887Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/binomial-coeffs" :lane "rin-topo-comb" :verified-at "2026-07-14T19:27:21.595Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/catalan" :lane "rin-topo-comb" :verified-at "2026-07-14T19:31:56.645Z" :examples-passed 0 :reason "missing fields: kind,explanation")
@@ -133,3 +133,12 @@
 (stamp :verb "synth/808" :lane "yuki-audio" :verified-at "2026-07-14T19:45:56.262Z" :examples-passed 5 :required-fields-present #t)
 (stamp :verb "synth/kit" :lane "yuki-audio" :verified-at "2026-07-14T19:45:57.340Z" :examples-passed 5 :required-fields-present #t)
 (stamp :verb "synth/chord" :lane "yuki-audio" :verified-at "2026-07-14T19:45:58.373Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "synth/orch" :lane "yuki-audio" :verified-at "2026-07-14T19:46:46.094Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "synth/orchestra" :lane "yuki-audio" :verified-at "2026-07-14T19:46:47.141Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "synth/play" :lane "yuki-audio" :verified-at "2026-07-14T19:46:48.153Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "ops/spt" :lane "zain-ops" :verified-at "2026-07-14T19:46:49.226Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "ops/edd" :lane "zain-ops" :verified-at "2026-07-14T19:46:50.276Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "ops/sequence-metrics" :lane "zain-ops" :verified-at "2026-07-14T19:46:51.338Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "ops/johnson" :lane "zain-ops" :verified-at "2026-07-14T19:46:52.374Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "ops/assign" :lane "zain-ops" :verified-at "2026-07-14T19:46:53.422Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "ops/assign-cost" :lane "zain-ops" :verified-at "2026-07-14T19:46:54.508Z" :examples-passed 5 :required-fields-present #t)
