@@ -146,3 +146,69 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Return the n-th Pascal row as a list. Row-sum is 2^n. Foundation for binomial coefficients and combinatorial probability."))
+
+(verb
+  :name "comb/catalan"
+  :library "comb"
+  :signature "(comb/catalan n) -> integer"
+  :summary "Catalan number C_n: count of balanced parenthesizations, binary tree shapes, monotonic lattice paths, and much else."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/catalan 5)"
+     :note "Returns 42: there are 42 ways to fully parenthesize a product of 6 factors ((...)... a·b·c·d·e·f).")
+    (:tier "apprentice"
+     :code "(comb/catalan 0)"
+     :note "Returns 1: there is exactly one way to parenthesize zero factors (the empty product). Catalan starts at C_0 = 1.")
+    (:tier "intermediate"
+     :code "(map comb/catalan (list 0 1 2 3 4 5 6 7 8))"
+     :note "Returns (1 1 2 5 14 42 132 429 1430) — the Catalan sequence. Growth is ~4^n / n^(3/2); one of the fastest-appearing sequences in enumerative combinatorics.")
+    (:tier "expert"
+     :code "(define (cat-recurrence n)\n  (define (helper k acc)\n    (if (>= k n)\n        acc\n        (helper (+ k 1) (+ acc (* (comb/catalan k) (comb/catalan (- n 1 k)))))))\n  (helper 0 0))\n(list ':direct (comb/catalan 5) ':via-recurrence (cat-recurrence 5))"
+     :note "Verify Segner's recurrence C_n = sum(k=0..n-1) C_k · C_(n-1-k). Returns (:direct 42 :via-recurrence 42). This recurrence proves the closure by splitting the outermost parenthesis at position k.")
+    (:tier "master"
+     :code "(define (paren-balancings n) (comb/catalan n))\n(list ':n0 (paren-balancings 0)\n      ':n3 (paren-balancings 3)\n      ':n4 (paren-balancings 4)\n      ':n5 (paren-balancings 5))"
+     :note "Domain: parser writer counts distinct syntax trees. 3 factors → 5 trees; 4 → 14; 5 → 42. Returns (:n0 1 :n3 5 :n4 14 :n5 42). The same number counts triangulations of an (n+2)-gon, monotonic paths in an n×n grid staying weakly below the diagonal, and Dyck words of length 2n."))
+
+  :related ("comb/binomial-coeffs" "comb/choose" "comb/bell" "comb/multinomial")
+  :caveats ("Grows fast: C_10 = 16796, C_15 ≈ 9.7e6, C_20 ≈ 6.6e9, C_30 ≈ 3.8e15 (near JS safe-integer limit)." "For n ≥ 30 the return may lose low-bit precision." "C_0 = 1 by convention — the empty case is one, not zero.")
+  :drawbacks ("No memoization across calls." "Not useful for enumerating the objects themselves (parenthesizations, trees, paths) — counts only." "Closed-form uses factorials; large n can overflow before Catalan-specific optimizations kick in.")
+  :usecases ("Counting binary tree shapes for parser tests or compiler benchmarks." "Enumerating unique triangulations of a convex polygon." "Verifying the count of Dyck words / balanced-parenthesis strings." "Analyzing algorithms whose subproblem structure decomposes into Catalan-many cases (matrix-chain multiplication order, optimal BST shapes).")
+  :learn (:concept "Catalan numbers count balanced binary structures. They emerge from Segner's convolution recurrence C_n = sum C_k · C_(n-1-k) — the same shape as split-at-outermost decompositions." :prerequisites ("comb/choose" "comb/factorial") :progression "Compare to comb/bell (partitions) and comb/binomial-coeffs (Pascal); read comb/catalan as C(2n,n)/(n+1) to see the closed form; then explore how catalan appears in triangulations, ballot problems, and Dyck lattice paths.")
+
+  :+math
+    (:algebra "Closed form: C_n = C(2n, n) / (n+1) = (2n)! / ((n+1)! n!). Recurrences: Segner C_n = sum(k=0..n-1) C_k C_(n-1-k); linear C_n = 2(2n-1)/(n+1) · C_(n-1). Generating function: c(x) = (1 - sqrt(1 - 4x)) / (2x). Asymptotic: C_n ~ 4^n / (n^(3/2) sqrt(pi))."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "non-negative integer"
+     :proofs "Segner's recurrence follows from the bijection between balanced parenthesizations of length 2n and pairs of balanced strings meeting at the outermost split. Closed-form derivation via the reflection principle on lattice paths.")
+
+  :+cs
+    (:complexity "Time O(n) via the linear recurrence C_n = 2(2n-1) · C_(n-1) / (n+1). Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Uses the linear recurrence C_n = C_(n-1) · 2(2n-1) / (n+1) starting from C_0 = 1. One number, one multiply, one divide per step; final result is a JavaScript number."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: C_0 = 1, C_5 = 42, C_8 = 1430; Segner recurrence cross-check for n = 5 matches direct call."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/binomial-coeffs" "comb/choose")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting C_0 = 1. Confusing with the Bell numbers (Bell grows faster and counts partitions, not balanced structures). Using it to enumerate objects — it only counts."
+     :when-not-to-use "You need very large n and can tolerate arbitrary-precision — JS number type loses precision past ~n = 30. You need the balanced strings themselves, not the count.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Catalan numbers count balanced binary structures: parenthesizations, tree shapes, Dyck paths. C_n = C(2n,n)/(n+1)."))
