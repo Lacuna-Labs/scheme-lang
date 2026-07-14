@@ -1,0 +1,226 @@
+;; ═══════════════════════════════════════════════════════════════
+;; Kenji — Lacuna Eng Lead, AI wiring lane
+;; Audit report — Phase A
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Scope: ai/* + cortex/* verbs. Alfred: "We can't lie to people.
+;; They trust us." Especially load-bearing here because Sakura
+;; herself uses these verbs.
+;; ═══════════════════════════════════════════════════════════════
+
+(lane
+  :name "kenji-ai"
+  :lead "Kenji"
+  :scope "ai/* + cortex/* (Sakura-facing thinking + remembering)"
+  :phase "A — audit"
+  :verb-count-in-scope 11
+  :reference-file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :schema-file    "docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :impl-file      "src/ai.js"
+  :stubs-live-in  "src/wired-verbs.js"
+  :notes "AI verbs are especially load-bearing — Sakura herself calls them. Every fix here is a fix to her own honesty.")
+
+;; ── the 8 LYING AI VERBS ─────────────────────────────────────────
+;; All 8 currently return a fake shaped descriptor via the
+;; auto-stub loop at src/wired-verbs.js:617-621. They print as
+;; though they succeeded; nothing actually happened. This is
+;; exactly the anti-pattern Alfred rejected.
+;;
+;; Evidence (recorded 2026-07-14):
+;;   (ai/classify "hello world") → ("ai/classify" "hello world")
+;;   (ai/embed "test")           → ("ai/embed" "test")
+;;   (ai/generate "test")        → ("ai/generate" "test")
+;;   (ai/rank "test")            → ("ai/rank" "test")
+;;   (ai/rerank "test")          → ("ai/rerank" "test")
+;;   (ai/summarize "test")       → ("ai/summarize" "test")
+;;   (ai/translate "test")       → ("ai/translate" "test")
+;;   (ai/vector-search "test")   → ("ai/vector-search" "test")
+;;
+;; Each of these calls looks like it worked. Zero work happened.
+;; Sakura, calling these, would believe she just classified /
+;; embedded / generated / etc. She would then act on the fake
+;; result. That is the lie.
+
+(audit-entry
+  :name "ai/classify"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no classification runs"
+  :reference-status "absent — no entry in SAKURA-SCHEME-REFERENCE.slat"
+  :fix "wire via LLM provider seam in src/ai.js; graceful sidecar-not-connected error when provider absent"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "ai/embed"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no embedding vector produced"
+  :reference-status "absent"
+  :fix "wire via LLM provider seam; deterministic hash-vector fallback is defensible for standalone REPL (documented as :low-fidelity), else graceful sidecar error"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "ai/generate"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no text generated"
+  :reference-status "absent"
+  :fix "wire via LLM provider (state.llm.complete); graceful sidecar error when no provider"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "ai/rank"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no ranking runs"
+  :reference-status "absent"
+  :fix "wire via provider seam; local no-embedding fallback is dishonest for ranking (order arbitrary), so prefer graceful error"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "ai/rerank"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no reranking runs"
+  :reference-status "absent"
+  :fix "wire via provider seam; graceful sidecar error when no provider"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "ai/summarize"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no summarization runs"
+  :reference-status "absent"
+  :fix "wire via LLM provider (state.llm.complete); graceful sidecar error when no provider"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "ai/translate"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no translation runs"
+  :reference-status "absent"
+  :fix "wire via LLM provider (state.llm.complete); graceful sidecar error when no provider"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "ai/vector-search"
+  :library "ai"
+  :status "lying-stub"
+  :current-impl "src/wired-verbs.js:617-621 auto-descriptor"
+  :current-behavior "returns a fake descriptor list; no search runs"
+  :reference-status "absent"
+  :fix "wire via Cortex (getCortex().query) when a vector index is present; graceful sidecar error otherwise. NEVER fake ranked hits."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+;; ── the 3 CORTEX VERBS (already-wired, need schema-lift) ──────────
+;;
+;; These are real impls, not lies. They live in src/wired-verbs.js
+;; and route through the in-memory Cortex declared in src/ai.js.
+;; Round 2 (2026-07-14) added them to the reference; Round 3 needs
+;; to lift them to full schema compliance (:impl-status, :impl-file,
+;; +ai / +commerce / +eng slices).
+
+(audit-entry
+  :name "cortex/read"
+  :library "cortex"
+  :status "wired-partial"
+  :current-impl "src/wired-verbs.js:55-58 → getCortex().recall(key)"
+  :current-behavior "returns stored value or undefined-coerced-to-() for missing keys"
+  :reference-status "authored (Round 2, 2026-07-14) — missing schema-compliant slices"
+  :fix "add :impl-status wired, :impl-file src/ai.js, +ai slice, +commerce slice"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "cortex/write"
+  :library "cortex"
+  :status "wired-partial"
+  :current-impl "src/wired-verbs.js:60-63 → getCortex().remember(key, value)"
+  :current-behavior "stores value under coerced string key; returns #t"
+  :reference-status "authored (Round 2) — missing schema-compliant slices"
+  :fix "add :impl-status wired, :impl-file src/ai.js, +ai slice, +commerce slice"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "cortex/topk"
+  :library "cortex"
+  :status "wired-partial"
+  :current-impl "src/wired-verbs.js:65-70 → getCortex().query(pattern).slice(0, k)"
+  :current-behavior "substring-match over keys; caps to k; returns empty list on miss"
+  :reference-status "authored (Round 2) — missing schema-compliant slices"
+  :fix "add :impl-status wired, :impl-file src/ai.js, +ai slice, +commerce slice"
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+;; ── ALREADY-WIRED (out of scope, listed for provenance) ───────────
+;; These already work correctly; they're not in this lane's scope
+;; but are listed for context so the next lane knows what to leave
+;; alone.
+
+(audit-entry :name "cortex/remember" :library "cortex" :status "wired" :current-impl "src/ai.js:160-162" :scope "out")
+(audit-entry :name "cortex/recall"   :library "cortex" :status "wired" :current-impl "src/ai.js:165-167" :scope "out")
+(audit-entry :name "cortex/query"    :library "cortex" :status "wired" :current-impl "src/ai.js:170-174" :scope "out")
+(audit-entry :name "cortex/forget"   :library "cortex" :status "wired" :current-impl "src/ai.js:177-179" :scope "out")
+(audit-entry :name "cortex/keys"     :library "cortex" :status "wired" :current-impl "src/ai.js:182-184" :scope "out")
+(audit-entry :name "cortex/size"     :library "cortex" :status "wired" :current-impl "src/ai.js:187-189" :scope "out")
+(audit-entry :name "llm/complete"    :library "llm"    :status "wired-with-missing-provider" :current-impl "src/ai.js:196-198" :scope "out")
+(audit-entry :name "llm/embed"       :library "llm"    :status "wired-with-missing-provider" :current-impl "src/ai.js:201-203" :scope "out")
+(audit-entry :name "llm/chat"        :library "llm"    :status "wired-with-missing-provider" :current-impl "src/ai.js:206-209" :scope "out")
+(audit-entry :name "llm/tokens"      :library "llm"    :status "wired-with-missing-provider" :current-impl "src/ai.js:212-214" :scope "out")
+
+;; The steering / behavior-tree / blackboard game-AI verbs (37 in
+;; total: ai/align, ai/arrive, ai/bb-*, ai/bt-*, ai/cohere, ai/evade,
+;; ai/flee, ai/flock, ai/flow-*, ai/follow-*, ai/grid, ai/max-force!,
+;; ai/passable?, ai/path, ai/policy*, ai/pursue, ai/seek, ai/separate,
+;; ai/utility, ai/wall!, ai/wander, ai/waypoints) belong to a
+;; different lane — game-AI, not LLM-AI — and are already documented
+;; in the reference. Some subset (ai/clear!, ai/decide, ai/flow-field,
+;; ai/follow-flow, ai/follow-path, ai/grid, ai/policy, ai/wall!) are
+;; ALSO returning auto-descriptors at src/wired-verbs.js:993-1001.
+;; Flagged for a downstream game-AI lane; NOT this lane's scope.
+
+;; ── PHASE B PLAN ──────────────────────────────────────────────────
+
+(plan
+  :phase "B"
+  :order
+    ("cortex/read (already-wired — lift to full schema first, easiest to REPL-verify)"
+     "cortex/write"
+     "cortex/topk"
+     "ai/embed (deterministic hash-vector fallback — REPL runnable, honestly labeled)"
+     "ai/classify"
+     "ai/generate"
+     "ai/summarize"
+     "ai/translate"
+     "ai/rank"
+     "ai/rerank"
+     "ai/vector-search")
+  :fallback-shape
+    "Every ai/* verb without a live provider raises:
+       (error 'external-service \"requires-python-ml-sidecar\" verb args)
+     This is CALLABLE and HONEST. The error IS the answer. Sakura
+     handling this error correctly is a first-class use case."
+  :verification "each example tier via ./bin/sakura-scheme eval; graceful-error return counts"
+  :commit-shape "kenji-ai: wire <name>"
+  :push "per-verb, no force, no --no-verify")
+
+;; End of audit. Waiting on schema lock, then Phase B begins.
