@@ -139,4 +139,26 @@
     (:path "carts/story/tortoise-and-hare.scm"
      :summary "Aesop's fable told, then simulated as a race.")
     (:path "carts/story/haiku-generator.scm"
-     :summary "5-7-5 lines picked from pools — form as a whole.")))
+     :summary "5-7-5 lines picked from pools — form as a whole.")
+
+    ;; ── games ──
+    (:path "carts/games/tic-tac-toe.scm"
+     :summary "10 random-vs-random tic-tac-toe games, tallied.")
+    (:path "carts/games/conway-quilt.scm"
+     :summary "three CA rulesets (Conway, HighLife, Maze) side by side.")
+    (:path "carts/games/nim.scm"
+     :summary "nim with perfect XOR-strategy vs random player.")
+    (:path "carts/games/high-low.scm"
+     :summary "binary-search a hidden 1..1000 number in ~10 guesses.")
+    (:path "carts/games/rock-paper-scissors.scm"
+     :summary "20 rounds of rock-paper-scissors, tallied.")
+    (:path "carts/games/dice-battle.scm"
+     :summary "500 Risk-style 3v2 dice battles, empirical odds.")
+    (:path "carts/games/coin-flip-streaks.scm"
+     :summary "10000 flips, longest streak, run-length histogram.")
+    (:path "carts/games/maze-carver.scm"
+     :summary "20×20 perfect maze carved via randomized DFS.")
+    (:path "carts/games/langton-flock.scm"
+     :summary "8 Langton's ants sharing one grid — flock chaos.")
+    (:path "carts/games/four-in-a-row.scm"
+     :summary "Connect Four with two random players.")))
