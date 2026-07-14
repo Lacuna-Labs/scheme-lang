@@ -1,0 +1,188 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; ada-math-a audit — Phase A
+;; Lane: no-namespace verbs, first letter a-h (95 verbs)
+;; Author: Ada (Lacuna Eng Lead — docs architect / no-namespace a-h lane)
+;; Date: 2026-07-14
+;;
+;; Alfred's floor doctrine — every stamp MUST correspond to a REAL REPL
+;; run that succeeded. No auto-stubs. No hallucinated behavior. If a verb
+;; cannot be honestly wired + verified, its entry ships with
+;;   :entry-provenance "author-blocked"
+;; and a plain-English reason. We do not lie.
+;;
+;; Composition with kid-from-North-Georgia doctrine:
+;;   A kid opens the manual and types (card-list). Something should
+;;   visibly happen — the list of open cards should appear. If we can't
+;;   deliver that in a bare REPL (no card runtime, no framebuffer) then
+;;   the ENTRY must say so honestly, not silently return a shaped
+;;   descriptor and claim success. That is the lie doctrine forbids.
+;; ─────────────────────────────────────────────────────────────────────
+
+(audit
+  :lane "ada-math-a"
+  :scope "no-namespace verbs, name[0] in [a,h]"
+  :author "ada"
+  :dated "2026-07-14"
+  :verbs-in-scope 95
+  :true-stubs 0
+  :shaped-descriptor 90
+  :real-impls 5
+
+  :note "In sakuraEnv, every verb in scope resolves to SOMETHING — no clean-error stubs remain. But 90 return shaped descriptors like (\"card-list\") — a well-known lie shape Alfred called out. This lane's job: (a) elevate to real impls where the semantics fit a standalone REPL, (b) mark the rest :impl-status deferred with :impl-notes describing what the full host does, (c) upgrade every entry to the new hand-authored full-schema shape (5 tiers × :note + math/cs/eng/hacker/ai slices). Reference IS the language."
+
+  :install-order
+    (:file "src/sakuraEnv.js"
+     :order
+       ("makeBaseEnv"           "L0 core R7RS + primitives"
+        "installAi"             "L2 AI (cortex, llm)"
+        "installGame"           "L3 game (sprites, entities, physics, on-frame)"
+        "installJuggle"         "L3.5 juggle (pure siteswap math)"
+        "installScene"          "L3.55 scene (level orchestration; needs game)"
+        "installCine"           "L3.56 cinematography (camera state)"
+        "installGameTheory"     "L3.6 combinatorial game theory (kira lane)"
+        "installOps"            "L3.7 operations research (zain lane)"
+        "installCommercial"     "L4 commercial (etsy/ebay/shopify/meta/google)"
+        "installSystem"         "L4.4 input/system (hiroshi lane)"
+        "installWiredVerbs"     "L4.5 wired — descriptor stubs for the long tail"
+        "installWiredVerbsIP"   "L4.6 priya's lane (no-ns i-p)"
+        "installWiredVerbsHanaMath" "L4.7 hana lane"
+        "installWiredVerbsMarcusMathC" "L4.8 marcus lane"
+        "registerReferenceVerbs" "L5 reference — stubs only names not yet bound"))
+
+  ;; ─── real-impls (5) — already honest ─────────────────────────────
+  ;; These pass a spot-check: they return a meaningful value that
+  ;; matches the reference contract. They still need the FULL-SCHEMA
+  ;; upgrade (5 tiers × :note + all disciplines slices).
+
+  (:tier "real-impls"
+   :count 5
+   :verbs (
+     "conway-cell?"        ; wired-verbs.js — honest #f in headless REPL
+     "grid-cell?"          ; wired-verbs.js — honest #f
+     "add-days"            ; base.js — date arithmetic; pure
+     "add-hours"           ; base.js — pure
+     "add-minutes"         ; base.js — pure
+   )
+   :note "Impl already honest. Ada only authors the upgraded entry.")
+
+  ;; ─── implementable-cheap (8) — pure JS, no host required ────────
+  ;; Small set that fits a standalone REPL. Deserves a real impl.
+
+  (:tier "cheap"
+   :count 8
+   :verbs (
+     "cols"                ; grid width; if grid-init has run return that, else 0
+     "eval"                ; interpreter's evaluate + reader.parse
+     "done"                ; cadence control token; return 'done symbol
+     "escalate"            ; control token; return (list 'escalate kind detail)
+     "emoji-by-name"       ; lookup table via Unicode CLDR / hardcoded set
+     "at-beat"             ; beat scheduler descriptor; can compute from tempo state
+     "audit-verify"        ; walks env / registry and returns boolean
+     "big-bang"            ; game-loop launcher; returns descriptor-safe game-id
+   )
+   :note "Real semantics in a REPL. Priority for Phase B wiring.")
+
+  ;; ─── card-runtime (25) — deferred; needs card host ──────────────
+  ;; card-* verbs mutate or read a live card runtime that is a fully
+  ;; separate substrate (bricklay layout engine + focus manager +
+  ;; render loop). The reference contract is a HOST-verb; a bare
+  ;; standalone REPL cannot honestly execute one. These ship the
+  ;; descriptor + :impl-status "deferred" with an :impl-notes
+  ;; explaining what the host does.
+
+  (:tier "card-runtime"
+   :count 25
+   :verbs (
+     "card-get" "card-id-of" "card-kind" "card-kinds" "card-land"
+     "card-lean-aside" "card-list" "card-open" "card-open-then"
+     "card-pluck" "card-reach" "card-rect" "card-rows"
+     "card-screen-rect" "card-set!" "card-settle-breath" "card-toss"
+     "card-unfocus!" "card-visible?" "card-where" "cards-list"
+     "flip-card" "fold-card" "define-card" "coin-emit"
+   )
+   :note "All 25 require the card runtime. Descriptor shape is the honest fallback for a headless REPL; entry says deferred + notes the true host contract.")
+
+  ;; ─── conway-grid (33) — deferred; needs Conway world state ──────
+  ;; conway-* and grid-* are cellular-automaton verbs. Reference
+  ;; contract needs the initialized Conway grid + tribe scoring +
+  ;; RAF loop. Pure math (conway-cell?, grid-cell?) already returns
+  ;; honest #f from wired-verbs. The rest need the substrate.
+
+  (:tier "conway-grid"
+   :count 33
+   :verbs (
+     "conway-cell-age-band" "conway-cell-glow" "conway-cell-lineage"
+     "conway-cell-mixed-parents" "conway-cols" "conway-end-round"
+     "conway-feed-corner" "conway-fire-rainbow" "conway-init"
+     "conway-live-count" "conway-rainbow-active?" "conway-round-scores"
+     "conway-round-tick" "conway-round-ticks-total" "conway-rows"
+     "conway-set-rule" "conway-soup-flush" "conway-spawn-beehive"
+     "conway-spawn-blinker" "conway-spawn-block" "conway-spawn-cell"
+     "conway-spawn-corner" "conway-spawn-glider" "conway-spawn-gosper"
+     "conway-spawn-lwss" "conway-spawn-r-pent"
+     "conway-spawn-startup-gun" "conway-step" "conway-tick-count"
+     "conway-tick-rainbow" "conway-tribe-counts" "conway-underdog"
+     "clear-surface-layer"
+   )
+   :note "Full runtime needed. Not a pilot target this pass. Entries marked :impl-status deferred with a shared substrate-reason.")
+
+  ;; ─── grid-substrate (14) — deferred; needs shared grid CA host ──
+  (:tier "grid-substrate"
+   :count 14
+   :verbs (
+     "grid-cell-age" "grid-cell-set!" "grid-cell-state"
+     "grid-cols" "grid-init" "grid-live-count" "grid-neighbors"
+     "grid-origin" "grid-rows" "grid-step" "grid-step-3state"
+     "grid-step-4state" "grid-step-aged" "grid-step-count"
+   )
+   :note "Live grid CA host required. Descriptor honest fallback.")
+
+  ;; ─── form/widget/emoji/misc (10) — deferred; needs UI host ──────
+  (:tier "ui-host"
+   :count 10
+   :verbs (
+     "field" "form" "form-group" "form-list" "form-of"
+     "define-form" "define-app" "define-button"
+     "emoji-paint-pixel" "emoji-prop" "emoji-turn"
+   )
+   :note "Widget/form/app registry runtime + paint surface. Descriptor honest fallback.")
+
+  ;; ─── other-deferred ─────────────────────────────────────────────
+  (:tier "other-deferred"
+   :count 4
+   :verbs (
+     "create-listing-from" ; commercial adapter path; blocked without auth-store live
+     "dot-count"           ; framebuffer layer read; deferred without live surface
+     "end-frame"           ; framebuffer flush; deferred without live surface
+     "eye-contact"         ; character/choreo runtime; deferred
+     "hand-off"            ; puppetry choreography; deferred
+     "fleet-do"            ; fleet iteration over shops; needs commercial state
+     "fleet-each"          ; ditto
+   )
+   :note "Miscellaneous descriptor-lies. Deferred until the referenced host lands. Entries mark :impl-status deferred + :impl-notes state the missing subsystem.")
+
+  ;; ─── phase-B priorities ─────────────────────────────────────────
+  ;; The 8 "cheap" verbs are the pilot batch. Each ships:
+  ;;   - real JS impl (pure or REPL-honest fallback)
+  ;;   - 5 example tiers, all REPL-verified
+  ;;   - full-schema entry: math + cs + eng + hacker + ai slices
+  ;;   - :entry-provenance "authored"
+  ;;   - :impl-status "wired"
+  ;; Other 87 ship staged entries with :impl-status "deferred" or
+  ;; "author-blocked" as appropriate. NEVER "wired" without verify.
+  ;;
+  ;; Rate-of-work note (Ada, 2026-07-14 pm):
+  ;;   Environment on this branch is unstable — concurrent agents
+  ;;   push often, git pull --rebase from the architect watcher can
+  ;;   revert working-tree edits, worktree flakes reported by ren-motion
+  ;;   in their phase-B blocker slat. Ada is pushing per-verb to
+  ;;   minimize race exposure.
+
+  :phase-b-priorities
+    ("done"       "trivial — control token"
+     "escalate"   "trivial — control token"
+     "eval"       "high — real Scheme runtime access"
+     "cols"       "medium — grid dim getter with honest 0 fallback"
+     "emoji-by-name" "medium — CLDR table lookup"))
+
+;; End of audit.
