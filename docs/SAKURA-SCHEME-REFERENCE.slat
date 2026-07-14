@@ -18683,13 +18683,18 @@
   :name "stat/quartile"
   :library "stat"
   :kind "meta"
-  :signature "(stat/quartile dataset which) -> number"
-  :summary "Extract the first, second (median), or third quartile from a dataset using linear interpolation."
-  :explanation "Quartiles divide a sorted dataset into four equal parts. Q1 (25th percentile) marks the boundary below which 25% of data falls; Q2 is the median; Q3 (75th percentile) marks where 75% falls below. This verb uses linear interpolation to estimate quartiles between data points, making it robust for small datasets. The `which` argument accepts 1, 2, 3 or the symbols 'q1, 'q2, 'q3. An empty dataset returns 'nan."
+  :signature "(stat/quartile dataset q) -> number"
+  :summary "Extract the q-th quartile (q ∈ {1, 2, 3}) via linear interpolation."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Sort ascending, interpolate at position (n-1)*(q/4). q MUST be a numeric 1/2/3 — the impl coerces via Number(), so symbols like 'q1 numerify to 0 (wrong). Use integers 1/2/3. Empty dataset returns 0."
+  :explanation "Quartiles divide a sorted dataset into four equal parts. Q1 (25th percentile), Q2 (median), Q3 (75th percentile). Linear interpolation between adjacent order statistics is used."
   :examples (
-    (:tier "novice" :code "(stat/quartile (list 1 2 3 4 5 6 7 8) 1)" :note "Returns Q1 (≈2.5), the 25th percentile of the dataset")
-    (:tier "intermediate" :code "(let ((grades (list 65 72 78 81 85 88 91 94 97)))\n  (list (stat/quartile grades 'q1)\n        (stat/quartile grades 'q2)\n        (stat/quartile grades 'q3)))" :note "Extracts all three quartiles from a grade distribution at once")
-    (:tier "expert" :code "(let ((scores (list 10 12 15 18 22 25 28 30 32 35)))\n  (let ((q1 (stat/quartile scores 1))\n        (q3 (stat/quartile scores 3)))\n    (let ((iqr (- q3 q1)))\n      (list 'iqr iqr 'lower-fence (- q1 (* 1.5 iqr))))))" :note "Uses quartiles to compute interquartile range and outlier detection boundaries")
+    (:tier "novice" :code "(stat/quartile '(1 2 3 4 5 6 7 8) 1)" :note "Q1 of eight evenly-spaced values. Returns 2.75.")
+    (:tier "apprentice" :code "(list (stat/quartile '(1 2 3 4 5 6 7 8) 1)\n      (stat/quartile '(1 2 3 4 5 6 7 8) 2)\n      (stat/quartile '(1 2 3 4 5 6 7 8) 3))" :note "All three quartiles for a uniform 8-point dataset: (2.75 4.5 6.25).")
+    (:tier "intermediate" :code "(let ((grades '(65 72 78 81 85 88 91 94 97)))\n  (list ':q1 (stat/quartile grades 1)\n        ':q2 (stat/quartile grades 2)\n        ':q3 (stat/quartile grades 3)))" :note "Quartiles of a 9-point grade distribution.")
+    (:tier "expert" :code "(define (iqr data)\n  (- (stat/quartile data 3) (stat/quartile data 1)))\n(define (outlier-fences data)\n  (let ((q1 (stat/quartile data 1))\n        (q3 (stat/quartile data 3)))\n    (let ((iqr (- q3 q1)))\n      (list ':lower (- q1 (* 1.5 iqr))\n            ':upper (+ q3 (* 1.5 iqr))))))\n(outlier-fences '(10 12 15 18 22 25 28 30 32 35))" :note "Tukey outlier fences: 1.5 * IQR beyond Q1/Q3. Any point outside these fences is flagged as an outlier.")
+    (:tier "master" :code "(define (five-number-summary data)\n  (list ':min (apply min data)\n        ':q1  (stat/quartile data 1)\n        ':med (stat/quartile data 2)\n        ':q3  (stat/quartile data 3)\n        ':max (apply max data)))\n(five-number-summary '(1 3 5 7 9 11 13 15 17 19))" :note "Tukey's five-number summary. Returns the six-slot record giving a fast picture of the distribution shape.")
   )
   :caveats ("Empty dataset returns 'nan; use stat/count to guard against it." "which must be exactly 1, 2, 3 or one of 'q1, 'q2, 'q3; other values return 'nan." "Linear interpolation assumes ordinal data; use with caution on categorical datasets." "Single-element or two-element datasets may produce unexpected quartiles; prefer stat/range or stat/iqr for robust spread assessment.")
   :drawbacks ("Linear interpolation is one of several valid quartile methods (R uses type 7 by default); results may differ from Excel or other tools using different methods." "Quartiles alone do not detect bimodality or skew; pair with stat/histogram or visual inspection." "For small n (<4), quartiles become less meaningful; consider stat/median and extrema instead.")
