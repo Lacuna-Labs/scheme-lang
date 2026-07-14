@@ -826,6 +826,31 @@
   :ai (:raises ("external-service — sidecar unreachable" "quota-exceeded — provider rate limit" "timeout — provider slow" "bad-input — text too long" "content-filtered — provider refused") :pipes-into ("string-append" "display" "cortex/write") :consumes-from ("string" "list of options") :cardinality "one" :deterministic #f :cacheable #t :common-mistakes "Passing whole email threads without chunking — providers refuse or truncate silently. Split into <4k-token chunks and summarize the summaries." :when-not-to-use "When you need the ORIGINAL preserved — link to it instead. Summarization is lossy on purpose." :returns-confidence #f)
   :commerce (:cost "external-billed" :fuel-cost "per-token" :needs-consent #f :idempotent #f :cortex-touch "none" :metered-billing #t))
 
+(verb
+  :name "ai/translate"
+  :library "ai"
+  :kind "read"
+  :signature "(ai/translate text target-lang [source-lang]) → string"
+  :summary "Translate text into a target language. Requires an LLM sidecar."
+  :impl-status "wired"
+  :impl-file "src/ai.js"
+  :impl-notes "Routes through state.llm.complete with a translation template. When no provider is wired, raises 'requires-python-ml-sidecar'. target-lang and source-lang are ISO-639-1 two-letter codes ('en', 'ja', 'es') or descriptive symbols. No local fallback."
+  :explanation "Ai/translate maps text from one language to another. Under a wired provider, the model handles semantics, register, and idioms. Under standalone REPL it raises requires-python-ml-sidecar — no local dictionary lookup would come close to a real translation, and pretending otherwise would be worse than an error. source-lang is optional; when omitted, the provider auto-detects. Sakura uses this verb to reach customers who don't share her operator's language; every use should be flanked by 'show the original too' UI so a bad translation stays inspectable."
+  :examples (
+    (:tier "novice" :code "(ai/translate \"hello, friend\" 'ja)" :note "Standalone REPL: raises requires-python-ml-sidecar. Wire an LLM to translate.")
+    (:tier "apprentice" :code "(ai/translate \"help my order\" 'en 'ja)" :note "Explicit source language ('ja) and target ('en). Standalone: same sidecar error.")
+    (:tier "intermediate" :code "(define (translate-or-passthrough text target)\n  (if (eq? (cortex/read \"llm/provider-status\") 'wired)\n      (ai/translate text target)\n      (list 'untranslated text target)))\n(translate-or-passthrough \"hello\" 'ja)" :note "Return a marked list when the sidecar is down so the UI can render 'untranslated' clearly.")
+    (:tier "expert" :code "(define (reply-in-customer-lang text customer-id)\n  (let ((lang (cortex/read (string-append \"customer/\" customer-id \"/lang\"))))\n    (cond ((nil? lang) text)\n          ((eq? lang 'en) text)\n          ((eq? (cortex/read \"llm/provider-status\") 'wired)\n           (ai/translate text lang))\n          (else\n           (list 'reply-in-english text 'target lang)))))\n(cortex/write \"customer/alice/lang\" 'ja)\n(reply-in-customer-lang \"Thanks for your order!\" \"alice\")" :note "Route a reply through translation only when needed AND the sidecar is up; otherwise keep English + mark the target so the operator sees the mismatch.")
+    (:tier "master" :code "(define (bilingual-notice text preferred-lang)\n  (let ((status (cortex/read \"llm/provider-status\")))\n    (cond ((eq? preferred-lang 'en) text)\n          ((eq? status 'wired)\n           (string-append text\n                          \"\\n---\\n\"\n                          (ai/translate text preferred-lang)))\n          (else\n           (string-append text\n                          \"\\n---\\n(translation unavailable; original above)\")))))\n(cortex/write \"llm/provider-status\" 'offline)\n(bilingual-notice \"Order confirmed.\" 'es)" :note "A cart-style bilingual notice: always show the original; append a translation when the sidecar is up; append an honest 'unavailable' note otherwise. Sakura uses this shape whenever she cannot confidently translate but the customer deserves to see something.")
+  )
+  :caveats ("No standalone fallback — raises requires-python-ml-sidecar without a wired provider." "target-lang / source-lang are provider-specific; ISO-639-1 codes are the common ground." "Idiom-heavy text degrades quality; consider :formality options where provider supports.")
+  :drawbacks ("Cost per call is high — each translation is a full generation pass." "Cultural drift: same sentence translated in different runs may land differently. Set :temperature 0 for stability." "Never round-trip A→B→A as a quality check — you get regression to the mean of both languages.")
+  :usecases ("Localizing Sakura's replies for non-English customers." "Translating a review to English for the operator." "Multilingual product-listing generation." "Any time content must reach a speaker of another language without dropping meaning.")
+  :related ("ai/generate" "ai/summarize" "ai/classify" "llm/complete" "cortex/read")
+  :learn (:concept "Machine translation as a specialization of generation. Sakura's ai/translate wraps llm/complete with translation-specific prompt scaffolding and language-code arguments." :prerequisites ("string" "symbol" "cond" "cortex/read") :progression "After ai/translate, learn ai/summarize + ai/translate composition for cross-language digest tasks.")
+  :ai (:raises ("external-service — sidecar unreachable" "quota-exceeded — provider rate limit" "timeout — provider slow" "bad-input — text too long" "unsupported-language — provider lacks the pair") :pipes-into ("string-append" "display" "cortex/write") :consumes-from ("string" "symbol") :cardinality "one" :deterministic #f :cacheable #t :common-mistakes "Assuming translation preserves formatting (line breaks, punctuation, code blocks). Providers vary. Round-trip-test critical strings before shipping." :when-not-to-use "Fixed UI strings — use a translation table (i18n dictionary). Static translations are cheaper and reviewable." :returns-confidence #f)
+  :commerce (:cost "external-billed" :fuel-cost "per-token" :needs-consent #f :idempotent #f :cortex-touch "none" :metered-billing #t))
+
 ; ─── library: alg (59 verbs) ───
 
 (verb
