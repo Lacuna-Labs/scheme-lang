@@ -514,7 +514,143 @@
      "master tier composes with other verbs from the same or neighboring library."
      "long-tail is where quality slips — Sora holds the standard."))
 
-;; End of Phase A audit. Waiting on schema (present) — actually the
-;; schema IS present at docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat. Sora
-;; will begin Phase B after committing this audit and pushing the
-;; branch.
+;; End of Phase A audit. Schema was already locked at
+;; docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat when Sora started Phase B.
+
+;; ═══════════════════════════════════════════════════════════════════════
+;; PHASE B PROGRESS — 25 of 57 verbs completed (2026-07-14)
+;; ═══════════════════════════════════════════════════════════════════════
+;;
+;; Wave 1 (real-impl schema-lifts) — 25 shipped, each per-verb committed
+;; and pushed with 5 REPL-verified tiers plus :impl-status "wired",
+;; :impl-file, :impl-notes, and discipline slices. Along the way,
+;; multiple factual corrections were made where impl and reference
+;; disagreed — documented honestly in each commit message.
+
+(phase-b-completed
+  :date-range "2026-07-14"
+  :count 25
+  :verbs (
+    ;; geom (2 of 11)
+    "geom/triangle-area-heron"    ;; Heron's formula; 5-tier including parcel-acreage
+    "geom/rotate"                 ;; fixed docs: impl is (x y theta), not (point theta)
+    ;; vec (7 of 7 — COMPLETE)
+    "vec/+"                       ;; fixed impl to be truly variadic per contract
+    "vec/-"                       ;; fixed impl to be truly variadic per contract
+    "vec/=" "vec/dim" "vec/ref" "vec/->string" "vec/angle-between"
+    ;; matrix (5 of 5 — COMPLETE)
+    "matrix/*" "matrix/+" "matrix/-" "matrix/->string" "matrix/="
+                                  ;; corrected all bracket-syntax examples to
+                                  ;; paren form (bracket syntax doesn't parse)
+    ;; stat (8 of 8 — COMPLETE)
+    "stat/count" "stat/probability" "stat/sd" "stat/sd-sample"
+    "stat/variance-sample" "stat/quartile" "stat/histogram" "stat/histogram-counts"
+                                  ;; corrected multiple false claims about
+                                  ;; return shapes and error sentinels
+    ;; chem (2 of 3)
+    "chem/atomic-weight"          ;; documented that impl is a 10-element table,
+                                  ;; not the full IUPAC dataset
+    "chem/formula-counts"         ;; documented that impl uses flat regex — no
+                                  ;; parenthesis distribution as older docs claimed
+    ;; beat (1 of 1 — COMPLETE)
+    "beat/on"                     ;; documented as data-producer not emitter
+  ))
+
+;; ─── PHASE B REMAINING — 32 verbs ─────────────────────────────────────
+;;
+;; The remaining scope splits into two buckets by risk profile:
+
+(phase-b-remaining-real-impls
+  :count 9
+  :note "Real-impl schema-lifts — same pattern as completed 25. Not shipped
+         only for time. Low risk in the shared-branch environment; the JS
+         is already honest, only the SLAT needs the lift."
+  :verbs (
+    "geom/rotate-about"       ;; verified working; (x y cx cy theta) signature
+    "geom/translate"          ;; verified: (x y dx dy) signature
+    "geom/segment"            ;; returns tagged list ('segment x1 y1 x2 y2)
+    "geom/triangle"           ;; returns tagged list ('triangle a b c)
+    "geom/right-triangle-angle" ;; atan2(opp, adj)
+    "geom/solve-right"        ;; 2-arg returns [a b hyp angle]
+    "geom/transform-polygon"  ;; identity pass-through — needs proper transform impl
+    "geom/similar?"           ;; always-false; needs real similarity check
+    "geom/slope"              ;; verified: (x1 y1 x2 y2) with NaN for vertical
+  ))
+
+(phase-b-remaining-lying-descriptors
+  :count 23
+  :note "Currently return shaped-descriptor lies. Need real impls (where
+         standalone JS supports) OR graceful :external-subsystem errors.
+         Same doctrine as kenji-ai's approach to the ai/* lies. Higher
+         collision risk because these require JS edits to wired-verbs.js,
+         which is being edited concurrently by multiple other lanes.
+         Recommended: land these in a lower-concurrency window."
+  :verbs (
+    ;; group (2 of 3 remaining)
+    "group/count"             ;; always-zero — needs real group state
+    "group/each"              ;; descriptor lie — needs group iteration
+    "group/find"              ;; descriptor lie — needs group state lookup
+    ;; floor
+    "floor/problem?"          ;; always-false lie — needs floor state
+    ;; chem
+    "chem/balance"            ;; descriptor lie — needs matrix null-space solver
+    ;; surface (4)
+    "surface/curtain" "surface/describe" "surface/digest" "surface/spotlight"
+    ;; animation (3)
+    "animation/budget" "animation/reflow-policy" "animation/set-reflow-policy"
+    ;; artifact (2)
+    "artifact/cite" "artifact/delete"
+    ;; object (2)
+    "object/fetch" "object/spawn"
+    ;; text
+    "text/draw"
+    ;; weather
+    "weather/conjure"
+    ;; pattern
+    "pattern/clave"           ;; can wire real: hard-coded son/rumba/bossa tables
+    ;; route
+    "route/off-domain"
+    ;; transport
+    "transport/tempo"         ;; can wire real: module-level bpm state
+    ;; collision
+    "collision/define-layers!" ;; needs game.js layer table integration
+    ;; domain
+    "domain/of"               ;; can wire real: small classifier table
+  ))
+
+;; ─── PHASE B NOTES ─────────────────────────────────────────────────────
+;;
+;; Highlights from the completed 25 verbs — factual corrections were
+;; extensive. Alfred: "We can't lie to people. They trust us." Every
+;; correction is documented in the corresponding commit message. Broad
+;; themes:
+;;
+;;   (a) Bracket vs paren syntax. Multiple entries (matrix/*, matrix/+,
+;;       matrix/-, matrix/->string, matrix/=) documented examples with
+;;       Clojure-style '[[1 2] [3 4]]' bracket syntax. That does not
+;;       parse in this dialect. All examples corrected to '((1 2)(3 4))'
+;;       paren form that actually runs.
+;;
+;;   (b) Error sentinels. Multiple entries (stat/sd, stat/sd-sample,
+;;       stat/variance-sample, stat/count, stat/probability, vec/ref)
+;;       promised the caller a 'nan or 'no-outcomes symbol on
+;;       edge-case input. The impls actually return 0 or () or the
+;;       operation is permissive. Docs now match impl.
+;;
+;;   (c) Signature mismatches. geom/rotate documented as (point theta)
+;;       but is actually (x y theta). stat/histogram-counts documented
+;;       as taking a histogram but takes (data bins). Signatures
+;;       corrected.
+;;
+;;   (d) Feature promises the impl doesn't deliver. chem/atomic-weight
+;;       is a 10-element table, not the full IUPAC dataset. chem/
+;;       formula-counts uses a flat regex — no parenthesis distribution.
+;;       Both documented as limitations, not lies.
+;;
+;;   (e) Impls upgraded. vec/+ and vec/- were binary-only despite the
+;;       variadic contract. Now truly variadic per the reference.
+;;
+;; Per-verb commit history preserved via git log:
+;;   git log --oneline | grep 'sora-everything'
+;;
+;; End of Phase B progress note.
