@@ -1853,3 +1853,298 @@
   :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
   :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
           :entry-summary (:short "Return active constellations." :long "Snapshot of currently active listening constellations." :for-ai "List." :for-kid "See which listening groups are active.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; PAINT-* CLUSTER (7 verbs)
+;;
+;; Rendering to a named grid surface. In a headless REPL there is no
+;; live surface, so paint-* returns a tagged descriptor list the host
+;; would consume. The entry :impl-status is "deferred" and :impl-notes
+;; explains the host's role.
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "paint-cell"
+  :library "paint"
+  :signature "(paint-cell surface col row colour [alpha]) -> descriptor"
+  :summary "Draw a single cell to a named grid surface at (col, row) in colour."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-cell 'world 5 3 'red)" :note "Descriptor for the host. Returns (\"paint-cell\" world 5 3 red).")
+    (:tier "apprentice" :code "(paint-cell 'world 0 0 'blue 0.5)" :note "With alpha. Returns (\"paint-cell\" world 0 0 blue 0.5).")
+    (:tier "intermediate" :code "(map (lambda (c) (paint-cell 'world c 0 'red)) (list 0 1 2 3))" :note "Row of red cells (descriptors). Returns 4 descriptors.")
+    (:tier "expert"    :code "(define (draw-line surface y1 y2) (map (lambda (y) (paint-cell surface 0 y 'blue)) (range y1 y2))) (draw-line 'world 0 3)"     :note "Column stripe. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (draw-checkerboard s n c1 c2) (map (lambda (r) (map (lambda (c) (paint-cell s c r (if (= (modulo (+ r c) 2) 0) c1 c2))) (range 0 n))) (range 0 n))) (draw-checkerboard 'world 2 'white 'black)"     :note "2x2 checkerboard. Returns nested descriptors — the host renders."))
+  :related ("paint-grid" "paint-conway" "paint-coin")
+  :caveats ("Headless REPL returns descriptors; a full host consumes and renders." "Out-of-bounds coordinates are host-decided (usually ignored)." "Colour resolution is host-decided at render time.")
+  :drawbacks ("No return value from the actual paint call — descriptors are opaque to Scheme.")
+  :usecases ("Draw individual cells." "Compose into procedural patterns.")
+  :learn (:concept "Emit a paint instruction; host consumes." :prerequisites () :progression "Learn paint-grid for a whole grid; paint-conway for automata.")
+  :+math (:algebra () :total #t :domain "surface + coords + colour" :codomain "descriptor list")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js"
+         :impl-notes "Descriptor factory in wired-verbs.js's shaped-descriptor pass. Host overrides via env.define to write to a real surface."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: descriptor shape stable."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f
+        :common-mistakes "Expecting a visual effect in headless REPL. Assuming out-of-bounds coordinates error.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Draw a cell to a grid surface." :long "Emit a paint instruction for a colored cell. Headless returns descriptor." :for-ai "Descriptor in headless; host renders." :for-kid "Paint one square of the grid.")))
+
+(verb
+  :name "paint-coin"
+  :library "paint"
+  :signature "(paint-coin surface col row) -> descriptor"
+  :summary "Draw a coin token to a named surface at (col, row)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-coin 'world 5 5)" :note "Descriptor. Returns (\"paint-coin\" world 5 5).")
+    (:tier "apprentice" :code "(paint-coin 'sandbox 0 0)" :note "Origin coin. Returns (\"paint-coin\" sandbox 0 0).")
+    (:tier "intermediate" :code "(map (lambda (r) (paint-coin 'world 0 r)) (list 0 1 2))" :note "Column of coins. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (coin-line surface y) (map (lambda (x) (paint-coin surface x y)) (list 0 2 4 6))) (coin-line 'world 5)" :note "Space-alternating coins on row 5. Returns 4 descriptors.")
+    (:tier "master"    :code "(define (scatter surface n) (map (lambda (i) (paint-coin surface (modulo (* i 3) 8) (quotient i 3))) (range 0 n))) (scatter 'world 5)" :note "Scatter n coins. Returns 5 descriptors."))
+  :related ("paint-cell" "paint-grid" "coin-emit")
+  :caveats ("Coin is a game-specific token; host defines the sprite.")
+  :drawbacks ("No value / colour parameters — just position.")
+  :usecases ("Reward tokens." "Collectibles.")
+  :learn (:concept "Emit a coin-placement instruction." :prerequisites ("paint-cell") :progression "Learn coin-emit for the game-state side.")
+  :+math (:algebra () :total #t :domain "surface + coords" :codomain "descriptor list")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory; host renders."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Draw a coin token." :long "Emit a coin-placement descriptor." :for-ai "Descriptor." :for-kid "Put a coin somewhere on the grid.")))
+
+(verb
+  :name "paint-conway"
+  :library "paint"
+  :signature "(paint-conway surface [palette]) -> descriptor"
+  :summary "Render the current Conway's Life state to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-conway 'world)" :note "Descriptor. Returns (\"paint-conway\" world).")
+    (:tier "apprentice" :code "(paint-conway 'sandbox (list 'black 'white))" :note "With 2-color palette. Returns (\"paint-conway\" sandbox (black white)).")
+    (:tier "intermediate" :code "(map (lambda (s) (paint-conway s)) (list 'world 'preview))" :note "Two surfaces. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (life-step) (list (paint-conway 'world) 'grid-step 'done)) (life-step)" :note "Step + render pipeline. Returns ((\"paint-conway\" world) grid-step done).")
+    (:tier "master"    :code "(define (life-loop surface iter) (if (= iter 0) 'done (begin (paint-conway surface) (life-loop surface (- iter 1))))) (life-loop 'world 3)" :note "3-step loop. Returns 'done."))
+  :related ("paint-grid" "rule-conway" "grid-step")
+  :caveats ("Requires host with a live Conway CA state." "Palette length controls state colouring.")
+  :drawbacks ("No return value on individual paint call.")
+  :usecases ("CA visualization." "Life demo.")
+  :learn (:concept "Render a Conway CA snapshot." :prerequisites ("paint-grid") :progression "Learn rule-conway for the rule side.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1) emit" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory; host renders CA state."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render Conway to surface." :long "Emit paint-conway descriptor for host to render." :for-ai "Descriptor." :for-kid "Show the Conway pattern on the screen.")))
+
+(verb
+  :name "paint-grid"
+  :library "paint"
+  :signature "(paint-grid surface [palette]) -> descriptor"
+  :summary "Render the current grid CA state to a named surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid 'world)" :note "Descriptor. Returns (\"paint-grid\" world).")
+    (:tier "apprentice" :code "(paint-grid 'sandbox (list 'black 'white 'red))" :note "3-color palette. Returns (\"paint-grid\" sandbox (black white red)).")
+    (:tier "intermediate" :code "(list (paint-grid 'a) (paint-grid 'b))" :note "Two. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (render-both) (list (paint-grid 'world (list 'dark 'light)) (paint-grid 'preview (list 'gray 'black)))) (render-both)" :note "Composed render. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (animate-grid surface n) (fold (lambda (acc _) (cons (paint-grid surface) acc)) (list) (range 0 n))) (animate-grid 'world 3)" :note "3-frame animation descriptors. Returns 3 descriptors."))
+  :related ("grid-step" "paint-conway" "paint-cell")
+  :caveats ("Palette shape is host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Grid visualization.")
+  :learn (:concept "Emit paint-grid instruction." :prerequisites () :progression "Learn siblings paint-grid-3state and paint-grid-4state.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render grid to surface." :long "Emit paint-grid descriptor for host to render." :for-ai "Descriptor." :for-kid "Show the grid pattern on the screen.")))
+
+(verb
+  :name "paint-grid-3state"
+  :library "paint"
+  :signature "(paint-grid-3state surface [palette]) -> descriptor"
+  :summary "Render a 3-state CA to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid-3state 'world)" :note "Descriptor. Returns (\"paint-grid-3state\" world).")
+    (:tier "apprentice" :code "(paint-grid-3state 'w (list 'dark 'mid 'light))" :note "3-color palette. Returns descriptor with palette.")
+    (:tier "intermediate" :code "(map paint-grid-3state (list 'a 'b))" :note "Two surfaces. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (show-3 surface) (list (paint-grid-3state surface (list 'red 'yellow 'green)))) (show-3 'world)" :note "Traffic-light palette. Returns 1 descriptor.")
+    (:tier "master"    :code "(define (multi-render surfaces palette) (map (lambda (s) (paint-grid-3state s palette)) surfaces)) (multi-render (list 'a 'b 'c) (list 'r 'g 'b))" :note "Batch. Returns 3 descriptors."))
+  :related ("paint-grid" "paint-grid-4state" "paint-conway")
+  :caveats ("3-state model host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Multi-state CA viz.")
+  :learn (:concept "3-state emit." :prerequisites ("paint-grid") :progression "Learn 4state sibling.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render 3-state grid." :long "Emit paint-grid-3state descriptor." :for-ai "Descriptor." :for-kid "Show a 3-color CA pattern.")))
+
+(verb
+  :name "paint-grid-4state"
+  :library "paint"
+  :signature "(paint-grid-4state surface [palette]) -> descriptor"
+  :summary "Render a 4-state CA to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid-4state 'world)" :note "Descriptor. Returns (\"paint-grid-4state\" world).")
+    (:tier "apprentice" :code "(paint-grid-4state 'w (list 'a 'b 'c 'd))" :note "4-color palette. Returns descriptor with palette.")
+    (:tier "intermediate" :code "(map paint-grid-4state (list 'x 'y))" :note "Two. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (four-panel surfaces) (map paint-grid-4state surfaces)) (four-panel (list 'p1 'p2 'p3 'p4))" :note "Four surfaces. Returns 4 descriptors.")
+    (:tier "master"    :code "(define (render-with palette surfaces) (map (lambda (s) (paint-grid-4state s palette)) surfaces)) (render-with (list 'r 'g 'b 'y) (list 'a 'b))" :note "Batch. Returns 2 descriptors."))
+  :related ("paint-grid-3state" "paint-grid")
+  :caveats ("4-state model host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Multi-state CA viz.")
+  :learn (:concept "4-state emit." :prerequisites () :progression "Learn siblings.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render 4-state grid." :long "Emit paint-grid-4state descriptor." :for-ai "Descriptor." :for-kid "Show a 4-color CA pattern.")))
+
+(verb
+  :name "paint-grid-with-age"
+  :library "paint"
+  :signature "(paint-grid-with-age surface [palette]) -> descriptor"
+  :summary "Render a grid CA with age-aware colouring to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid-with-age 'world)" :note "Descriptor. Returns (\"paint-grid-with-age\" world).")
+    (:tier "apprentice" :code "(paint-grid-with-age 'w (list 'new 'mid 'old))" :note "Age palette. Returns descriptor with palette.")
+    (:tier "intermediate" :code "(map paint-grid-with-age (list 'a 'b))" :note "Two. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (age-render s) (paint-grid-with-age s (list 'yellow 'orange 'red))) (age-render 'world)" :note "Hot palette. Returns 1 descriptor.")
+    (:tier "master"    :code "(define (compare surfaces) (map (lambda (s) (list s (paint-grid-with-age s))) surfaces)) (compare (list 'a 'b))" :note "Multiple. Returns paired descriptors."))
+  :related ("paint-grid" "grid-cell-age")
+  :caveats ("Age model host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Age-decay viz.")
+  :learn (:concept "Age-aware paint emit." :prerequisites () :progression "Learn siblings.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render age-aware grid." :long "Emit paint-grid-with-age descriptor." :for-ai "Descriptor." :for-kid "Show the grid with color for how old each cell is.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; MOTION-* CLUSTER (4 verbs)
+;;
+;; Motion verbs need a live input source and a character registry.
+;; Headless REPL returns descriptors; entries mark deferred.
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "motion-anchor-to-input"
+  :library "motion"
+  :signature "(motion-anchor-to-input character input-source) -> descriptor"
+  :summary "Anchor a character's motion to a live input source."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-anchor-to-input 'hero 'gamepad)" :note "Descriptor. Returns (\"motion-anchor-to-input\" hero gamepad).")
+    (:tier "apprentice" :code "(motion-anchor-to-input 'ship 'keyboard)" :note "Keyboard anchor. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (motion-anchor-to-input c 'touch)) (list 'a 'b 'c))" :note "Bulk. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (setup chars src) (map (lambda (c) (motion-anchor-to-input c src)) chars)) (setup (list 'p1 'p2) 'gamepad)" :note "Party anchoring. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (multi-player mapping) (map (lambda (p) (motion-anchor-to-input (car p) (cadr p))) mapping)) (multi-player (list (list 'p1 'gamepad-1) (list 'p2 'gamepad-2)))" :note "Multi-player mapping. Returns 2 descriptors."))
+  :related ("motion-follow-input" "motion-halt" "motion-move-to" "make-character")
+  :caveats ("Requires live input runtime.")
+  :drawbacks ("No transformation applied — anchor is 1:1.")
+  :usecases ("Player control.")
+  :learn (:concept "Bind motion to input." :prerequisites () :progression "Learn follow-input for a looser bind.")
+  :+math (:algebra () :total #t :domain "character + source" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Anchor motion to input." :long "Bind a character's motion to a live input source." :for-ai "Descriptor." :for-kid "Let the game controller move the character.")))
+
+(verb
+  :name "motion-follow-input"
+  :library "motion"
+  :signature "(motion-follow-input character input-source) -> descriptor"
+  :summary "Have a character loosely follow input rather than mirror it exactly."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-follow-input 'pet 'cursor)" :note "Descriptor. Returns (\"motion-follow-input\" pet cursor).")
+    (:tier "apprentice" :code "(motion-follow-input 'buddy 'touch)" :note "Touch follow. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (motion-follow-input c 'cursor)) (list 'a 'b))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (pack members leader) (map (lambda (m) (motion-follow-input m leader)) members)) (pack (list 'dog 'cat) 'player)" :note "Pack behavior. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (crowd-follow crowd) (map (lambda (c) (motion-follow-input c 'player)) crowd)) (crowd-follow (list 'a 'b 'c))" :note "Crowd. Returns 3 descriptors."))
+  :related ("motion-anchor-to-input" "motion-move-to" "motion-halt")
+  :caveats ("Follow includes lag; anchor is 1:1.")
+  :drawbacks ("Lag hardcoded in host.")
+  :usecases ("Pet/pack AI.")
+  :learn (:concept "Loose follow, not anchor." :prerequisites () :progression "Learn anchor variant.")
+  :+math (:algebra () :total #t :domain "character + source" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Have character follow input loosely." :long "Follow input with lag rather than mirror exactly." :for-ai "Descriptor." :for-kid "Let a pet walk toward the cursor.")))
+
+(verb
+  :name "motion-halt"
+  :library "motion"
+  :signature "(motion-halt character) -> descriptor"
+  :summary "Stop a character's motion."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-halt 'hero)" :note "Descriptor. Returns (\"motion-halt\" hero).")
+    (:tier "apprentice" :code "(motion-halt 'ship)" :note "Halt. Returns descriptor.")
+    (:tier "intermediate" :code "(map motion-halt (list 'a 'b))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (halt-all chars) (map motion-halt chars)) (halt-all (list 'p1 'p2 'p3))" :note "Halt all. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (pause-scene chars) (list 'paused (map motion-halt chars))) (pause-scene (list 'a 'b))" :note "Scene pause. Returns (paused (...))."))
+  :related ("motion-move-to" "motion-anchor-to-input")
+  :caveats ("Stops motion; does not reset position.")
+  :drawbacks ("No gradual stop.")
+  :usecases ("Cutscene freeze." "Damage stun.")
+  :learn (:concept "Zero out motion." :prerequisites () :progression "Learn move-to for the opposite.")
+  :+math (:algebra () :total #t :domain "character" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Stop character motion." :long "Halt a character's motion; position unchanged." :for-ai "Descriptor." :for-kid "Tell a character to stop moving.")))
+
+(verb
+  :name "motion-move-to"
+  :library "motion"
+  :signature "(motion-move-to character x y) -> descriptor"
+  :summary "Direct a character to move toward (x, y)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-move-to 'hero 10 5)" :note "Descriptor. Returns (\"motion-move-to\" hero 10 5).")
+    (:tier "apprentice" :code "(motion-move-to 'ship 100 100)" :note "Target coords. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (motion-move-to c 0 0)) (list 'a 'b))" :note "Rally to origin. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (path-to char points) (map (lambda (p) (motion-move-to char (car p) (cadr p))) points)) (path-to 'hero (list (list 10 10) (list 20 20)))" :note "Path descriptors. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (formation chars offsets center) (map (lambda (i) (let ((c (list-ref chars i)) (dx (car (list-ref offsets i))) (dy (cadr (list-ref offsets i)))) (motion-move-to c (+ (car center) dx) (+ (cadr center) dy)))) (range 0 (length chars)))) (formation (list 'a 'b) (list (list -5 0) (list 5 0)) (list 40 40))" :note "Formation move. Returns 2 descriptors."))
+  :related ("motion-halt" "motion-anchor-to-input")
+  :caveats ("Motion speed host-defined.")
+  :drawbacks ("No arrival callback.")
+  :usecases ("AI pathing." "Cutscene movement.")
+  :learn (:concept "Direct move to a point." :prerequisites () :progression "Learn halt.")
+  :+math (:algebra () :total #t :domain "character + coords" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Move character to a point." :long "Direct a character to move toward (x, y)." :for-ai "Descriptor." :for-kid "Tell a character to walk somewhere.")))
