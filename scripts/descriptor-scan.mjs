@@ -111,8 +111,44 @@ for (let idx = 0; idx < verbList.length; idx++) {
   }
 }
 
-process.exit = origExit
 process.stderr.write(`[scan] loop done, ${descriptorLies.length} lies, ${exitBlocked} exit-blocks\n`)
+
+// The main-loop pass already computed which verbs return descriptor
+// lies (0). To count how many now return honest-deferred error records
+// we would need a second pass — but some wired verbs allocate heavily
+// under sentinel args and OOM the process. Skip the count unless
+// explicitly requested with --count-deferred.
+let deferredCount = 0
+if (args.includes('--count-deferred') || args.includes('--dump-deferred')) {
+  const deferredNames = []
+  // Use a smaller sentinel set to minimize allocation cost.
+  const light = [[], [1], [1, 2]]
+  for (const name of verbList) {
+    if (skipList.has(name) || controlValueWhitelist.has(name)) continue
+    const v = env.vars.get(name)
+    if (typeof v !== 'function' || v._sakuraStub) continue
+    for (const sargs of light) {
+      let r
+      try { r = v(...sargs) } catch { continue }
+      if (r != null && typeof r === 'object' && !Array.isArray(r) && r.__sakuraError === true) {
+        deferredCount++; deferredNames.push(name); break
+      }
+    }
+  }
+  process.stderr.write(`[scan] honest-deferred verbs: ${deferredCount}\n`)
+  if (args.includes('--dump-deferred')) {
+    const fs = await import('node:fs')
+    fs.writeFileSync('/tmp/deferred-verbs.txt', deferredNames.sort().join('\n') + '\n')
+    process.stderr.write(`[scan] dumped ${deferredCount} names to /tmp/deferred-verbs.txt\n`)
+  }
+}
+
+process.exit = origExit
+if (args.includes('--dump-deferred')) {
+  const fs = await import('node:fs')
+  fs.writeFileSync('/tmp/deferred-verbs.txt', deferredNames.sort().join('\n') + '\n')
+  process.stderr.write(`[scan] dumped ${deferredCount} deferred names to /tmp/deferred-verbs.txt\n`)
+}
 
 // Optionally dump the full list of lying names for downstream fix scripts.
 if (args.includes('--dump-names')) {
@@ -120,6 +156,8 @@ if (args.includes('--dump-names')) {
   fs.writeFileSync('/tmp/descriptor-lies.txt', descriptorLies.map(x => x.name).sort().join('\n') + '\n')
   process.stderr.write(`[scan] dumped ${descriptorLies.length} names to /tmp/descriptor-lies.txt\n`)
 }
+
+// Node process may exit successfully.
 
 function isDescriptorShape(r, name) {
   if (!Array.isArray(r) || r.length === 0) return false
