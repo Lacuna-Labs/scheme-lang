@@ -1726,3 +1726,652 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "SP-1200 sample emulation. DSP ready, sample bank pending. pending-sample-bank in REPL."))
+
+;; ─── radio/* — 14 verbs ──────────────────────────────────────────
+
+(verb
+  :name "radio/stations"
+  :library "radio"
+  :kind "rd"
+  :signature "(radio/stations) -> [string ...] | descriptor"
+  :summary "List all available radio-station slugs; a read-only catalog probe."
+  :impl-status "wired-descriptor"
+  :explanation "radio/stations queries the internal station registry and returns a flat list of station-name slugs (lowercase, whitespace-stripped). Under a live host the list reflects the currently loaded stations. In headless REPL there is no live registry, so the verb returns the descriptor ('radio/stations). Read-only; safe to call frequently; useful for building station-picker UIs."
+  :examples (
+    (:tier "novice"
+     :code "(radio/stations)"
+     :note "Ask for the station list. In REPL: returns (\"radio/stations\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((s (radio/stations))) (if (pair? s) (car s) s))"
+     :note "Extract the head. In REPL the head is the verb-name string.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/stations)) (list 1 2))"
+     :note "Idempotent — safe to poll. Two calls, two descriptor copies.")
+    (:tier "expert"
+     :code "(define (station-count) (length (radio/stations))) (station-count)"
+     :note "Count the stations. In REPL: descriptor is length 1, so returns 1. Under a live host: number of registered stations.")
+    (:tier "master"
+     :code "(let ((all (radio/stations))) (list (quote available) (length all)))"
+     :note "Build a status summary. Real UIs feed this into a dropdown builder.")
+  )
+  :caveats
+    ("Returns descriptor in REPL, list of slugs under live host."
+     "Names are slugified (lowercase, no special chars); original names not preserved."
+     "Empty list is possible under live host if no stations are registered.")
+  :drawbacks ("No metadata beyond slug; no genre, country, bitrate." "Read-only; doesn't refresh the registry.")
+  :usecases ("Populate a station-picker dropdown." "Validate a user-selected station id." "Log available stations at startup.")
+  :related ("radio/play" "radio/now-playing" "radio/next" "radio/prev")
+  :learn
+    (:concept "Catalog probe — list-what's-available before user selection."
+     :prerequisites ("(core)/length")
+     :progression "List stations. Then pick one. Then feed it to radio/play.")
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:984-991 auto-descriptor. Host binds to a real station registry."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/stations); apprentice=\"radio/stations\"; intermediate=2 copies; expert=1; master=(available 1)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/play") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Treating the descriptor as a real list of stations."
+     :when-not-to-use "You need station metadata beyond names.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "List of station slugs. Descriptor in REPL."))
+
+(verb
+  :name "radio/now-playing"
+  :library "radio"
+  :kind "rd"
+  :signature "(radio/now-playing) -> [id name] | #f | descriptor"
+  :summary "Query the currently playing station (or #f if none)."
+  :impl-status "wired-descriptor"
+  :explanation "radio/now-playing returns the current station's identifier and name as a two-element list, or #f if nothing is playing. Under a live host it reflects the current transport state. In headless REPL it returns the descriptor ('radio/now-playing) — pair? guard as usual. Useful for displays and for confirming a radio/play call took effect."
+  :examples (
+    (:tier "novice"
+     :code "(radio/now-playing)"
+     :note "Query the current station. In REPL: returns (\"radio/now-playing\").")
+    (:tier "apprentice"
+     :code "(let ((r (radio/now-playing))) (car r))"
+     :note "Extract the head. Returns \"radio/now-playing\" in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/now-playing)) (list 1 2))"
+     :note "Poll twice. Read-only and idempotent.")
+    (:tier "expert"
+     :code "(define (current) (radio/now-playing)) (car (current))"
+     :note "A helper that reads the current station. Under live host, `car` yields the id; in REPL the descriptor tag.")
+    (:tier "master"
+     :code "(begin (radio/play) (radio/now-playing))"
+     :note "Start playback, then confirm. Returns (\"radio/now-playing\") in REPL.")
+  )
+  :caveats ("Descriptor in REPL vs [id name] tuple under live host." "Returns #f when nothing plays.")
+  :drawbacks ("No metadata beyond id/name.")
+  :usecases ("Show 'now playing' in a UI." "Confirm a radio/play took effect." "Log playback state.")
+  :related ("radio/play" "radio/stations")
+  :learn
+    (:concept "Current-state read for the radio transport."
+     :prerequisites ("radio/play")
+     :progression "Read after play. Then show in UI. Then poll on tick.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/now-playing); apprentice=\"radio/now-playing\"; intermediate=2 copies; expert=\"radio/now-playing\"; master=('radio/now-playing)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming pair? implies a real (id name) — could be the descriptor."
+     :when-not-to-use "You want the full station list — use radio/stations.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Current station. Descriptor in REPL. [id name] live."))
+
+(verb
+  :name "radio/play"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/play [id]) -> [status info] | descriptor"
+  :summary "Start playing a radio station, optionally by ID; default plays the first station."
+  :impl-status "wired-descriptor"
+  :explanation "radio/play tunes and starts playback. With no argument it plays the first station in the registry; with a symbol id it tunes to that specific station. Under a live host it returns [ok {name ...}] on success, [error 'unknown-station ...] on failure. In REPL it returns the descriptor ('radio/play [id]). Idempotent — calling play on the currently-playing station is a no-op under a live host."
+  :examples (
+    (:tier "novice"
+     :code "(radio/play)"
+     :note "Play the first station. Returns (\"radio/play\") — the descriptor.")
+    (:tier "apprentice"
+     :code "(radio/play (quote lofi))"
+     :note "Play a specific station by slug. Returns (\"radio/play\" lofi).")
+    (:tier "intermediate"
+     :code "(map radio/play (list (quote lofi) (quote jazz) (quote synthwave)))"
+     :note "Fire three plays in sequence. Under a live host the last one wins; each returns its descriptor in REPL.")
+    (:tier "expert"
+     :code "(define (start-my-station id) (radio/play id)) (start-my-station (quote bbc-radio-1))"
+     :note "A tiny helper that starts a specific station by id. Composition-ready.")
+    (:tier "master"
+     :code "(begin (radio/pause) (radio/play (quote lofi)))"
+     :note "Pause anything currently playing, then start lofi. The idiomatic pause-then-play swap.")
+  )
+  :caveats ("id is a symbol matching a station slug; unknown ids return [error ...] under live host." "Repeated calls on the same station are no-ops.")
+  :drawbacks ("No preview of the station before playback starts." "No station metadata surfaced via this verb; use radio/now-playing.")
+  :usecases ("Play button in a UI." "Auto-play favourite station at startup." "Programmatic station switching.")
+  :related ("radio/pause" "radio/toggle" "radio/next" "radio/prev" "radio/now-playing")
+  :learn
+    (:concept "Transport start — the entry point for radio playback."
+     :prerequisites ("radio/stations")
+     :progression "Play the default station. Then pass an id. Then combine with pause/toggle.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/play); apprentice=('radio/play lofi); intermediate=3 descriptors; expert=('radio/play bbc-radio-1); master=('radio/play lofi)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing" "radio/next") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Passing a string instead of a symbol id. Assuming the descriptor is [ok ...]."
+     :when-not-to-use "You want to advance stations sequentially — use radio/next.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Tune-and-play. Optional id. Descriptor in REPL."))
+
+(verb
+  :name "radio/pause"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/pause) -> [ok info] | descriptor"
+  :summary "Pause the radio stream; state-only, no fade."
+  :impl-status "wired-descriptor"
+  :explanation "radio/pause halts audio without changing the tuned station. Under a live host it returns [ok {paused: true}]; in REPL it returns the descriptor ('radio/pause). Idempotent — pausing an already-paused radio is a no-op. Pairs with radio/play to resume and radio/toggle for one-verb play/pause."
+  :examples (
+    (:tier "novice"
+     :code "(radio/pause)"
+     :note "Stop playback. Returns (\"radio/pause\") — the descriptor.")
+    (:tier "apprentice"
+     :code "(begin (radio/play (quote lofi)) (radio/pause))"
+     :note "Start playback then pause. The pause wins because it comes second.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/pause)) (list 1 2 3))"
+     :note "Three pauses in a row. Idempotent, all return the descriptor.")
+    (:tier "expert"
+     :code "(define (pause-and-log) (radio/pause) (quote paused)) (pause-and-log)"
+     :note "A helper that pauses and returns a status symbol. Handy in a state machine.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (radio/pause) (loop (+ i 1)))))"
+     :note "Loop-pause pattern — safe to call in a tight loop because idempotent. Returns 'done.")
+  )
+  :caveats ("Preserves station; only stops the stream." "No fade; abrupt stop.")
+  :drawbacks ("No query verb specifically for pause state; use radio/now-playing.")
+  :usecases ("Pause button in transport UI." "Silence on notification." "Bind to a hotkey.")
+  :related ("radio/play" "radio/toggle" "radio/mute")
+  :learn
+    (:concept "Transport pause — the inverse of play."
+     :prerequisites ("radio/play")
+     :progression "Pause. Then combine with radio/play. Then use radio/toggle for the one-verb pattern.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/pause); apprentice=('radio/pause); intermediate=3 copies; expert='paused; master='done."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/play") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Confusing pause with mute — pause stops the stream, mute silences it."
+     :when-not-to-use "You want to preserve the audio stream but silence it — use radio/mute.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Halt the stream. Preserves station. Idempotent."))
+
+(verb
+  :name "radio/toggle"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/toggle) -> [status details] | descriptor"
+  :summary "Flip radio between play and pause; one-verb transport control."
+  :impl-status "wired-descriptor"
+  :explanation "radio/toggle flips the play/pause state without needing external state tracking. Under a live host: if playing, pause; if paused, play. Returns a status tuple describing the new state. In REPL it returns the descriptor ('radio/toggle). Idempotent to the sense that two toggles restore the original state."
+  :examples (
+    (:tier "novice"
+     :code "(radio/toggle)"
+     :note "Flip the transport. Returns (\"radio/toggle\") in REPL.")
+    (:tier "apprentice"
+     :code "(begin (radio/play) (radio/toggle))"
+     :note "Start playback, then toggle (pauses under a live host).")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/toggle)) (list 1 2 3))"
+     :note "Three toggles — the transport ends up in the opposite state from the start.")
+    (:tier "expert"
+     :code "(define (on-play-btn) (radio/toggle) (quote toggled)) (on-play-btn)"
+     :note "Wire a UI button to toggle without tracking play/pause externally.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (radio/toggle) (loop (+ i 1)))))"
+     :note "Toggle three times. Under a live host: play→pause→play. Returns 'done.")
+  )
+  :caveats ("Does not change the station; only flips play/pause." "Rapid toggles may race under live host; batch state changes when possible.")
+  :drawbacks ("No way to force a specific state — use radio/play or radio/pause explicitly for that.")
+  :usecases ("Spacebar handler for play/pause." "Minimalist media UI.")
+  :related ("radio/play" "radio/pause" "radio/mute")
+  :learn
+    (:concept "Stateless flip — no external state needed."
+     :prerequisites ("radio/play" "radio/pause")
+     :progression "Toggle. Then bind to a key. Then combine with radio/mute for full transport.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/toggle); apprentice=('radio/toggle); intermediate=3 copies; expert='toggled; master='done."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming toggle also changes station — it does not."
+     :when-not-to-use "You want to force play — use radio/play. You want to force pause — use radio/pause.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Flip play/pause. Stateless. Descriptor in REPL."))
+
+(verb
+  :name "radio/next"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/next) -> [status details] | descriptor"
+  :summary "Advance to the next station in the loaded list, wrapping around."
+  :impl-status "wired-descriptor"
+  :explanation "radio/next moves the transport forward by one station. Under a live host it cycles through the loaded station list, wrapping from the last back to the first, and begins playback on the newly selected station. In REPL it returns the descriptor ('radio/next)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/next)"
+     :note "Advance to the next station. Returns (\"radio/next\").")
+    (:tier "apprentice"
+     :code "(begin (radio/play) (radio/next))"
+     :note "Start playback, then advance. The next station takes over.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/next)) (list 1 2 3))"
+     :note "Three advances in a row. Under a live host: cycles through three stations.")
+    (:tier "expert"
+     :code "(define (cycle-forward n) (let loop ((i 0)) (if (>= i n) (quote done) (begin (radio/next) (loop (+ i 1)))))) (cycle-forward 3)"
+     :note "Cycle forward n stations with a helper. Wraps at the end of the list.")
+    (:tier "master"
+     :code "(for-each (lambda (_) (radio/next)) (list 1 2 3 4 5))"
+     :note "Advance five times using for-each. Returns undefined per for-each contract.")
+  )
+  :caveats ("Wraps around at the end of the list." "Playback begins immediately on the new station.")
+  :drawbacks ("Cannot peek at the next station before switching; use radio/now-playing after.")
+  :usecases ("Next button in a media UI." "Cycle through curated stations.")
+  :related ("radio/prev" "radio/play" "radio/now-playing" "radio/stations")
+  :learn
+    (:concept "Circular list navigation with side-effect playback."
+     :prerequisites ("radio/stations" "radio/play")
+     :progression "Advance once. Then cycle. Then use radio/prev for symmetry.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/next); apprentice=('radio/next); intermediate=3 copies; expert='done; master=undefined."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming next stops at the end — it wraps."
+     :when-not-to-use "You want to jump to a specific station by id — use radio/play with an id.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Advance one station. Wraps."))
+
+(verb
+  :name "radio/prev"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/prev) -> [status details] | descriptor"
+  :summary "Step back to the previous station in the loaded list, wrapping around."
+  :impl-status "wired-descriptor"
+  :explanation "radio/prev moves the transport backward by one station. Wraps from the first station back to the last. Under a live host playback begins immediately on the newly selected station. In REPL it returns the descriptor ('radio/prev)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/prev)"
+     :note "Step back one station. Returns (\"radio/prev\").")
+    (:tier "apprentice"
+     :code "(begin (radio/next) (radio/prev))"
+     :note "Advance, then step back — end up on the original station.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/prev)) (list 1 2 3))"
+     :note "Three previous-steps. Under a live host: cycles backward.")
+    (:tier "expert"
+     :code "(define (cycle direction) (if (equal? direction (quote back)) (radio/prev) (radio/next))) (cycle (quote back))"
+     :note "A direction-agnostic cycle helper.")
+    (:tier "master"
+     :code "(begin (radio/play) (radio/next) (radio/prev))"
+     :note "Play, advance, then step back — you end up where you started. Under a live host the transport is idle-idempotent for symmetric operations.")
+  )
+  :caveats ("Wraps at the beginning of the list to the end." "Playback begins immediately.")
+  :drawbacks ("Cannot peek at the previous station; use radio/now-playing after.")
+  :usecases ("Previous button in a UI." "Symmetric backward navigation.")
+  :related ("radio/next" "radio/play" "radio/now-playing")
+  :learn
+    (:concept "Circular list navigation — the counterpart of radio/next."
+     :prerequisites ("radio/stations" "radio/next")
+     :progression "Step back. Then combine with radio/next for full navigation.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/prev); apprentice=('radio/prev); intermediate=3 copies; expert=('radio/prev); master=('radio/prev)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming stop-at-start — it wraps."
+     :when-not-to-use "You want to jump — use radio/play with an id.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Step back one station. Wraps."))
+
+(verb
+  :name "radio/mute"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/mute) -> [ok info] | descriptor"
+  :summary "Silence the radio without stopping the stream; playback continues, gain is zeroed."
+  :impl-status "wired-descriptor"
+  :explanation "radio/mute sets the mute flag on the radio's gain stage. Unlike radio/pause (which stops the stream), mute keeps the stream running but silences it. Under a live host the mute gate goes to zero; audio buffer position advances. In REPL it returns the descriptor ('radio/mute)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/mute)"
+     :note "Silence the radio. Returns (\"radio/mute\").")
+    (:tier "apprentice"
+     :code "(let ((r (radio/mute))) (car r))"
+     :note "Extract the tag. Returns \"radio/mute\".")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/mute)) (list 1 2 3))"
+     :note "Three mute calls; idempotent.")
+    (:tier "expert"
+     :code "(define (mute-and-do) (radio/mute) (quote muted)) (mute-and-do)"
+     :note "Mute + status return in one helper.")
+    (:tier "master"
+     :code "(begin (radio/mute) (radio/unmute))"
+     :note "Mute then unmute — end state is unmuted. Returns the unmute descriptor.")
+  )
+  :caveats ("Stream keeps running — position advances silently." "Volume level is preserved separately; unmute restores it.")
+  :drawbacks ("No fade; abrupt gate.")
+  :usecases ("Mute button in a UI." "Silence on notification.")
+  :related ("radio/unmute" "radio/pause" "radio/volume")
+  :learn
+    (:concept "Silence-while-running — the difference between mute and pause."
+     :prerequisites ("radio/play")
+     :progression "Mute. Then unmute. Then combine with volume for a graceful fade-to-silence.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/mute); apprentice=\"radio/mute\"; intermediate=3 copies; expert='muted; master=('radio/unmute)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/unmute") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Confusing mute with pause. Assuming muted streams save bandwidth — they do not."
+     :when-not-to-use "You want to fully stop the stream — use radio/pause.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Zero the gate. Stream keeps running."))
+
+(verb
+  :name "radio/unmute"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/unmute) -> [ok info] | descriptor"
+  :summary "Restore audio output after a mute; volume level is preserved."
+  :impl-status "wired-descriptor"
+  :explanation "radio/unmute clears the mute flag on the radio's gain stage. Under a live host the gate reopens and the (still-running) audio stream becomes audible. Volume level is preserved separately; unmuting does not reset it. In REPL returns the descriptor ('radio/unmute)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/unmute)"
+     :note "Restore output. Returns (\"radio/unmute\").")
+    (:tier "apprentice"
+     :code "(begin (radio/mute) (radio/unmute))"
+     :note "Mute then unmute — end at unmuted.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/unmute)) (list 1 2))"
+     :note "Two unmutes; idempotent.")
+    (:tier "expert"
+     :code "(define (focus-mode enabled?) (if enabled? (radio/mute) (radio/unmute))) (focus-mode #f)"
+     :note "A focus-mode toggle: mute when enabled, unmute when disabled.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (radio/unmute) (loop (+ i 1)))))"
+     :note "Idempotent loop.")
+  )
+  :caveats ("Volume is preserved; unmute does not reset to a default." "Does not start playback if paused; combine with radio/play if needed.")
+  :drawbacks ("No fade-in.")
+  :usecases ("Restore audio after focus mode." "Restore after ducking.")
+  :related ("radio/mute" "radio/play" "radio/volume")
+  :learn
+    (:concept "Reverse the mute flag — pair with radio/mute."
+     :prerequisites ("radio/mute")
+     :progression "Unmute. Then combine with focus mode.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/unmute); apprentice=('radio/unmute); intermediate=2 copies; expert=('radio/unmute); master='done."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Assuming unmute restores from pause — it does not; use radio/play."
+     :when-not-to-use "You need to restore from paused state — use radio/play.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Open the gate. Preserves volume."))
+
+(verb
+  :name "radio/volume"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/volume v) -> [ok info] | [error info] | descriptor"
+  :summary "Set the radio's output volume to a level in [0, 1]."
+  :impl-status "wired-descriptor"
+  :explanation "radio/volume sets the amplitude of the radio stream. Accepts a numeric argument in [0, 1] where 0 is silent and 1 is maximum. Clamps out-of-range values. Under a live host it applies immediately via a gain node. In REPL it returns the descriptor ('radio/volume v). Volume persists until changed; muting and unmuting preserve the level."
+  :examples (
+    (:tier "novice"
+     :code "(radio/volume 0.5)"
+     :note "Set volume to half. Returns (\"radio/volume\" 0.5).")
+    (:tier "apprentice"
+     :code "(let ((r (radio/volume 0.8))) (car r))"
+     :note "Extract the tag. Returns \"radio/volume\".")
+    (:tier "intermediate"
+     :code "(map radio/volume (list 0 0.25 0.5 0.75 1))"
+     :note "Sweep five levels. Each call returns its own descriptor.")
+    (:tier "expert"
+     :code "(define (fade-out steps) (let loop ((i 0)) (if (>= i steps) (quote faded) (begin (radio/volume (- 1 (/ i steps))) (loop (+ i 1)))))) (fade-out 5)"
+     :note "Linear fade-out over N steps. Composes with `after-frame` for real-time smoothness.")
+    (:tier "master"
+     :code "(let* ((slider 60) (v (/ slider 100))) (radio/volume v))"
+     :note "Bridge a UI slider (0-100) to volume level [0, 1]. The idiomatic pattern for a volume knob.")
+  )
+  :caveats ("Numeric only; symbols and strings are not coerced." "Values clamped to [0, 1]." "Independent of mute state.")
+  :drawbacks ("No query verb specifically for current volume." "No built-in fade curve.")
+  :usecases ("Volume slider handler." "Automatic ducking on notification." "Fade-out on cart close.")
+  :related ("radio/mute" "radio/unmute" "audio/master-volume")
+  :learn
+    (:concept "Continuous level control with clamping."
+     :prerequisites ("(core)/max" "(core)/min")
+     :progression "Set. Then fade. Then bridge to a slider.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/volume 0.5); apprentice=\"radio/volume\"; intermediate=5 descriptors; expert='faded; master=('radio/volume 0.6)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Passing 50 expecting percent — use (/ n 100) to bridge from a percent slider."
+     :when-not-to-use "You want global gain — use audio/master-volume.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Set stream gain in [0, 1]. Clamps."))
+
+(verb
+  :name "radio/eq"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/eq preset) -> [status info] | descriptor"
+  :summary "Request an equalizer preset ('flat, 'warm, 'sharp); a state-change with async settle."
+  :impl-status "wired-descriptor"
+  :explanation "radio/eq requests an EQ preset change. Give it a preset name (a symbol: 'flat, 'warm, 'sharp, or others host-defined) and the verb records the request. Under a live host it may return [pending-eq {...}] as the EQ graph is not yet fully wired; when wired it will apply the preset via the gain/filter chain. In REPL it returns the descriptor ('radio/eq preset)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/eq (quote warm))"
+     :note "Request a warm EQ. Returns (\"radio/eq\" warm).")
+    (:tier "apprentice"
+     :code "(let ((r (radio/eq (quote sharp)))) (car r))"
+     :note "Extract the tag. Returns \"radio/eq\".")
+    (:tier "intermediate"
+     :code "(map radio/eq (list (quote flat) (quote warm) (quote sharp)))"
+     :note "Cycle through three presets. Each returns its descriptor.")
+    (:tier "expert"
+     :code "(define (mood->eq mood) (cond ((equal? mood (quote energetic)) (radio/eq (quote sharp))) ((equal? mood (quote mellow)) (radio/eq (quote warm))) (else (radio/eq (quote flat))))) (mood->eq (quote mellow))"
+     :note "Dispatch on mood: warm for mellow, sharp for energetic, flat otherwise.")
+    (:tier "master"
+     :code "(for-each radio/eq (list (quote flat) (quote warm) (quote sharp) (quote flat)))"
+     :note "Cycle through four presets. Under a live host the last one wins.")
+  )
+  :caveats ("Presets are host-defined; unknown presets still return descriptor in REPL." "Under live host: EQ graph may not be fully wired — 'pending-eq return.")
+  :drawbacks ("Fixed presets; no per-band tweaking exposed at this level.")
+  :usecases ("EQ preset buttons in a UI." "Mood-driven audio coloring." "Log EQ changes as part of session state.")
+  :related ("radio/play" "radio/volume" "audio/spectrum")
+  :learn
+    (:concept "Request-async-settle — the pattern for state changes that may pend."
+     :prerequisites ("radio/play")
+     :progression "Set a preset. Then dispatch on mood. Then combine with radio/visualize for a mood-driven scene.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/eq warm); apprentice=\"radio/eq\"; intermediate=3 descriptors; expert=('radio/eq warm); master=undefined."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Assuming EQ is fully wired today — under some live hosts it returns pending-eq."
+     :when-not-to-use "You need per-band control — use a proper DSP verb.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "EQ preset request. Async-settle under live host."))
+
+(verb
+  :name "radio/mesh"
+  :library "radio"
+  :kind "rd"
+  :signature "(radio/mesh) -> [symbol ...] | descriptor"
+  :summary "List available mesh visualisation IDs; a catalog read for the visualiser."
+  :impl-status "wired-descriptor"
+  :explanation "radio/mesh returns the flat list of registered mesh-variation IDs — each ID names a visual style the radio visualiser can use when playing. Read-only; safe to call frequently. In REPL returns the descriptor ('radio/mesh); under a live host returns a list of symbols. Useful for populating a mesh-picker UI."
+  :examples (
+    (:tier "novice"
+     :code "(radio/mesh)"
+     :note "Ask for mesh IDs. Returns (\"radio/mesh\") in REPL.")
+    (:tier "apprentice"
+     :code "(let ((r (radio/mesh))) (if (pair? r) (car r) r))"
+     :note "Extract the head. In REPL: \"radio/mesh\" (verb-name tag).")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/mesh)) (list 1 2))"
+     :note "Two calls; idempotent.")
+    (:tier "expert"
+     :code "(define (mesh-count) (length (radio/mesh))) (mesh-count)"
+     :note "Count the meshes. In REPL: descriptor is length 1 so returns 1.")
+    (:tier "master"
+     :code "(let* ((all (radio/mesh)) (n (length all))) (list (quote count) n))"
+     :note "Build a status summary. In REPL: (count 1) because the descriptor has arity 1.")
+  )
+  :caveats ("Descriptor in REPL vs list of symbols under live host." "List is static per session under live host.")
+  :drawbacks ("No metadata beyond IDs; no descriptions or previews." "Static list.")
+  :usecases ("Populate a mesh-picker in a radio-player UI." "Validate a mesh ID before radio/visualize.")
+  :related ("radio/visualize" "radio/sync-to-beat")
+  :learn
+    (:concept "Static catalog read for visualisation."
+     :prerequisites () :progression "List meshes. Then feed one into radio/visualize.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/mesh); apprentice=\"radio/mesh\"; intermediate=2 copies; expert=1; master=(count 1)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/visualize") :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Treating the descriptor as a real mesh list."
+     :when-not-to-use "You want to apply a mesh — use radio/visualize.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Mesh IDs list. Read-only catalog."))
+
+(verb
+  :name "radio/visualize"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/visualize [mesh-id]) -> [ok info] | descriptor"
+  :summary "Activate a radio visualisation, optionally with a specific mesh ID."
+  :impl-status "wired-descriptor"
+  :explanation "radio/visualize turns on the animated visualiser tied to radio playback. With no argument it picks a default mesh based on host heuristics; with a mesh-id it uses that specific variation (or falls back to default if unknown). Under a live host it wires the mesh into the radio surface and returns [ok {variation path}]; in REPL it returns the descriptor ('radio/visualize [mesh-id])."
+  :examples (
+    (:tier "novice"
+     :code "(radio/visualize)"
+     :note "Activate the default visualiser. Returns (\"radio/visualize\").")
+    (:tier "apprentice"
+     :code "(radio/visualize (quote mesh-wave))"
+     :note "Activate a specific mesh. Returns (\"radio/visualize\" mesh-wave).")
+    (:tier "intermediate"
+     :code "(map radio/visualize (list (quote mesh-a) (quote mesh-b) (quote mesh-c)))"
+     :note "Cycle three meshes. Under a live host the last one wins.")
+    (:tier "expert"
+     :code "(define (viz-for-genre g) (radio/visualize (if (equal? g (quote electronic)) (quote mesh-grid) (quote mesh-flow)))) (viz-for-genre (quote electronic))"
+     :note "Genre-driven mesh selection. Electronic → grid; anything else → flow.")
+    (:tier "master"
+     :code "(begin (radio/play) (radio/visualize (quote mesh-wave)))"
+     :note "Play the radio, then activate a specific mesh. Real carts sync this with radio/sync-to-beat.")
+  )
+  :caveats ("Unknown mesh-ids fall back to default under live host." "Does not affect playback; use radio/play separately.")
+  :drawbacks ("No layering — one active mesh at a time.")
+  :usecases ("Activate a visualiser on scene enter." "Let users pick a mesh style." "Auto-select by genre.")
+  :related ("radio/mesh" "radio/sync-to-beat" "radio/play")
+  :learn
+    (:concept "Selecting and activating a resource from a registry with fallback."
+     :prerequisites ("radio/mesh")
+     :progression "Activate default. Then pick a mesh. Then sync to beat.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/visualize); apprentice=('radio/visualize mesh-wave); intermediate=3 descriptors; expert=('radio/visualize mesh-grid); master=('radio/visualize mesh-wave)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/sync-to-beat") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Assuming visualize also starts playback — it does not."
+     :when-not-to-use "You want to list meshes first — use radio/mesh.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Activate a mesh visualisation. Optional mesh-id."))
+
+(verb
+  :name "radio/sync-to-beat"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/sync-to-beat onOff) -> [ok info] | descriptor"
+  :summary "Toggle whether the radio visualisation locks to the audio's beat."
+  :impl-status "wired-descriptor"
+  :explanation "radio/sync-to-beat controls a boolean coupling between the audio's beat detection and the mesh animation. When enabled ('on or #t), the mesh phase locks to detected onsets. When disabled ('off or #f), it animates independently. The setting persists in radio state until changed. In REPL returns the descriptor ('radio/sync-to-beat onOff)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/sync-to-beat (quote on))"
+     :note "Enable beat sync. Returns (\"radio/sync-to-beat\" on).")
+    (:tier "apprentice"
+     :code "(radio/sync-to-beat (quote off))"
+     :note "Disable beat sync. Returns (\"radio/sync-to-beat\" off).")
+    (:tier "intermediate"
+     :code "(map radio/sync-to-beat (list (quote on) (quote off)))"
+     :note "Toggle on then off. Each returns its descriptor.")
+    (:tier "expert"
+     :code "(define (mood->sync mood) (radio/sync-to-beat (if (equal? mood (quote energetic)) (quote on) (quote off)))) (mood->sync (quote energetic))"
+     :note "Mood-driven sync selection.")
+    (:tier "master"
+     :code "(begin (radio/sync-to-beat (quote on)) (radio/play))"
+     :note "Enable sync, then start playback. Under a live host visuals lock to the audio.")
+  )
+  :caveats ("Argument is a symbol ('on/'off) or boolean (#t/#f); other values default to 'off." "Requires an active radio/visualize for a visible effect.")
+  :drawbacks ("No query verb for current sync state." "Global — all meshes share one setting.")
+  :usecases ("DJ/live-performance sync toggle." "Ambient-mode toggle that decouples visuals from beats." "Auto-enable for high-energy genres.")
+  :related ("radio/visualize" "radio/mesh" "audio/onset?")
+  :learn
+    (:concept "Cross-domain coupling — audio → visual sync."
+     :prerequisites ("radio/visualize" "audio/onset?")
+     :progression "Enable sync. Then observe the effect with a visualiser. Then wire to mood.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/sync-to-beat on); apprentice=('radio/sync-to-beat off); intermediate=2 descriptors; expert=('radio/sync-to-beat on); master=('radio/play)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/visualize") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Assuming sync starts visualisation — it does not; use radio/visualize."
+     :when-not-to-use "You want beat detection for game logic — use audio/onset? directly.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Toggle visual↔audio beat coupling. State-change."))
