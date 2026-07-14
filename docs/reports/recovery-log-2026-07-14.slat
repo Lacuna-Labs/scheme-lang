@@ -6694,3 +6694,27 @@
             :status "landed"
             :verification "handoff-preserve sha=218e50b09ea54d67")
     ))
+
+;; ═══════════════════════════════════════════════════════════════
+;; RECOVERY-013 PHASE 1 AUDIT (Recovery Lane 4)
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-log
+  :date "2026-07-14"
+  :lane "recovery-lane-4"
+  :items ("recovery-013-phase-1")
+  :moves
+    (
+     (audit :id "recovery-013"
+            :phase "phase-1"
+            :report "/Users/alfred/code/scheme-lang/docs/reports/shortened-block-candidates-2026-07-14.slat"
+            :canonical-chapters-scanned 733
+            :roots-scanned ("/Users/alfred/code/curator/BOOK/A-branch-scheme-books"
+                            "/Users/alfred/code/curator/BOOK/B-main-scheme-books/scheme-books"
+                            "/Users/alfred/code/curator/BOOK/D-remote-branches")
+            :same-slug-matches 642
+            :true-candidates 0
+            :revision-draft-candidates 91
+            :notes "For every canonical chapter matched to a same-slug preserved counterpart, canonical wc >= preserved wc — no shortening detected on that dimension. Separately found 91 chapters where a -rN revision-track variant is materially longer than canonical (interpretation unclear: earlier-draft-polished-down vs later-expansion-never-landed). No restore applied. Alfred review required before phase 2."
+            :status "audit-complete-restore-deferred")
+    ))
