@@ -383,6 +383,38 @@
   :author "Alfred"
   :cross-refs ("decision-002 (no polymorphic get)" "R7RS §6.4 (pairs and lists — the shape-specific accessor pattern)" "SRFI-69 (hash tables — hash-ref/hash-set! shape)"))
 
+(decision
+  :id "018"
+  :what "Pure R7RS-small only. No SRFI adoptions. Users compose helpers from primitives."
+  :why "Alfred, on the shape of the reference: 'Pure R7RS-small.' The point is portability and readability across every conforming Scheme (Chibi, Chicken, Gauche, MIT, Guile, Racket-r7rs). Adopting SRFI-1 for filter/find/first/rest and SRFI-200/241 for match would each add surface area and lock readers into helpers that aren't in the base standard. Better to teach the fold pattern once and reference it. Every example runs in any R7RS-small Scheme; when a reader graduates from Sakura to another Scheme, nothing they learned goes stale."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Adopt SRFI-1 (filter, find, first, rest, last, second, third, take, drop)"
+       "Would clean 93 usages in the reference, but adds an SRFI dependency to every example. Alfred called this 'pure R7RS-small' — SRFIs are not the standard.")
+     ("Adopt SRFI-200/241 for match"
+       "Cleaner than deep cond chains for pattern-heavy code, but adds a form. R7RS-small has cond and case; those cover the 5 current match usages.")
+     ("Define filter/find etc. as Sakura extensions in base.js"
+       "Would still be non-R7RS-small in the reference's user-facing surface. Rejected: our extensions are the domain layer (card/motion/world/ai/shop), not helpers over lists."))
+  :convention
+    ("Base env = R7RS-small procedures + Sakura's domain verbs (card/*, motion/*, world/*, ai/*, shop/*, etc.)."
+     "No filter, find, first, rest, last, second, third, take, drop, iota, delete, remove, partition, span, break, unfold, fold-right — these are SRFI-1."
+     "No match — use cond with predicate clauses."
+     "No first/rest — use car/cdr."
+     "No true/false — use #t/#f."
+     "No [square brackets] — use (parens)."
+     "No bare nil — use '() for empty list or #f for false.")
+  :examples
+    ((:pre "(filter positive? xs)")
+     (:post "(let loop ((xs xs) (acc '()))\n         (cond ((null? xs) (reverse acc))\n               ((positive? (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n               (else (loop (cdr xs) acc))))")
+     (:pre "(first xs)")
+     (:post "(car xs)")
+     (:pre "(match x ((list 'ok v) v) ((list 'err e) (raise e)))")
+     (:post "(cond ((and (pair? x) (eq? (car x) 'ok)) (cadr x))\n         ((and (pair? x) (eq? (car x) 'err)) (raise (cadr x))))"))
+  :affects "Reference-Rewrite lane executes: 93 SRFI-1 usages + 5 match forms + 31 boolean drift + 9 [bracket] + 1 bare nil + 26 kw-arg + 9 remaining `get` uses (all of the Convention Sweep's 183 findings). Base env: any SRFI-1 helpers currently registered are removed."
+  :author "Alfred"
+  :cross-refs ("R7RS-small Revised^7 Report" "decision-001 (positional args)" "decision-002 (no polymorphic get)" "decision-006 (no mutable pairs)"))
+
 ;; End of seeded decisions. Append new entries below with monotonic :id.
 ;; When reversing an old decision, add a NEW entry that names :supersedes,
 ;; and edit the old entry to add :status "superseded" + :superseded-by.
