@@ -11,7 +11,7 @@
 ;; Alfred: every module adopts the new schema, not just the previously
 ;; unimplemented ones).
 
-(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 26)
+(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 28)
 (fail :verb "comb/bell" :lane "rin-topo-comb" :verified-at "2026-07-14T19:26:34.887Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/binomial-coeffs" :lane "rin-topo-comb" :verified-at "2026-07-14T19:27:21.595Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/catalan" :lane "rin-topo-comb" :verified-at "2026-07-14T19:31:56.645Z" :examples-passed 0 :reason "missing fields: kind,explanation")
@@ -103,3 +103,15 @@
 (fail :verb "land-on-downbeat" :lane "priya-math-b" :verified-at "2026-07-14T19:40:59.791Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "measure-content" :lane "priya-math-b" :verified-at "2026-07-14T19:40:59.791Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "list-item-pluck" :lane "priya-math-b" :verified-at "2026-07-14T19:40:59.791Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "seq/recurrence" :lane "hana-math" :verified-at "2026-07-14T19:41:46.447Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "calc/partial" :lane "hana-math" :verified-at "2026-07-14T19:41:46.448Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "calc/gradient" :lane "hana-math" :verified-at "2026-07-14T19:41:46.448Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "calc/directional-derivative" :lane "hana-math" :verified-at "2026-07-14T19:41:46.448Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "calc/jacobian" :lane "hana-math" :verified-at "2026-07-14T19:41:46.448Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "calc/divergence" :lane "hana-math" :verified-at "2026-07-14T19:41:46.448Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "calc/curl" :lane "hana-math" :verified-at "2026-07-14T19:41:46.448Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "comb/pascal-triangle" :lane "rin-topo-comb" :verified-at "2026-07-14T19:41:46.449Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "comb/permute" :lane "rin-topo-comb" :verified-at "2026-07-14T19:41:46.449Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "comb/stirling2" :lane "rin-topo-comb" :verified-at "2026-07-14T19:41:46.449Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(stamp :verb "audio/tempo" :lane "yuki-audio" :verified-at "2026-07-14T19:41:47.563Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "audio/key" :lane "yuki-audio" :verified-at "2026-07-14T19:41:48.612Z" :examples-passed 5 :required-fields-present #t)
