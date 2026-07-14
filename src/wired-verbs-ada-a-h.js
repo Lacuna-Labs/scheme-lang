@@ -56,6 +56,27 @@ export function installWiredVerbsAdaAH(env, fuel) {
     return [sym('escalate'), kindSym, detail]
   })
 
+  // ── cols — surface width in cells ──────────────────────────────────
+  //
+  // Reference contract: (cols) -> integer. Return the grid column
+  // count. In a standalone REPL we route to `canvas-width` if the
+  // framebuffer bound one; otherwise return 0 honestly (no live
+  // surface). Live hosts (browser IDE, game shell) override with the
+  // real width.
+  //
+  // Marcus's lane wired `rows` on the same shape; this is the
+  // matching wire for `cols` in the a-h lane. Symmetric with rows,
+  // and the two together let a kid write (list (cols) (rows)) and
+  // get a real pair back — non-zero once a surface binds.
+  def('cols', () => {
+    try {
+      const w = env.vars.get('canvas-width')
+      if (typeof w === 'function') return Number(w()) || 0
+      if (typeof w === 'number') return w
+    } catch { /* no framebuffer bound; report 0 cols */ }
+    return 0
+  })
+
   // ── eval — dynamic Scheme evaluation ────────────────────────────────
   //
   // Reference contract: (eval expr [env]) -> value. Takes a

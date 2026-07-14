@@ -266,6 +266,87 @@
      :required-fields-present #t
      :entry-summary "Evaluate a quoted Scheme expression dynamically at runtime."))
 
+;; ─── cols — surface width in cells ───────────────────────────────
+
+(verb
+  :name "cols"
+  :library "core"
+  :signature "(cols) -> integer"
+  :summary "Return the grid width in cells (columns) of the current surface, or 0 if no surface is bound."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(cols)"
+     :note "In a standalone REPL with no framebuffer, returns 0 honestly. Under a live host (browser IDE), returns the surface's column count.")
+    (:tier "apprentice"
+     :code "(list (cols) (rows))"
+     :note "Pair the width and height. Two zeros in headless REPL; a real (w h) list once a surface binds. Never lies about the dimensions.")
+    (:tier "intermediate"
+     :code "(if (> (cols) 0) 'ready 'no-surface)"
+     :note "Guard pattern: check whether a surface is available before doing width-dependent work. `no-surface` means the code that needs a live framebuffer should hold off.")
+    (:tier "expert"
+     :code "(define (each-column fn)\n  (let loop ((x 0))\n    (if (>= x (cols))\n        'done\n        (begin (fn x) (loop (+ x 1))))))\n(each-column (lambda (x) x))"
+     :note "Iterate all columns. In a headless REPL (cols) is 0 so the loop doesn't run and returns `done`. Under a live surface it visits every column index.")
+    (:tier "master"
+     :code "(define (center-x [width 1])\n  (max 0 (quotient (- (cols) width) 2)))\n(list (center-x) (center-x 10))"
+     :note "Layout helper: horizontal center of a rect. Uses cols to compute a real screen coordinate. Falls back to 0 gracefully when no surface is bound."))
+  :related ("rows" "canvas-cols" "grid-cols" "pixels-wide")
+  :caveats ("Returns 0 in a headless REPL — this is honest, not a bug. Under a live host, returns the true column count of the current surface."
+            "The value is a snapshot; if the surface is resized, call again to see the new value."
+            "Different surfaces (canvas, grid, conway world) may have different column counts. `cols` reads the currently focused surface.")
+  :drawbacks ("No way to distinguish 'no surface' from 'surface with 0 cols' without checking rows or another indicator."
+              "In a headless context every column-loop degenerates to a no-op — write guard clauses that don't panic when cols = 0.")
+  :usecases ("Bounds checking for x-coordinate loops."
+             "Layout math (center, right-align)."
+             "Detecting whether a live surface is available.")
+  :learn (:concept "Surface dimensions are constants at the point of read — they don't animate. `cols` and `rows` together fully describe the grid the kid is painting on."
+          :prerequisites ("rows" "quotient" "if")
+          :progression "After cols, learn (grid-cols) and (canvas-cols) which query specific substrates. Then look at (pixels-wide) which reports pixel-space width.")
+
+  :+math
+    (:algebra ("Cardinal count of the column set. cols >= 0.")
+     :total #t
+     :domain "no arguments"
+     :codomain "non-negative integer")
+
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects (state)
+     :pure #f
+     :special-form #f
+     :evaluation-order "no arguments")
+
+  :+eng
+    (:impl-file "src/wired-verbs-ada-a-h.js"
+     :impl-notes "def('cols', () => ...). Reads canvas-width from env if bound (function or number); else returns 0. Symmetric with Marcus's `rows` wire."
+     :permission "read"
+     :latency-class "sync-fast"
+     :tests "REPL-verified all 5 tiers. (cols) => 0 in headless; list/loop shapes verified."
+     :since "1.0")
+
+  :+hacker
+    (:primitive #t
+     :kin "curses COLS macro; termcap 'co' entry; PICO-8's screen width constant."
+     :history "Sakura framebuffer contract. Marcus (marcus-math-c lane) wired rows first; ada wires cols in the a-h lane on the same shape."
+     :hackable #t
+     :written-in "src/wired-verbs-ada-a-h.js — 6 lines with try/catch fallback.")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("layout math, loop bounds, coordinate transforms")
+     :consumes-from ("no arguments")
+     :cardinality "one"
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes ("Assuming cols is always positive. In headless REPL it's 0 — the code must guard."
+                       "Confusing cols (grid columns) with pixels-wide (screen pixels).")
+     :when-not-to-use "When you actually need pixel-space width — use pixels-wide instead.")
+
+  :meta
+    (:entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Return the grid width in cells (columns) of the current surface, or 0 if no surface is bound."))
+
 ;; End of pilot batch. Remaining 92 verbs in the a-h lane are tracked
 ;; in docs/reports/lanes/ada-math-a-audit-2026-07-14.slat and will be
 ;; added here as they get authored + verified. Never a stamp without
