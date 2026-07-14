@@ -1,0 +1,260 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-zain-ops.slat — Zain's authored verb entries
+;;
+;; Lane: ops (operations research primitives — 35 verbs)
+;; Author: Zain (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Coverage:
+;;   Inventory:   ops/eoq  ops/inventory-cost  ops/reorder-point
+;;                ops/safety-stock  ops/newsvendor  ops/newsvendor-fractile
+;;   Queueing:    ops/littles-law  ops/mm1  ops/mmc  ops/mmc-servers-for
+;;                ops/erlang-b  ops/erlang-c
+;;   Scheduling:  ops/spt  ops/edd  ops/johnson  ops/sequence-metrics
+;;                ops/assign  ops/assign-cost
+;;   Graphs:      ops/dijkstra  ops/bellman-ford  ops/max-flow  ops/pagerank
+;;   Markov:      ops/markov  ops/markov-step  ops/stationary
+;;                ops/absorbing-probs  ops/absorbing-steps
+;;   LP/MIP:      ops/lp  ops/lp-value  ops/lp-solve  ops/simplex
+;;                ops/interior-point  ops/mip-solve  ops/branch-bound
+;;                ops/knapsack
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0.
+;; Required by architect verifier: name library kind signature summary
+;; explanation examples caveats drawbacks usecases related learn.
+;; Examples: 5 tiers — novice, apprentice, intermediate, expert, master.
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval.
+;; Alfred: "we can't lie to people. They trust us."
+;; No descriptor lies. Every verb returns a real number, list, or map,
+;; or a documented sentinel ('infeasible 'unbounded 'use-backend 'fuel-budget).
+;; ═══════════════════════════════════════════════════════════════
+
+
+;; ─── Inventory ─────────────────────────────────────────────────────
+
+(verb
+  :name "ops/eoq"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/eoq demand order-cost holding-cost) -> Q*"
+  :summary "Economic order quantity — the order size that minimizes total annual inventory cost."
+  :impl-status "wired"
+  :explanation "Solves the classic Wilson EOQ formula Q* = sqrt(2·D·K / h) where D is annual demand, K is the fixed cost per order, and h is the annual holding cost per unit. The result is the order quantity that balances setup and carrying costs — order more, you carry more inventory; order less, you incur more setup cost. The formula assumes constant deterministic demand, instantaneous replenishment, no shortages, and fixed unit cost. Real shops rarely have all four; the value of EOQ is that it gives a defensible baseline you can then perturb. If any input is non-positive the verb returns 0 rather than throwing — a shop asking about a product with zero demand should learn 'don't order any', not crash."
+  :examples (
+    (:tier "novice"
+     :code "(ops/eoq 1000 50 5)"
+     :note "D=1000 units/year, K=$50/order, h=$5/unit/year. Q* ≈ 141 units per order.")
+    (:tier "apprentice"
+     :code "(let ((D 1200) (K 40) (h 8)) (ops/eoq D K h))"
+     :note "Named locals make the formula readable — you can swap any of D, K, h and re-run.")
+    (:tier "intermediate"
+     :code "(let ((eoq-value (ops/eoq 2400 60 3))) (list (quote Q*) eoq-value (quote units)))"
+     :note "Tag the answer so downstream readers know what the number means. Returns a labeled list.")
+    (:tier "expert"
+     :code "(define (annual-orders D Q) (/ D Q)) (annual-orders 5000 (ops/eoq 5000 100 2))"
+     :note "Compose EOQ into a derived metric: annual orders = demand / Q*. Answers 'how often do I reorder'.")
+    (:tier "master"
+     :code "(let* ((D 8000) (K 75) (h 4) (Q (ops/eoq D K h)) (cost (ops/inventory-cost D Q h K))) (list (quote optimal-quantity) Q (quote annual-cost) cost))"
+     :note "Full inventory sizing report: compute EOQ, plug it into ops/inventory-cost to verify the total annual cost.")
+  )
+  :caveats
+    ("Assumes constant deterministic demand. Real demand varies; use ops/newsvendor when the shape of variability matters."
+     "Assumes instantaneous replenishment. If lead time is non-trivial, pair EOQ with ops/reorder-point."
+     "Any non-positive input returns 0 — the caller should decide whether that means 'skip this SKU' or 'flag as data error'."
+     "The answer is a real number, not an integer. Round up in practice; the total cost curve is flat near Q*.")
+  :drawbacks
+    ("No quantity discounts. If the supplier drops the unit price at bulk quantities, EOQ is not the right optimizer — solve the piecewise cost function."
+     "No stockout cost. Real shortages hurt customer trust; EOQ ignores that entirely."
+     "Assumes h is correctly measured. Warehouse cost per unit is often the hardest number in the business to pin down.")
+  :usecases
+    ("Consignment shop sizing an order for a fast-selling SKU."
+     "Curriculum demo: introduce inventory tradeoffs before adding stochasticity."
+     "Sanity-check spreadsheet: given D, K, h, what should Q look like? EOQ is the answer.")
+  :related ("ops/inventory-cost" "ops/reorder-point" "ops/safety-stock" "ops/newsvendor")
+  :learn
+    (:concept "Balancing setup cost against carrying cost — the archetypal continuous-optimization problem."
+     :prerequisites ("(core)/sqrt" "(core)/let" "understanding demand + holding cost")
+     :progression "Start with (ops/eoq D K h). Plug into ops/inventory-cost. Then add lead time via ops/reorder-point. Then let demand be random and move to ops/newsvendor.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/inventory-cost"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/inventory-cost demand order-qty holding-cost order-cost) -> total-annual-cost"
+  :summary "Total annual inventory cost — ordering cost plus carrying cost — for a given order quantity."
+  :impl-status "wired"
+  :explanation "Computes K·D/Q + h·Q/2 where D is annual demand, Q is the fixed order quantity, K is the per-order setup cost, and h is the annual holding cost per unit. The first term is the annual ordering cost (D/Q orders per year, K each); the second is the average carrying cost (average inventory Q/2, held at h per unit-year). Pair with ops/eoq to see that the EOQ minimizes exactly this expression. Useful on its own for evaluating a non-optimal Q — e.g. an operator forced to a case-pack size that isn't Q*."
+  :examples (
+    (:tier "novice"
+     :code "(ops/inventory-cost 1000 200 5 50)"
+     :note "D=1000, Q=200, h=5, K=50. Ordering cost 250 + carrying cost 500 = 750/year.")
+    (:tier "apprentice"
+     :code "(let ((D 2000) (Q 300) (h 4) (K 80)) (ops/inventory-cost D Q h K))"
+     :note "Named locals — same shape as ops/eoq, easy to keep straight.")
+    (:tier "intermediate"
+     :code "(let* ((D 5000) (K 100) (h 2) (Q-opt (ops/eoq D K h)) (Q-forced 400)) (list (quote at-Q*) (ops/inventory-cost D Q-opt h K) (quote at-forced) (ops/inventory-cost D Q-forced h K)))"
+     :note "Compare cost at the optimal Q against a forced case-pack Q. The gap is the price of the packaging constraint.")
+    (:tier "expert"
+     :code "(define (cost-vs-qty D K h qs) (map (lambda (Q) (list Q (ops/inventory-cost D Q h K))) qs)) (cost-vs-qty 3000 60 5 (list 100 200 300 400 500))"
+     :note "Build a cost-vs-quantity table by mapping ops/inventory-cost over a list of candidate Qs. Plot mentally: the curve is a U with its bottom at EOQ.")
+    (:tier "master"
+     :code "(let* ((D 6000) (K 90) (h 6) (Q* (ops/eoq D K h)) (test-Qs (list (* Q* 0.5) Q* (* Q* 1.5))) (costs (map (lambda (Q) (ops/inventory-cost D Q h K)) test-Qs))) (list (quote quantities) test-Qs (quote costs) costs))"
+     :note "Verify the U-shape empirically: cost at Q*/2 and at 1.5·Q* should both exceed cost at Q*. That's the shape of the total-cost curve.")
+  )
+  :caveats
+    ("Order quantity Q must be positive; Q ≤ 0 returns 0 rather than dividing by zero."
+     "Units of K, h, D must be consistent (per year is the convention). Feed daily demand + annual holding and the answer is garbage."
+     "Assumes constant demand across the year. If demand is seasonal, use a periodic model instead.")
+  :drawbacks
+    ("Does not model stockouts or lost-sale cost — assumes 'you always have some'. Real shortages cost customer trust."
+     "Assumes ordering cost is fixed. If K scales with quantity (e.g. tiered freight), this expression is wrong."
+     "Ignores time value of money. Over a year, discounting can matter for large K.")
+  :usecases
+    ("Feed ops/eoq's output back through this verb to confirm the total cost."
+     "Compare cost at a supplier's minimum-order-quantity against the theoretical optimum."
+     "Sensitivity table: hold D and K, vary h to see how storage cost changes the total.")
+  :related ("ops/eoq" "ops/newsvendor" "ops/reorder-point")
+  :learn
+    (:concept "Total-cost decomposition: fixed-setup + variable-carrying — the two forces that fight in inventory."
+     :prerequisites ("understanding of average inventory being Q/2")
+     :progression "Evaluate at Q*. Then evaluate at forced Qs (case packs, MOQs). Then move to ops/newsvendor for stochastic demand.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/littles-law"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/littles-law lambda W) -> L"
+  :summary "Little's Law: average number in a system equals arrival rate times average time in system (L = λ·W)."
+  :impl-status "wired"
+  :explanation "Little's Law is the single deepest identity in queueing theory: for any stable system, in steady state, the long-run average number of items in the system L equals the long-run arrival rate λ multiplied by the average time each item spends in the system W. It requires almost no assumptions — arrivals can be anything, service can be anything, the discipline can be anything — as long as the system is stable and you measure over a long enough window. Consequence: to know L you can measure λ + W; to know W you can measure λ + L. That's how you count without counting."
+  :examples (
+    (:tier "novice"
+     :code "(ops/littles-law 5 2)"
+     :note "5 arrivals per minute, each stays 2 minutes → 10 items in system on average.")
+    (:tier "apprentice"
+     :code "(let ((arrivals-per-hour 60) (avg-stay-hours 0.5)) (ops/littles-law arrivals-per-hour avg-stay-hours))"
+     :note "One arrival per minute; average stay half an hour → 30 people in the shop on average.")
+    (:tier "intermediate"
+     :code "(define (customers-in-shop arr-per-hour minutes-per-visit) (ops/littles-law arr-per-hour (/ minutes-per-visit 60))) (customers-in-shop 45 8)"
+     :note "Wrap the units conversion. 45 customers/hour, 8 minutes each → 6 in the shop on average.")
+    (:tier "expert"
+     :code "(let* ((lambda-arrivals 10) (mm1 (ops/mm1 lambda-arrivals 12)) (W-time (list-ref mm1 3)) (L-derived (ops/littles-law lambda-arrivals W-time))) (list (quote L-from-mm1) (list-ref mm1 1) (quote L-from-little) L-derived))"
+     :note "Cross-check M/M/1's L against Little's Law: both should agree. Any mismatch is a rounding artifact or a bug.")
+    (:tier "master"
+     :code "(let* ((observed-lambda 25) (measured-W 12)) (let ((implied-L (ops/littles-law observed-lambda measured-W))) (list (quote arrivals-per-hour) observed-lambda (quote avg-time-min) measured-W (quote implied-inventory) implied-L)))"
+     :note "Operator report: measured arrival rate and time-in-store from the door-counter and the checkout logs — Little's Law converts them into an inventory estimate.")
+  )
+  :caveats
+    ("λ and W must share time units. If λ is per hour, W must be in hours."
+     "Requires a STABLE system: over the measurement window, the arrival rate and the departure rate must be equal (nothing is accumulating or draining)."
+     "It's an AVERAGE identity, not a moment-to-moment one — instantaneous counts can deviate wildly.")
+  :drawbacks
+    ("Says nothing about variance, only means."
+     "Does not tell you WHERE the time is spent — Little's Law can't separate queue time from service time."
+     "Useless if you can't measure any two of λ, L, W.")
+  :usecases
+    ("Estimate work-in-progress (L) from throughput (λ) and cycle time (W) — the fundamental Lean metric."
+     "Estimate cycle time (W) from inventory (L) and arrival rate (λ)."
+     "Cross-validate a queueing model: the model must satisfy Little's Law or something is broken.")
+  :related ("ops/mm1" "ops/mmc" "ops/erlang-c")
+  :learn
+    (:concept "The most parsimonious identity in queueing: three numbers, one constraint, no assumptions about distributions."
+     :prerequisites ("arithmetic")
+     :progression "Verify Little's Law inside ops/mm1's output. Then use it in reverse — measure two, derive one. Then apply to a real shop or checkout line.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/reorder-point"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/reorder-point daily-demand lead-time-days safety-stock) -> ROP"
+  :summary "Reorder point: the inventory level at which to place a new order — expected lead-time demand plus a safety buffer."
+  :impl-status "wired"
+  :explanation "ROP = μ·L + safety, where μ is the average daily demand, L is the lead time in days, and safety is the extra buffer to guard against stockouts caused by demand or lead-time variability. The first term is what you expect to sell while you wait for the next shipment; the second protects against being wrong. Pair with ops/safety-stock to compute the second term from a service-level target. This is not a probability model — it's a threshold — but its inputs come from probability models."
+  :examples (
+    (:tier "novice"
+     :code "(ops/reorder-point 10 3 5)"
+     :note "10 units/day, 3-day lead time, 5-unit safety stock → reorder when inventory drops to 35.")
+    (:tier "apprentice"
+     :code "(let ((mu 25) (L 7) (safety 30)) (ops/reorder-point mu L safety))"
+     :note "Weekly-lead scenario: 25 units/day, 7 days to replenish, 30-unit cushion → ROP = 205.")
+    (:tier "intermediate"
+     :code "(let* ((daily-demand 15) (lead-time 5) (safety (ops/safety-stock 1.65 4 5)) (rop (ops/reorder-point daily-demand lead-time safety))) (list (quote safety) safety (quote rop) rop))"
+     :note "Compose with ops/safety-stock: 95%-service-level (z=1.65), σ=4, L=5 → safety ≈ 15, ROP = 90.")
+    (:tier "expert"
+     :code "(define (place-order? on-hand mu L safety) (<= on-hand (ops/reorder-point mu L safety))) (place-order? 32 10 3 5)"
+     :note "Predicate wrapper: given current inventory, decide whether to place a new order. True at or below ROP.")
+    (:tier "master"
+     :code "(let* ((mu 40) (L 6) (z 2.05) (sigma 8) (safety (ops/safety-stock z sigma L)) (rop (ops/reorder-point mu L safety)) (eoq (ops/eoq (* mu 300) 100 3))) (list (quote rop) rop (quote reorder-qty) eoq))"
+     :note "Full replenishment policy: WHEN to reorder (ROP) plus HOW MUCH to reorder (EOQ). Two numbers, complete story.")
+  )
+  :caveats
+    ("Daily demand and lead time must be in matching units. If lead time is in weeks, express μ as weekly demand."
+     "Safety stock is passed in — this verb does not compute it. Use ops/safety-stock to derive the number from a service level."
+     "ROP is a threshold, not a schedule; combining with an actual monitoring frequency is the operator's job.")
+  :drawbacks
+    ("Assumes lead time is deterministic. If lead time varies, ops/safety-stock's σ should be inflated to reflect that."
+     "Does not model backorder cost — if stockouts are cheap, you can run lean; if they're catastrophic, safety should be large.")
+  :usecases
+    ("Set the low-stock alert threshold in an inventory tracker."
+     "Decide whether an incoming shipment can be delayed a day (compare next-day inventory forecast against ROP)."
+     "Curriculum: introduce the notion that timing and quantity are separable decisions.")
+  :related ("ops/eoq" "ops/safety-stock" "ops/inventory-cost")
+  :learn
+    (:concept "Timing decision under lead time: reorder before you run out, not when you run out."
+     :prerequisites ("basic averaging" "understanding lead time")
+     :progression "Set μ, L, safety by hand. Then compute safety from ops/safety-stock. Then combine with ops/eoq for the full policy.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/safety-stock"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/safety-stock z sigma L) -> safety-buffer"
+  :summary "Safety stock: z-quantile times demand standard deviation times the square root of lead time."
+  :impl-status "wired"
+  :explanation "Computes z·σ·√L, the classical safety-stock formula. z is the standard-normal quantile for the target service level (z=1.65 for 95%, z=2.05 for 98%, z=2.33 for 99%); σ is the per-period demand standard deviation; L is the lead time in periods. The √L comes from summing independent daily demands into lead-time demand — variance adds, so standard deviation scales as √L. This is the safety buffer to feed into ops/reorder-point."
+  :examples (
+    (:tier "novice"
+     :code "(ops/safety-stock 1.65 10 4)"
+     :note "95% service level (z=1.65), σ=10 units/day, L=4 days → safety ≈ 33 units.")
+    (:tier "apprentice"
+     :code "(let ((z 2.05) (sigma 8) (L 9)) (ops/safety-stock z sigma L))"
+     :note "98% service level, σ=8, L=9 → safety ≈ 49.2. Higher service level, higher buffer.")
+    (:tier "intermediate"
+     :code "(let ((service-levels (list 1.28 1.65 2.05 2.33))) (map (lambda (z) (ops/safety-stock z 6 5)) service-levels))"
+     :note "Table of safety stocks at 90%, 95%, 98%, 99% service. Watch the buffer double as you climb the last stretch.")
+    (:tier "expert"
+     :code "(define (safety-for-service% pct sigma L) (let ((z (cond ((>= pct 99) 2.33) ((>= pct 98) 2.05) ((>= pct 95) 1.65) ((>= pct 90) 1.28) (else 1.0)))) (ops/safety-stock z sigma L))) (safety-for-service% 95 12 6)"
+     :note "Human-friendly wrapper: pass the service percentage instead of the z-quantile. Falls through to z=1.0 (84%) for weaker targets.")
+    (:tier "master"
+     :code "(let* ((sigma 15) (L 10) (z-values (list 1.28 1.65 2.05 2.33)) (safety-values (map (lambda (z) (ops/safety-stock z sigma L)) z-values)) (rop-values (map (lambda (s) (ops/reorder-point 40 L s)) safety-values))) (list (quote safety) safety-values (quote rop) rop-values))"
+     :note "Full sensitivity report: how does ROP change as we tighten service level? Both safety and ROP grow — the cost of certainty is inventory.")
+  )
+  :caveats
+    ("z should reflect the DESIRED service level. Small z means willingness to stock out; large z means paranoia."
+     "σ and L must be measured in the same period (both daily, both weekly, etc.)."
+     "The √L multiplier assumes lead-time demands across days are independent. If demand is highly correlated (a viral SKU), inflate σ."
+     "The formula is calibrated to normal demand. Heavy-tailed demand needs a different quantile.")
+  :drawbacks
+    ("Assumes deterministic lead time. Variable lead time inflates the required buffer beyond this formula."
+     "Ignores holding cost of the safety stock — the operator must weigh service level against carrying cost separately."
+     "Ignores backorder cost — no way to trade off cheap stockouts against expensive holding.")
+  :usecases
+    ("Set the safety-stock parameter for ops/reorder-point."
+     "Compare the cost of a 95% target vs a 99% target — how many extra units of holding does the last 4 points buy?"
+     "Educate an operator on the diminishing return of extreme service levels.")
+  :related ("ops/reorder-point" "ops/eoq" "ops/newsvendor")
+  :learn
+    (:concept "Variance under summation grows linearly with L; standard deviation grows with √L. Safety stock inherits the √L."
+     :prerequisites ("standard normal z-quantiles" "variance of a sum of independent RVs")
+     :progression "Compute safety at a few service levels. Then feed into ops/reorder-point. Then compare with the ops/newsvendor answer for the single-period version of the same tradeoff.")
+  :entry-provenance "authored")
