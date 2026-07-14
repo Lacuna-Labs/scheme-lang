@@ -851,6 +851,31 @@
   :ai (:raises ("external-service — sidecar unreachable" "quota-exceeded — provider rate limit" "timeout — provider slow" "bad-input — text too long" "unsupported-language — provider lacks the pair") :pipes-into ("string-append" "display" "cortex/write") :consumes-from ("string" "symbol") :cardinality "one" :deterministic #f :cacheable #t :common-mistakes "Assuming translation preserves formatting (line breaks, punctuation, code blocks). Providers vary. Round-trip-test critical strings before shipping." :when-not-to-use "Fixed UI strings — use a translation table (i18n dictionary). Static translations are cheaper and reviewable." :returns-confidence #f)
   :commerce (:cost "external-billed" :fuel-cost "per-token" :needs-consent #f :idempotent #f :cortex-touch "none" :metered-billing #t))
 
+(verb
+  :name "ai/rank"
+  :library "ai"
+  :kind "read"
+  :signature "(ai/rank query candidates [k]) → ((candidate score) …)"
+  :summary "Rank candidates by relevance to a query. Requires an embedding sidecar."
+  :impl-status "wired"
+  :impl-file "src/ai.js"
+  :impl-notes "Routes through state.llm (embedding + similarity) when a provider is wired. Under standalone REPL raises 'requires-python-ml-sidecar'. Alfred: 'we can't lie to people.' No local fallback — arbitrary order would be worse than an error."
+  :explanation "Ai/rank takes a query and a list of candidate strings; returns the candidates ordered by relevance to the query, each paired with a similarity score. Under a wired provider, both query and candidates are embedded and ranked by cosine similarity (or the provider's native ranker). Under standalone REPL, ai/rank raises requires-python-ml-sidecar — we won't ship a random-order fallback because arbitrary ranking is worse than no ranking. Optional k caps the returned list to the top-k candidates."
+  :examples (
+    (:tier "novice" :code "(ai/rank \"red dress\" '(\"blue jeans\" \"red shirt\" \"green hat\"))" :note "Standalone REPL: raises requires-python-ml-sidecar. Wire an embedding provider for real ranking.")
+    (:tier "apprentice" :code "(ai/rank \"comfortable shoes\" '(\"running shoes\" \"dress shoes\" \"sandals\") 2)" :note "Optional k=2 caps the result to top-2. Standalone: same sidecar error.")
+    (:tier "intermediate" :code "(define (rank-or-fallback query cands)\n  (if (eq? (cortex/read \"llm/provider-status\") 'wired)\n      (ai/rank query cands)\n      (map (lambda (c) (list c 0)) cands)))\n(rank-or-fallback \"any\" '(\"a\" \"b\" \"c\"))" :note "When the sidecar is down, return the candidates in original order with score 0 so downstream code sees the same shape.")
+    (:tier "expert" :code "(define (search-listings query all)\n  (let ((status (cortex/read \"llm/provider-status\")))\n    (cond ((null? all) '())\n          ((eq? status 'wired)\n           (ai/rank query all 5))\n          (else\n           (map (lambda (item) (list item 0))\n                (filter (lambda (item)\n                          (string-contains? item query))\n                        all))))))\n(search-listings \"silver\" '(\"silver ring\" \"gold chain\" \"silver bracelet\" \"leather bag\"))" :note "Real ranking when wired; honest substring-filter fallback otherwise. The fallback IS worse — but it's callable, deterministic, and clearly labeled with score 0.")
+    (:tier "master" :code "(define (best-reply-candidate query drafts)\n  (let ((status (cortex/read \"llm/provider-status\")))\n    (cond ((null? drafts) 'no-drafts)\n          ((= (length drafts) 1) (car drafts))\n          ((eq? status 'wired)\n           (let ((ranked (ai/rank query drafts 1)))\n             (if (null? ranked) (car drafts) (car (car ranked)))))\n          (else (car drafts)))))\n(best-reply-candidate \"customer wants refund\"\n                     '(\"apology + credit offer\" \"info request\" \"escalation script\"))" :note "A cart-style routine that picks the best reply from a small candidate list: single-draft → return it; wired → real ranking; otherwise → first draft (still shows something). Sakura uses this shape to keep responses grounded in pre-approved templates while adding relevance ranking when possible.")
+  )
+  :caveats ("No standalone fallback for the ordering — raises requires-python-ml-sidecar." "Requires an embedding provider or a native cross-encoder; small local models are an option but not shipped by default." "Score scale is provider-specific; compare within one call, not across calls.")
+  :drawbacks ("Cost per call scales with candidate count; batch when possible." "Latency 100ms – 1s per rank call; not for tight loops." "Non-deterministic if the provider uses stochastic tie-breaks; set :temperature 0 where supported.")
+  :usecases ("Ranking search-result candidates by query relevance." "Choosing the best reply template for a customer message." "Ordering related products for a listing page." "Deduplication ranking: rank by similarity, drop near-duplicates.")
+  :related ("ai/rerank" "ai/vector-search" "ai/embed" "cortex/topk" "llm/embed")
+  :learn (:concept "Ranking = 'given a query, order candidates by how well they match'. Ai/rank composes embedding + similarity; ai/rerank refines an existing candidate order." :prerequisites ("list" "map" "filter" "cond" "cortex/read") :progression "After ai/rank, learn ai/rerank for two-stage retrieval and ai/vector-search for pre-indexed ranking at scale.")
+  :ai (:raises ("external-service — sidecar unreachable" "quota-exceeded — provider rate limit" "timeout — provider slow" "bad-input — too many candidates") :pipes-into ("map" "car" "sort" "filter") :consumes-from ("string" "list of strings") :cardinality "many" :deterministic #f :cacheable #t :common-mistakes "Ranking hundreds of candidates in one call — providers refuse or truncate. Batch into groups of 20-50 and merge." :when-not-to-use "Exact matching, keyword filtering, or fixed-order sorts (alphabetical, chronological) — use filter + sort. Cheaper, faster, correct." :returns-confidence #t)
+  :commerce (:cost "external-billed" :fuel-cost "per-candidate" :needs-consent #f :idempotent #t :cortex-touch "none" :metered-billing #t))
+
 ; ─── library: alg (59 verbs) ───
 
 (verb
