@@ -1123,3 +1123,197 @@
              :long  "One-shot snapshot alist with playing, muted, volume, position, current-guid, queue-length."
              :for-ai "State snapshot. Read-only."
              :for-kid "Ask the player how it's doing — one big message with everything.")))
+
+;; ─── podcast-queue — read the play queue ─────────────────────────
+
+(verb
+  :name "podcast-queue"
+  :library "podcast"
+  :signature "(podcast-queue) -> list-of-episodes"
+  :summary "Return the list of queued episodes."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-queue)"                                                                                         :note "Initial empty queue. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue))"                                    :note "After one add. Returns one-element list.")
+    (:tier "intermediate" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-add (list 'audio-url \"b\")) (length (podcast-queue)))" :note "Length. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (map (lambda (ep) (obj-get ep 'audio-url)) (podcast-queue)))" :note "Map to URLs. Returns (\"a\").")
+    (:tier "master"
+     :code "(define (queue-summary)\n  (map (lambda (ep) (obj-get ep 'title)) (podcast-queue)))\n(begin (podcast-queue-add (list 'audio-url \"a\" 'title \"first\")) (podcast-queue-add (list 'audio-url \"b\" 'title \"second\")) (queue-summary))"
+     :note "Summary titles. Returns (\"first\" \"second\")."))
+  :related ("podcast-queue-add" "podcast-queue-remove" "podcast-load")
+  :caveats ("Order is insertion order; head is next-to-play." "Queue is a snapshot — mutations after retrieval don't propagate back.")
+  :drawbacks ("No shuffle." "No priority/reorder in-place.")
+  :usecases ("Show queue in UI." "Compute queue length for HUD.")
+  :learn (:concept "Read-side snapshot of the queue." :prerequisites () :progression "Learn queue-add / queue-remove.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of alists")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return podcast.queue.slice()."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: initial ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return the queue." :long "Snapshot of the podcast play queue." :for-ai "List of episodes." :for-kid "See what's coming up next.")))
+
+;; ─── podcast-queue-add ────────────────────────────────────────────
+
+(verb
+  :name "podcast-queue-add"
+  :library "podcast"
+  :signature "(podcast-queue-add episode-alist) -> new-length | error-triple"
+  :summary "Add an episode to the tail of the queue; returns the new queue length."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-queue-add (list 'audio-url \"a\"))" :note "Add one. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-add (list 'audio-url \"b\")))" :note "Two adds. Returns 2.")
+    (:tier "intermediate" :code "(podcast-queue-add \"not-an-alist\")" :note "Bad type returns error triple. Returns (error bad-episode \"expected an alist\").")
+    (:tier "expert"    :code "(define (add-many eps) (map podcast-queue-add eps)) (add-many (list (list 'audio-url \"a\") (list 'audio-url \"b\") (list 'audio-url \"c\")))" :note "Bulk add. Returns (1 2 3).")
+    (:tier "master"
+     :code "(define (schedule-playlist urls)\n  (fold (lambda (acc url) (podcast-queue-add (list 'audio-url url)) acc) 'done urls))\n(schedule-playlist (list \"a\" \"b\" \"c\"))"
+     :note "Schedule a playlist. Returns 'done."))
+  :related ("podcast-queue" "podcast-queue-remove" "podcast-load")
+  :caveats ("Bad type returns error triple." "No dedup.")
+  :drawbacks ("No priority-add." "No batch API.")
+  :usecases ("Playlist building." "Auto-continue after end.")
+  :learn (:concept "Append to the tail." :prerequisites () :progression "Pair with queue-remove and queue.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "number | error-triple")
+  :+cs (:complexity "O(1) amortized" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "podcast.queue.push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: 1, 2, 3." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (bad-episode) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Add an episode to the queue." :long "Append to the tail of the queue." :for-ai "Append." :for-kid "Add a podcast to the end of the queue.")))
+
+;; ─── podcast-queue-remove ─────────────────────────────────────────
+
+(verb
+  :name "podcast-queue-remove"
+  :library "podcast"
+  :signature "(podcast-queue-remove episode-alist) -> number-removed | error-triple"
+  :summary "Remove all queue entries matching the episode's guid."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-queue-remove (list 'audio-url \"a\"))" :note "Nothing to remove. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-remove (list 'audio-url \"a\")))" :note "Add + remove. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-remove (list 'audio-url \"a\")))" :note "Duplicates removed. Returns 2.")
+    (:tier "expert"    :code "(podcast-queue-remove \"not-an-alist\")" :note "Bad type. Returns (error bad-episode \"expected an alist\").")
+    (:tier "master"    :code "(define (skip-and-drop ep) (list 'skipped (podcast-queue-remove ep) 'new-length (length (podcast-queue)))) (begin (podcast-queue-add (list 'audio-url \"a\")) (skip-and-drop (list 'audio-url \"a\")))" :note "Drop + report. Returns (skipped 1 new-length 0)."))
+  :related ("podcast-queue" "podcast-queue-add")
+  :caveats ("Matches all entries with the same guid." "Returns 0 when absent.")
+  :drawbacks ("No remove-by-index.")
+  :usecases ("Skip an episode." "Deduplicate a queue.")
+  :learn (:concept "Remove by episode identity." :prerequisites () :progression "Learn queue-add mirror.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "number | error-triple")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter by guid; return count removed."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: 0, 1, 2." :since "1.0")
+  :+ai (:raises (bad-episode) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Remove from queue by guid." :long "Filter matching guid entries out." :for-ai "Filter." :for-kid "Take a podcast out of the queue.")))
+
+;; ─── podcast-subscribe / -unsubscribe / -is-subscribed? / -subscriptions ─
+
+(verb
+  :name "podcast-subscribe"
+  :library "podcast"
+  :signature "(podcast-subscribe feed-url) -> subscription-count"
+  :summary "Add a podcast feed to the subscriptions list; return the new count."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-subscribe \"https://feed.example.com/rss\")" :note "Subscribe. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\"))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"a\"))" :note "Dedup — same URL. Returns 1.")
+    (:tier "expert"    :code "(define (bulk-subscribe feeds) (map podcast-subscribe feeds)) (bulk-subscribe (list \"a\" \"b\" \"c\"))" :note "Map. Returns (1 2 3).")
+    (:tier "master"
+     :code "(define (opml-import urls)\n  (list 'added (fold (lambda (acc url) (podcast-subscribe url) (+ acc 1)) 0 urls) 'total (length (podcast-subscriptions))))\n(opml-import (list \"a\" \"b\" \"c\"))"
+     :note "OPML import shape. Returns (added 3 total 3)."))
+  :related ("podcast-unsubscribe" "podcast-is-subscribed?" "podcast-subscriptions")
+  :caveats ("Dedups on exact string match.")
+  :drawbacks ("No feed validation.")
+  :usecases ("OPML import." "One-click subscribe.")
+  :learn (:concept "Add-once semantics." :prerequisites () :progression "Learn unsubscribe + is-subscribed?.")
+  :+math (:algebra () :total #t :domain "string" :codomain "count")
+  :+cs (:complexity "O(n) dedup" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Add-once via includes-guard."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Subscribe to a feed." :long "Add feed URL to subs; dedups on exact match." :for-ai "Add-once." :for-kid "Follow a podcast.")))
+
+(verb
+  :name "podcast-unsubscribe"
+  :library "podcast"
+  :signature "(podcast-unsubscribe feed-url) -> count-removed"
+  :summary "Remove a feed from subscriptions."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-unsubscribe \"a\")" :note "Nothing subscribed. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-unsubscribe \"a\"))" :note "Sub then unsub. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (podcast-unsubscribe \"a\") (length (podcast-subscriptions)))" :note "Returns 1.")
+    (:tier "expert"    :code "(define (cull-many urls) (map podcast-unsubscribe urls)) (begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (cull-many (list \"a\" \"b\")))" :note "Bulk cull. Returns (1 1).")
+    (:tier "master"
+     :code "(define (cleanup-abandoned pattern)\n  (fold (lambda (acc url) (if (and (string? url) (>= (string-length url) (string-length pattern))) (+ acc (podcast-unsubscribe url)) acc)) 0 (podcast-subscriptions)))\n(begin (podcast-subscribe \"abandoned-1\") (podcast-subscribe \"abandoned-2\") (podcast-subscribe \"keep\") (cleanup-abandoned \"abandoned-\"))"
+     :note "Pattern cleanup. Returns 3."))
+  :related ("podcast-subscribe" "podcast-subscriptions")
+  :caveats ("Exact string match.")
+  :drawbacks ("No regex.")
+  :usecases ("Unsub button." "Cleanup dead feeds.")
+  :learn (:concept "Remove-if-present." :prerequisites ("podcast-subscribe") :progression "Learn subscribe mirror.")
+  :+math (:algebra () :total #t :domain "string" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter matching URL; return count."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Unsubscribe from a feed." :long "Remove feed URL." :for-ai "Remove-if-present." :for-kid "Stop following a podcast.")))
+
+(verb
+  :name "podcast-is-subscribed?"
+  :library "podcast"
+  :signature "(podcast-is-subscribed? feed-url) -> boolean"
+  :summary "True if the feed URL is currently subscribed."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-is-subscribed? \"a\")" :note "Nothing subscribed. Returns #f.")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-is-subscribed? \"a\"))" :note "After sub. Returns #t.")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-is-subscribed? \"b\"))" :note "Different URL. Returns #f.")
+    (:tier "expert"    :code "(define (toggle-sub url) (if (podcast-is-subscribed? url) (podcast-unsubscribe url) (podcast-subscribe url))) (begin (toggle-sub \"a\") (podcast-is-subscribed? \"a\"))" :note "Toggle. Returns #t.")
+    (:tier "master"    :code "(define (import-if-new feeds) (for-each (lambda (f) (unless (podcast-is-subscribed? f) (podcast-subscribe f))) feeds) (length (podcast-subscriptions))) (import-if-new (list \"a\" \"b\" \"a\"))" :note "Import-if-new. Returns 2."))
+  :related ("podcast-subscribe" "podcast-unsubscribe")
+  :caveats ("Exact string match.")
+  :drawbacks ("No fuzzy.")
+  :usecases ("Toggle UI." "Guard bulk import.")
+  :learn (:concept "Membership predicate." :prerequisites () :progression "Learn subscribe / unsubscribe pair.")
+  :+math (:algebra () :total #t :domain "string" :codomain "boolean")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "subscriptions.includes(url)."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Is this feed subscribed?" :long "Predicate over subscription membership." :for-ai "Membership." :for-kid "Are you following this podcast?")))
+
+(verb
+  :name "podcast-subscriptions"
+  :library "podcast"
+  :signature "(podcast-subscriptions) -> list-of-strings"
+  :summary "Return the current list of subscribed feed URLs."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-subscriptions)" :note "Nothing subscribed. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-subscriptions))" :note "One sub. Returns (\"a\").")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (length (podcast-subscriptions)))" :note "Two subs. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (map string-length (podcast-subscriptions)))" :note "Map. Returns (1 1).")
+    (:tier "master"    :code "(define (export-opml) (list 'opml (map (lambda (u) (list 'outline u)) (podcast-subscriptions)))) (begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (export-opml))" :note "OPML export. Returns (opml ((outline \"a\") (outline \"b\")))."))
+  :related ("podcast-subscribe" "podcast-unsubscribe" "podcast-is-subscribed?")
+  :caveats ("Snapshot only.")
+  :drawbacks ("No metadata.")
+  :usecases ("OPML export." "UI list.")
+  :learn (:concept "Read-side snapshot." :prerequisites () :progression "Pair with subscribe / unsubscribe.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of strings")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return subscriptions.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return subscribed feed URLs." :long "Snapshot." :for-ai "List." :for-kid "See which podcasts you follow.")))
