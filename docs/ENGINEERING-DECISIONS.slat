@@ -1,0 +1,41 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SAKURA SCHEME — ENGINEERING DECISIONS
+;;
+;; Deliberate deviations from R7RS-small, and the reasons for them.
+;;
+;; Doctrine: "They've tried things and talked about it longer than I
+;; have, so I trust their judgment." — Alfred, 2026-07-14
+;;
+;; We stay close to R7RS-small unless an implementation-level reason
+;; justifies a deviation. Where we deviate, we log why here. Any
+;; deliberate break lives in this file. If it isn't logged, it isn't
+;; a decision — it's a bug.
+;;
+;; Format: SLAT, one (decision ...) record per entry.
+;;
+;; Companion: docs/reports/convention-sweep-*.slat lists the
+;; findings that motivated (or contradict) each decision.
+;; ═══════════════════════════════════════════════════════════════
+
+(decision
+  :id "001"
+  :what "Positional args, no keyword-arg syntax in interp"
+  :why "R7RS-small does not have keyword args. Adopting them would fork the interp. Property-list is Scheme-idiomatic for many-arg verbs; positional is idiomatic for few-arg verbs."
+  :date "2026-07-14"
+  :alternatives-rejected
+    (("interp keyword args" "Would extend the reader; deviation from R7RS.")
+     ("SRFI-88 keyword objects" "Not universally supported; adds surface area."))
+  :affects "Verb signatures that currently use :key value syntax in their :signature or :examples fields"
+  :author "Alfred")
+
+(decision
+  :id "002"
+  :what "No polymorphic `get` verb"
+  :why "Clojure-ism, not Scheme. Scheme accessors are shape-specific by design — hash-ref, vector-ref, assoc, record accessors."
+  :date "2026-07-14"
+  :alternatives-rejected
+    (("Add (get x k)" "Would hide type info; contra R7RS explicit-shape idiom."))
+  :affects "Reference entries that currently call (get x 'field)"
+  :author "Alfred")
+
+;; End of decisions. Append future entries below with monotonic :id.
