@@ -6718,3 +6718,86 @@
             :notes "For every canonical chapter matched to a same-slug preserved counterpart, canonical wc >= preserved wc — no shortening detected on that dimension. Separately found 91 chapters where a -rN revision-track variant is materially longer than canonical (interpretation unclear: earlier-draft-polished-down vs later-expansion-never-landed). No restore applied. Alfred review required before phase 2."
             :status "audit-complete-restore-deferred")
     ))
+
+;; ═══════════════════════════════════════════════════════════════
+;; RECOVERY-013 PHASE 2 EXECUTION (Recovery Lane 5) + RECOVERY-012
+;; DIVERGENT ALIAS VERIFICATION
+;; ═══════════════════════════════════════════════════════════════
+;;
+;; Doctrine: merge-not-throw (Alfred 2026-07-14).
+;; Reference: ~/.claude/projects/-Users-alfred-code/memory/
+;;            project_merge_not_throw_doctrine_2026_07_14.md
+;;
+;; Method:
+;;   For each of the 80 unique canonical chapters flagged in
+;;   shortened-block-candidates-2026-07-14.slat as having an -rN
+;;   revision-track variant with materially more content:
+;;
+;;   1. Split canonical prose and rN markdown by ## H2 headings.
+;;   2. Compare heading sets (case-insensitive, punctuation-stripped).
+;;   3. For each rN section whose (normalized) heading does NOT appear
+;;      in canonical: append the full body as a demoted (H3) entry
+;;      under a new appendix H2 titled "Notes and Additional
+;;      Considerations from rN draft" at the bottom of canonical prose.
+;;   4. For each rN section whose heading DOES appear in canonical:
+;;      SKIP (canonical wording preserved).
+;;   5. Inject :merged-from + :merge-decision + :merged-at + :merged-by
+;;      provenance fields before :prose in each canonical .book.slatl.
+;;   6. Verify canonical file size strictly grew (or stayed same for
+;;      all-covered cases). Zero shrinkage tolerated.
+;;
+;; Result: 80 canonical chapters merged, all grew. 3,294 appendix
+;; sections landed. 2,795,819 bytes added to the six affected books.
+;; NO DELETES. Every rN section either overlapped canonical (preserved
+;; canonical wording) or landed as appendix (nothing thrown).
+
+(recovery-log
+  :date "2026-07-14"
+  :lane "recovery-lane-5"
+  :items ("recovery-013-phase-2" "recovery-012-alias-verification")
+  :canonical-chapters-merged 80
+  :rN-source-files-processed 91
+  :appendix-sections-added 3294
+  :bytes-added 2795819
+  :bytes-before 2879780
+  :bytes-after 5722920
+  :growth-ratio 1.99
+  :canonical-files-shrank 0
+  :hard-conflicts 0
+  :per-book
+    (
+     (:book "book-of-one-shot"     :chapters 5  :appendix-sections 189 :bytes-added 93024)
+     (:book "book-of-money"        :chapters 16 :appendix-sections 563 :bytes-added 449791)
+     (:book "book-of-motion"       :chapters 16 :appendix-sections 661 :bytes-added 553991)
+     (:book "book-of-self"         :chapters 16 :appendix-sections 636 :bytes-added 429301)
+     (:book "book-of-systems"      :chapters 16 :appendix-sections 585 :bytes-added 444065)
+     (:book "book-of-music"        :chapters 11 :appendix-sections 660 :bytes-added 825647
+      :notes "11 chapters × 2 rN drafts each (r1 + r2) = 22 source files processed"))
+  :recovery-012-verification
+    (
+     (verified :alias "book-of-the-instruments"
+               :method "sentence-by-sentence match between mirror :content and canonical :prose"
+               :missing-from-mirror ("## Persisting instrument state section" "[[book-of-slat]] cross-reference bullet")
+               :missing-from-canonical ()
+               :decision "no-merge-required-canonical-is-strict-superset"
+               :safeguard "mirror preserved in .aliases-2026-07-14/book-of-the-instruments/")
+     (verified :alias "book-of-the-miscellany"
+               :method "sentence-by-sentence match between mirror :content and canonical :prose"
+               :missing-from-mirror ("[[book-of-slat]] bullet in Cross-links")
+               :missing-from-canonical ()
+               :decision "no-merge-required-canonical-is-strict-superset"
+               :safeguard "mirror preserved in .aliases-2026-07-14/book-of-the-miscellany/"))
+  :safeguards-enforced
+    ("NO-DELETES: all -rN source files remain at BOOK/A-branch-scheme-books/*/-rN.md"
+     "NO-SILENT-LOSS: every rN section decided (overlap → preserved-canonical; unique → appendix)"
+     "CANONICAL-NEVER-SHRINKS: 80/80 verified grew (0 shrank, 0 same)"
+     "PROVENANCE-ON-EVERY-MERGE: :merged-from lists every rN file consulted per chapter"
+     "MIRROR-ALIAS-PRESERVED: both divergent aliases retained side-by-side")
+  :git-commits
+    ("c18def518 recovery-013: merge book-of-one-shot rN drafts — appendix-189 archive-0"
+     "2564b4214 recovery-013: merge book-of-money rN drafts — appendix-563 archive-0"
+     "620f2673b recovery-013: merge book-of-motion rN drafts — appendix-661 archive-0"
+     "b0223e6bb recovery-013: merge book-of-self rN drafts — appendix-636 archive-0"
+     "82df57e26 recovery-013: merge book-of-systems rN drafts — appendix-585 archive-0"
+     "fdca91956 recovery-013: merge book-of-music rN drafts — appendix-660 archive-0")
+  :status "complete")
