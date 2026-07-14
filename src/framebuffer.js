@@ -174,6 +174,90 @@ export class Framebuffer {
     }
   }
 
+  // ── flower rasterizer ──────────────────────────────────────────────
+  //
+  // paintFlower(n, col, row, spin, sx, sy, dy, petals) — draw one of
+  // four canned flower sprites at (col, row).
+  //
+  //   n=0  five-dot cluster (petal + center + 3 tips)
+  //   n=1  five-petal daisy (petals around a center)
+  //   n=2  six-petal (hex arrangement)
+  //   n=3  small four-petal (tulip-ish)
+  //
+  // spin  — rotation in degrees (integer or float)
+  // sx,sy — X/Y scale factors (default 1)
+  // dy    — vertical pixel offset (draws petals dy below the geometric center)
+  // petals— optional list of palette-indexed color values; if provided,
+  //         petals[0] is the petal color and petals[1] is the center
+  //         color. Non-numeric or malformed entries are silently ignored
+  //         (reference caveat: 'malformed petals are ignored').
+  //
+  // All numeric args pass through the same coercion the reference
+  // documents: non-numeric spin/dy become 0; non-numeric scales default
+  // to 1. The verb mutates the buffer (bumps version once at the end).
+  paintFlower(n, col, row, spin, sx, sy, dy, petals) {
+    const cx = (col | 0)
+    let cy = (row | 0)
+    const sn = (typeof n === 'number' && Number.isFinite(n)) ? (n | 0) % 4 : 0
+    const nIdx = ((sn % 4) + 4) % 4   // 0..3
+    const th = (typeof spin === 'number' && Number.isFinite(spin))
+      ? (spin * Math.PI / 180) : 0
+    const scx = (typeof sx === 'number' && Number.isFinite(sx) && sx > 0) ? sx : 1
+    const scy = (typeof sy === 'number' && Number.isFinite(sy) && sy > 0) ? sy : 1
+    const dyi = (typeof dy === 'number' && Number.isFinite(dy)) ? (dy | 0) : 0
+    cy += dyi
+    // Colors: default petal=14 (pink), center=10 (yellow).
+    let petalC = 14
+    let centerC = 10
+    if (Array.isArray(petals) && petals.length > 0) {
+      const p0 = petals[0]
+      if (typeof p0 === 'number' && Number.isFinite(p0)) petalC = ((p0 | 0) % this.palette.length + this.palette.length) % this.palette.length
+      else if (typeof p0 === 'string') {
+        const n0 = NAMED_COLORS[p0.toLowerCase()]
+        if (n0 !== undefined) petalC = n0
+      }
+      if (petals.length > 1) {
+        const p1 = petals[1]
+        if (typeof p1 === 'number' && Number.isFinite(p1)) centerC = ((p1 | 0) % this.palette.length + this.palette.length) % this.palette.length
+        else if (typeof p1 === 'string') {
+          const n1 = NAMED_COLORS[p1.toLowerCase()]
+          if (n1 !== undefined) centerC = n1
+        }
+      }
+    }
+
+    // Petal counts and base radius per sprite index.
+    const spriteSpec = [
+      { petals: 4, baseR: 2, center: 1 },   // 0 dot-cluster
+      { petals: 5, baseR: 3, center: 1 },   // 1 daisy
+      { petals: 6, baseR: 3, center: 1 },   // 2 hex
+      { petals: 4, baseR: 2, center: 1 },   // 3 tulip-ish
+    ][nIdx]
+
+    const petalCount = spriteSpec.petals
+    const rx = spriteSpec.baseR * scx
+    const ry = spriteSpec.baseR * scy
+
+    // Draw petals around center, rotated by spin.
+    for (let i = 0; i < petalCount; i++) {
+      const a = th + (i * 2 * Math.PI / petalCount)
+      const pxc = Math.round(cx + Math.cos(a) * rx)
+      const pyc = Math.round(cy + Math.sin(a) * ry)
+      // Each petal is a small disc.
+      const pr = Math.max(1, Math.round(Math.min(rx, ry) * 0.6))
+      this.disc(pxc, pyc, pr, petalC)
+    }
+    // Center dot.
+    this.disc(cx, cy, Math.max(1, Math.round(Math.min(rx, ry) * 0.4)), centerC)
+    // Sprite 3 (tulip-ish) gets a tiny stem below.
+    if (nIdx === 3) {
+      const stemLen = Math.max(2, Math.round(3 * scy))
+      const stemC = NAMED_COLORS['dark-green'] ?? 3
+      this.line(cx, cy + Math.round(ry), cx, cy + Math.round(ry) + stemLen, stemC)
+    }
+    this.version++
+  }
+
   // ── data plot — sparkline-style series ────────────────────────────
 
   // data: array of numbers. Renders as a connected line across the

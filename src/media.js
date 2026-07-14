@@ -178,6 +178,19 @@ export function registerMedia(env, fuel) {
     return undefined
   })
 
+  // (flower/paint n col row [spin sx sy dy petals]) — paint a flower sprite.
+  //
+  // Real rasterization into the framebuffer via Framebuffer.paintFlower.
+  // Sprite index n picks one of 4 canned shapes (dot-cluster / daisy /
+  // hex / tulip-ish). Optional spin, X/Y scale, vertical offset, and
+  // petal color list follow the reference signature.
+  //
+  // Returns undefined per reference §flower/paint (:signature ... -> null).
+  def('flower/paint', (n, col, row, spin, sx, sy, dy, petals) => {
+    getMediaState().fb.paintFlower(n, col, row, spin, sx, sy, dy, petals)
+    return undefined
+  }, 'animate')
+
   // (pget x y) — read a pixel's palette index.
   def('pget', (x, y) => getMediaState().fb.peek(+x, +y))
 
