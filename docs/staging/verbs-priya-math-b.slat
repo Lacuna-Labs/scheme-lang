@@ -1317,3 +1317,286 @@
   :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
   :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
           :entry-summary (:short "Return subscribed feed URLs." :long "Snapshot." :for-ai "List." :for-kid "See which podcasts you follow.")))
+
+;; ─── podcast speaker management ───────────────────────────────────
+
+(verb
+  :name "podcast-follow-speaker"
+  :library "podcast"
+  :signature "(podcast-follow-speaker speaker-id) -> count"
+  :summary "Follow a podcast speaker so their appearances are highlighted; returns the new follower count."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-follow-speaker 'alice)" :note "Follow. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-follow-speaker 'alice) (podcast-follow-speaker 'bob))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(begin (podcast-follow-speaker 'alice) (podcast-follow-speaker 'alice))" :note "Dedup. Returns 1.")
+    (:tier "expert"    :code "(define (invite guests) (map podcast-follow-speaker guests)) (invite (list 'alice 'bob 'carol))" :note "Bulk. Returns (1 2 3).")
+    (:tier "master"    :code "(define (follow-if-new sp) (if (member sp (podcast-followed-speakers)) 'already (begin (podcast-follow-speaker sp) 'added))) (list (follow-if-new 'alice) (follow-if-new 'alice))" :note "Guarded. Returns (added already)."))
+  :related ("podcast-unfollow-speaker" "podcast-followed-speakers")
+  :caveats ("Dedup on symbol match.")
+  :drawbacks ("No metadata.")
+  :usecases ("Follow a speaker across shows." "Personalized episode ranking.")
+  :learn (:concept "Add-once follow." :prerequisites () :progression "Learn unfollow + followed-speakers.")
+  :+math (:algebra () :total #t :domain "symbol|string" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Add-once via includes-guard."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Follow a speaker." :long "Add a speaker to the followed list; dedup." :for-ai "Add-once." :for-kid "Follow a person's podcast appearances.")))
+
+(verb
+  :name "podcast-unfollow-speaker"
+  :library "podcast"
+  :signature "(podcast-unfollow-speaker speaker-id) -> count-removed"
+  :summary "Unfollow a speaker."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-unfollow-speaker 'alice)" :note "Nothing followed. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-follow-speaker 'alice) (podcast-unfollow-speaker 'alice))" :note "Sub then unsub. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (podcast-unfollow-speaker 'a) (length (podcast-followed-speakers)))" :note "One remains. Returns 1.")
+    (:tier "expert"    :code "(define (drop-all) (map podcast-unfollow-speaker (podcast-followed-speakers))) (begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (drop-all))" :note "Bulk drop. Returns (1 1).")
+    (:tier "master"    :code "(define (toggle-follow sp) (if (member sp (podcast-followed-speakers)) (podcast-unfollow-speaker sp) (podcast-follow-speaker sp))) (list (toggle-follow 'x) (toggle-follow 'x))" :note "Toggle. Returns (1 1)."))
+  :related ("podcast-follow-speaker" "podcast-followed-speakers")
+  :caveats ("Symbol match.")
+  :drawbacks ("No fuzzy.")
+  :usecases ("Unfollow button.")
+  :learn (:concept "Remove-if-present." :prerequisites ("podcast-follow-speaker") :progression "Learn follow mirror.")
+  :+math (:algebra () :total #t :domain "symbol" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter matching; return count."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Unfollow a speaker." :long "Remove from followed list." :for-ai "Remove-if-present." :for-kid "Stop following a person.")))
+
+(verb
+  :name "podcast-followed-speakers"
+  :library "podcast"
+  :signature "(podcast-followed-speakers) -> list-of-strings"
+  :summary "Return the list of currently-followed speaker IDs."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-followed-speakers)" :note "Empty. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-follow-speaker 'alice) (podcast-followed-speakers))" :note "One. Returns (\"alice\").")
+    (:tier "intermediate" :code "(begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (length (podcast-followed-speakers)))" :note "Two. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-follow-speaker 'alice) (member \"alice\" (podcast-followed-speakers)))" :note "Membership. Returns (\"alice\").")
+    (:tier "master"    :code "(define (export-follows) (list 'followed (podcast-followed-speakers))) (begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (export-follows))" :note "Export shape. Returns (followed (\"a\" \"b\"))."))
+  :related ("podcast-follow-speaker" "podcast-unfollow-speaker")
+  :caveats ("Snapshot only.")
+  :drawbacks ("No metadata.")
+  :usecases ("UI list." "Analytics.")
+  :learn (:concept "Read-side snapshot." :prerequisites () :progression "Pair with follow / unfollow.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of strings")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return followed.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return followed speakers." :long "Snapshot." :for-ai "List." :for-kid "See which people you follow.")))
+
+;; ─── podcast-bookmark + podcast-clips ─────────────────────────────
+
+(verb
+  :name "podcast-bookmark"
+  :library "podcast"
+  :signature "(podcast-bookmark guid) -> bookmark-count"
+  :summary "Bookmark an episode by guid; returns the new bookmark count."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-bookmark \"ep-42\")" :note "Bookmark. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-bookmark \"a\") (podcast-bookmark \"b\"))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(begin (podcast-bookmark \"a\") (podcast-bookmark \"a\"))" :note "Dedup. Returns 1.")
+    (:tier "expert"    :code "(define (bookmark-all guids) (map podcast-bookmark guids)) (bookmark-all (list \"a\" \"b\" \"c\"))" :note "Bulk. Returns (1 2 3).")
+    (:tier "master"    :code "(define (bookmark-current) (let ((c (podcast-current))) (if c (podcast-bookmark (obj-get c 'audio-url)) 'nothing-to-bookmark))) (begin (podcast-load (list 'audio-url \"https://ex/e\")) (bookmark-current))" :note "Bookmark current. Returns 1."))
+  :related ("podcast-current" "podcast-clips")
+  :caveats ("Dedup on guid.")
+  :drawbacks ("No metadata (time, note).")
+  :usecases ("Save-for-later.")
+  :learn (:concept "Add-once bookmark." :prerequisites () :progression "Learn clips for time-tagged saves.")
+  :+math (:algebra () :total #t :domain "string" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Add-once via includes-guard."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Bookmark an episode." :long "Add-once bookmark by guid." :for-ai "Add-once." :for-kid "Save a podcast for later.")))
+
+(verb
+  :name "podcast-clips"
+  :library "podcast"
+  :signature "(podcast-clips) -> list-of-clips"
+  :summary "Return the list of saved clips."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-clips)" :note "Empty. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-save-clip (list 'id \"c1\" 'start 60 'end 120)) (podcast-clips))" :note "One. Returns a one-element list.")
+    (:tier "intermediate" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-save-clip (list 'id \"c2\")) (length (podcast-clips)))" :note "Two. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-save-clip (list 'id \"c1\" 'title \"intro\")) (map (lambda (c) (obj-get c 'title)) (podcast-clips)))" :note "Titles. Returns (\"intro\").")
+    (:tier "master"    :code "(define (export-clips) (list 'clips (map (lambda (c) (list (obj-get c 'id) (obj-get c 'start) (obj-get c 'end))) (podcast-clips)))) (begin (podcast-save-clip (list 'id \"c1\" 'start 60 'end 120)) (export-clips))" :note "Export. Returns (clips ((\"c1\" 60 120)))."))
+  :related ("podcast-save-clip" "podcast-delete-clip")
+  :caveats ("Snapshot only.")
+  :drawbacks ("No sort.")
+  :usecases ("Clip UI." "Export.")
+  :learn (:concept "Read-side snapshot." :prerequisites ("podcast-save-clip") :progression "Learn save + delete.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of alists")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return clips.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return saved clips." :long "Snapshot." :for-ai "List." :for-kid "See your saved podcast clips.")))
+
+(verb
+  :name "podcast-save-clip"
+  :library "podcast"
+  :signature "(podcast-save-clip clip-alist) -> new-count | error-triple"
+  :summary "Save a clip (alist with id, start, end, title, etc.) to the clips list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-save-clip (list 'id \"c1\" 'start 60 'end 120))" :note "Save. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-save-clip (list 'id \"c2\")))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(podcast-save-clip \"bad\")" :note "Bad type. Returns (error bad-clip \"expected an alist\").")
+    (:tier "expert"    :code "(define (clip-at start end) (podcast-save-clip (list 'id (number->string start) 'start start 'end end))) (clip-at 30 45)" :note "Wrapped. Returns 1.")
+    (:tier "master"    :code "(define (batch-save clips) (map podcast-save-clip clips)) (batch-save (list (list 'id \"a\") (list 'id \"b\") (list 'id \"c\")))" :note "Bulk. Returns (1 2 3)."))
+  :related ("podcast-clips" "podcast-delete-clip")
+  :caveats ("Bad type returns error triple." "No dedup — same id twice creates two entries.")
+  :drawbacks ("No validation of start/end.")
+  :usecases ("Clip button." "Auto-save on marker.")
+  :learn (:concept "Append to clips list." :prerequisites () :progression "Learn delete + clips.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "clips.push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (bad-clip) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Save a clip." :long "Append clip to clips list." :for-ai "Append." :for-kid "Save a snippet from a podcast.")))
+
+(verb
+  :name "podcast-delete-clip"
+  :library "podcast"
+  :signature "(podcast-delete-clip clip-id) -> count-removed"
+  :summary "Delete a saved clip by id."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-delete-clip \"c1\")" :note "Nothing saved. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-delete-clip \"c1\"))" :note "Save then delete. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-save-clip (list 'id \"c2\")) (podcast-delete-clip \"c1\") (length (podcast-clips)))" :note "One left. Returns 1.")
+    (:tier "expert"    :code "(define (delete-all) (map (lambda (c) (podcast-delete-clip (obj-get c 'id))) (podcast-clips))) (begin (podcast-save-clip (list 'id \"a\")) (podcast-save-clip (list 'id \"b\")) (delete-all))" :note "Bulk. Returns (1 1).")
+    (:tier "master"    :code "(define (delete-if pred) (fold (lambda (acc c) (if (pred c) (+ acc (podcast-delete-clip (obj-get c 'id))) acc)) 0 (podcast-clips))) (begin (podcast-save-clip (list 'id \"a\" 'tag 'old)) (podcast-save-clip (list 'id \"b\" 'tag 'new)) (delete-if (lambda (c) (equal? (obj-get c 'tag) 'old))))" :note "Conditional delete. Returns 1."))
+  :related ("podcast-clips" "podcast-save-clip")
+  :caveats ("Match by id field on the clip alist.")
+  :drawbacks ("No batch delete-by-id.")
+  :usecases ("Delete button." "Cleanup old clips.")
+  :learn (:concept "Remove-if-id-matches." :prerequisites ("podcast-save-clip") :progression "Learn save mirror.")
+  :+math (:algebra () :total #t :domain "string|symbol" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter by id; return count removed."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Delete a clip by id." :long "Remove all clips with matching id." :for-ai "Remove-if-match." :for-kid "Delete a saved clip.")))
+
+;; ─── podcast rate / history / mentions ────────────────────────────
+
+(verb
+  :name "podcast-rate"
+  :library "podcast"
+  :signature "(podcast-rate guid rating) -> rating"
+  :summary "Set a numeric rating for an episode; overwrites prior rating; returns the rating."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-rate \"ep-42\" 5)" :note "Rate. Returns 5.")
+    (:tier "apprentice" :code "(podcast-rate \"ep-42\" 4.5)" :note "Fractional. Returns 4.5.")
+    (:tier "intermediate" :code "(begin (podcast-rate \"a\" 3) (podcast-rate \"a\" 5))" :note "Overwrite. Returns 5.")
+    (:tier "expert"    :code "(define (rate-multiple pairs) (map (lambda (p) (podcast-rate (car p) (cadr p))) pairs)) (rate-multiple (list (list \"a\" 5) (list \"b\" 4) (list \"c\" 3)))" :note "Bulk. Returns (5 4 3).")
+    (:tier "master"    :code "(define (rate-then-tag guid r tag) (list (podcast-rate guid r) tag)) (rate-then-tag \"a\" 5 'starred)" :note "Rate + tag pipeline. Returns (5 starred)."))
+  :related ("podcast-current" "podcast-state")
+  :caveats ("No range check." "Overwrite semantics.")
+  :drawbacks ("No historical / recency tracking.")
+  :usecases ("Star rating." "Sort-by-rating.")
+  :learn (:concept "Idempotent set of guid → rating." :prerequisites () :progression "Learn state for read-side.")
+  :+math (:algebra () :total #t :domain "guid + number" :codomain "number")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "rates[guid] = rating."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Rate an episode." :long "Set numeric rating; overwrites prior." :for-ai "Idempotent set." :for-kid "Give a podcast episode a star rating.")))
+
+(verb
+  :name "podcast-clear-history"
+  :library "podcast"
+  :signature "(podcast-clear-history) -> count-cleared"
+  :summary "Clear the play history; returns how many guids were cleared."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-clear-history)" :note "Empty history. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-load (list 'audio-url \"a\")) (podcast-clear-history))" :note "One in history (from load). Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-load (list 'audio-url \"a\")) (podcast-load (list 'audio-url \"b\")) (podcast-clear-history))" :note "Two. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-load (list 'audio-url \"a\")) (podcast-clear-history) (podcast-clear-history))" :note "Second clear is 0. Returns 0.")
+    (:tier "master"    :code "(define (cleanup-and-report) (let ((n (podcast-clear-history))) (list 'cleared n))) (begin (podcast-load (list 'audio-url \"a\")) (cleanup-and-report))" :note "Cleanup + report. Returns (cleared 1)."))
+  :related ("podcast-load" "podcast-state")
+  :caveats ("Irreversible — history is gone." "Does not affect subscriptions or bookmarks.")
+  :drawbacks ("No selective clear (all-or-nothing).")
+  :usecases ("Privacy cleanup." "New-user onboarding.")
+  :learn (:concept "Bulk clear of play history." :prerequisites () :progression "Learn history-preserving verbs.")
+  :+math (:algebra () :total #t :domain "()" :codomain "count")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "n = history.length; history = []; return n."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Clear play history." :long "Wipe history; return count cleared." :for-ai "Bulk clear." :for-kid "Erase the record of what you listened to.")))
+
+(verb
+  :name "podcast-record-mention"
+  :library "podcast"
+  :signature "(podcast-record-mention mention) -> new-count | error-triple"
+  :summary "Record a mention (alist or string) into the mentions log."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-record-mention \"heard about Rust\")" :note "String. Returns 1.")
+    (:tier "apprentice" :code "(podcast-record-mention (list 'topic 'physics 'ep \"e-01\"))" :note "Alist. Returns 1 (or 2 if a prior test added one).")
+    (:tier "intermediate" :code "(podcast-record-mention 42)" :note "Bad type. Returns (error bad-mention ...).")
+    (:tier "expert"    :code "(define (log-topic t) (podcast-record-mention (list 'topic t))) (map log-topic (list 'a 'b 'c))" :note "Bulk. Returns (1 2 3).")
+    (:tier "master"    :code "(define (weekly-report) (list 'mentions-this-week 3)) (weekly-report)" :note "Report shape. Returns (mentions-this-week 3)."))
+  :related ("podcast-publish-insight")
+  :caveats ("Only alist or string accepted.")
+  :drawbacks ("No timestamp.")
+  :usecases ("Topic tracker." "Recommendation seeder.")
+  :learn (:concept "Append to mentions log." :prerequisites () :progression "Learn publish-insight for the publish side.")
+  :+math (:algebra () :total #t :domain "alist|string" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-mention) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Record a mention." :long "Log a mention (alist or string) for later reference." :for-ai "Append." :for-kid "Write down something interesting you heard.")))
+
+(verb
+  :name "podcast-publish-insight"
+  :library "podcast"
+  :signature "(podcast-publish-insight insight) -> new-count | error-triple"
+  :summary "Publish an insight derived from the podcast into the insight feed."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-publish-insight \"important idea\")" :note "String. Returns 1.")
+    (:tier "apprentice" :code "(podcast-publish-insight (list 'topic 'ml 'confidence 0.9))" :note "Alist. Returns count.")
+    (:tier "intermediate" :code "(podcast-publish-insight #f)" :note "Bad type. Returns (error bad-insight ...).")
+    (:tier "expert"    :code "(define (publish-from-current) (let ((c (podcast-current))) (if c (podcast-publish-insight (list 'guid (obj-get c 'audio-url))) 'no-episode))) (publish-from-current)" :note "Guarded publish. Returns 'no-episode when nothing loaded.")
+    (:tier "master"    :code "(define (auto-insight text score) (podcast-publish-insight (list 'text text 'score score))) (auto-insight \"Rust is fast\" 0.85)" :note "Structured insight. Returns count."))
+  :related ("podcast-record-mention" "podcast-current")
+  :caveats ("Alist or string only.")
+  :drawbacks ("No dedup.")
+  :usecases ("Auto-insight from LLM." "Manual insight publishing.")
+  :learn (:concept "Publish to the insight feed." :prerequisites () :progression "Learn record-mention for the input side.")
+  :+math (:algebra () :total #t :domain "alist|string" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; append tagged as 'insight."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.5" :needs-consent #f :idempotent #f :cortex-touch write)
+  :+ai (:raises (bad-insight) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Publish an insight." :long "Publish an insight (alist or string) to the feed." :for-ai "Append tagged." :for-kid "Share a smart thought about a podcast.")))
