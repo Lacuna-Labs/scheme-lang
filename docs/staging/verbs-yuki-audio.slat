@@ -1319,3 +1319,206 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Chord on an orchestral section. Multi-voice, one-shot. pending-audio in REPL."))
+
+(verb
+  :name "synth/orch"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/orch section pitch [dur [dynamic [articulation]]]) -> [status info]"
+  :summary "Play a single note on an orchestral section (violin, cello, trumpet, etc.) with dynamic and articulation control."
+  :impl-status "wired-pending"
+  :explanation "synth/orch is the single-voice orchestral verb. Give it a section symbol ('violin, 'cello, 'viola, 'trumpet, 'trombone, 'horn, 'oboe, 'clarinet, etc.), a pitch (MIDI number or symbol), and optional duration (seconds), dynamic (0..1), and articulation ('legato, 'staccato, 'portamento). Under a live host it plays the note through the section's timbre; in REPL it returns [pending-audio {section pitch duration dynamic articulation}]. Layer multiple calls to build chords or polyphonic lines."
+  :examples (
+    (:tier "novice"
+     :code "(synth/orch (quote violin) 60 1.0)"
+     :note "Play a violin C4 for one second at defaults. Returns (pending-audio #<object>).")
+    (:tier "apprentice"
+     :code "(synth/orch (quote cello) 48 2.0 0.7 (quote legato))"
+     :note "Cello C3, two-second legato, moderate dynamic. All arguments used.")
+    (:tier "intermediate"
+     :code "(map (lambda (p) (synth/orch (quote trumpet) p 0.5)) (list 60 64 67 72))"
+     :note "Four trumpet notes: C4 E4 G4 C5 — an ascending arpeggio. Half-second each.")
+    (:tier "expert"
+     :code "(define (arpeggio section pitches dur) (for-each (lambda (p) (synth/orch section p dur 0.6 (quote staccato))) pitches)) (arpeggio (quote trumpet) (list 60 64 67 72) 0.4)"
+     :note "A reusable arpeggio helper: staccato notes on any section. Builds a punchy fanfare from a pitch list.")
+    (:tier "master"
+     :code "(let* ((sections (list (quote violin) (quote cello) (quote trumpet))) (results (map (lambda (s) (synth/orch s 60 1)) sections))) (list (quote fired) (length results) (quote voices)))"
+     :note "Play the same C4 on three sections simultaneously — a small ensemble. Returns (fired 3 voices).")
+  )
+  :caveats
+    ("Section name must be recognised by the host; unknown returns pending-audio in REPL."
+     "Pitch as MIDI number (0-127) or symbol ('C4, 'Fs3)."
+     "Requires audio/listen 'ok under live host."
+     "Multiple calls layer; they do not replace.")
+  :drawbacks
+    ("Onset latency; scheduling is async."
+     "Limited articulation palette."
+     "No ADSR envelope exposed at this level.")
+  :usecases
+    ("Compose orchestral underscores."
+     "Real-time orchestration in response to player input."
+     "Cinematic cue notes and stabs.")
+  :related ("synth/chord" "synth/orchestra" "synth/play" "synth/808")
+  :learn
+    (:concept "Single-voice orchestral synthesis — the polyphonic building block."
+     :prerequisites ("audio/listen" "synth/orchestra")
+     :progression "Play a note. Then layer three notes for a chord. Then use synth/chord for a cleaner API. Then move to synth/play for whole scores.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:189-190. Returns [pending-audio {section, pitch, duration, dynamic, articulation}]. Host binds to live section synths."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio); apprentice=(pending-audio); intermediate=4 pairs; expert=undefined; master=(fired 3 voices)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen" "synth/orchestra")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Confusing pitch as frequency vs MIDI number. Passing dynamic as symbol expecting keyword — it's a number 0..1."
+     :when-not-to-use "You want a full chord — use synth/chord. You want a score — use synth/play.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Single-voice orchestral note. Section + pitch + envelope. pending-audio in REPL."))
+
+(verb
+  :name "synth/orchestra"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/orchestra hall) -> [ok info]"
+  :summary "Configure the orchestral reverb/hall model; subsequent synth/orch calls play through this acoustic space."
+  :impl-status "wired-partial"
+  :explanation "synth/orchestra sets the acoustic environment for orchestral synthesis. Give it a hall name (a symbol: 'concert, 'chamber, 'studio, 'cathedral, etc.) and it configures the reverb/space that colours every following synth/orch call. Under a live host it swaps the DSP reverb chain; in REPL it returns [ok {hall}] — recording the intent. This is one of the few synth/* verbs that returns 'ok even without a live host because setting state is a valid pure operation."
+  :examples (
+    (:tier "novice"
+     :code "(synth/orchestra (quote concert))"
+     :note "Switch to a concert-hall reverb. Returns (ok #<object>).")
+    (:tier "apprentice"
+     :code "(let ((r (synth/orchestra (quote chamber)))) (car r))"
+     :note "Extract the status tag from the result. Returns ok.")
+    (:tier "intermediate"
+     :code "(map synth/orchestra (list (quote concert) (quote chamber) (quote studio)))"
+     :note "Cycle through three halls in one map. Under a live host the last one wins.")
+    (:tier "expert"
+     :code "(define (set-hall mood) (cond ((equal? mood (quote intimate)) (synth/orchestra (quote chamber))) ((equal? mood (quote grand)) (synth/orchestra (quote concert))) (else (synth/orchestra (quote studio))))) (set-hall (quote grand))"
+     :note "Dispatch on a semantic mood tag to choose an acoustic environment. Returns (ok #<object>).")
+    (:tier "master"
+     :code "(for-each synth/orchestra (list (quote concert) (quote chamber) (quote studio) (quote cathedral)))"
+     :note "Cycle through four halls with for-each. Under a live host: the reverb tail changes with each call. Returns undefined (for-each contract).")
+  )
+  :caveats
+    ("Hall name must be known to the host; unknown names may still return ok in REPL."
+     "Switching halls disconnects the previous reverb tail — long tails may cut abruptly."
+     "Global — all synth/orch calls after the switch use the new hall.")
+  :drawbacks
+    ("No parameter tweaking (reverb time, diffusion); halls are presets."
+     "Latency on switch — DSP reallocation is not instantaneous.")
+  :usecases
+    ("Scene ambience: switch from 'studio (rehearsal) to 'concert (performance)."
+     "Match the hall to the composition (chamber for quartet, concert for orchestra)."
+     "Emotional colouring via acoustic space.")
+  :related ("synth/orch" "synth/chord" "synth/play")
+  :learn
+    (:concept "Acoustic environment modelling — how reverb defines the character of a sound."
+     :prerequisites ("synth/orch")
+     :progression "Set a hall. Then play a note. Then switch halls between sections of a piece.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:191-192. Returns [ok {hall}]. Host binds to a real reverb chain."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(ok); apprentice=ok; intermediate=3 (ok ...) pairs; expert=(ok); master=undefined."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("synth/orch" "synth/chord")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the hall applies to synth/808 or synth/kit — it does not; those have their own routing."
+     :when-not-to-use "You want per-source reverb control — use audio-graph opts directly.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Set orchestral reverb hall. State-change with [ok] return."))
+
+(verb
+  :name "synth/play"
+  :library "synth"
+  :kind "io"
+  :signature "(synth/play score tempo) -> [status info]"
+  :summary "Schedule and play a full musical score at a given tempo."
+  :impl-status "wired-pending"
+  :explanation "synth/play takes a structured score object — a plist with :tracks — and a tempo in BPM. Under a live host it schedules every note of every track into the audio timeline; in REPL it returns [pending-audio {score tempo}]. Score shape: (tracks ((notes (pitches ...)) ...)) at minimum; hosts may accept extended shapes with per-note duration, dynamics, etc. The high-level composition verb complementing synth/orch (single note), synth/chord (single chord), and synth/kit (drum pattern)."
+  :examples (
+    (:tier "novice"
+     :code "(synth/play (list (quote tracks) (list (list (quote notes) (list 60 64 67)))) 120)"
+     :note "Play a three-note score at 120 BPM. Returns (pending-audio #<object>).")
+    (:tier "apprentice"
+     :code "(let* ((score (list (quote tracks) (list (list (quote notes) (list 60 62 64))))) (r (synth/play score 100))) (car r))"
+     :note "Play a small ascending line at 100 BPM. Returns pending-audio.")
+    (:tier "intermediate"
+     :code "(map (lambda (tempo) (synth/play (list (quote tracks) (list (list (quote notes) (list 60)))) tempo)) (list 90 120 150))"
+     :note "Play the same single-note score at three different tempos. Returns three pending-audio pairs.")
+    (:tier "expert"
+     :code "(define (play-simple pitches tempo) (synth/play (list (quote tracks) (list (list (quote notes) pitches))) tempo)) (play-simple (list 60 62 64 65 67) 110)"
+     :note "A reusable helper that builds a one-track score from a pitch list and tempo. Composition-friendly shape.")
+    (:tier "master"
+     :code "(let* ((tempos (list 60 90 120 150 180)) (fired (map (lambda (t) (synth/play (list (quote tracks) (list (list (quote notes) (list 60)))) t)) tempos))) (list (quote all-tempos-fired) (length fired)))"
+     :note "Sweep across five tempos, all playing the same C4. Real carts extend the shape with per-note durations and articulation.")
+  )
+  :caveats
+    ("Score must be a proper plist with :tracks. Bare pitch lists are not scores."
+     "Tempo is BPM; scheduling drift may occur without a live master clock."
+     "Once scheduled under live host, the score plays to completion; there's no mid-play insert.")
+  :drawbacks
+    ("No real-time note editing — pre-compose the score."
+     "Memory scales with score length; huge scores warrant streaming, not buffering."
+     "Envelope curves are host-default; custom shapes need per-note modulation.")
+  :usecases
+    ("Background music tracks."
+     "Rhythm games with pre-composed accompaniment."
+     "Procedurally-generated music from data.")
+  :related ("synth/orch" "synth/chord" "synth/kit" "synth/load-score" "audio/tempo")
+  :learn
+    (:concept "Data-as-score — representing music as a list structure that a scheduler plays."
+     :prerequisites ("synth/orch" "(core)/list")
+     :progression "Play a three-note score. Then two tracks. Then generate from data. Then load pre-authored scores with synth/load-score.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:193-194. Returns [pending-audio {score, tempo}]. Host binds to a real scheduler."
+     :permission "state-change"
+     :latency-class "async-quick"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio); apprentice=pending-audio; intermediate=3 pairs; expert=(pending-audio); master=(all-tempos-fired 5)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/onset?" "synth/onset-tap")
+     :consumes-from ("synth/load-score")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Passing a raw pitch list expecting a score wrap. Forgetting the tempo argument."
+     :when-not-to-use "You want a single voice — use synth/orch. You want drums only — use synth/kit.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Score-based playback. Multi-track. Tempo-locked. pending-audio in REPL."))
