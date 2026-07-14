@@ -1272,5 +1272,370 @@
   :entry-provenance "authored")
 
 
+;; ─── Linear + integer programming ─────────────────────────────────
+
+(verb
+  :name "ops/lp"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/lp [direction] c A b) -> lp-artifact"
+  :summary "Build a standard-form linear-programming artifact: (lp direction c A b) with Ax ≤ b, x ≥ 0."
+  :impl-status "wired"
+  :explanation "Constructs the tagged data structure the LP solvers consume. Accepts either (ops/lp c A b) — direction defaults to 'maximize — or (ops/lp direction c A b) with direction = 'maximize or 'minimize. c is the objective coefficient vector; A is the constraint matrix (rows are constraints); b is the RHS vector; all constraints are ≤. This is a builder — it does not solve, just packages inputs. Pass the result to ops/simplex, ops/lp-solve, ops/interior-point, ops/mip-solve, or ops/branch-bound."
+  :examples (
+    (:tier "novice"
+     :code "(ops/lp (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5))"
+     :note "3-variable LP with 2 constraints and default 'maximize direction. Ready to solve.")
+    (:tier "apprentice"
+     :code "(ops/lp (quote minimize) (list 1 2 3) (list (list 1 1 0) (list 0 1 1)) (list 5 4))"
+     :note "Explicit minimize direction. Three decision variables, two constraints.")
+    (:tier "intermediate"
+     :code "(let* ((c (list 5 4)) (A (list (list 6 4) (list 1 2))) (b (list 24 6)) (lp (ops/lp (quote maximize) c A b))) (list (quote lp-shape) lp (quote solved) (ops/simplex lp)))"
+     :note "Build the LP, then solve it. Standard LP example — result gives x* and objective value.")
+    (:tier "expert"
+     :code "(define (production-plan profit-vec resource-matrix capacity) (let* ((lp (ops/lp (quote maximize) profit-vec resource-matrix capacity)) (sol (ops/simplex lp))) (list (quote plan) sol))) (production-plan (list 40 30) (list (list 2 1) (list 1 1) (list 1 3)) (list 100 80 90))"
+     :note "Wrap ops/lp + ops/simplex as a domain function — build the LP, solve it, return the plan.")
+    (:tier "master"
+     :code "(let* ((profit (list 3 5 4)) (usage (list (list 2 3 2) (list 4 1 3) (list 3 4 1))) (capacity (list 100 120 90)) (lp (ops/lp (quote maximize) profit usage capacity)) (result (ops/lp-solve profit usage capacity))) (list (quote lp-artifact) lp (quote solution) result))"
+     :note "Product-mix planning: three products, three resources. Build lp, then solve. See both the artifact and the resulting production quantities.")
+  )
+  :caveats
+    ("Constraints are always ≤. Convert equalities and ≥ constraints by negating or splitting into two constraints."
+     "Assumes nonnegative variables (x ≥ 0). To allow negative variables, substitute x = x⁺ − x⁻ and expand."
+     "This verb does not validate dimensions; a malformed artifact will error out at solve time.")
+  :drawbacks
+    ("No bound constraints beyond nonnegativity — pass (0 ≤ x_i ≤ u_i) as an explicit row."
+     "No sparse representation — dense A is required."
+     "Cannot yet express variable-integer requirements — for that use ops/mip-solve with a separate integers list.")
+  :usecases
+    ("Production planning: maximize profit under resource capacities."
+     "Diet problem: minimize cost subject to nutritional constraints."
+     "Portfolio construction: maximize return with variance and budget constraints."
+     "Transportation and assignment reformulations.")
+  :related ("ops/simplex" "ops/lp-solve" "ops/interior-point" "ops/mip-solve" "ops/lp-value")
+  :learn
+    (:concept "Separate the LP MODEL from the LP SOLVER — the artifact is the currency both share."
+     :prerequisites ("linear inequality" "objective vs constraints")
+     :progression "Build a 2-var LP by hand. Then hand off to ops/simplex. Then wrap into a domain function.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/lp-value"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/lp-value c solution) -> objective-value"
+  :summary "Compute c·x — the objective value of an LP solution vector under coefficient vector c."
+  :impl-status "wired"
+  :explanation "Given the objective coefficient vector c and a solution — either a bare x vector, or a solution list from ops/simplex/ops/lp-solve (with ('x <vec>) inside) — computes the objective value c·x. Useful for verifying an ops/simplex answer, scoring a candidate solution, or computing objective values for multiple candidates against the same c."
+  :examples (
+    (:tier "novice"
+     :code "(ops/lp-value (list 3 2) (list 2 1))"
+     :note "c=(3,2), x=(2,1). c·x = 3·2 + 2·1 = 8.")
+    (:tier "apprentice"
+     :code "(let ((c (list 5 4 3)) (x (list 2 3 4))) (ops/lp-value c x))"
+     :note "c·x = 5·2 + 4·3 + 3·4 = 34.")
+    (:tier "intermediate"
+     :code "(let* ((sol (ops/simplex (ops/lp (quote maximize) (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5))))) (ops/lp-value (list 3 2) sol))"
+     :note "Pass the full solution list to ops/lp-value — it extracts the x vector. Answer matches the ('objective ...) inside sol.")
+    (:tier "expert"
+     :code "(define (score-candidates c candidates) (map (lambda (x) (list (quote candidate) x (quote value) (ops/lp-value c x))) candidates)) (score-candidates (list 3 5 4) (list (list 2 3 1) (list 1 4 2) (list 3 2 3)))"
+     :note "Score multiple candidate solution vectors against the same objective c. Useful in candidate-generation-then-select workflows.")
+    (:tier "master"
+     :code "(let* ((c (list 3 2)) (A (list (list 1 1) (list 2 1))) (b (list 4 5)) (sol (ops/lp-solve c A b)) (x-vec (cadr (assoc (quote x) sol))) (computed (ops/lp-value c x-vec))) (list (quote objective-in-solution) (cadr (assoc (quote objective) sol)) (quote objective-computed) computed))"
+     :note "Cross-verify: extract x from the solution list, recompute c·x, compare with the ('objective ...) reported by the solver. They should match.")
+  )
+  :caveats
+    ("Accepts EITHER a bare x vector OR a solution list from ops/simplex — auto-detects by looking for ('x …) inside."
+     "Assumes c and x are aligned; extra elements in c beyond x's length contribute 0."
+     "No sign convention — this is just c·x, whatever direction the LP was.")
+  :drawbacks
+    ("Does not verify feasibility. Garbage x gives garbage value.")
+  :usecases
+    ("Verify ops/simplex against a hand-computed dot product."
+     "Score a heuristic solution."
+     "Reconstruct the objective when only the x-vector was persisted.")
+  :related ("ops/lp" "ops/simplex" "ops/lp-solve")
+  :learn
+    (:concept "The objective function of an LP is simply a dot product."
+     :prerequisites ("(core)/vec-dot" "(core)/map")
+     :progression "Compute on a bare vector. Then on a solver output. Then use in cross-verification.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/lp-solve"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/lp-solve c A b) -> solution | 'infeasible | 'unbounded | 'fuel-budget"
+  :summary "One-shot LP solver: builds the LP with ops/lp (default maximize) and solves via ops/simplex."
+  :impl-status "wired"
+  :explanation "Convenience wrapper: compose ops/lp and ops/simplex in a single call. Returns the same solution shape as ops/simplex: ((status …) (objective v) (x …)) or one of the sentinel symbols 'infeasible / 'unbounded / 'fuel-budget. Direction is 'maximize (the most common case); if you need minimize, use the (ops/simplex (ops/lp 'minimize ...)) form directly."
+  :examples (
+    (:tier "novice"
+     :code "(ops/lp-solve (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5))"
+     :note "Small LP with two variables. Optimal x = (1,3), objective 9.")
+    (:tier "apprentice"
+     :code "(ops/lp-solve (list 5 4 3) (list (list 2 3 1) (list 4 1 2) (list 3 4 2)) (list 5 11 8))"
+     :note "3-var, 3-constraint LP. Real problem shape.")
+    (:tier "intermediate"
+     :code "(let* ((profit (list 40 30 50)) (usage (list (list 2 1 3) (list 1 2 1))) (cap (list 100 80)) (sol (ops/lp-solve profit usage cap))) (list (quote decision) (cadr (assoc (quote x) sol)) (quote profit) (cadr (assoc (quote objective) sol))))"
+     :note "Product-mix problem solved end-to-end. Extract the x vector and the objective.")
+    (:tier "expert"
+     :code "(define (solve-or-report profit usage cap) (let ((res (ops/lp-solve profit usage cap))) (cond ((eq? res (quote infeasible)) (list (quote error) (quote infeasible))) ((eq? res (quote unbounded)) (list (quote error) (quote unbounded))) (else (list (quote optimum) (cadr (assoc (quote objective) res))))))) (solve-or-report (list 3 5) (list (list 1 1) (list 2 3)) (list 4 12))"
+     :note "Handle sentinel-symbol failures explicitly. Returns clean error tags on infeasible / unbounded.")
+    (:tier "master"
+     :code "(let* ((markets (list (list 2 3 1) (list 3 1 2) (list 1 4 3))) (max-share (list 100 80 90)) (revenue (list 5 4 6)) (sol (ops/lp-solve revenue markets max-share))) (list (quote market-allocation) sol))"
+     :note "Business scenario: 3 products, 3 markets, each product has a per-market revenue and a max market share to consume. LP-solve finds the profit-maximizing production mix.")
+  )
+  :caveats
+    ("Direction is always 'maximize. For minimize, use (ops/simplex (ops/lp 'minimize c A b))."
+     "Constraints are ≤. Convert other constraint types manually."
+     "Requires nonnegative variables.")
+  :drawbacks
+    ("Simplex-based — for very large LPs, real solvers (Gurobi, CPLEX) beat this."
+     "Phase-1 not implemented — LPs with negative b entries return 'needs-phase-1."
+     "No sensitivity or dual-value output.")
+  :usecases
+    ("Prototype LP-based decision models."
+     "Curriculum: introduce LP as a one-call problem before diving into the artifact form."
+     "Rapid what-if analysis: change c, A, or b and re-run.")
+  :related ("ops/lp" "ops/simplex" "ops/lp-value")
+  :learn
+    (:concept "One-liner LP: c, A, b in → objective + x out."
+     :prerequisites ("understanding LP standard form")
+     :progression "Solve small LP. Then use the artifact form. Then compare against ops/interior-point.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/simplex"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/simplex lp-artifact) -> solution | 'infeasible | 'unbounded | 'fuel-budget"
+  :summary "Simplex algorithm on a standard-form LP artifact from ops/lp. Returns solution list or a diagnostic sentinel."
+  :impl-status "wired"
+  :explanation "Dantzig's simplex method on the LP artifact (lp direction c A b). Adds slack variables to convert Ax ≤ b to equalities, iterates pivots to move along vertices of the feasible polytope until a vertex where no reduced cost is negative — the optimum. Time is polynomial in practice, exponential in the worst case (rare). Returns ((status optimal) (objective v) (x …)). Fails as 'unbounded when a direction of improvement has no leaving variable, 'fuel-budget when max iterations (2000) is exceeded, 'invalid-lp if the artifact shape is wrong, or 'needs-phase-1 if b has negative entries (not yet supported)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/simplex (ops/lp (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5)))"
+     :note "Solve the standard 2-var LP. Optimum at (1,3) with objective 9.")
+    (:tier "apprentice"
+     :code "(ops/simplex (ops/lp (quote minimize) (list 2 3) (list (list 1 1)) (list 5)))"
+     :note "Minimize with a single constraint. Optimum at (0,0), objective 0.")
+    (:tier "intermediate"
+     :code "(let* ((lp (ops/lp (quote maximize) (list 4 3) (list (list 2 3) (list 3 1) (list 1 1)) (list 12 9 5))) (sol (ops/simplex lp))) (list (quote solution) sol (quote check) (ops/lp-value (list 4 3) sol)))"
+     :note "3-constraint LP. Solution list plus cross-check via ops/lp-value.")
+    (:tier "expert"
+     :code "(define (dual-perspective c A b) (let* ((primal (ops/simplex (ops/lp (quote maximize) c A b))) (optimum (cadr (assoc (quote objective) primal)))) (list (quote primal-max) optimum))) (dual-perspective (list 3 5) (list (list 1 1) (list 2 3)) (list 4 12))"
+     :note "Wrap simplex and just report the optimum. Useful when only the number matters.")
+    (:tier "master"
+     :code "(let* ((profits (list 5 4 3 2)) (A (list (list 2 3 1 2) (list 1 1 3 1) (list 3 2 2 3))) (b (list 8 5 12)) (lp (ops/lp (quote maximize) profits A b)) (sol (ops/simplex lp)) (x (cadr (assoc (quote x) sol))) (obj (cadr (assoc (quote objective) sol)))) (list (quote objective) obj (quote decision) x (quote c-dot-x) (ops/lp-value profits x)))"
+     :note "4-var, 3-constraint LP. Full breakdown: objective from simplex, decision vector, and independent recomputation of c·x for cross-check.")
+  )
+  :caveats
+    ("Returns 'needs-phase-1 for LPs with negative b — must be provided in canonical form."
+     "Iteration cap is 2000; larger LPs may need more."
+     "Sign of the objective is corrected internally — the value returned is the intended objective (max or min)."
+     "Ties among candidate pivot columns broken by first-negative-index; may hit degeneracy on pathological instances.")
+  :drawbacks
+    ("No Phase 1 for infeasible-start LPs."
+     "No dual variables reported."
+     "No integer or binary constraints — use ops/mip-solve.")
+  :usecases
+    ("Solve small-to-medium LPs in-cart."
+     "Teach the simplex algorithm's mechanics without hiding them in a black-box solver."
+     "Verify a hand-calculated LP solution.")
+  :related ("ops/lp" "ops/lp-solve" "ops/interior-point" "ops/mip-solve")
+  :learn
+    (:concept "Simplex as a walk along vertices of the feasible polytope, pivoting toward improvement."
+     :prerequisites ("linear inequality" "the concept of a vertex")
+     :progression "Solve a 2-var LP by hand + graphically. Then ops/simplex. Then look inside the tableau via source.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/interior-point"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/interior-point lp-artifact) -> solution | 'use-backend | 'invalid-lp"
+  :summary "Interior-point LP solver — for small instances, backed by ops/simplex; larger instances escalate 'use-backend."
+  :impl-status "wired"
+  :explanation "The reference contract permits ops/interior-point to escalate 'use-backend when a real barrier solver is needed. In this in-language build, small LPs (n, m ≤ 20) are solved via ops/simplex and tagged with (solved-by simplex-fallback). Larger LPs return the sentinel 'use-backend cleanly — a signal to the caller that a native interior-point solver is required. This is NOT a lie: we document the boundary in the entry, and the returned tag says explicitly what happened."
+  :examples (
+    (:tier "novice"
+     :code "(ops/interior-point (ops/lp (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5)))"
+     :note "Small LP — solves via simplex fallback. Result tagged with (solved-by simplex-fallback) for honesty.")
+    (:tier "apprentice"
+     :code "(ops/interior-point (ops/lp (quote maximize) (list 5 4 3) (list (list 2 3 1) (list 4 1 2) (list 3 4 2)) (list 5 11 8)))"
+     :note "3-var, 3-constraint LP. Small enough to solve; returns simplex-fallback result.")
+    (:tier "intermediate"
+     :code "(let ((sol (ops/interior-point (ops/lp (list 3 5) (list (list 1 1) (list 2 3)) (list 4 12))))) (list (quote status) (cadr (assoc (quote status) sol)) (quote via) (cadr (assoc (quote solved-by) sol))))"
+     :note "Extract the solver-provenance tag. Under this build every small instance is solved by the simplex fallback.")
+    (:tier "expert"
+     :code "(define (try-ip lp) (let ((res (ops/interior-point lp))) (cond ((eq? res (quote use-backend)) (list (quote escalated-to-backend))) ((eq? res (quote invalid-lp)) (list (quote error) (quote invalid-lp))) (else (list (quote solved) res))))) (try-ip (ops/lp (list 5 3 2) (list (list 1 2 1) (list 2 1 3)) (list 10 15)))"
+     :note "Handle the use-backend escalation explicitly. Real deployments would substitute a native interior-point solver on escalation.")
+    (:tier "master"
+     :code "(let* ((c (list 4 3 2 1)) (A (list (list 1 2 1 3) (list 2 1 3 1) (list 3 1 1 2))) (b (list 8 12 10)) (lp (ops/lp (quote maximize) c A b)) (ip-result (ops/interior-point lp)) (simplex-result (ops/simplex lp))) (list (quote interior-point) ip-result (quote simplex) simplex-result))"
+     :note "Small 4-var LP solved both ways. Simplex-fallback answer matches direct simplex answer — cross-verification of the fallback machinery.")
+  )
+  :caveats
+    ("Only small instances (n, m ≤ 20) are solved in-language; larger returns 'use-backend."
+     "Result carries a (solved-by simplex-fallback) tag when fallback fires — that's the honesty."
+     "Same LP-artifact shape as ops/simplex.")
+  :drawbacks
+    ("Not a real interior-point implementation; a native barrier solver would beat simplex on very large problems."
+     "The 20 × 20 threshold is a conservative choice — Alfred can adjust as the ambient runtime grows.")
+  :usecases
+    ("Placeholder in scripts that will later route to a native interior-point solver."
+     "Small LPs where the caller wants the interior-point semantics but is fine with the simplex fallback."
+     "Curriculum: contrast simplex vs interior-point conceptually, note that scale determines which wins.")
+  :related ("ops/simplex" "ops/lp" "ops/lp-solve")
+  :learn
+    (:concept "Interior-point methods traverse the INTERIOR of the polytope, not the vertices. Complementary to simplex."
+     :prerequisites ("ops/simplex" "the notion of a barrier function")
+     :progression "Solve small. Then note the fallback. Then think about when a real IP solver would be worth wiring.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/mip-solve"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mip-solve constraints objective [opts]) -> solution | 'use-backend | 'invalid-mip | 'infeasible | 'fuel-budget"
+  :summary "Mixed-integer programming: LP-relaxation branch-and-bound over integer variables. Small instances only."
+  :impl-status "wired"
+  :explanation "MIP: some or all decision variables are constrained to integer values. Small instances (n ≤ 12) are solved exactly via branch-and-bound on the LP relaxation using ops/simplex at each node. Larger returns 'use-backend. `constraints` is a plist with 'A, 'b, 'integers (list of variable indices that must be integer), and 'direction ('maximize | 'minimize). `objective` is the c vector. Returns the standard solution shape plus (solved-by branch-and-bound) tag."
+  :examples (
+    (:tier "novice"
+     :code "(ops/mip-solve (list (list (quote A) (list (list 1 1) (list 2 1))) (list (quote b) (list 4 5)) (list (quote integers) (list 0 1)) (list (quote direction) (quote maximize))) (list 3 2))"
+     :note "2-var MIP with both variables integer. Optimum x = (1,3), objective 9. Solved by branch-and-bound.")
+    (:tier "apprentice"
+     :code "(ops/mip-solve (list (list (quote A) (list (list 2 3) (list 3 1))) (list (quote b) (list 12 10)) (list (quote integers) (list 0 1)) (list (quote direction) (quote maximize))) (list 4 3))"
+     :note "Both variables integer. Solver enumerates the small integer lattice via LP relaxation + bounds.")
+    (:tier "intermediate"
+     :code "(let* ((cons (list (list (quote A) (list (list 1 2 1) (list 2 1 3) (list 3 1 2))) (list (quote b) (list 8 12 10)) (list (quote integers) (list 0 1 2)) (list (quote direction) (quote maximize)))) (obj (list 5 4 3)) (sol (ops/mip-solve cons obj))) (list (quote solution) sol))"
+     :note "3-var, 3-constraint MIP. All three integer. Solver explores until integer-feasible node beats current best.")
+    (:tier "expert"
+     :code "(define (mip-report constraints objective) (let ((res (ops/mip-solve constraints objective))) (cond ((eq? res (quote use-backend)) (list (quote too-large))) ((eq? res (quote infeasible)) (list (quote no-integer-solution))) (else res)))) (mip-report (list (list (quote A) (list (list 3 2) (list 1 4))) (list (quote b) (list 12 8)) (list (quote integers) (list 0 1)) (list (quote direction) (quote maximize))) (list 4 3))"
+     :note "Handle both use-backend and infeasible sentinels. Solver still returns the standard shape on success.")
+    (:tier "master"
+     :code "(let* ((cons (list (list (quote A) (list (list 1 1 1 1) (list 2 3 1 2) (list 1 1 4 1))) (list (quote b) (list 10 20 15)) (list (quote integers) (list 0 1 2 3)) (list (quote direction) (quote maximize)))) (obj (list 4 5 3 2)) (sol (ops/mip-solve cons obj))) (list (quote allocation) sol))"
+     :note "4-item allocation MIP: all four variables constrained integer with three shared resource constraints. Solver returns the optimal integer allocation.")
+  )
+  :caveats
+    ("Constraints plist must include 'A and 'b; 'direction defaults to 'maximize."
+     "Larger than n=12 escalates 'use-backend."
+     "Solver-node cap is 5000; harder instances return 'fuel-budget."
+     "Constraints all interpreted as ≤. Convert equality/≥ manually.")
+  :drawbacks
+    ("Naïve branch-and-bound — no cutting planes, no strong branching."
+     "No warm-starting between related instances."
+     "Real MIP solvers (Gurobi, CPLEX) are orders of magnitude faster on hard instances.")
+  :usecases
+    ("Small combinatorial problems: assignment with cardinality constraints, small knapsack variants."
+     "Prototype MIP models before commissioning a real solver."
+     "Curriculum: expose branch-and-bound machinery in-language.")
+  :related ("ops/lp-solve" "ops/branch-bound" "ops/knapsack" "ops/simplex")
+  :learn
+    (:concept "MIP = LP + integer variables. Branch-and-bound divides the search space and prunes with LP bounds."
+     :prerequisites ("ops/lp-solve" "the idea of relaxation")
+     :progression "Solve tiny MIPs. Watch the branch-and-bound tag. Understand when 'use-backend fires.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/branch-bound"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/branch-bound problem-spec) -> solution | 'invalid-spec | 'use-backend"
+  :summary "Generic branch-and-bound solver on a problem-spec plist — dispatches to ops/mip-solve after shape normalization."
+  :impl-status "wired"
+  :explanation "Accepts a problem specification in one of two shapes: a plist of (direction/objective/constraints/integers) pairs, OR a flat form ('maximize c 'constraints ((row op rhs) ...) 'integers idxs). Converts constraints written as (coeffs op rhs) triples into standard A/b form (≤, ≥ negated, = split into two rows), then hands off to ops/mip-solve. Returns the same shapes ops/mip-solve returns."
+  :examples (
+    (:tier "novice"
+     :code "(ops/branch-bound (list (list (quote direction) (quote maximize)) (list (quote objective) (list 3 5)) (list (quote constraints) (list (list (list 2 1) (quote <=) 4) (list (list 1 1) (quote <=) 3))) (list (quote integers) (list 0 1))))"
+     :note "Small 2-var integer program with two ≤ constraints. Returns optimum x = (0,3), objective 15.")
+    (:tier "apprentice"
+     :code "(ops/branch-bound (list (list (quote direction) (quote maximize)) (list (quote objective) (list 4 3))  (list (quote constraints) (list (list (list 2 3) (quote <=) 12) (list (list 3 1) (quote <=) 10))) (list (quote integers) (list 0 1))))"
+     :note "2-var problem with both variables integer. Optimum lands on an integer vertex.")
+    (:tier "intermediate"
+     :code "(let* ((spec (list (list (quote direction) (quote maximize)) (list (quote objective) (list 3 2 1)) (list (quote constraints) (list (list (list 1 1 1) (quote <=) 6) (list (list 2 1 3) (quote <=) 10))) (list (quote integers) (list 0 1 2)))) (sol (ops/branch-bound spec))) (list (quote solution) sol))"
+     :note "3-var integer program with two constraints. Branch-and-bound expands the LP relaxation until integer feasible.")
+    (:tier "expert"
+     :code "(define (bb-summary spec) (let ((res (ops/branch-bound spec))) (cond ((eq? res (quote invalid-spec)) (list (quote error) (quote bad-input))) ((eq? res (quote use-backend)) (list (quote escalated))) (else (list (quote objective) (cadr (assoc (quote objective) res)) (quote x) (cadr (assoc (quote x) res))))))) (bb-summary (list (list (quote direction) (quote maximize)) (list (quote objective) (list 5 4 3)) (list (quote constraints) (list (list (list 2 3 1) (quote <=) 5) (list (list 4 1 2) (quote <=) 11))) (list (quote integers) (list 0 1 2))))"
+     :note "Wrap ops/branch-bound with error handling. Real deployments handle 'use-backend by routing to a native MIP solver.")
+    (:tier "master"
+     :code "(let* ((spec (list (list (quote direction) (quote maximize)) (list (quote objective) (list 8 11 6 4)) (list (quote constraints) (list (list (list 5 7 4 3) (quote <=) 14))) (list (quote integers) (list 0 1 2 3)))) (result (ops/branch-bound spec))) (list (quote knapsack-mip) result))"
+     :note "MIP-formulated knapsack (single capacity constraint, integer variables). Branch-and-bound recovers the same answer ops/knapsack gives via DP.")
+  )
+  :caveats
+    ("Constraint operator must be one of '<= '< '>= '> '= '=='."
+     "Same size threshold as ops/mip-solve (n ≤ 12); larger returns 'use-backend."
+     "Equality constraints are split into two ≤ rows internally.")
+  :drawbacks
+    ("Overhead vs ops/mip-solve — the shape-normalization pass costs a bit."
+     "No stronger cuts than the LP relaxation bounds."
+     "No presolve.")
+  :usecases
+    ("MIP with mixed constraint types (≤, ≥, =) expressed naturally."
+     "Reformulate combinatorial problems as generic branch-and-bound."
+     "Curriculum: expose the constraint-normalization step explicitly.")
+  :related ("ops/mip-solve" "ops/lp-solve" "ops/knapsack")
+  :learn
+    (:concept "Branch-and-bound as a template: define a problem, get a solution — the mechanics happen underneath."
+     :prerequisites ("ops/mip-solve")
+     :progression "Formulate a small MIP with all three constraint types. Then ops/branch-bound. Then compare with ops/mip-solve.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/knapsack"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/knapsack capacity items) -> (total-value chosen-indices) | 'bad-items"
+  :summary "0/1 knapsack via dynamic programming — pick items to maximize value under a weight capacity."
+  :impl-status "wired"
+  :explanation "Classic 0/1 knapsack: given a nonneg integer capacity W and a list of items where each item is (weight value), find the subset that maximizes total value subject to total weight ≤ W. Uses standard dynamic programming O(n·W) time, O(n·W) space. Returns (total-value chosen-indices) where indices are 0-based positions in the input list. This is optimal — not a heuristic. Handles up to n·W ≈ 10⁶ product before memory becomes a concern in-cart."
+  :examples (
+    (:tier "novice"
+     :code "(ops/knapsack 10 (list (list 2 3) (list 3 4) (list 4 5) (list 5 6)))"
+     :note "Capacity 10, four items. Optimal choice: items 0, 1, 3 (weights 2+3+5=10, values 3+4+6=13).")
+    (:tier "apprentice"
+     :code "(ops/knapsack 15 (list (list 5 10) (list 4 40) (list 6 30) (list 3 50)))"
+     :note "Capacity 15. Higher-value-per-weight items get prioritized. Answers 90 with three items.")
+    (:tier "intermediate"
+     :code "(let* ((cap 20) (items (list (list 3 10) (list 5 20) (list 7 30) (list 2 5) (list 4 15))) (res (ops/knapsack cap items))) (list (quote total-value) (car res) (quote chosen) (cadr res)))"
+     :note "5 items, cap 20. Return the winning subset + its total value.")
+    (:tier "expert"
+     :code "(define (knapsack-report cap items) (let* ((res (ops/knapsack cap items)) (val (car res)) (idxs (cadr res)) (chosen (map (lambda (i) (list-ref items i)) idxs))) (list (quote capacity) cap (quote value) val (quote chosen-items) chosen))) (knapsack-report 12 (list (list 4 8) (list 3 6) (list 5 10) (list 2 3)))"
+     :note "Report the actual chosen items (not just indices) alongside the total value.")
+    (:tier "master"
+     :code "(let* ((cap 25) (items (list (list 3 8) (list 5 12) (list 4 10) (list 2 4) (list 6 15) (list 3 7) (list 5 11))) (res (ops/knapsack cap items)) (total-value (car res)) (chosen-idxs (cadr res)) (chosen-weight (apply + (map (lambda (i) (car (list-ref items i))) chosen-idxs)))) (list (quote value) total-value (quote weight-used) chosen-weight (quote capacity) cap))"
+     :note "Verify that total chosen weight ≤ capacity. Reports weight used + capacity for full transparency.")
+  )
+  :caveats
+    ("Weights must be nonneg integers. Fractional weights need a different algorithm (LP relaxation)."
+     "Capacity likewise must be integer for the DP to work."
+     "Items with negative value are simply not chosen — no error."
+     "Returns 'bad-items if the items list contains a malformed entry.")
+  :drawbacks
+    ("O(n·W) space — a capacity of 1_000_000 with 100 items uses ~100M cells."
+     "0/1 only — no multiple copies of an item. For unbounded knapsack, a different DP recurrence is needed."
+     "No support for multiple constraints (multi-dimensional knapsack).")
+  :usecases
+    ("Choose which SKUs to bring to a market booth given a limited carrying capacity."
+     "Portfolio construction with a hard budget."
+     "Cutting stock and packing problems (in simple form)."
+     "Curriculum: introduce DP with a classic problem.")
+  :related ("ops/mip-solve" "ops/branch-bound" "ops/lp-solve")
+  :learn
+    (:concept "Bottom-up DP: dp[i][c] = best value using first i items with capacity c."
+     :prerequisites ("0/1 vs unbounded" "understanding a DP table")
+     :progression "Solve small instance by hand. Then ops/knapsack. Then reformulate as MIP and compare with ops/mip-solve.")
+  :entry-provenance "authored")
+
+
+
 
 

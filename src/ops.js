@@ -428,10 +428,12 @@ export function installOps(env) {
     if (!isList(c)) return 0
     // Try to extract an x-vector from a solution list.
     let x = solution
-    if (isList(solution) && solution.length > 0 && solution[0] instanceof Sym) {
-      // Look inside for ('x <vec>) or ('vars <vec>).
+    // Detect solution-list shape: it's a list of (key value) pairs where
+    // each pair's first element is a Sym. Look for ('x <vec>) or similar.
+    if (isList(solution) && solution.length > 0 && isList(solution[0]) &&
+        solution[0][0] instanceof Sym) {
       for (const entry of solution) {
-        if (isList(entry) && entry.length === 2 && entry[0] instanceof Sym) {
+        if (isList(entry) && entry.length >= 2 && entry[0] instanceof Sym) {
           const k = entry[0].name
           if (k === 'x' || k === 'vars' || k === 'solution') { x = entry[1]; break }
         }
