@@ -212,3 +212,69 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Catalan numbers count balanced binary structures: parenthesizations, tree shapes, Dyck paths. C_n = C(2n,n)/(n+1)."))
+
+(verb
+  :name "comb/choose"
+  :library "comb"
+  :signature "(comb/choose n k) -> integer"
+  :summary "Binomial coefficient C(n,k) = n! / (k! (n-k)!): count of k-element subsets of an n-set."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/choose 5 2)"
+     :note "Returns 10: there are 10 ways to choose 2 items from 5. C(5,2) = 5·4/2·1 = 10.")
+    (:tier "apprentice"
+     :code "(comb/choose 10 0)"
+     :note "Returns 1: there is exactly one way to choose zero items — the empty subset. C(n,0) = 1 for every n.")
+    (:tier "intermediate"
+     :code "(comb/choose 52 5)"
+     :note "Returns 2598960: the number of distinct 5-card poker hands from a standard 52-card deck. This is the total-hands denominator in poker probability.")
+    (:tier "expert"
+     :code "(map (lambda (k) (comb/choose 6 k)) (list 0 1 2 3 4 5 6))"
+     :note "Returns (1 6 15 20 15 6 1) — the 6th row of Pascal's triangle. Same as (comb/binomial-coeffs 6); choose is the point-lookup, binomial-coeffs is the row.")
+    (:tier "master"
+     :code "(define (probability-of-k-heads n k)\n  (/ (comb/choose n k) (expt 2 n)))\n(list ':n5-k2 (probability-of-k-heads 5 2)\n      ':n10-k5 (probability-of-k-heads 10 5)\n      ':n10-k10 (probability-of-k-heads 10 10))"
+     :note "Compute the probability of exactly k heads in n fair coin flips: C(n,k) / 2^n. Returns (:n5-k2 0.3125 :n10-k5 0.24609375 :n10-k10 0.0009765625). The peak at k=n/2 mirrors the Pascal-row peak."))
+
+  :related ("comb/binomial-coeffs" "comb/multichoose" "comb/multinomial" "comb/factorial" "comb/pascal-row")
+  :caveats ("For k < 0 or k > n, returns 0 (empty subset count)." "Uses the multiplicative form C(n,k) = product((n-i)/(i+1)) for i in 0..k-1, symmetric-min-k optimization applied." "C(n,k) can grow past JS's safe integer limit (2^53); for n ≈ 60 and k ≈ n/2 the number crosses that boundary and rounding enters.")
+  :drawbacks ("No arbitrary-precision — for n > 60 use log-space arithmetic or a big-integer library." "The multiplicative loop is O(k); for k close to n use the symmetry C(n,k) = C(n,n-k) — the impl does this automatically." "Not memoized across calls; a hot loop over many (n,k) pairs may benefit from a local table.")
+  :usecases ("Card and dice probability: '2598960 poker hands.'" "Statistics: binomial probability mass and cumulative distributions." "Combinatorial enumeration: how many ways to seat, choose, sample, pair." "Buffer sizing in probabilistic algorithms: expected number of collisions grows as C(n,2).")
+  :learn (:concept "Binomial coefficient — the point value in Pascal's triangle; counts unordered selections without replacement." :prerequisites ("comb/factorial") :progression "Follow with comb/multichoose for selections WITH replacement, comb/multinomial for k-way splits, comb/binomial-coeffs to see the whole Pascal row, and stat/binomial for the full Binomial(n,p) distribution.")
+
+  :+math
+    (:algebra "C(n,k) = n! / (k! (n-k)!) = product((n-i)/(i+1)) for i in 0..k-1. Symmetry: C(n,k) = C(n,n-k). Pascal identity: C(n,k) = C(n-1,k-1) + C(n-1,k). Sum: sum(k) C(n,k) = 2^n. Vandermonde: sum(k) C(m,k) C(n,r-k) = C(m+n,r)."
+     :total #t
+     :domain "n and k are integers; result is 0 for k < 0 or k > n"
+     :codomain "non-negative integer"
+     :proofs "Direct combinatorial: C(n,k) counts k-subsets of an n-set, by k-length selection sequences (n!/(n-k)!) divided by orderings within a subset (k!).")
+
+  :+cs
+    (:complexity "Time O(min(k, n-k)) via the multiplicative form. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Uses the multiplicative form C(n,k) = product((n-i)/(i+1)) with the symmetric-min-k optimization k := min(k, n-k). Final rounds to nearest integer to correct for accumulated FP error. Same helper backs comb/binomial-coeffs, comb/multichoose, comb/pascal-row."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/choose 5 2)=10, (comb/choose 10 0)=1, (comb/choose 52 5)=2598960, row of C(6,k) matches binomial-coeffs 6."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("expt" "comb/binomial-coeffs" "stat/binomial")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Reading C(n,k) as an ordered selection — it's UNORDERED (use n!/(n-k)! for k-permutations). Forgetting C(n,0) = 1. Assuming C(n,k) = 0 for k > n is a math law — it's a boundary convention that this impl honors."
+     :when-not-to-use "You need k-permutations (ordered) — that's n!/(n-k)!, not C(n,k). You need selection with replacement — that's comb/multichoose. You need arbitrary-precision — big-int libraries required past n ≈ 60.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Binomial coefficient. Point-lookup in Pascal's triangle. Foundation for probability, statistics, and combinatorial enumeration."))
