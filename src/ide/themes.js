@@ -8,15 +8,98 @@
 // keep the shape identical — every consumer indexes by key.
 
 export const THEMES = Object.freeze({
+  sakura: {
+    name: 'sakura',
+    display: 'Sakura — the branded mode, warm paper, cherry blossom',
+    // The signature theme. Pale cream surface (from the reference
+    // fantasy-console displays), soft ink, bright pink accent, gold
+    // for flower centers. This is the flower's home.
+    promptGlyph: '✿ ',
+    bg:        231, // near-white cream
+    text:      53,  // deep purple ink
+    dim:       247, // mist
+    accent:    212, // pink blossom
+    accent2:   221, // gold flower center
+    keyword:   61,  // muted blue
+    fn:        67,
+    string:    108, // moss
+    number:    172, // amber
+    comment:   250, // fog
+    ok:        108,
+    warn:      179,
+    err:       124,
+    border:    253, // pale
+    selection: 224, // petal
+    web: {
+      bg:        '#fdfaf6',
+      text:      '#2a1f3d',
+      dim:       '#8a7a8a',
+      accent:    '#ef6ea6',
+      accent2:   '#f6c453',
+      keyword:   '#6b7ea8',
+      fn:        '#5687bf',
+      string:    '#5e8b5e',
+      number:    '#c07a3e',
+      comment:   '#c5b5c5',
+      ok:        '#7fa66f',
+      warn:      '#c8a147',
+      err:       '#c15c5c',
+      border:    '#f3e3ed',
+      selection: '#fce4e8',
+      font:      'iA Writer Mono, Berkeley Mono, JetBrains Mono, ui-monospace, monospace',
+    },
+  },
+  hacker: {
+    name: 'hacker',
+    display: 'Hacker — black surface, phosphor green, no decoration',
+    // For people who arrive at the REPL knowing what they want and
+    // don't want the flower in the way. Black terminal, phosphor
+    // green, plain `> ` prompt. No accent flourishes. Fast text.
+    promptGlyph: '> ',
+    bg:        16,  // true black
+    text:      46,  // phosphor green
+    dim:       28,  // dim green
+    accent:    83,  // lighter green
+    accent2:   40,  // mid green
+    keyword:   46,  // same as text (no differentiation on purpose)
+    fn:        119, // slight variation
+    string:    121, // pale green
+    number:    40,
+    comment:   22,  // very dim green
+    ok:        46,
+    warn:      226, // yellow (only splash of non-green — errors + warnings)
+    err:       196, // red (errors only)
+    border:    22,
+    selection: 22,
+    web: {
+      bg:        '#000000',
+      text:      '#00ff41',
+      dim:       '#00a028',
+      accent:    '#33ff77',
+      accent2:   '#22cc44',
+      keyword:   '#00ff41',
+      fn:        '#66ffaa',
+      string:    '#aaffcc',
+      number:    '#22cc44',
+      comment:   '#007f22',
+      ok:        '#00ff41',
+      warn:      '#ffff00',
+      err:       '#ff3333',
+      border:    '#003311',
+      selection: '#003311',
+      font:      'IBM Plex Mono, Menlo, ui-monospace, monospace',
+    },
+  },
   'sakura-light': {
     name: 'sakura-light',
     display: 'Sakura Light — warm cream, pink accents',
     // Per-theme prompt glyph — the REPL prompt gets a different tail
     // for each theme. Kept tiny + typographic; one glyph max, never
-    // gaudy. sakura-light gets the flower, sakura-dark gets a night
-    // blossom, high-contrast gets a utilitarian chevron, paper gets a
-    // typographer's guillemet.
-    promptGlyph: '✿ ',
+    // gaudy. `sakura` (the branded default) gets ✿; sakura-light gets
+    // ❀ (heavy blossom); sakura-dark gets ❦ (night blossom);
+    // high-contrast gets › (utilitarian chevron); paper gets » (guillemet);
+    // hacker gets `> ` (plain, no flair).
+    promptGlyph: '❀ ',
     // Terminal colors (256-color palette indexes)
     bg:        231, // near-white background
     text:      235, // dark ink

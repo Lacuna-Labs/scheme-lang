@@ -552,6 +552,91 @@ function cmdReset(ctx) {
 
 function cmdExit(ctx) { ctx.exit(0) }
 
+// ── settings ─────────────────────────────────────────────────────────
+// ,settings           — show current settings + how to change
+// ,set <key> <value>  — update a setting (persisted)
+// ,reset <key>        — restore default
+// ,theme <name>       — shortcut for `,set theme <name>` (applies live)
+// ,themes             — list available themes
+
+async function cmdSettings(ctx, args) {
+  const { writeLine } = ctx
+  const settings = await import('./settings.js')
+  const cur = settings.all()
+  writeLine('')
+  writeLine(role.section('sakura-scheme settings'))
+  writeLine('')
+  const rows = []
+  for (const key of Object.keys(settings.SCHEMA)) {
+    const v = cur[key]
+    const doc = settings.SCHEMA[key].doc
+    const display = typeof v === 'string' ? '"' + v + '"'
+                  : typeof v === 'boolean' ? (v ? '#t' : '#f')
+                  : String(v)
+    rows.push([':' + key, display, doc])
+  }
+  const keyW = Math.max(...rows.map(r => r[0].length)) + 2
+  const valW = Math.max(...rows.map(r => r[1].length)) + 2
+  for (const [k, v, d] of rows) {
+    writeLine('  ' + role.meta(k.padEnd(keyW)) + role.text(v.padEnd(valW)) + role.dim(d))
+  }
+  writeLine('')
+  writeLine(role.dim('  change:  ,set <key> <value>'))
+  writeLine(role.dim('  reset:   ,reset <key>'))
+  writeLine(role.dim('  themes:  ,themes    (or: ,theme <name>)'))
+  writeLine(role.dim('  file:    ' + settings.filePath()))
+  writeLine('')
+}
+
+async function cmdSet(ctx, args) {
+  const { writeLine } = ctx
+  if (args.length < 2) return writeLine(role.warn('usage: ,set <key> <value>   (see ,settings)'))
+  const [key, ...rest] = args
+  const value = rest.join(' ').replace(/^"|"$/g, '') // strip surrounding quotes if any
+  const settings = await import('./settings.js')
+  const result = settings.set(key, value)
+  if (!result.ok) return writeLine(role.err('  ' + result.error))
+  writeLine(role.ok('  ' + key + ' → ' + JSON.stringify(result.value)))
+  // Apply live-editable settings immediately
+  if (key === 'theme') {
+    const { setTheme } = await import('../ide/themes.js')
+    if (setTheme(result.value)) writeLine(role.dim('  (applied — restart the IDE to see everywhere)'))
+  }
+}
+
+async function cmdResetSetting(ctx, args) {
+  const { writeLine } = ctx
+  if (args.length < 1) return writeLine(role.warn('usage: ,reset-setting <key>   (see ,settings)'))
+  const settings = await import('./settings.js')
+  const result = settings.reset(args[0])
+  if (!result.ok) return writeLine(role.err('  ' + result.error))
+  writeLine(role.ok('  ' + args[0] + ' → ' + JSON.stringify(result.value) + ' (default)'))
+}
+
+async function cmdTheme(ctx, args) {
+  const { writeLine } = ctx
+  if (args.length < 1) {
+    // No args — list
+    const { themeList, currentThemeName, THEMES } = await import('../ide/themes.js')
+    const list = themeList()
+    const cur = currentThemeName()
+    writeLine('')
+    writeLine(role.section('themes'))
+    writeLine('')
+    for (const name of list) {
+      const marker = name === cur ? role.accent(' • ') : '   '
+      writeLine(marker + role.strong(name.padEnd(16)) + role.dim(THEMES[name].display || ''))
+    }
+    writeLine('')
+    writeLine(role.dim('  set: ,theme <name>    (persisted; applies to IDE next launch)'))
+    writeLine('')
+    return
+  }
+  return cmdSet(ctx, ['theme', args[0]])
+}
+
+async function cmdThemes(ctx) { return cmdTheme(ctx, []) }
+
 // ── the table ────────────────────────────────────────────────────────
 
 export const COMMANDS = [
@@ -584,6 +669,11 @@ export const COMMANDS = [
   { names: ['keys', 'keybindings'],        handler: cmdKeys,      doc: 'keybindings' },
   { names: ['verbs'],                      handler: cmdVerbs,     doc: 'verb-status summary' },
   { names: ['reset'],                      handler: cmdReset,     doc: 'reset env' },
+  { names: ['settings', 'config'],         handler: cmdSettings,  doc: 'show + change settings' },
+  { names: ['set'],                        handler: cmdSet,       doc: 'change a setting' },
+  { names: ['reset-setting'],              handler: cmdResetSetting, doc: 'restore a setting default' },
+  { names: ['theme'],                      handler: cmdTheme,     doc: 'switch color theme (or list)' },
+  { names: ['themes'],                     handler: cmdThemes,    doc: 'list available themes' },
   { names: ['exit', 'quit', 'q'],          handler: cmdExit,      doc: 'exit REPL' },
   // Future work — stubbed. Discoverable via ,help + tab-complete; produce
   // a friendly "coming in v1.2" message when invoked. These are v1.2
