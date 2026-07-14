@@ -1,13 +1,17 @@
 ; Sakura Scheme Reference — CONSOLIDATED
 ; Generated 2026-07-13 from verb-help-assembled.json + SAKURA-SCHEME-1.0.REF.md
-; 1,157 verbs + 128 core language forms
+; 1,160 verbs + 128 core language forms
 ; This IS the language. Everything derives from it.
+;
+; Round 2 (2026-07-14): +3 cortex first-class wrappers (read/write/topk)
+; teach both readers (kid + Sakura training data) about the direct
+; Scheme-facing surface of Cortex.
 
 (reference
   :name "sakura-scheme"
   :version "1.0"
-  :consolidated-at "2026-07-13"
-  :verb-count 1157
+  :consolidated-at "2026-07-14"
+  :verb-count 1160
   :core-form-count 120
 )
 
@@ -3900,6 +3904,77 @@
   :usecases ("Computing complete rotations and circular motion" "Fourier analysis and frequency-domain computations" "Periodic signal processing and oscillations" "Animation and motion control (turns instead of radians)" "Graphics: rotation matrices and angular velocity")
   :related ("const/pi" "const/e" "math/sin" "math/cos" "geom/->radians" "geom/->degrees")
   :learn (:concept "Tau is 2π and makes angle arithmetic more intuitive by mapping full rotations to whole numbers (1 turn = τ radians)." :prerequisites ("Understanding radians and the relationship between 2π and a full circle" "Familiarity with trigonometric functions") :progression "Use const/tau for periodic and rotational problems; then explore Fourier transforms (curve/*) and vector rotation (geom/rotate, geom/rotate-about)."))
+
+; ─── library: cortex (3 verbs) ───
+;
+; Cortex is Sakura's persistent memory graph — the surmise-store-retrieve
+; loop that survives across sessions. Three first-class wrappers give
+; Scheme code direct access without threading through the `act` dispatch
+; layer: read (key → value or empty), write (key value → #t), topk
+; (pattern k → up to k hits). These sit alongside the act-dispatched
+; verbs cortex/recall + cortex/remember + cortex/forget documented in
+; section 5 of this reference.
+;
+; Doctrine (Alfred, 2026-07-13): Cortex accretes facts as the user
+; teaches — the LLM does not get retrained. The four faucets are
+; Weights → Cortex → Atlas → Tools. These three wrappers are the
+; Scheme-facing surface of Cortex; carts still prefer `act` for
+; provenance capture, but scripts + REPL sessions get to call these
+; directly for exploration and quick teaching.
+
+(verb
+  :name "cortex/read"
+  :library "cortex"
+  :kind "read"
+  :signature "(cortex/read key) → value | ()"
+  :summary "Read a value from Cortex by key. Returns () if the key is absent."
+  :explanation "Cortex/read is the first-class Scheme wrapper for a Cortex lookup. It looks up the given key in the active Cortex memory store (per-user, per-cart-context) and returns the stored value. When the key is absent, it returns the empty list () — matching the Scheme convention that absent lookups are the empty list rather than throwing. The key can be a string or a symbol; both are coerced to strings before lookup. This is one of three first-class Cortex wrappers (read, write, topk); the act-dispatched variants (cortex/recall, cortex/remember, cortex/forget) route through the driver for provenance capture, but cortex/read short-circuits directly to the store for interactive use in the REPL and IDE."
+  :examples (
+    (:tier "novice" :code "(cortex/read \"favorite-color\")" :note "Read the value stored under 'favorite-color'. Returns () if never set.")
+    (:tier "intermediate" :code "(define c (cortex/read \"customer/last-order\"))\n(if (null? c) 'no-orders-yet c)" :note "Guard against a missing key by testing for the empty list.")
+    (:tier "expert" :code "(define (pref key default)\n  (let ((v (cortex/read (string-append \"pref/\" key))))\n    (if (null? v) default v)))\n(pref \"theme\" \"sakura-dark\")" :note "Build a small preference-lookup helper with defaults. Cortex reads are cheap enough to call per-render.")
+  )
+  :caveats ("Returns () for missing keys, NOT #f. Test with (null? v) not (not v)." "Keys are coerced to strings; symbols and strings with the same characters hit the same slot." "Reads are not audited — for provenance capture, prefer (act 'cortex/recall …)." "The Cortex instance is a per-process default; carts run in isolated stores if the host sets one up.")
+  :drawbacks ("No versioning — a later cortex/write with the same key overwrites silently." "No expiration or decay in the direct wrapper; use cortex/forget (act-dispatched) for cleanup." "Not suitable for large binary blobs — Cortex is optimized for small facts, not media.")
+  :usecases ("Interactive lookup in the REPL or IDE while exploring what's been stored." "Quick default-with-fallback patterns in operator scripts." "Test scaffolding that seeds a Cortex fixture then reads it back." "Feature toggles or user prefs stored per session.")
+  :related ("cortex/write" "cortex/topk" "cortex/recall" "cortex/remember" "cortex/forget" "act")
+  :learn (:concept "Cortex is Sakura's persistent memory graph. Read is the get half of a key-value store, with () sentinel for absent keys." :prerequisites ("null?" "string?" "let") :progression "After cortex/read, learn cortex/write to store values; then cortex/topk to search by pattern; then the act-dispatched forms for provenance."))
+
+(verb
+  :name "cortex/write"
+  :library "cortex"
+  :kind "mut"
+  :signature "(cortex/write key value) → #t"
+  :summary "Store a value in Cortex under key. Overwrites any prior value at that key."
+  :explanation "Cortex/write is the first-class Scheme wrapper for a Cortex store. It writes the given value to the active Cortex memory store under the given key and returns #t. The key can be a string or a symbol (both coerced to string). The value can be any Scheme value — number, string, list, symbol, or a nested structure. Cortex stores the value as-is; readers get back the same shape. This is the write half of the direct-access pair (with cortex/read); use it in the REPL and IDE for quick teaching and in operator scripts that don't need provenance capture. Carts building on the reasoning-and-remember loop should still prefer (act 'cortex/remember …) so the driver captures the full audit trail."
+  :examples (
+    (:tier "novice" :code "(cortex/write \"favorite-color\" \"sakura-pink\")" :note "Store a single fact. Returns #t.")
+    (:tier "intermediate" :code "(cortex/write \"customer/last-order\"\n  (list ':id 4132 ':total 49.99 ':when 'today))" :note "Store a small structured fact under a namespaced key. Later, cortex/read retrieves the same list shape.")
+    (:tier "expert" :code "(define (remember-many pairs)\n  (for-each\n    (lambda (kv)\n      (cortex/write (car kv) (cadr kv)))\n    pairs))\n(remember-many\n  (list (list \"pref/theme\"      \"paper\")\n        (list \"pref/font-size\"  14)\n        (list \"pref/vim-mode\"   #t)))" :note "Bulk-store a batch of preferences from a list of (key value) pairs.")
+  )
+  :caveats ("Overwrites silently — no versioning in the direct wrapper." "For persistence and provenance, use (act 'cortex/remember …) instead." "Keys are strings; namespacing is by convention (e.g., 'pref/theme', 'customer/id')." "Cortex may serialize the value on flush; keep values Scheme-simple (no closures, no host objects).")
+  :drawbacks ("No transaction — a partial batch can leave Cortex in a mixed state on error." "No size limit is enforced client-side; a huge value can bloat storage." "Concurrent writers from multiple carts to the same key have last-write-wins semantics.")
+  :usecases ("Teaching Sakura a fact interactively via the REPL." "Persisting user preferences from an IDE settings dialog." "Seeding fixtures in tests before exercising cortex/read." "Operator scripts that record ambient state (last-cursor, last-file, session-id).")
+  :related ("cortex/read" "cortex/topk" "cortex/remember" "cortex/forget" "act")
+  :learn (:concept "Cortex is Sakura's persistent memory graph. Write is the set half of a key-value store; the wrapper short-circuits act-dispatch for interactive use." :prerequisites ("list" "cons" "for-each" "cortex/read") :progression "After cortex/write, learn cortex/topk to search across many keys; then act 'cortex/remember for provenance-captured writes."))
+
+(verb
+  :name "cortex/topk"
+  :library "cortex"
+  :kind "read"
+  :signature "(cortex/topk pattern [k]) → (hit …)"
+  :summary "Return up to k Cortex entries matching a query pattern. Default k is 10."
+  :explanation "Cortex/topk searches the Cortex memory graph for entries relevant to the given pattern and returns up to k hits, ordered by similarity. The pattern is a string or symbol interpreted by the Cortex query engine — plain-text keywords, key-prefix globs, or structured patterns depending on the host store. Each hit is a Scheme value (typically a list containing the matched key, value, and a similarity score). When no hits match, the result is the empty list. The wrapper wraps the underlying cortex/query engine; the difference is that topk caps the result count for use in ranked lists (e.g., 'give me the 5 most-similar customer facts')."
+  :examples (
+    (:tier "novice" :code "(cortex/topk \"favorite\" 3)" :note "Return up to 3 Cortex entries containing or keyed by 'favorite'.")
+    (:tier "intermediate" :code "(define recent (cortex/topk \"customer/\" 10))\n(map car recent)" :note "Take the 10 most-relevant customer facts, project just the keys.")
+    (:tier "expert" :code "(define (suggest-similar-listings query)\n  (let ((hits (cortex/topk query 5)))\n    (if (null? hits)\n        'no-similar-listings\n        (map (lambda (hit)\n               (list ':key (car hit)\n                     ':score (if (pair? (cdr hit)) (cadr hit) 0)))\n             hits))))\n(suggest-similar-listings \"jewelry/vintage-silver\")" :note "Build a small recommender: query Cortex, extract the (key score) pairs for downstream ranking.")
+  )
+  :caveats ("Result shape depends on the underlying Cortex store — always guard with pair? / null? before destructuring." "k defaults to 10 when omitted; pass explicitly for reproducible tests." "Ranking is by the Cortex similarity function — cosine over embeddings in the production host, substring match in the standalone REPL." "Returns () not #f when there are no hits.")
+  :drawbacks ("Not a full-text search — precision depends on how the writer namespaced keys." "No pagination in the direct wrapper — request k explicitly." "Large k values may be slow; prefer k ≤ 50 for interactive latency.")
+  :usecases ("Building small recommenders on top of stored customer or listing facts." "Interactive exploration in the IDE — 'what have I stored under this prefix?'" "Ranked candidate lists for downstream reasoning (feed the topk into an act 'lacuna/ask)." "Debugging Cortex state during a session — inspect what's been remembered.")
+  :related ("cortex/read" "cortex/write" "cortex/recall" "cortex/query" "act")
+  :learn (:concept "Topk is the ranked-search variant of Cortex read — return the k most-relevant entries for a pattern, empty list on miss." :prerequisites ("cortex/read" "cortex/write" "map" "car" "null?") :progression "After cortex/topk, learn (act 'cortex/recall …) for provenance-captured queries and (act 'cortex/multi-store-publish …) for cross-store search when hosts wire it."))
 
 ; ─── library: core (322 verbs) ───
 

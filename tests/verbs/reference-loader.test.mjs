@@ -12,7 +12,7 @@ import { loadReference, getVerbEntry, referenceMeta, clearReferenceCache } from 
 
 test('loader — parses and counts', () => {
   const ref = loadReference()
-  assert.equal(ref.verbs.size, 1157, 'expected 1,157 verbs')
+  assert.equal(ref.verbs.size, 1160, 'expected 1,160 verbs (1,157 base + 3 cortex first-class wrappers added Round 2)')
   assert.equal(ref.coreForms.size, 70, 'expected 70 core forms')
 })
 
@@ -32,11 +32,11 @@ test('loader — reference meta', () => {
   const m = referenceMeta()
   assert.equal(m.name, 'sakura-scheme')
   assert.equal(m.version, '1.0')
-  assert.equal(m.verbCount, 1157)
+  assert.equal(m.verbCount, 1160)
 })
 
 test('loader — clear + reload works', () => {
   clearReferenceCache()
   const ref = loadReference()
-  assert.equal(ref.verbs.size, 1157)
+  assert.equal(ref.verbs.size, 1160)
 })
