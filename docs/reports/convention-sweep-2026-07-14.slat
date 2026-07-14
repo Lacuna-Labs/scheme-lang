@@ -26,6 +26,7 @@
 ;;   match-form                → no decision yet
 ;;   square-bracket-literal    → no decision yet
 ;;   common-lisp-idiom         → no decision yet
+;;   boolean-literal-drift     → no decision yet (true/false → #t/#f)
 ;; ═══════════════════════════════════════════════════════════════
 
 (sweep-header
@@ -33,13 +34,14 @@
   :date "2026-07-14"
   :author "convention-sweep lane"
   :verbs-scanned 1168
-  :findings-total 151
+  :findings-total 182
   :companion "docs/ENGINEERING-DECISIONS.slat"
 )
 
 ; ── summary by pattern kind ──
 (sweep-summary-by-kind
   :srfi-1-primitive 73
+  :boolean-literal-drift 31
   :keyword-arg-syntax 26
   :non-r7rs-primitive 20
   :square-bracket-literal 9
@@ -54,6 +56,7 @@
 
 ; ── top verbs by finding count ──
 (sweep-top-verbs
+  ("card-canvas-rect" 3)
   ("phys/same-dimension?" 3)
   ("radio/next" 3)
   ("radio/play" 3)
@@ -61,14 +64,13 @@
   ("ai/seek" 2)
   ("calc/critical-points-1d" 2)
   ("audio-perceptual-bands" 2)
-  ("card-canvas-rect" 2)
+  ("canvas-pause" 2)
+  ("card-screen-rect" 2)
+  ("fleet-do" 2)
   ("read-gmail-folder" 2)
   ("read-inbox" 2)
+  ("input/set!" 2)
   ("juggle/state" 2)
-  ("math/compare" 2)
-  ("motion/arc" 2)
-  ("nt/divisible?" 2)
-  ("nt/divisors" 2)
 )
 
 ; ── findings ──
@@ -555,6 +557,97 @@
 )
 
 (convention-finding
+  :verb "canvas-clear-region"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5285"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "canvas-pause"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5321"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "canvas-pause"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5321"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "canvas-power-tier"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5339"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "canvas-region-live-count"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5357"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "canvas-resume"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5375"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "canvas-rule"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5411"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
+)
+
+(convention-finding
   :verb "card-canvas-rect"
   :location "docs/SAKURA-SCHEME-REFERENCE.slat:5501"
   :pattern-kind "get-verb"
@@ -579,6 +672,19 @@
   :recommendation "adopt SRFI-1 with decision-entry"
   :requires-decision-entry #t
   :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-canvas-rect"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5501"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
 )
 
 (convention-finding
@@ -635,6 +741,97 @@
 )
 
 (convention-finding
+  :verb "card-rect"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5861"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-rows"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5879"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-screen-rect"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5897"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-screen-rect"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5897"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-set!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5915"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-settle-breath"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5933"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-unfocus!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5969"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
   :verb "cards-list"
   :location "docs/SAKURA-SCHEME-REFERENCE.slat:6023"
   :pattern-kind "srfi-1-primitive"
@@ -645,6 +842,32 @@
   :recommendation "adopt SRFI-1 with decision-entry"
   :requires-decision-entry #t
   :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "conway-feed-corner"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:6239"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "conway-fire-rainbow"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:6257"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
 )
 
 (convention-finding
@@ -659,6 +882,19 @@
   :requires-decision-entry #f
   :decision-ref "001"
   :note "#:status"
+)
+
+(convention-finding
+  :verb "emoji-by-name"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:6902"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
 )
 
 (convention-finding
@@ -687,6 +923,19 @@
   :requires-decision-entry #f
   :decision-ref "001"
   :note "#:filter, #:filter, #:parallel"
+)
+
+(convention-finding
+  :verb "fleet-do"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7064"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
 )
 
 (convention-finding
@@ -729,6 +978,19 @@
 )
 
 (convention-finding
+  :verb "input-may-i?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7550"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "3 occurrence(s)"
+)
+
+(convention-finding
   :verb "nav-map"
   :location "docs/SAKURA-SCHEME-REFERENCE.slat:7820"
   :pattern-kind "keyword-arg-syntax"
@@ -739,6 +1001,19 @@
   :recommendation "positional (<=5 args)"
   :requires-decision-entry #f
   :decision-ref "001"
+)
+
+(convention-finding
+  :verb "next"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7838"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
 )
 
 (convention-finding
@@ -966,6 +1241,19 @@
 )
 
 (convention-finding
+  :verb "stop-when"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9476"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "2 occurrence(s)"
+)
+
+(convention-finding
   :verb "surface-paint-text"
   :location "docs/SAKURA-SCHEME-REFERENCE.slat:9674"
   :pattern-kind "keyword-arg-syntax"
@@ -989,6 +1277,32 @@
   :recommendation "adopt SRFI-1 with decision-entry"
   :requires-decision-entry #t
   :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "viewport"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9854"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "viewport-width"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9872"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
 )
 
 (convention-finding
@@ -1174,6 +1488,32 @@
 )
 
 (convention-finding
+  :verb "entity/pin!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11230"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "5 occurrence(s)"
+)
+
+(convention-finding
+  :verb "entity/sensor!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11284"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "3 occurrence(s)"
+)
+
+(convention-finding
   :verb "entity/team!"
   :location "docs/SAKURA-SCHEME-REFERENCE.slat:11464"
   :pattern-kind "match-form"
@@ -1275,6 +1615,32 @@
   :recommendation "adopt SRFI-1 with decision-entry"
   :requires-decision-entry #t
   :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "input/set!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:13793"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "4 occurrence(s)"
+)
+
+(convention-finding
+  :verb "input/set!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:13793"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "3 occurrence(s)"
 )
 
 (convention-finding
@@ -1447,6 +1813,19 @@
 )
 
 (convention-finding
+  :verb "matrix/determinant"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14870"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `false` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #f (short) or #false (long) — never bare `false`"
+  :alternative "none"
+  :recommendation "#f / #false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
   :verb "matrix/identity"
   :location "docs/SAKURA-SCHEME-REFERENCE.slat:14888"
   :pattern-kind "square-bracket-literal"
@@ -1552,6 +1931,19 @@
   :recommendation "positional (<=5 args)"
   :requires-decision-entry #f
   :decision-ref "001"
+)
+
+(convention-finding
+  :verb "motion/with-feel"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15142"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
 )
 
 (convention-finding
@@ -1896,7 +2288,7 @@
 
 (convention-finding
   :verb "stat/z-score"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18818"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18828"
   :pattern-kind "srfi-1-primitive"
   :example "(filter ("
   :severity "low"
@@ -1909,7 +2301,7 @@
 
 (convention-finding
   :verb "surface/describe"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18856"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18866"
   :pattern-kind "keyword-arg-syntax"
   :example "(surface/describe [:detail 'brief|'full]) -> state-object"
   :severity "high"
@@ -1922,7 +2314,7 @@
 
 (convention-finding
   :verb "system/cards"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19456"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19466"
   :pattern-kind "srfi-1-primitive"
   :example "(filter ("
   :severity "low"
@@ -1935,7 +2327,7 @@
 
 (convention-finding
   :verb "system/health"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19474"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19484"
   :pattern-kind "naming-snake-in-examples"
   :example "fuel_exhausted"
   :severity "medium"
@@ -1949,7 +2341,7 @@
 
 (convention-finding
   :verb "system/registry"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19492"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19502"
   :pattern-kind "srfi-1-primitive"
   :example "(filter\n           ("
   :severity "low"
@@ -1962,7 +2354,7 @@
 
 (convention-finding
   :verb "vec/+"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20388"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20398"
   :pattern-kind "non-r7rs-primitive"
   :example "(rest s"
   :severity "medium"
@@ -1975,7 +2367,7 @@
 
 (convention-finding
   :verb "vec/="
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20468"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20478"
   :pattern-kind "non-r7rs-primitive"
   :example "(rest ("
   :severity "medium"
@@ -1988,7 +2380,7 @@
 
 (convention-finding
   :verb "vec/angle-between"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20494"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20504"
   :pattern-kind "non-r7rs-primitive"
   :example "(rest c"
   :severity "medium"
@@ -2001,7 +2393,7 @@
 
 (convention-finding
   :verb "vec/dim"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20538"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20548"
   :pattern-kind "non-r7rs-primitive"
   :example "(rest ("
   :severity "medium"
@@ -2014,7 +2406,7 @@
 
 (convention-finding
   :verb "weather/conjure"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20676"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20686"
   :pattern-kind "keyword-arg-syntax"
   :example "example uses :at, :at, :scale"
   :severity "high"
@@ -2027,7 +2419,7 @@
 
 (convention-finding
   :verb "world/link-rest!"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:21002"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:21012"
   :pattern-kind "non-r7rs-primitive"
   :example "(rest ("
   :severity "medium"
@@ -2040,7 +2432,7 @@
 
 (convention-finding
   :verb "world/tape-audio"
-  :location "docs/SAKURA-SCHEME-REFERENCE.slat:21200"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:21210"
   :pattern-kind "srfi-1-primitive"
   :example "(filter ("
   :severity "low"
@@ -2049,4 +2441,17 @@
   :recommendation "adopt SRFI-1 with decision-entry"
   :requires-decision-entry #t
   :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "world/tape-hash"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:21264"
+  :pattern-kind "boolean-literal-drift"
+  :example "bare `true` token"
+  :severity "high"
+  :proposed-fix "R7RS: use #t (short) or #true (long) — never bare `true`"
+  :alternative "none"
+  :recommendation "#t / #true"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
 )

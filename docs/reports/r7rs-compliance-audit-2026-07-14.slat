@@ -1,0 +1,504 @@
+;; ═══════════════════════════════════════════════════════════════
+;; R7RS-SMALL COMPLIANCE AUDIT — 2026-07-14
+;;
+;; Lane: R7RS-Compliance-Sweep
+;; Doctrine (Alfred): "Add all of R7RS-small's features. No
+;; diverging. Fix in book."
+;;
+;; This audit catalogs every R7RS-small procedure and special form,
+;; classifies each as implemented / missing / diverges / deferred,
+;; and points to the decision-entry for each honest deferral.
+;;
+;; Method:
+;;   1. Programmatically enumerate the sakura env (2189 bindings).
+;;   2. Walk R7RS-small §4-§7 procedure by procedure.
+;;   3. Cross-check every special form via a REPL probe script.
+;;   4. Cross-reference pre-existing decision-entries (001-016).
+;;
+;; STATE PRE-AUDIT (Phase 1):
+;;   - Special forms present: quote if define set! lambda begin let
+;;     let* letrec named-let quasiquote unquote unquote-splicing when
+;;     unless cond case and or (via SPECIAL_FORMS set) + variadic
+;;     dotted-tail lambda (interp §326)
+;;   - Special forms MISSING at interp/macro level:
+;;     letrec* do delay delay-force force make-promise guard
+;;     parameterize define-record-type define-values define-library
+;;     cond `=>` clause, case `=>` clause
+;;   - Reader MISSING: character literals (#\a, #\space, #\x41),
+;;     vector literals (#(1 2 3)), block comments (#| ... |#),
+;;     datum comment (#;expr), boolean long-form (#true / #false)
+;;   - Standard procedures: see per-section audit below.
+;; ═══════════════════════════════════════════════════════════════
+
+(audit-header
+  :name "r7rs-compliance-audit-2026-07-14"
+  :date "2026-07-14"
+  :author "R7RS-Compliance lane"
+  :branch "verbs/wire-596-2026-07-14"
+  :env-inspected "makeSakuraEnv"
+  :bindings-total 2189
+  :companion-docs
+    ("docs/ENGINEERING-DECISIONS.slat"
+     "docs/reports/convention-sweep-2026-07-14.slat"
+     "docs/COMPLIANCE-DIRECTIVE-2026-07-14.slat"))
+
+;; ─────────────────────────────────────────────────────────────────
+;; §4 EXPRESSIONS (special forms)
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§4.1 Primitive expression types"
+  :required-forms (quote lambda if set!)
+  :implemented (quote lambda if set!)
+  :missing ()
+  :notes "All four present in interp.js SPECIAL_FORMS.")
+
+(section-audit
+  :section "§4.2 Derived expression types"
+  :required-forms (cond case and or when unless let let* letrec letrec*
+                   let-values let*-values begin do delay delay-force force
+                   make-promise parameterize guard quasiquote unquote
+                   unquote-splicing case-lambda let-syntax letrec-syntax)
+  :implemented (cond case and or when unless let let* letrec begin
+                quasiquote unquote unquote-splicing let-syntax letrec-syntax)
+  :missing (letrec* let-values let*-values do delay delay-force force
+            make-promise parameterize guard case-lambda cond-arrow
+            case-arrow)
+  :priority "critical"
+  :implementation-notes
+    "letrec* semantically identical to letrec in our interp (define-then-set
+     already sequences). do → macro-expand to named-let. delay/force →
+     promise objects with lazy evaluation. guard → macro over
+     with-exception-handler + call/cc-style escape (we can implement guard
+     without full call/cc by catching JS exceptions). let-values →
+     multiple-value binding on top of call-with-values. define-values
+     lives in §5 but shares mechanism.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §5 PROGRAM STRUCTURE
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§5 Program structure"
+  :required-forms (define define-syntax define-record-type define-values
+                   define-library import export include include-ci)
+  :implemented (define define-syntax)
+  :missing (define-record-type define-values define-library import export
+            include include-ci)
+  :priority "high (record-type + values), medium (library system)"
+  :implementation-notes
+    "define-record-type: SRFI-9 shape, records as tagged JS objects with
+     accessor + mutator closures. define-values: relies on multiple-value
+     mechanism from §6.10. define-library / import / export: Sakura Scheme
+     uses a single flat env today; defer with decision-entry citing verb
+     dispatcher's flat namespace + no client demand yet.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.1 EQUIVALENCE PREDICATES — ALL PRESENT
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.1 Equivalence predicates"
+  :required-procs (eqv? eq? equal?)
+  :implemented (eqv? eq? equal?)
+  :missing ()
+  :notes "Present; behavior slightly generous (eq? falls to structural
+    comparison via deepEqual). R7RS permits this — eq? MAY return #t on
+    structurally equal values.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.2 NUMBERS
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.2 Numbers"
+  :required-procs (number? complex? real? rational? integer?
+    exact? inexact? exact-integer? exact-rational?
+    = < > <= >= zero? positive? negative? odd? even? max min
+    + * - / abs floor/ floor-quotient floor-remainder
+    truncate/ truncate-quotient truncate-remainder quotient remainder modulo
+    gcd lcm numerator denominator floor ceiling truncate round
+    rationalize exp log sin cos tan asin acos atan square sqrt
+    exact-integer-sqrt expt make-rectangular make-polar
+    real-part imag-part magnitude angle inexact exact
+    number->string string->number)
+  :implemented (number? real? rational? integer? exact? inexact?
+    = < > <= >= zero? positive? negative? odd? even? max min
+    + * - / abs quotient remainder modulo gcd lcm floor ceiling truncate round
+    exp log sin cos tan asin acos atan square sqrt expt
+    inexact exact number->string string->number)
+  :missing (complex? exact-integer? exact-rational? floor/ floor-quotient
+    floor-remainder truncate/ truncate-quotient truncate-remainder
+    numerator denominator rationalize exact-integer-sqrt
+    make-rectangular make-polar real-part imag-part magnitude angle)
+  :diverges (exact inexact rational? exact?)
+  :priority "medium"
+  :implementation-notes
+    "IMPLEMENT: complex? (always #f), exact-integer? (integer? + exact?),
+     exact-rational? (rational? + exact?), floor/truncate quotient family
+     (Math.floor/Math.trunc combinations), numerator/denominator (return
+     n and 1 since we lack rationals), rationalize (identity for now),
+     exact-integer-sqrt (Math.trunc(Math.sqrt(n)) + remainder).
+     DEFER: complex-arithmetic family (make-rectangular etc.) —
+     decision-entry cites no numeric-tower per decision-011 and no
+     domain need. If a domain needs complex, escalate.
+     DIVERGES: `exact` and `inexact` are truncate + Number+0; R7RS says
+     exact should return an exact rational representation, but we don't
+     have rationals (decision-011). Keep behavior, note it under 011.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.3 BOOLEANS
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.3 Booleans"
+  :required-procs (not boolean? boolean=?)
+  :implemented (not boolean? boolean=?)
+  :missing ()
+  :notes "Complete.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.4 PAIRS AND LISTS
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.4 Pairs and lists"
+  :required-procs (pair? cons car cdr set-car! set-cdr!
+    caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr
+    caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr
+    cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
+    null? list? make-list list length append reverse list-tail list-ref
+    list-set! list-copy memq memv member assq assv assoc)
+  :implemented (pair? cons car cdr caar cadr cdar cddr caaar caadr cadar
+    caddr cdaar cdadr cddar cdddr cadddr cddddr null? list? make-list
+    list length append reverse list-tail list-ref list-copy member assoc)
+  :missing (set-car! set-cdr! caaaar caaadr caadar caaddr cadaar cadadr
+    caddar cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar
+    list-set! memq memv assq assv)
+  :diverges (member assoc)
+  :deferred (set-car! set-cdr!)
+  :priority "high"
+  :implementation-notes
+    "IMPLEMENT: memq/memv/assq/assv (use eq/eqv semantics — we already
+     have _eqQ, use the same for now with a decision-entry that eq?/eqv?
+     collapse). list-set! (mutable via array index assignment on the
+     JS array; documents as \"mutates the underlying vector storage\").
+     The remaining four-deep c[ad]{4}r accessors are trivial.
+     DEFER: set-car! / set-cdr! — decision-006 explicitly rejects mutable
+     pair cells.
+     DIVERGES: member/assoc take optional third arg (compare procedure);
+     we accept 2-arg call today. Extend to accept optional compare.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.5 SYMBOLS
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.5 Symbols"
+  :required-procs (symbol? symbol=? symbol->string string->symbol)
+  :implemented (symbol? symbol=? symbol->string string->symbol)
+  :missing ()
+  :notes "Complete.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.6 CHARACTERS — ALL MISSING (no character type today)
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.6 Characters"
+  :required-procs (char? char=? char<? char>? char<=? char>=?
+    char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=?
+    char-alphabetic? char-numeric? char-whitespace?
+    char-upper-case? char-lower-case? digit-value
+    char->integer integer->char char-upcase char-downcase char-foldcase)
+  :implemented ()
+  :missing (char? char=? char<? char>? char<=? char>=?
+    char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=?
+    char-alphabetic? char-numeric? char-whitespace?
+    char-upper-case? char-lower-case? digit-value
+    char->integer integer->char char-upcase char-downcase char-foldcase)
+  :priority "high"
+  :implementation-notes
+    "Sakura Scheme has no distinct char type — every 1-char JS string
+     stands in. Implement chars as tagged wrappers (Ch class) so char?
+     is testable and char->integer / integer->char work canonically.
+     Reader: parse #\\a, #\\space, #\\newline, #\\tab, #\\return,
+     #\\null, #\\xHH, #\\delete, #\\escape, #\\backspace. Every
+     char? procedure lifts a JS charCode.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.7 STRINGS
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.7 Strings"
+  :required-procs (string? make-string string string-length string-ref
+    string-set! string=? string<? string>? string<=? string>=?
+    string-ci=? string-ci<? string-ci>? string-ci<=? string-ci>=?
+    string-upcase string-downcase string-foldcase
+    substring string-append string->list list->string string-copy
+    string-copy! string-fill! string-map string-for-each
+    string->vector vector->string)
+  :implemented (string? make-string string string-length string-ref
+    string=? string<? string>? string<=? string>=?
+    string-upcase string-downcase substring string-append
+    string->list list->string string-copy)
+  :missing (string-set! string-ci=? string-ci<? string-ci>? string-ci<=?
+    string-ci>=? string-foldcase string-copy! string-fill!
+    string-map string-for-each string->vector vector->string)
+  :deferred (string-set! string-copy! string-fill!)
+  :priority "medium"
+  :implementation-notes
+    "IMPLEMENT: string-ci=? and family (case-fold compare), string-foldcase
+     (== toLowerCase), string-map, string-for-each (both fold over chars,
+     using our Ch wrapper), string->vector, vector->string.
+     DEFER: string-set!, string-copy!, string-fill! — JS strings are
+     immutable. New decision-entry: strings are immutable — matches
+     decision-006 rationale (immutable-first surface). Instead, use
+     string-append, substring, string-copy.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.8 VECTORS
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.8 Vectors"
+  :required-procs (vector? make-vector vector vector-length vector-ref
+    vector-set! vector->list list->vector vector-fill! vector-copy
+    vector-copy! vector-append vector-map vector-for-each
+    vector->string string->vector)
+  :implemented (vector? make-vector vector vector-length vector-ref
+    vector->list list->vector vector-map vector-for-each)
+  :missing (vector-set! vector-fill! vector-copy vector-copy!
+    vector-append vector->string string->vector)
+  :priority "high"
+  :implementation-notes
+    "IMPLEMENT all: vector-set! (JS array index assignment — see decision-009
+     which permits mutable vector state), vector-fill! (in-place fill),
+     vector-copy (fresh copy with optional start/end), vector-copy!
+     (in-place copy from src to dst), vector-append, vector->string
+     (chars to string), string->vector (string to chars).
+     Note: vector-map/for-each need optional multiple-vector variadic
+     form — R7RS §6.8 permits multiple vectors; ours only takes one.
+     Extend to accept multiple.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.9 BYTEVECTORS — ALL MISSING (no bytevector type today)
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.9 Bytevectors"
+  :required-procs (bytevector? make-bytevector bytevector bytevector-length
+    bytevector-u8-ref bytevector-u8-set! bytevector-copy bytevector-copy!
+    bytevector-append utf8->string string->utf8)
+  :implemented ()
+  :missing (bytevector? make-bytevector bytevector bytevector-length
+    bytevector-u8-ref bytevector-u8-set! bytevector-copy bytevector-copy!
+    bytevector-append utf8->string string->utf8)
+  :priority "high"
+  :implementation-notes
+    "Bytevector = JS Uint8Array. All ops trivial. utf8->string via
+     TextDecoder, string->utf8 via TextEncoder. Present in every modern
+     browser + Node.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.10 CONTROL FEATURES
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.10 Control features"
+  :required-procs (procedure? apply map for-each string-map string-for-each
+    vector-map vector-for-each call-with-current-continuation call/cc
+    values call-with-values dynamic-wind)
+  :implemented (procedure? apply map for-each vector-map vector-for-each)
+  :missing (string-map string-for-each values call-with-values
+    dynamic-wind)
+  :deferred (call-with-current-continuation call/cc)
+  :priority "high"
+  :implementation-notes
+    "IMPLEMENT: values (returns a Values wrapper), call-with-values
+     (consumes Values or single-value), dynamic-wind (structured
+     before/thunk/after — without full call/cc, before-after are still
+     runnable around a thunk).
+     DEFER: call/cc — decision-004 already logged. Confirm & keep.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.11 EXCEPTIONS
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.11 Exceptions"
+  :required-procs (error error-object? error-object-message
+    error-object-irritants error-object-type read-error? file-error?
+    raise raise-continuable with-exception-handler)
+  :implemented (error)
+  :missing (error-object? error-object-message error-object-irritants
+    error-object-type read-error? file-error?
+    raise raise-continuable with-exception-handler)
+  :priority "critical"
+  :implementation-notes
+    "IMPLEMENT: raise (throw ErrorObject), raise-continuable (same as
+     raise in our model — non-continuable exceptions are the only kind
+     we support; document this as a decision), with-exception-handler
+     (try/catch wrapper installing the handler), error-object?/message/
+     irritants (accessors on a class). Wrap `error` to build an
+     ErrorObject. read-error? (check ReadError class from reader.js),
+     file-error? (always #f, since we have no file ports per
+     decision-010). Then add `guard` as a special form: rewrites
+     to with-exception-handler + escape via thrown sentinel.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.12 ENVIRONMENTS AND EVAL
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.12 Environments and eval"
+  :required-procs (environment scheme-report-environment null-environment
+    eval interaction-environment)
+  :implemented (eval)
+  :missing (environment scheme-report-environment null-environment
+    interaction-environment)
+  :deferred (eval scheme-report-environment null-environment
+    interaction-environment environment)
+  :priority "deferred"
+  :implementation-notes
+    "DEFER: decision-005 already logged (no eval, no read of arbitrary
+     source at runtime). All environment/eval procedures inherit this
+     rationale. Keep our internal eval as an ADAPTER seam for the REPL
+     but do not expose a runtime eval to author code. Confirm & keep.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.13 INPUT AND OUTPUT
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.13 Input and output"
+  :required-procs (current-input-port current-output-port current-error-port
+    input-port? output-port? textual-port? binary-port? port?
+    close-port close-input-port close-output-port
+    open-input-string open-output-string get-output-string
+    open-input-bytevector open-output-bytevector get-output-bytevector
+    read read-char peek-char read-line read-string read-u8 peek-u8
+    char-ready? u8-ready? eof-object eof-object?
+    write write-shared write-simple display newline write-char write-string write-u8
+    flush-output-port
+    open-input-file open-output-file open-binary-input-file
+    open-binary-output-file with-input-from-file with-output-to-file
+    call-with-input-file call-with-output-file
+    input-port-open? output-port-open?)
+  :implemented (write display newline)
+  :missing (current-input-port current-output-port current-error-port
+    input-port? output-port? textual-port? binary-port? port?
+    close-port close-input-port close-output-port
+    open-input-string open-output-string get-output-string
+    open-input-bytevector open-output-bytevector get-output-bytevector
+    read-char peek-char read-line read-string read-u8 peek-u8
+    char-ready? u8-ready? eof-object eof-object?
+    write-shared write-simple write-char write-string write-u8
+    flush-output-port
+    input-port-open? output-port-open?)
+  :deferred (read open-input-file open-output-file open-binary-input-file
+    open-binary-output-file with-input-from-file with-output-to-file
+    call-with-input-file call-with-output-file)
+  :priority "medium — string/bytevector ports YES; file ports DEFERRED"
+  :implementation-notes
+    "IMPLEMENT: string ports (open-input-string, open-output-string,
+     get-output-string), bytevector ports (open-input-bytevector,
+     open-output-bytevector, get-output-bytevector), current-*-port
+     (thin wrappers around console), port? / input-port? / output-port?
+     / textual-port? / binary-port? / port-open?, close-port family,
+     read-char / peek-char / read-line / read-string, write-char /
+     write-string, eof-object / eof-object?, flush-output-port.
+     write-shared/write-simple: same as write in our model (no shared
+     structure — decision-006 no cycles).
+     DEFER file ports: decision-010 already logged (I/O gated as verbs).
+     DEFER read from arbitrary port: decision-005 (no runtime parsing).
+     String-port `read` for the REPL adapter is fine — but we do not
+     expose it to author programs.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §6.14 SYSTEM INTERFACE
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§6.14 System interface"
+  :required-procs (load file-exists? delete-file command-line exit
+    emergency-exit get-environment-variable get-environment-variables
+    current-second current-jiffy jiffies-per-second features)
+  :implemented (file-exists? exit)
+  :missing (load delete-file command-line emergency-exit
+    get-environment-variable get-environment-variables current-second
+    current-jiffy jiffies-per-second features)
+  :deferred (load delete-file)
+  :priority "medium"
+  :implementation-notes
+    "IMPLEMENT: command-line (process.argv.slice(1) or []),
+     emergency-exit (process.exit synchronously), get-environment-variable
+     (process.env[k]), get-environment-variables (as alist),
+     current-second (Date.now()/1000), current-jiffy (Date.now()),
+     jiffies-per-second (1000), features (list of feature symbols
+     including 'sakura-scheme 'r7rs).
+     DEFER: load (decision-005 no runtime parsing/eval),
+     delete-file (decision-010 file I/O is verb-gated).")
+
+;; ─────────────────────────────────────────────────────────────────
+;; §7 LIBRARY SYSTEM
+;; ─────────────────────────────────────────────────────────────────
+
+(section-audit
+  :section "§7 Formal syntax and library system"
+  :required-forms (define-library import export only except prefix rename
+    include include-library-declarations cond-expand)
+  :implemented ()
+  :missing (define-library import export only except prefix rename
+    include include-library-declarations cond-expand)
+  :deferred (define-library import export include include-library-declarations)
+  :priority "deferred — single flat namespace"
+  :implementation-notes
+    "IMPLEMENT: cond-expand (compile-time feature test macro — trivial
+     given `features`).
+     DEFER: define-library + full R7RS module system. Sakura Scheme uses
+     a single flat namespace by design (all 2189 verbs share the env
+     handed to the interp — see makeSakuraEnv). Adding a module system
+     would fork the dispatcher's structural walk (which assumes one
+     namespace). New decision-entry documents this.")
+
+;; ─────────────────────────────────────────────────────────────────
+;; SUMMARY
+;; ─────────────────────────────────────────────────────────────────
+
+(summary
+  :implemented-sections-complete
+    ("§6.1 equivalence" "§6.3 booleans" "§6.5 symbols")
+  :implementation-plan
+    ((:phase-2a "reader + interp — special forms + reader features"
+      :items (letrec* do delay/force parameterize guard let-values
+              define-record-type define-values case-lambda cond-arrow
+              case-arrow char-literals vector-literals block-comments
+              datum-comment long-form-booleans))
+     (:phase-2b "characters + strings + vectors + bytevectors"
+      :items (char? char-comparators char-alphabetic? etc.
+              string-map string-for-each string-ci-family string-foldcase
+              string->vector vector->string
+              vector-set! vector-fill! vector-copy vector-copy! vector-append
+              bytevector-full-family utf8-conversions))
+     (:phase-2c "control + exceptions + numbers"
+      :items (values call-with-values dynamic-wind
+              raise raise-continuable with-exception-handler
+              error-object family
+              floor-slash truncate-slash family exact-integer-sqrt
+              numerator denominator complex? predicates))
+     (:phase-2d "ports + system"
+      :items (string-ports bytevector-ports current-*-port port-predicates
+              read-char peek-char read-line eof-object
+              command-line current-second features cond-expand)))
+  :deferred-with-decision-entries
+    ((call/cc "decision-004")
+     (dynamic-wind-continuation-aware "extend decision-004")
+     (eval-runtime-source "decision-005")
+     (mutable-pairs "decision-006")
+     (mutable-strings "NEW decision")
+     (file-ports "decision-010")
+     (complex-numbers "NEW decision under decision-011")
+     (exact-rationals "decision-011")
+     (define-library "NEW decision")))

@@ -305,6 +305,33 @@ function detectCommonLisp(v) {
       note: `${bareNil.length} occurrence(s)`,
     })
   }
+  // Bare `true` / `false` — R7RS uses #t / #f
+  const bareTrue = codeNoStrings.match(/(?<![-a-z?!])true(?![-a-z?!])/g)
+  if (bareTrue && bareTrue.length > 0) {
+    findings.push({
+      patternKind: 'boolean-literal-drift',
+      example: 'bare `true` token',
+      severity: 'high',
+      proposedFix: 'R7RS: use #t (short) or #true (long) — never bare `true`',
+      alternative: 'none',
+      recommendation: '#t / #true',
+      requiresDecisionEntry: false,
+      note: `${bareTrue.length} occurrence(s)`,
+    })
+  }
+  const bareFalse = codeNoStrings.match(/(?<![-a-z?!])false(?![-a-z?!])/g)
+  if (bareFalse && bareFalse.length > 0) {
+    findings.push({
+      patternKind: 'boolean-literal-drift',
+      example: 'bare `false` token',
+      severity: 'high',
+      proposedFix: 'R7RS: use #f (short) or #false (long) — never bare `false`',
+      alternative: 'none',
+      recommendation: '#f / #false',
+      requiresDecisionEntry: false,
+      note: `${bareFalse.length} occurrence(s)`,
+    })
+  }
   return findings
 }
 
@@ -480,6 +507,7 @@ lines.push(';;   srfi-1-primitive          → no decision yet (filter/find)')
 lines.push(';;   match-form                → no decision yet')
 lines.push(';;   square-bracket-literal    → no decision yet')
 lines.push(';;   common-lisp-idiom         → no decision yet')
+lines.push(';;   boolean-literal-drift     → no decision yet (true/false → #t/#f)')
 lines.push(';; ═══════════════════════════════════════════════════════════════')
 lines.push('')
 lines.push('(sweep-header')
