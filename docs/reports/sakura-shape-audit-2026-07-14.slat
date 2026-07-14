@@ -1,0 +1,9350 @@
+; Sakura Shape Audit — 2026-07-14
+; Automated per-verb classification against Sakura-shape doctrine.
+; Reviewer: shape-audit-lane (script-driven, heuristic).
+;
+; Verdict legend:
+;   sakura-shaped         — examples fit Sakura world; keep as-is
+;   console-shape-legit   — fantasy-console verb, console-shape is CORRECT
+;   console-shape-leaking — non-console verb whose examples leaked console idioms; RESHAPE
+;   r7rs-violation        — example uses non-R7RS forms (funcall/call-cc/defmacro/etc)
+;   intent-unclear        — name+args do not clarify intent; ASK ALFRED
+
+(shape-audit
+  :date "2026-07-14"
+  :reviewer "shape-audit-lane"
+  :total-verbs-audited 1166
+  :fully-sakura-shaped 1142
+  :console-shape-legit 23
+  :console-shape-leaking 0
+  :r7rs-violations 1
+  :intent-clear-impl-stub 15
+  :intent-unclear 0
+)
+
+(finding
+  :verb "ai/align"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/arrive"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bb-del!"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bb-get"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bb-has?"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bb-set!"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-action"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-condition"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-force"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-invert"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-parallel"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-selector"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-sequence"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/bt-tick"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/clear!"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/cohere"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/decide"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/evade"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/flee"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/flock"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/flow-at"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/flow-field"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/follow-flow"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/follow-path"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/grid"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/max-force!"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/passable?"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/path"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/policy"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/policy-act"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/pursue"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/seek"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/separate"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/utility"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/wall!"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/wander"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/waypoints"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/embed"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/classify"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/generate"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/summarize"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/translate"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/rank"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/rerank"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ai/vector-search"
+  :namespace "ai"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/apply-symmetry"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/center"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/conjugacy-classes"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/cosets"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/cycles->perm"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/cyclic"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/dihedral"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/direct-product"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/element-order"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/group-from-table"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/identity"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/image"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/index"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/interval-vector"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/inverse"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/invert"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/is-abelian?"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/is-field?"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/is-group?"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/is-homomorphism?"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/is-isomorphic?"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/is-normal?"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/kernel"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/normal-form"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/nr-L"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/nr-P"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/nr-R"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/op"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/orbit"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/order"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/pcset"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm->cycles"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-apply"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-compose"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-conjugate"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-identity"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-inverse"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-order"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-parity"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-pow"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-sign"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/perm-support"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/poly-add"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/poly-mul"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/prime-form"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/rosette"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/stabilizer"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/subgroup-gen"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/subgroup?"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/symmetric"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/symmetry-group"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/transpose"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/triad"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/zn"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/zn-add"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/zn-inverse"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/zn-mul"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "alg/zn-units"
+  :namespace "alg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "animation/budget"
+  :namespace "animation"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "animation/reflow-policy"
+  :namespace "animation"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "animation/set-reflow-policy"
+  :namespace "animation"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "artifact/cite"
+  :namespace "artifact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "artifact/delete"
+  :namespace "artifact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "artifact/list"
+  :namespace "artifact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "artifact/save"
+  :namespace "artifact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ask/reasoner"
+  :namespace "ask"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/bar-clock"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/halt"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/key"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/listen"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/lufs"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/master-volume"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/onset-strength"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/onset?"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/play"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/playing?"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/spectrum"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/tempo"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio/transcribe-with-cloud-help"
+  :namespace "audio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "base/make-character"
+  :namespace "base"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "beat/on"
+  :namespace "beat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cadence/may-propose?"
+  :namespace "cadence"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cadence/plan"
+  :namespace "cadence"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/arc-length"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/arc-length-param"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/average-value"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/continuous?"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/critical-points-1d"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/curl"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/derivative"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/differentiable?"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/directional-derivative"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/divergence"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/extrema-1d"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/gradient"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/hessian"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/integral"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/jacobian"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/laplacian"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/limit"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/line-integral"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/newton"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/partial"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/radius-of-convergence"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/riemann-sum"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/second-derivative"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/series-converges?"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/surface-integral"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/surface-revolution"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/tangent-line"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/taylor"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/total-differential"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "calc/volume-revolution"
+  :namespace "calc"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/activity"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/activity-done"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/activity-progress"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/ask"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/audio-pulse"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/audio-pulse-off"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/do"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/emit"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/physics!"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card/transition"
+  :namespace "card"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "chem/atomic-weight"
+  :namespace "chem"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "chem/balance"
+  :namespace "chem"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "chem/formula-counts"
+  :namespace "chem"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "chem/molar-mass"
+  :namespace "chem"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "chem/moles"
+  :namespace "chem"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cine/comfort"
+  :namespace "cine"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cine/follow"
+  :namespace "cine"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cine/following?"
+  :namespace "cine"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cine/frame"
+  :namespace "cine"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cine/shot"
+  :namespace "cine"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cine/shots"
+  :namespace "cine"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cine/stop"
+  :namespace "cine"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "collision/define-layers!"
+  :namespace "collision"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/bell"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/binomial-coeffs"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/catalan"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/choose"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/derangement"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/factorial"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/multichoose"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/multinomial"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/partition-count"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/pascal-row"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/pascal-triangle"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/permute"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "comb/stirling2"
+  :namespace "comb"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/*"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/+"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/-"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/->polar"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/->string"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex//"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/="
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/arg"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/conjugate"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/exp"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/from-polar"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/im"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/make"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/modulus"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/neg"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/pow"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/re"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "complex/scale"
+  :namespace "complex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/e"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/ln10"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/ln2"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/phi"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/pi"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/sqrt2"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/sqrt3"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "const/tau"
+  :namespace "const"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cortex/read"
+  :namespace "cortex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cortex/write"
+  :namespace "cortex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cortex/topk"
+  :namespace "cortex"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "across-beats"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "act"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "add-shop"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "after"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "after-frame"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "age-layer"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "analog-pad"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "animation-budget"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "animation-reflow-policy"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "animation-set-reflow-policy"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "anomaly-recent"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "app-clear!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "app-list"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "app-of"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "apply-markdown"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "arc-between"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "at-beat"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-band"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-bands"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-bar-clock"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-beat?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-bpm"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-halt"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-master-volume"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-peak"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-perceptual-bands"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-play"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-playing?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-rms"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-tempo"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audio-time"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "audit-verify"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "begin-frame"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "big-bang"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "button"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "button-list"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "button-of"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-bring-to-view"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-center-on"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-export"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-fit-all"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-frame"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-home"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-pan"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-pan-to"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-record"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-scale"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-set!"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-state"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-tilt"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-trace"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-x"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-y"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-zoom-to"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "camera-zoom-to-card"
+  :namespace "core"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cancel-tick"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-cell-age"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-cell-alive?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-cell-set!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-clear-region"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-cols"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-pause"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-power-tier"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-region-live-count"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-resume"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-rows"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-rule"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-rule-set!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "canvas-spawn-pattern"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-anchor-settle"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-ask"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-canvas-rect"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-close"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-do"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-each"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-ease-aside"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-effect"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-emit"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-find-by-kind"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-focus!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-get"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-id-of"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-kind"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-kinds"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-land"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-lean-aside"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-list"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-open"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-open-then"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-pluck"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-reach"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-rect"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-rows"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-screen-rect"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-set!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-settle-breath"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-toss"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-unfocus!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-visible?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "card-where"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cards-list"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "check-with"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "clear-surface-layer"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "coin-emit"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "cols"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-cell-age-band"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-cell-glow"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-cell-lineage"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-cell-mixed-parents"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-cell?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-cols"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-end-round"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-feed-corner"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-fire-rainbow"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-init"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-live-count"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-rainbow-active?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-round-scores"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-round-tick"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-round-ticks-total"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-rows"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-set-rule"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-soup-flush"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-beehive"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-blinker"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-block"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-cell"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-corner"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-glider"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-gosper"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-lwss"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-r-pent"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-spawn-startup-gun"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-step"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-tick-count"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-tick-rainbow"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-tribe-counts"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "conway-underdog"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "create-listing-from"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ctx-get"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ctx-result"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ctx-set"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "define-app"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "define-button"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "define-card"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "define-form"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "display"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "done"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "dot-count"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "emoji-by-name"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "emoji-paint-pixel"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "emoji-prop"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "emoji-turn"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "end-frame"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "escalate"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "eval"
+  :namespace "core"
+  :verdict "r7rs-violation"
+  :issues ("example-1-eval-forbidden" "example-2-eval-forbidden" "example-3-eval-forbidden")
+  :recommendation "reshape-example-1,2,3"
+)
+
+(finding
+  :verb "eye-contact"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "field"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "fleet-do"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "fleet-each"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "flip-card"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "fold-card"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "form"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "form-group"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "form-list"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "form-of"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "frame"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-cell-age"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-cell-set!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-cell-state"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-cell?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-cols"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-init"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-live-count"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-neighbors"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-origin"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-rows"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-step"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-step-3state"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-step-4state"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-step-aged"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid-step-count"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "hand-off"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "imagine"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "in-formation"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "input-may-i?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "interrupted"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "invariants"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "key?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "land-on-downbeat"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "layout-bricklay!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "list-item-pluck"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "list-item-toss"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "make-character"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "measure-content"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion-anchor-to-input"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion-follow-input"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion-halt"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion-move-to"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "move-card"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nav-map"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "next"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note-dots"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note-place"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note-place-at"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note-release"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note-strike"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "obj-get"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "on-canvas-trace"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "on-frame"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "on-key"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "on-tick"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "orient-card"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "paint-cell"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "paint-coin"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "paint-conway"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "paint-grid"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "paint-grid-3state"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "paint-grid-4state"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "paint-grid-with-age"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "pixels-tall"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "pixels-wide"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-active-constellations"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-bookmark"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-clear-history"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-clips"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-current"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-delete-clip"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-dismiss-episode-actions"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-episode-actions"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-follow-speaker"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-followed-speakers"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-is-subscribed?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-load"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-muted?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-pause"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-play"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-publish-insight"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-queue"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-queue-add"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-queue-remove"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-rate"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-record-episode-actions"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-record-mention"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-resolve-tier"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-resume"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-save-brief"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-save-clip"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-save-mini-pod"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-seek"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-set-show-tier"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-sleep"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-state"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-subscribe"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-subscriptions"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-unfollow-speaker"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-unsubscribe"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-voice-overlay-enable"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "podcast-volume"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio-current-station-country"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio-current-station-name"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "randint"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "random"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "random-int"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "random-pick"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "random-range"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "rasterize-text"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "read-desktop-text"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "read-gmail-folder"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "read-inbox"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "read-inventory"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "read-open-returns"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "receive-listing"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "register-tick"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "release-listing"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "rotate-card"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "rows"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "rule-conway"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "scale-card"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-active-shop"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-dot-alpha"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-dot-color"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-dot-radius"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-free-shipping-threshold"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-inventory"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-processing-time"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-shipping-profile"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "set-vacation-mode"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sprite"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sprites"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stop"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stop-when"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "store-listing-republish"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "store-listing-set-price"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sub-position-per-beat"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "submit"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "summon"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-curtain"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-dim"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-dusk"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-exists?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-paint-dots"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-paint-text"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-paper"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface-spotlight"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "svg-set"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sway!"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tempo"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "to-draw"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "touch"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "transfer"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "unpublish-listing"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "viewport"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "viewport-width"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "wait"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "walk-cycle"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "walk-together"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "where-to-click"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "with-seed"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "with-spacing"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "zoom-legible?"
+  :namespace "core"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/accel"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/arc-length"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/bezier"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/bezier-eval"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/binormal"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/brachistochrone"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/catmull-rom"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/christoffel"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/curvature"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/curvature-2d"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/cycloid"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/descent-time"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/euler-lagrange-residual"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/eval"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/fall-line"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/fall-path"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/first-form"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/frenet-frame"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/gaussian-curvature"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/geodesic-distance"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/gradient"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/hermite"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/mean-curvature"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/normal"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/osculating-circle"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/principal-curvatures"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/sample"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/second-form"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/slope-angle"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/speed"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/spline-length"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/spline-resample"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/surface-graph"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/surface-normal"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/torsion"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/unit-tangent"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "curve/velocity"
+  :namespace "curve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "domain/of"
+  :namespace "domain"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "eng/beam-reactions"
+  :namespace "eng"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "eng/bode"
+  :namespace "eng"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "eng/statics-solve"
+  :namespace "eng"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "eng/tf"
+  :namespace "eng"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "eng/tf-dc-gain"
+  :namespace "eng"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "eng/tf-stable?"
+  :namespace "eng"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/accel!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/alive?"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/bounce!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/collisions"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/damage!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/despawn!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/distance"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/drag!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/friction!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/ref"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/glide!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/goto!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/gravity-scale!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/hp!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/kind"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/layer!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/mask!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/mass!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/max-speed!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/move!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/overlaps?"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/parent!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/pin!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/pos"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/pose!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/sensor!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/set!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/set-pos!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/set-vel!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/shape!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/shape-flower!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/solid!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/sprite!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/state"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/tag!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/team!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/untag!"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/vel"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/x"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "entity/y"
+  :namespace "entity"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/*"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/+"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/-"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/->float"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/->mixed"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/->string"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact//"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/<"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/<="
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/="
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/>"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/>="
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/abs"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/denominator"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/float->rat"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/inverse"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/neg"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/numerator"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "exact/rat"
+  :namespace "exact"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "floor/problem?"
+  :namespace "floor"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "flower/paint"
+  :namespace "flower"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/frame"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/grundy"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/mex"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/nim-outcome"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/nim-sum"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/running?"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/star-n"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/state"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/step"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/stop"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-add"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-birthday"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-eq?"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-is-number?"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-le?"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-lit"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-mul"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-neg"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-simplest"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/surreal-sub"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/temperature"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/to-real"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/ttt-best-move"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/ttt-value"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "game/wythoff-p?"
+  :namespace "game"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/->degrees"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/->radians"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/angle-between"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/arc-length"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/arccos"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/arcsin"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/arctan"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/atan2"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/circle"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/circle-area"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/circle-circumference"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/collinear?"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/cone-surface"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/cone-volume"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/cos"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/cylinder-surface"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/cylinder-volume"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/dilate"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/distance"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/inscribed-angle"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/interior-angle"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/interior-angle-deg"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/law-of-cosines-angle"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/law-of-cosines-side"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/law-of-sines-side"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/midpoint"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/perimeter"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/point"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/polygon-area"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/polygon-perimeter"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/prism-volume"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/pyramid-volume"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/pythagoras-hypotenuse"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/pythagoras-leg"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/reflect-line"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/reflect-origin"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/reflect-x"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/reflect-y"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/regular-polygon-area"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/regular-polygon-vertices"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/right-triangle-angle"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/rotate"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/rotate-about"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/sector-area"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/segment"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/similar?"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/sin"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/slope"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/solve-right"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/sphere-surface"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/sphere-volume"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/tan"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/transform-polygon"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/translate"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/triangle"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/triangle-area"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "geom/triangle-area-heron"
+  :namespace "geom"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/card-center"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/clear"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/dot"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-clear!"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-go-to!"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-list"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-move-to!"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-pos"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-settled?"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-spawn!"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/flower-state!"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "grid/glow"
+  :namespace "grid"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "group/count"
+  :namespace "group"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "group/each"
+  :namespace "group"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "group/find"
+  :namespace "group"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "input/buttons"
+  :namespace "input"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "input/down?"
+  :namespace "input"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "input/may-i?"
+  :namespace "input"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "input/pressed?"
+  :namespace "input"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "input/set!"
+  :namespace "input"
+  :verdict "console-shape-legit"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "juggle/balls"
+  :namespace "juggle"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "juggle/generate"
+  :namespace "juggle"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "juggle/max-throw"
+  :namespace "juggle"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "juggle/simulate"
+  :namespace "juggle"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "juggle/state"
+  :namespace "juggle"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "juggle/valid?"
+  :namespace "juggle"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/characteristic-poly"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/eigenvalues"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/eigenvalues-2x2"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/eigenvalues-3x3"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/eigenvectors"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/gram-schmidt"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/inverse"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/is-invertible?"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/is-orthogonal?"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/is-symmetric?"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/least-squares"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/lu"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/matrix-power"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/null-space"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/project"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/qr"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/rank"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/solve"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/svd"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "linalg/trace"
+  :namespace "linalg"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/area-model"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/array"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/avg"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/compare"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/count-on"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/digit-at"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/exp"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/expanded-form"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/fraction-bar"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/integer-line"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/log"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/log-base"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/log10"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/log2"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/mixed-number"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/number-line"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/pct"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/place-value"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/pow"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/ratio-bar"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/round"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/round-half-up"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/round-to-place"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/skip-count"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "math/sum"
+  :namespace "math"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/*"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/+"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/-"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/->string"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/="
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/cols"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/determinant"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/identity"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/make"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/ref"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/rows"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/scale"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "matrix/transpose"
+  :namespace "matrix"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/anchor-to-input"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/arc"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/cadence"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/drop"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/follow-input"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/halt"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/move-to"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/pocket"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/with-feel"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "motion/with-pace"
+  :namespace "motion"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "need/deep-think?"
+  :namespace "need"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note/place-at"
+  :namespace "note"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note/release"
+  :namespace "note"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "note/strike"
+  :namespace "note"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/base-convert"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/composite?"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/continued-fraction"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/coprime?"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/crt"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/digit-sum"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/digital-root"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/divisible?"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/divisor-count"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/divisor-sum"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/divisors"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/divmod"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/even?"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/extended-gcd"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/factor"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/factor-tree"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/gcd"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/is-perfect?"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/lcm"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/mod"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/mod-inverse"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/mod-pow"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/next-prime"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/nth-prime"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/odd?"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/prime-factorization"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/prime?"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/sieve"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "nt/totient"
+  :namespace "nt"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "num/nintegrate-2d"
+  :namespace "num"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "num/nintegrate-3d"
+  :namespace "num"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "object/fetch"
+  :namespace "object"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "object/spawn"
+  :namespace "object"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/absorbing-probs"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/absorbing-steps"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/assign"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/assign-cost"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/bellman-ford"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/branch-bound"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/dijkstra"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/edd"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/eoq"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/erlang-b"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/erlang-c"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/interior-point"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/inventory-cost"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/johnson"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/knapsack"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/littles-law"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/lp"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/lp-solve"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/lp-value"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/markov"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/markov-step"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/max-flow"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/mip-solve"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/mm1"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/mmc"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/mmc-servers-for"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/newsvendor"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/newsvendor-fractile"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/pagerank"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/reorder-point"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/safety-stock"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/sequence-metrics"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/simplex"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/spt"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "ops/stationary"
+  :namespace "ops"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/bow"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/breathe"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/expression"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/grasp"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/lean"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/look-toward"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/lower"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/nod"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/point"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/raise"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/reach"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/shake"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/shrug"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/step"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/sway"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/tilt"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/turn"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/twist"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "part/wave"
+  :namespace "part"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "pattern/clave"
+  :namespace "pattern"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/L-free"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/L-harmonic"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/constant"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/dimension"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/gravitational-force"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/kinematics"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/kinetic-energy"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/lagrange-residual"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/lagrangian-action"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/nbody"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/q*"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/q+"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/q/"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/quantity"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/quantity->tag"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/rlc-damping"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/same-dimension?"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/uncertainty-add"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "phys/uncertainty-mul"
+  :namespace "phys"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/bar"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/contour"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/fit-grid"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/from-series"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/function"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/histogram"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/line"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/nice-domain"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/parametric"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/phase-portrait"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/render-svg"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/scatter"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/vector-field"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "plot/with"
+  :namespace "plot"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "prefab/define"
+  :namespace "prefab"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "prefab/spawn"
+  :namespace "prefab"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/eq"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/mesh"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/mute"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/next"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/now-playing"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/pause"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/play"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/prev"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/stations"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/sync-to-beat"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/toggle"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/unmute"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/visualize"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "radio/volume"
+  :namespace "radio"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "route/off-domain"
+  :namespace "route"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "scene/clear"
+  :namespace "scene"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "scene/grid"
+  :namespace "scene"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "scene/imagine"
+  :namespace "scene"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "scene/load"
+  :namespace "scene"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "scene/spawn-many"
+  :namespace "scene"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/arithmetic"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/arithmetic-sum"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/fibonacci"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/geometric"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/geometric-inf-sum"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/geometric-sum"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/lucas"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/nth-term"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/partial-sums"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/product"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/recurrence"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "seq/sigma"
+  :namespace "seq"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "shoppe/balance"
+  :namespace "shoppe"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "shoppe/buy-merch"
+  :namespace "shoppe"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "shoppe/buy-pack"
+  :namespace "shoppe"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "shoppe/close"
+  :namespace "shoppe"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "shoppe/open"
+  :namespace "shoppe"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "shoppe/savings"
+  :namespace "shoppe"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "shoppe/transactions"
+  :namespace "shoppe"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/completing-square"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/distance"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/interest"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/linear"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/midpoint"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/percent-change"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/proportion"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/pythagorean-triple?"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/quadratic"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/slope-intercept"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/system-2x2"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/unit-circle"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "solve/vertex"
+  :namespace "solve"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sprite/address"
+  :namespace "sprite"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sprite/landmarks"
+  :namespace "sprite"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sprite/rasterize"
+  :namespace "sprite"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/count"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/histogram"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/histogram-counts"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/iqr"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/max"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/mean"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/median"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/min"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/mode"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/probability"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/quartile"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/range"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/sd"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/sd-sample"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/sum"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/variance"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/variance-sample"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "stat/z-score"
+  :namespace "stat"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface/curtain"
+  :namespace "surface"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface/describe"
+  :namespace "surface"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface/digest"
+  :namespace "surface"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface/dim"
+  :namespace "surface"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "surface/spotlight"
+  :namespace "surface"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/->string"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/="
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/add"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/coeff"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/const"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/degree"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/derivative"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/evaluate"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/expand"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/factor"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/mul"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/poly"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/pow"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/scale"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/solve-ineq"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/solve-linear"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/solve-quadratic"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/sub"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/substitute"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "sym/var"
+  :namespace "sym"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/808"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/chord"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/kit"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/load-score"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/onset-tap"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/orch"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/orchestra"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/play"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "synth/sp1200"
+  :namespace "synth"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "system/cards"
+  :namespace "system"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "system/health"
+  :namespace "system"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "system/registry"
+  :namespace "system"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "system/scheduler"
+  :namespace "system"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "system/surface"
+  :namespace "system"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "text/draw"
+  :namespace "text"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "think/deep"
+  :namespace "think"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/ease"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/lissajous"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/mod-n"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/osc"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/pattern"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/phase"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/pulse"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/sine"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "tick/triangle"
+  :namespace "tick"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "time/across"
+  :namespace "time"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "time/delta"
+  :namespace "time"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "time/during"
+  :namespace "time"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "time/every-ms"
+  :namespace "time"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "time/then"
+  :namespace "time"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "time/until"
+  :namespace "time"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "time/when"
+  :namespace "time"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/ball"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/betti"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/betti-curve"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/betti-k"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/bottleneck"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/boundary-matrix"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/close"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/complex"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/components"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/connected?"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/crossing-number"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/euler-char"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/euler-genus"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/f-vector"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/graph"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/homology-gf2"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/knot"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/metric-space"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/orientable?"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/persistence"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/persistence-entropy"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/planar?"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/rips-filtration"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/total-persistence"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/unknot?"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/vietoris-rips"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "topo/writhe"
+  :namespace "topo"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "transport/tempo"
+  :namespace "transport"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/+"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/-"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/->string"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/="
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/angle-between"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/cross"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/dim"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/dot"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/make"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/norm"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/normalize"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/ref"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "vec/scale"
+  :namespace "vec"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "weather/conjure"
+  :namespace "weather"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/after"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/attract!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/camera"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/camera-bounds!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/camera-follow!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/camera-shake!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/camera-snap!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/collisions"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/count"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/each"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/find"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/floor!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/frame"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/gravity!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/hash"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/impulse!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/link!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/link-rest!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/nearest"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/render"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/repel!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/reset!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/restore!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/snapshot"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/solve!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/spawn"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/step"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/sway-all!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-audio"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-clear!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-frames"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-hash"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-lcamera"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-record!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-recording?"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-replay"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-save"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/tape-stop!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
+
+(finding
+  :verb "world/wind!"
+  :namespace "world"
+  :verdict "sakura-shaped"
+  :issues ()
+  :recommendation "keep"
+)
