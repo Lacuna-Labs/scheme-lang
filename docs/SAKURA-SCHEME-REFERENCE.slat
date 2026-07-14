@@ -13164,13 +13164,18 @@
   :name "geom/rotate"
   :library "geom"
   :kind "meta"
-  :signature "(geom/rotate point theta) -> point"
-  :summary "Rotate a point counterclockwise about the origin by theta radians."
-  :explanation "Rotation about the origin is a fundamental transformation. A point (x, y) rotated by angle θ counterclockwise becomes (x cos θ - y sin θ, x sin θ + y cos θ). This is used for turning shapes, camera rotations, and orienting game objects. The angle is in radians; use geom/->radians to convert from degrees if needed."
+  :signature "(geom/rotate x y theta) -> (x' y')"
+  :summary "Rotate the point (x, y) counterclockwise about the origin by theta radians; return the rotated coordinates."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "3-arg positional form: separate x, y, theta. Returns a 2-list (x', y'). Older docs promised a point-list first argument; the actual impl takes flat positional args. Compose with car/cadr of a point-list if you have one: (geom/rotate (car pt) (cadr pt) theta)."
+  :explanation "Rotation about the origin: point (x, y) rotated by angle θ counterclockwise becomes (x cos θ - y sin θ, x sin θ + y cos θ). Angle is in radians."
   :examples (
-    (:tier "novice" :code "(geom/rotate (geom/point 1 0) 0)" :note "Rotate (1, 0) by 0 radians (no rotation); expect (1, 0).")
-    (:tier "intermediate" :code "(geom/rotate (geom/point 1 0) (geom/->radians 90))" :note "Rotate (1, 0) counterclockwise by 90° (π/2 radians); expect approximately (0, 1).")
-    (:tier "expert" :code "(define (rotate-polygon pts angle)\n  (map (lambda (p) (geom/rotate p angle)) pts))\n(let ((triangle (list (geom/point 1 0) (geom/point 0 1) (geom/point -1 0))))\n  (rotate-polygon triangle (geom/->radians 45)))" :note "Rotate an entire polygon by rotating each vertex; useful for orienting game sprites or geometric shapes.")
+    (:tier "novice" :code "(geom/rotate 1 0 0)" :note "Zero rotation, no change. Returns (1 0).")
+    (:tier "apprentice" :code "(geom/rotate 1 0 (geom/->radians 90))" :note "90 degrees counterclockwise. Returns (~0 1) — the unit x-axis rotated to the y-axis (tiny float epsilon for the near-zero x component).")
+    (:tier "intermediate" :code "(geom/rotate 3 4 (geom/->radians 180))" :note "180-degree rotation flips both coords. Returns (~-3 ~-4).")
+    (:tier "expert" :code "(define (rotate-point-list pts theta)\n  (map (lambda (p) (geom/rotate (car p) (cadr p) theta)) pts))\n(rotate-point-list '((1 0) (0 1) (-1 0)) (geom/->radians 90))" :note "Adapter: given a point-list format, rotate each. Handy when working with polygon vertex lists rather than flat coords.")
+    (:tier "master" :code "(define (rosette-vertices n)\n  ;; Generate n equally-spaced points on the unit circle by rotating (1,0)\n  ;; by k*(2*pi/n) for k = 0..n-1. Classic construction for regular polygons.\n  (let loop ((k 0) (acc '()))\n    (if (>= k n)\n        (reverse acc)\n        (let ((theta (/ (* 2 3.141592653589793 k) n)))\n          (loop (+ k 1)\n                (cons (geom/rotate 1 0 theta) acc))))))\n(length (rosette-vertices 8))" :note "Build an 8-vertex rosette (unit octagon). Returns 8 — the count of vertices. Extend to draw regular polygons by connecting them with geom/segment.")
   )
   :caveats ("theta is in radians, not degrees; use geom/->radians to convert." "Rotation is counterclockwise; negative angles rotate clockwise." "Floating-point precision may introduce small rounding errors, especially for non-special angles.")
   :drawbacks ("Always rotates about the origin; for rotation about an arbitrary point, use geom/rotate-about instead." "More expensive than no transformation; avoid rotating the same point multiple times in a loop (rotate once and reuse).")
