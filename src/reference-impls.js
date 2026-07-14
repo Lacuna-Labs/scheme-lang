@@ -19,10 +19,17 @@ export function installReferenceImpls(env, fuel) {
   // Don't overwrite an existing binding — earlier layers (L2 AI, L3
   // GAME, L4 COMMERCIAL) win over the reference registrar's impls.
   // Snapshot the env at entry so we only add NEW names.
+  //
+  // Also track names WE define in this pass — otherwise a later bulk
+  // descriptor list would clobber an earlier real-impl def (this is
+  // how `audit-verify` used to lose to a descriptor even though the
+  // first def gave it the honest `() => true` shape).
   const preExisting = new Set(env.vars.keys())
+  const definedHere = new Set()
   const def = (n, f, perm = 'read') => {
-    if (preExisting.has(n)) return
+    if (preExisting.has(n) || definedHere.has(n)) return
     env.define(n, f, { perm })
+    definedHere.add(n)
   }
 
   // ── helpers ────────────────────────────────────────────────────────
@@ -30,12 +37,30 @@ export function installReferenceImpls(env, fuel) {
   const list = (...a) => a
   const isNil = (x) => x === undefined || x === null || (Array.isArray(x) && x.length === 0)
 
-  // Return a tagged descriptor list — used by "runtime" verbs (act,
-  // done, next, escalate, paint-*, camera-*, envelope-queue, …) that
-  // in a standalone REPL have no wired subsystem. The descriptor is
-  // recognisable by callers and matches the shape the real dispatcher
-  // would receive.
-  const descriptor = (tag, ...args) => [tag, ...args]
+  // Return an honest deferred-substrate error record. Alfred's floor
+  // doctrine — "We can't lie to people. They trust us." — forbids the
+  // old descriptor-shape trick where a verb returned `[verb-name, args]`
+  // pretending it had done the thing. Instead, verbs whose real
+  // substrate isn't wired in this build return a first-class error
+  // record catchable via `guard` (R7RS §6.11). Consumers (books,
+  // curator-web) that DO wire the substrate override the impl before
+  // this file's def() runs — so real dispatch still happens.
+  //
+  // Shape: { __sakuraError: true, kind, verb, message } — a plain
+  // JS object with a stable sentinel so scanners, guards, and the
+  // REPL's rich display can recognise it without evaluating.
+  //
+  // Kept the name `descriptor` at the call site during the sweep so we
+  // don't touch 84 lines. Every call becomes an honest error record.
+  const descriptor = (tag /* , ...args */) => ({
+    __sakuraError: true,
+    kind: 'substrate-required',
+    verb: tag,
+    message: `substrate not wired in this build for '${tag}'`,
+  })
+  // Escape hatch: verbs that genuinely still need to compose a tagged
+  // list (a couple of internal helpers) use `taggedList`.
+  const taggedList = (tag, ...args) => [tag, ...args]
 
   // ── afford / think / ask / need — meta-reasoning descriptors ──────
   def('afford/deep-think', (detail = null) => descriptor('afford/deep-think', detail))

@@ -619,10 +619,15 @@ test('quasiquote special form still works', () => {
 
 // ── REPL-layer graphic-shape auto-quote + easter egg ─────────────────
 
-test('shape verbs auto-quote at REPL prompt', () => {
-  const r = runReplPiped('(circle 40 40 15)\n,exit\n')
+test('shape verbs at REPL prompt draw + render shows pixels', () => {
+  // Draw verbs (circle, disc, line, rect, rect-fill) return unspecified
+  // per R7RS side-effect convention — the descriptor-shape sweep
+  // (2026-07-14) stripped the old tagged-list "receipt" they used to
+  // fake-print. The pixels DID land in the framebuffer; calling
+  // (render) shows them as braille dots.
+  const r = runReplPiped('(circle 40 40 15)\n(render)\n,exit\n')
   assert.doesNotMatch(r.stdout, /unbound/)
-  // Braille output uses these characters
+  // Braille output uses these characters after (render) is called.
   assert.match(r.stdout, /[⠀-⣿]/)
 })
 

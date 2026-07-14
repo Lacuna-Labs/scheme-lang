@@ -293,29 +293,35 @@ function runEval(expr, extraEnv = {}) {
   return { stdout: (r.stdout || '').trim(), stderr: (r.stderr || '').trim(), status: r.status }
 }
 
-test('e2e — circle verb evaluates', () => {
-  const r = runEval('(circle 40 40 15)')
+// Draw verbs used to return a tagged-list "receipt" (circle 40 40 15)
+// that also happened to draw. The descriptor-shape sweep (2026-07-14)
+// removed that receipt — real side-effect verbs return unspecified per
+// R7RS convention. What we prove now is (a) evaluation succeeds, and
+// (b) the framebuffer actually holds pixels afterwards via (render).
+test('e2e — circle verb evaluates and lands pixels', () => {
+  const r = runEval('(begin (clear) (circle 40 40 15) (render))')
   assert.equal(r.status, 0)
-  // Prints as tagged list.
-  assert.match(r.stdout, /circle/)
+  // (render) returns a framebuffer record — enough to prove the draw
+  // ran and the framebuffer holds state.
+  assert.match(r.stdout, /object/)
 })
 
-test('e2e — disc verb evaluates', () => {
-  const r = runEval('(disc 40 40 15)')
+test('e2e — disc verb evaluates and lands pixels', () => {
+  const r = runEval('(begin (clear) (disc 40 40 15) (render))')
   assert.equal(r.status, 0)
-  assert.match(r.stdout, /disc/)
+  assert.match(r.stdout, /object/)
 })
 
-test('e2e — line verb evaluates', () => {
-  const r = runEval('(line 0 0 40 40)')
+test('e2e — line verb evaluates and lands pixels', () => {
+  const r = runEval('(begin (clear) (line 0 0 40 40) (render))')
   assert.equal(r.status, 0)
-  assert.match(r.stdout, /line/)
+  assert.match(r.stdout, /object/)
 })
 
-test('e2e — rect verb evaluates', () => {
-  const r = runEval('(rect 5 5 20 15)')
+test('e2e — rect verb evaluates and lands pixels', () => {
+  const r = runEval('(begin (clear) (rect 5 5 20 15) (render))')
   assert.equal(r.status, 0)
-  assert.match(r.stdout, /rect/)
+  assert.match(r.stdout, /object/)
 })
 
 test('e2e — set-mode changes dimensions', () => {

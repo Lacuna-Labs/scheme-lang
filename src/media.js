@@ -130,39 +130,42 @@ export function registerMedia(env, fuel) {
     return undefined
   })
 
-  // (circle cx cy r) → tagged list, also drawn into the framebuffer.
+  // (circle cx cy r) — draws into the framebuffer. Side effect only.
+  //
+  // Alfred's floor doctrine: "We can't lie to people. They trust us."
+  // Historically these draw verbs returned a tagged-list receipt like
+  // (circle 40 40 15) so richDisplay could re-render the shape from
+  // the REPL value. But the descriptor-shape sweep (2026-07-14) called
+  // that a lie by shape — a return value that walks like a descriptor
+  // is a descriptor. Real side-effect verbs in R7RS return unspecified.
+  // The actual pixels landed in the framebuffer; `(render)` reads them.
   def('circle', (cx, cy, r) => {
-    const st = getMediaState()
-    st.fb.circle(+cx, +cy, +r)
-    return [new Sym('circle'), +cx, +cy, +r]
+    getMediaState().fb.circle(+cx, +cy, +r)
+    return undefined
   })
 
-  // (disc cx cy r) → tagged list, also drawn.
+  // (disc cx cy r) — filled circle, side effect only.
   def('disc', (cx, cy, r) => {
-    const st = getMediaState()
-    st.fb.disc(+cx, +cy, +r)
-    return [new Sym('disc'), +cx, +cy, +r]
+    getMediaState().fb.disc(+cx, +cy, +r)
+    return undefined
   })
 
-  // (line x0 y0 x1 y1) → tagged list, also drawn.
+  // (line x0 y0 x1 y1) — line segment, side effect only.
   def('line', (x0, y0, x1, y1) => {
-    const st = getMediaState()
-    st.fb.line(+x0, +y0, +x1, +y1)
-    return [new Sym('line'), +x0, +y0, +x1, +y1]
+    getMediaState().fb.line(+x0, +y0, +x1, +y1)
+    return undefined
   })
 
-  // (rect x y w h) → tagged list, also drawn.
+  // (rect x y w h) — rectangle outline, side effect only.
   def('rect', (x, y, w, h) => {
-    const st = getMediaState()
-    st.fb.rect(+x, +y, +w, +h)
-    return [new Sym('rect'), +x, +y, +w, +h]
+    getMediaState().fb.rect(+x, +y, +w, +h)
+    return undefined
   })
 
-  // (rect-fill x y w h) — filled variant.
+  // (rect-fill x y w h) — filled rectangle, side effect only.
   def('rect-fill', (x, y, w, h) => {
-    const st = getMediaState()
-    st.fb.rectFill(+x, +y, +w, +h)
-    return [new Sym('rect-fill'), +x, +y, +w, +h]
+    getMediaState().fb.rectFill(+x, +y, +w, +h)
+    return undefined
   })
 
   // (plot data) → a plot record. Also rasterizes into the framebuffer.

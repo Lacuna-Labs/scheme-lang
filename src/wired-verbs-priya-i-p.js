@@ -184,12 +184,17 @@ export function installWiredVerbsIP(env, _fuel) {
   // lookup. In a pure-REPL context there is no ambient "backing list"
   // to mutate. Priya ships a functional variant that works on an
   // explicit list argument: (list-item-pluck lst id) → shorter list.
-  // The 1-arg form (id only) returns a descriptor for the host, since
-  // the ambient store is host-side.
+  // The 1-arg form (id only) used to return a descriptor lie — post
+  // the descriptor-shape sweep (2026-07-14) it returns an honest
+  // substrate-required error record, matching R7RS §6.11.
   def('list-item-pluck', (...args) => {
     if (args.length === 1) {
-      // Host-side lookup — return descriptor honestly.
-      return [sym('list-item-pluck'), args[0]]
+      return {
+        __sakuraError: true,
+        kind: 'substrate-required',
+        verb: 'list-item-pluck',
+        message: 'ambient list-store host not wired; call (list-item-pluck lst id) with an explicit list',
+      }
     }
     if (args.length >= 2 && Array.isArray(args[0])) {
       const [lst, id] = args
@@ -208,12 +213,16 @@ export function installWiredVerbsIP(env, _fuel) {
   })
 
   // ── list-item-toss — reorder item within a list ──────────────────
-  // Same story as pluck: pure form (lst id from to) or descriptor for
-  // the host. Zero-based indices; out-of-bounds returns list unchanged.
+  // Same story as pluck: pure form (lst id from to) or an honest
+  // substrate-required error for the ambient-store host case.
   def('list-item-toss', (...args) => {
     if (args.length === 3) {
-      // (id from to) — host-side; return descriptor.
-      return [sym('list-item-toss'), args[0], num(args[1]), num(args[2])]
+      return {
+        __sakuraError: true,
+        kind: 'substrate-required',
+        verb: 'list-item-toss',
+        message: 'ambient list-store host not wired; call (list-item-toss lst id from to) with an explicit list',
+      }
     }
     if (args.length >= 4 && Array.isArray(args[0])) {
       const [lst, _id, fromI, toI] = args

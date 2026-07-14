@@ -41,11 +41,30 @@ export function installWiredVerbs(env, fuel) {
     env.define(n, f, { perm })
   }
 
-  // Shaped descriptors — for verbs whose real semantics need a live
-  // subsystem (audio hw, host frame loop). The descriptor is a tagged
-  // list the caller can inspect; consumers running under a real host
-  // pass their own installer that overrides these.
-  const descriptor = (tag, ...args) => [tag, ...args]
+  // Honest deferred-substrate error record. Alfred's floor doctrine
+  // — "We can't lie to people. They trust us." — forbids the old
+  // descriptor-shape trick where a verb returned `[verb-name, args]`
+  // pretending it had done the thing. Instead, verbs whose real
+  // substrate isn't wired in this build return a first-class error
+  // record catchable via `guard` (R7RS §6.11). Consumers (books,
+  // curator-web) that DO wire the substrate install a real impl BEFORE
+  // this module runs, which the preExisting guard preserves.
+  //
+  // Shape: { __sakuraError: true, kind, verb, message } — a plain
+  // JS object with a stable sentinel so scanners, guards, and the
+  // REPL's rich display recognise it without evaluating.
+  //
+  // Kept the name `descriptor` at the call site during the sweep so
+  // 66 lines don't have to move.
+  const descriptor = (tag /* , ...args */) => ({
+    __sakuraError: true,
+    kind: 'substrate-required',
+    verb: tag,
+    message: `substrate not wired in this build for '${tag}'`,
+  })
+  // Escape hatch: verbs that genuinely still need to compose a tagged
+  // list (a couple of internal helpers) use `taggedList`.
+  const taggedList = (tag, ...args) => [tag, ...args]
 
   // ── 1. Cortex first-class wrappers ─────────────────────────────────
   //
@@ -1145,7 +1164,164 @@ export function installWiredVerbs(env, fuel) {
     }
     return Object.entries(out).map(([k, v]) => [k, v])
   })
-  def('chem/balance', (formula) => descriptor('chem/balance', formula))
+  // ── chem/balance — balance a chemical equation via null-space of the
+  //    atom-count matrix. Reference contract: (chem/balance reaction) ->
+  //    list of integer coefficients | 'unbalanced-reaction.
+  //
+  // reaction format:
+  //   ((reactants…) (products…))
+  // where each formula is a string like "H2O", "CO2", "Fe2(OH)3", "NH3".
+  // Symbols and strings both accepted. Returns a list of positive
+  // integer coefficients ordered as (reactant-coeffs… product-coeffs…);
+  // or the symbol 'unbalanced-reaction if no positive-integer null-space
+  // solution exists.
+  //
+  // Algorithm: build a matrix M (rows=elements, cols=formulas) of atom
+  // counts (products get NEGATIVE counts). Solve Mx=0 over the rationals
+  // via Gauss-Jordan; scale the parametric solution to smallest
+  // positive integers via lcm/gcd.
+  def('chem/balance', (reaction) => {
+    // parseFormula: "Fe2(OH)3" -> { Fe: 2, O: 3, H: 3 }
+    const parseFormula = (s) => {
+      s = String(s instanceof Sym ? s.name : s)
+      const counts = {}
+      // Recursive descent for parenthesized groups. Returns { atoms, next-index }.
+      const parseAt = (pos) => {
+        const out = {}
+        while (pos < s.length) {
+          const c = s[pos]
+          if (c === '(') {
+            const inner = parseAt(pos + 1)
+            pos = inner.next
+            // multiplier after ')'
+            let mult = ''
+            while (pos < s.length && /[0-9]/.test(s[pos])) { mult += s[pos++] }
+            const m = mult ? parseInt(mult, 10) : 1
+            for (const [k, v] of Object.entries(inner.atoms)) {
+              out[k] = (out[k] || 0) + v * m
+            }
+          } else if (c === ')') {
+            return { atoms: out, next: pos + 1 }
+          } else if (/[A-Z]/.test(c)) {
+            let sym = c; pos++
+            while (pos < s.length && /[a-z]/.test(s[pos])) sym += s[pos++]
+            let mult = ''
+            while (pos < s.length && /[0-9]/.test(s[pos])) { mult += s[pos++] }
+            const m = mult ? parseInt(mult, 10) : 1
+            out[sym] = (out[sym] || 0) + m
+          } else {
+            pos++  // skip unknown character (whitespace, etc.)
+          }
+        }
+        return { atoms: out, next: pos }
+      }
+      const { atoms } = parseAt(0)
+      return atoms
+    }
+
+    const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b] } return a || 1 }
+    const lcm = (a, b) => Math.abs(a * b) / gcd(a, b)
+
+    if (!Array.isArray(reaction) || reaction.length !== 2) return new Sym('unbalanced-reaction')
+    const [reactants, products] = reaction
+    if (!Array.isArray(reactants) || !Array.isArray(products) ||
+        reactants.length === 0 || products.length === 0) {
+      return new Sym('unbalanced-reaction')
+    }
+
+    const allFormulas = [...reactants, ...products]
+    const n = allFormulas.length
+    const parsed = allFormulas.map(parseFormula)
+    const elements = [...new Set(parsed.flatMap(p => Object.keys(p)))].sort()
+    if (elements.length === 0) return new Sym('unbalanced-reaction')
+
+    // Build matrix M: rows = elements, cols = formulas. Products get
+    // negative counts so the whole reaction sums to 0.
+    const M = elements.map(el => parsed.map((p, i) => {
+      const cnt = p[el] || 0
+      return i < reactants.length ? cnt : -cnt
+    }))
+
+    // Gauss-Jordan over rationals — represent each cell as a fraction
+    // [num, den] and reduce. Rows are equations, cols are unknowns.
+    const rows = M.map(r => r.map(x => [x, 1]))
+    const frac = (a, b) => { const g = gcd(a, b); const s = b < 0 ? -1 : 1; return [s * a / g, s * b / g] }
+    const fAdd = ([a, b], [c, d]) => frac(a * d + c * b, b * d)
+    const fMul = ([a, b], [c, d]) => frac(a * c, b * d)
+    const fNeg = ([a, b]) => [-a, b]
+    const nRows = rows.length, nCols = n
+    let pivotCol = 0
+    for (let row = 0; row < nRows && pivotCol < nCols; pivotCol++) {
+      // Find pivot in pivotCol at row..nRows.
+      let pivotRow = -1
+      for (let r = row; r < nRows; r++) {
+        if (rows[r][pivotCol][0] !== 0) { pivotRow = r; break }
+      }
+      if (pivotRow === -1) continue
+      // Swap.
+      [rows[row], rows[pivotRow]] = [rows[pivotRow], rows[row]]
+      // Normalize pivot row to 1 at pivot column.
+      const piv = rows[row][pivotCol]
+      const pivInv = [piv[1], piv[0]]  // reciprocal
+      rows[row] = rows[row].map(cell => fMul(cell, pivInv))
+      // Eliminate other rows.
+      for (let r = 0; r < nRows; r++) {
+        if (r === row) continue
+        const factor = rows[r][pivotCol]
+        if (factor[0] === 0) continue
+        rows[r] = rows[r].map((cell, j) => fAdd(cell, fNeg(fMul(factor, rows[row][j]))))
+      }
+      row++
+    }
+
+    // Now find a null-space vector. Pick free variable(s) = 1.
+    // Identify pivot columns.
+    const pivotCols = []
+    for (let r = 0; r < nRows; r++) {
+      for (let c = 0; c < nCols; c++) {
+        if (rows[r][c][0] === 1 && rows[r][c][1] === 1) {
+          let onlyOne = true
+          for (let r2 = 0; r2 < nRows; r2++) {
+            if (r2 !== r && rows[r2][c][0] !== 0) { onlyOne = false; break }
+          }
+          if (onlyOne) { pivotCols.push(c); break }
+        }
+      }
+    }
+    const freeCols = []
+    for (let c = 0; c < nCols; c++) if (!pivotCols.includes(c)) freeCols.push(c)
+    if (freeCols.length !== 1) return new Sym('unbalanced-reaction')
+
+    // Set free variable to 1, back-substitute for pivots.
+    const solution = new Array(nCols).fill(null)
+    solution[freeCols[0]] = [1, 1]
+    for (let i = pivotCols.length - 1; i >= 0; i--) {
+      const c = pivotCols[i]
+      const r = i
+      // rows[r][c] === 1; equation: pivot_var + sum(rows[r][fc] * free_var) = 0
+      // => pivot_var = -sum(...)
+      let sum = [0, 1]
+      for (const fc of freeCols) {
+        sum = fAdd(sum, fMul(rows[r][fc], solution[fc]))
+      }
+      solution[c] = fNeg(sum)
+    }
+
+    // Scale to positive integers.
+    const denominators = solution.map(([_, d]) => d)
+    const commonDen = denominators.reduce(lcm, 1)
+    const ints = solution.map(([nn, dd]) => (nn * commonDen) / dd)
+    // All must be positive (or all negative — flip sign then).
+    if (ints.some(x => x === 0)) return new Sym('unbalanced-reaction')
+    const anyNeg = ints.some(x => x < 0)
+    const anyPos = ints.some(x => x > 0)
+    if (anyNeg && anyPos) return new Sym('unbalanced-reaction')
+    const signFixed = anyNeg ? ints.map(x => -x) : ints
+    // Reduce by common gcd.
+    const g = signFixed.reduce(gcd, 0) || 1
+    return signFixed.map(x => x / g)
+  })
+
 
   def('artifact/cite', (id) => descriptor('artifact/cite', id))
   def('artifact/delete', (id) => descriptor('artifact/delete', id))
