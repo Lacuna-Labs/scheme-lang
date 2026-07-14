@@ -162,3 +162,73 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Cut the currently sustained note. Zero-arg. Idempotent."))
+
+(verb
+  :name "note/place-at"
+  :library "note"
+  :kind "paint"
+  :signature "(note/place-at pitch [stave] [clef]) -> descriptor"
+  :summary "Render a pitch glyph on a musical staff without sounding it; a paint-level operation."
+  :impl-status "wired-descriptor"
+  :explanation "note/place-at is the visual half of the note pair. It draws the pitch's glyph on the staff at the correct vertical slot, but does not produce sound. Pitch is a symbol like 'C4 or 'Fs3; stave is a numeric index (0 = treble is typical); clef is a symbol ('treble, 'bass, 'alto). The verb returns a descriptor a live cart surface consumes to actually paint the glyph — in headless REPL you inspect the return to confirm the placement. Useful for teaching notation, showing chord shapes, and building interactive scores where the user reads what they hear."
+  :examples (
+    (:tier "novice"
+     :code "(note/place-at (quote G4) 0 (quote treble))"
+     :note "Draw a G4 on the treble staff, slot 0. Returns (\"note/place-at\" \"G4\" 0 \"treble\").")
+    (:tier "apprentice"
+     :code "(begin (note/place-at (quote C4) 0 (quote treble)) (note/place-at (quote E4) 0 (quote treble)) (note/place-at (quote G4) 0 (quote treble)))"
+     :note "Show a C-major triad as three simultaneous glyphs on the treble staff. Under a live host all three appear together.")
+    (:tier "intermediate"
+     :code "(for-each (lambda (p) (note/place-at p 0 (quote treble))) (list (quote C4) (quote D4) (quote E4) (quote F4) (quote G4) (quote A4) (quote B4) (quote C5)))"
+     :note "Render a full one-octave scale as eight glyphs on the treble staff. Reads left-to-right the way a musician would.")
+    (:tier "expert"
+     :code "(define (show-chord pitches stave clef) (for-each (lambda (p) (note/place-at p stave clef)) pitches)) (show-chord (list (quote C4) (quote E4) (quote G4) (quote Bflat4)) 0 (quote treble))"
+     :note "A reusable `show-chord` helper: give it a list of pitches, a stave, and a clef, and it paints the chord. Here we show a C7 with the flat seventh.")
+    (:tier "master"
+     :code "(let ((scale (list (quote C4) (quote D4) (quote E4) (quote F4) (quote G4) (quote A4) (quote B4) (quote C5)))) (for-each (lambda (p) (note/place-at p 0 (quote treble)) (note/strike p 0.15) (note/release)) scale))"
+     :note "Read-and-hear: for each degree of the scale, paint the glyph AND sound the pitch. This is what a music-theory cart delivers to a student — the eye and the ear together.")
+  )
+  :caveats
+    ("Pitch must be a valid music-notation symbol or MIDI number; unparseable pitches produce a descriptor but no visible glyph."
+     "Stave index is numeric; 0 is standard treble. Other indices depend on the card's staff layout."
+     "Clef affects vertical positioning; a G4 on a bass staff sits in a different slot than on a treble staff."
+     "Multiple calls within one begin render simultaneously under a live host; they do not animate in sequence unless paced.")
+  :drawbacks
+    ("Paint-only — no audio. Pair with `note/strike` for sound."
+     "No duration display: all glyphs paint with the same default shape."
+     "Requires an active staff-bearing card; a bare call outside a card context has nothing to paint on.")
+  :usecases
+    ("Teach music-notation basics — pitch to glyph mapping."
+     "Show the answer to a music-theory exercise on-screen."
+     "Build a read-and-hear cart where students see the glyph AND hear the pitch."
+     "Annotate a score with specific pitches highlighted.")
+  :related ("note/strike" "note/release" "surface-paint-text" "card-do")
+  :learn
+    (:concept "Paint-level notation: pitch glyphs live on a staff geometry the card supplies."
+     :prerequisites ("(core)/for-each" "note/strike (for the paired ear-training pattern)")
+     :progression "Start with a single (note/place-at 'C4). Then show a chord. Then show a scale. Then pair with note/strike for read-and-hear.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:175-176. Returns ('note/place-at pitch stave clef) — a four-element descriptor the host surface consumes."
+     :permission "paint"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('note/place-at \"G4\" 0 \"treble\"); apprentice=last of three; intermediate=undefined; expert=undefined; master=undefined."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("note/strike")
+     :consumes-from ("core scale/chord generators")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming this makes sound — it does not. Confusing the stave numeric index with the clef symbol."
+     :when-not-to-use "You want sound — use `note/strike`. You need dynamic notation (rhythm, ties, dots) — this verb paints only the pitch, not the duration.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Paint a pitch on a staff. Silent. Complements note/strike for read-and-hear."))
