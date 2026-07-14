@@ -301,3 +301,274 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Guard verb for the live audio analyser. Callable in REPL as a descriptor; ok under a live host."))
+
+(verb
+  :name "audio/playing?"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/playing?) -> boolean | descriptor"
+  :summary "Ask whether the audio system currently has anything playing; a read-only status probe."
+  :impl-status "wired-descriptor"
+  :explanation "audio/playing? is a status predicate. Under a live host it returns #t if any audio stream is currently sounding, #f otherwise. Under the standalone REPL there is no live audio graph, so the verb returns the descriptor ('audio/playing?) — callers use (pair? result) or type-check to distinguish. The verb is idempotent, read-only, and safe to call at high frequency. Useful for guards, transport-state UIs, and knowing whether it is safe to start a new sound without stepping on a running one."
+  :examples (
+    (:tier "novice"
+     :code "(audio/playing?)"
+     :note "Ask if anything is playing. In REPL: returns (\"audio/playing?\"), a descriptor. Under a live host: #t or #f.")
+    (:tier "apprentice"
+     :code "(let ((p (audio/playing?))) (if (pair? p) (quote maybe) (if p (quote yes) (quote no))))"
+     :note "Distinguish the three shapes: descriptor (headless), #t (playing), #f (silent). Returns 'maybe in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/playing?)) (list 1 2 3))"
+     :note "audio/playing? is safe to call every frame. Returns three descriptor copies in REPL.")
+    (:tier "expert"
+     :code "(define (check) (let ((r (audio/playing?))) (if (pair? r) (car r) r))) (check)"
+     :note "A tiny helper: if the return is a descriptor, unwrap the tag; otherwise pass the boolean through. Returns \"audio/playing?\" in REPL.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (audio/playing?) (loop (+ i 1)))))"
+     :note "Poll three times; the verb has no side effects, so the loop just returns 'done. Under a live host you would branch on the return to decide whether to keep polling.")
+  )
+  :caveats
+    ("Descriptor return in headless REPL is a pair; a naive `(if (audio/playing?) ...)` will treat it as truthy. Use `pair?` to gate."
+     "Idempotent — polling is cheap.")
+  :drawbacks
+    ("No way to know WHICH stream is playing; just a yes/no aggregate."
+     "No stream count; if you need per-voice state, track handles yourself.")
+  :usecases
+    ("Gate a 'start music' button so it does not double-fire."
+     "Show a play/pause indicator in a transport UI."
+     "Skip an ambient sound when a foreground effect is already sounding.")
+  :related ("audio/play" "audio/halt" "audio/listen" "audio/master-volume")
+  :learn
+    (:concept "Read-only status probes and their three-shape returns (boolean live, descriptor headless)."
+     :prerequisites ("(core)/if" "(core)/pair?")
+     :progression "Use audio/playing? to gate transport UI. Combine with audio/halt for panic-stop. Then explore audio/listen for the analyser guard.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/playing?) descriptor in REPL; host overrides bind to a real transport state."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/playing?); apprentice='maybe; intermediate=3 copies; expert=\"audio/playing?\"; master='done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/halt" "audio/play")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Treating the descriptor as a boolean directly. Assuming false-returns are guaranteed — the shape varies between live and headless."
+     :when-not-to-use "You want to know which specific handle is playing — this verb aggregates.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Is anything sounding? Read-only. Callable in REPL as descriptor."))
+
+(verb
+  :name "audio/halt"
+  :library "audio"
+  :kind "mut"
+  :signature "(audio/halt handle) -> descriptor"
+  :summary "Stop a running audio handle; returns the halt descriptor a live host consumes to actually silence the stream."
+  :impl-status "wired-descriptor"
+  :explanation "audio/halt takes a handle (the value that `audio/play` returned) and stops the corresponding stream. Under a live host it disconnects the graph node; under headless REPL it returns the tagged list ('audio/halt handle) — the shape a host would consume. Halting an already-halted handle is a silent no-op, so it's safe to call twice. The verb pairs with `audio/play` to bracket a stream's lifetime."
+  :examples (
+    (:tier "novice"
+     :code "(audio/halt (quote handle-1))"
+     :note "Stop the stream named handle-1. Returns (\"audio/halt\" handle-1) — the descriptor a live host consumes.")
+    (:tier "apprentice"
+     :code "(let ((h (audio/play (quote kick)))) (audio/halt h))"
+     :note "Start a sound, then immediately stop it. The idiomatic play-then-halt bracket.")
+    (:tier "intermediate"
+     :code "(for-each (lambda (h) (audio/halt h)) (list (quote h1) (quote h2) (quote h3)))"
+     :note "Halt a batch of handles at once. Common when tearing down a whole scene.")
+    (:tier "expert"
+     :code "(define (cross-fade old new-source) (let ((newh (audio/play new-source))) (audio/halt old) newh)) (cross-fade (quote old) (quote track-b))"
+     :note "A minimal crossfade: play the new source, halt the old, return the new handle. Real crossfades interpolate the volume; this is the transport skeleton.")
+    (:tier "master"
+     :code "(let ((h1 (audio/play (quote loop))) (h2 (audio/play (quote layer)))) (audio/halt h1) (audio/halt h2))"
+     :note "Play two overlapping streams, halt them both. Under a live host this stops the mix cleanly; in REPL you get back the two descriptors.")
+  )
+  :caveats
+    ("A handle passed to audio/halt becomes invalid — do not reuse it."
+     "Halting a handle that never played is a silent no-op, not an error."
+     "No fade; halt is immediate. For a fade, ramp `audio/master-volume` before halting."
+     "The descriptor arity is 2: (verb handle).")
+  :drawbacks
+    ("No fade curve — abrupt cutoff can click. Combine with audio/master-volume ramps for smoothness."
+     "Global handles only; no per-channel selective halting.")
+  :usecases
+    ("Bracket a music track's lifetime around a scene."
+     "Cross-fade transport by playing the new one before halting the old."
+     "Panic-stop: iterate all active handles and halt them.")
+  :related ("audio/play" "audio/master-volume" "audio/playing?" "note/release")
+  :learn
+    (:concept "Handle lifecycle: play returns a handle, halt takes the same handle to end the stream."
+     :prerequisites ("audio/play")
+     :progression "Start with a single play-halt. Then a crossfade. Then a scene teardown loop.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/halt handle). Host surfaces override to disconnect the audio graph node."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/halt handle-1); apprentice=descriptor of halt(pending-audio); intermediate=undefined; expert=(pending-audio #<object>); master=descriptor of last halt."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/play")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Reusing a halted handle expecting it to restart — it does not. Call audio/play again for a new handle."
+     :when-not-to-use "You want to fade out — use audio/master-volume ramps first, then halt. You want to release a single sustained note — use note/release.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Stop a playing handle. Idempotent. Descriptor return in REPL."))
+
+(verb
+  :name "audio/play"
+  :library "audio"
+  :kind "mut"
+  :signature "(audio/play source [opts]) -> [status info] | handle"
+  :summary "Trigger sound playback; returns a handle you can pass to audio/halt or a pending-audio tuple in headless REPL."
+  :impl-status "wired-pending"
+  :explanation "audio/play is the primary sound-trigger verb. Give it a resource identifier (a symbol or string naming a pre-loaded sound) and optional keyword args (:volume :loop :rate). Under a live host it returns a playback handle. Under the standalone REPL it returns [pending-audio {source opts}] — the shape a host consumes. Handles are opaque; use them only to pass to audio/halt. Multiple calls queue independent playbacks — audio/play does NOT restart a running stream, it layers a new one."
+  :examples (
+    (:tier "novice"
+     :code "(audio/play (quote kick-drum))"
+     :note "Trigger the kick-drum sound. In REPL: returns (pending-audio #<object>) — the shape the host would consume.")
+    (:tier "apprentice"
+     :code "(let ((handle (audio/play (quote background-music)))) (car handle))"
+     :note "Save the handle for later halting; the first element is the status tag. Returns pending-audio in REPL.")
+    (:tier "intermediate"
+     :code "(map audio/play (list (quote hit1) (quote hit2) (quote hit3)))"
+     :note "Trigger three sounds in sequence and collect the handles. Under a live host they all play; in REPL you get three pending-audio pairs.")
+    (:tier "expert"
+     :code "(define (loop-music track) (let ((h (audio/play track))) (if (and (pair? h) (symbol? (car h)) (equal? (symbol->string (car h)) \"pending-audio\")) (list (quote will-play-when-ready) track) (list (quote playing) track)))) (loop-music (quote ambient))"
+     :note "Branch on the status tag: 'will-play-when-ready if headless, 'playing if the live host reported success. Uses symbol->string because the returned tag is a Sym.")
+    (:tier "master"
+     :code "(let* ((tracks (list (quote lofi) (quote jazz) (quote synth))) (handles (map audio/play tracks))) (list (quote tracks) (length tracks) (quote handles) (length handles)))"
+     :note "Fan out a playlist: fire off three tracks, save all three handles, report the counts. Real carts extend this to schedule crossfades between the tracks.")
+  )
+  :caveats
+    ("Handles are opaque; do not try to read them beyond passing to audio/halt."
+     "Multiple plays layer, they do not replace. Halt the old handle first if you want a swap."
+     "Comparing the head to 'pending-audio via `equal?` fails because Sym identity differs; use `symbol->string` or `symbol-name` if you need a string match."
+     "Resource must exist in the pre-loaded cache under a live host; unknown resources fail silently in REPL.")
+  :drawbacks
+    ("No built-in fade-in — combine with `audio/master-volume` ramping."
+     "Long-lived loops accumulate memory if never halted."
+     "No priority or voice-stealing — heavy calls can glitch the audio thread.")
+  :usecases
+    ("Trigger a sound effect on button press."
+     "Start a looping music bed at cart open."
+     "Layer ambient tracks with a per-source volume."
+     "Play a UI feedback ping on state transitions.")
+  :related ("audio/halt" "audio/master-volume" "audio/playing?" "note/strike" "synth/play")
+  :learn
+    (:concept "Handle-returning verbs — save the return, pass it to halt when done."
+     :prerequisites ("(core)/let" "audio/halt")
+     :progression "Start with a single audio/play + audio/halt bracket. Then fan out multiple tracks. Then build a crossfade helper.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:404. Returns [pending-audio {source opts}] in REPL. Host surfaces override with a real Web Audio buffer-source launcher."
+     :permission "state-change"
+     :latency-class "async-quick"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=(pending-audio #<object>); apprentice=pending-audio; intermediate=(3 pairs); expert=(will-play-when-ready ambient); master=(tracks 3 handles 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/halt")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming audio/play restarts a running stream — it layers. Comparing the return's head via `equal?` on a literal quote — Sym identity fails; use symbol->string."
+     :when-not-to-use "You want simple bell-clean pitches — use `note/strike`. You want a rich synthesized voice — use `synth/orch` or `synth/808`. You want to schedule a whole song — use `synth/play` with a score.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Trigger a sound. Returns a handle for later halting. Descriptor tuple in REPL."))
+
+(verb
+  :name "audio/master-volume"
+  :library "audio"
+  :kind "mut"
+  :signature "(audio/master-volume level) -> [ok {level}]"
+  :summary "Set the global audio-output gain. Records the intent in cortex; returns [ok info]."
+  :impl-status "wired-partial"
+  :explanation "audio/master-volume is one of the few audio verbs with a small real side effect in the standalone REPL: it stores the requested level in cortex under the key 'audio/master-volume' so subsequent (cortex/read 'audio/master-volume) recovers it. The return is [ok {level}] — the same shape a live host uses. Level is a number, conventionally in [0, 1] but clamping is host-specific. Multiple calls in one frame all record; the last one wins. Combine with a step-loop to build a fade."
+  :examples (
+    (:tier "novice"
+     :code "(audio/master-volume 0.5)"
+     :note "Set volume to 0.5. Returns (ok #<object>). The 0.5 is recorded in cortex so it survives across REPL frames.")
+    (:tier "apprentice"
+     :code "(begin (audio/master-volume 1) (audio/master-volume 0.5))"
+     :note "Two calls; the second wins. Under a live host the gain node's value settles at 0.5.")
+    (:tier "intermediate"
+     :code "(map audio/master-volume (list 0 0.25 0.5 0.75 1))"
+     :note "Sweep across five levels in one map. Returns five [ok ...] pairs — one per call.")
+    (:tier "expert"
+     :code "(define (fade steps) (let loop ((i 0)) (if (>= i steps) (quote faded) (begin (audio/master-volume (- 1 (/ i steps))) (loop (+ i 1)))))) (fade 5)"
+     :note "A simple linear fade-out over N steps. Under a live host the sound audibly ramps; in REPL the intent is recorded step by step.")
+    (:tier "master"
+     :code "(let* ((slider 60) (v (/ slider 100))) (audio/master-volume v))"
+     :note "Bridge a UI slider (0-100) to the [0, 1] master volume convention. This is what a real settings card does when the user drags the volume knob.")
+  )
+  :caveats
+    ("Level is a number; symbols and strings are not auto-coerced."
+     "The convention is [0, 1]; values outside may be clamped by the live host but are still recorded honestly."
+     "Global — no per-source volume via this verb. Use per-source rate/volume opts on audio/play instead."
+     "Recorded in cortex; you can read the last-set value with (cortex/read 'audio/master-volume).")
+  :drawbacks
+    ("No fade curve built in; you must orchestrate steps."
+     "No query verb specifically for master volume; the recorded key is a workaround.")
+  :usecases
+    ("Wire a volume slider in a UI card."
+     "Build a fade-out helper for scene transitions."
+     "Duck the mix when a foreground alert fires."
+     "Remember the user's preferred volume across sessions via cortex.")
+  :related ("audio/play" "audio/halt" "cortex/read" "radio/volume" "synth/play")
+  :learn
+    (:concept "Global gain control with intent-recording; the pattern of pairing a live-side effect with a cortex breadcrumb."
+     :prerequisites ("(core)/let" "cortex/read")
+     :progression "Set the master. Then build a fade loop. Then bridge a slider. Then remember the user's preference across sessions.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:398-403. Coerces level to a number, stores it in cortex under key 'audio/master-volume', returns [ok {level}]."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=(ok #<object>); apprentice=(ok #<object>) after last call; intermediate=5 (ok ...) pairs; expert='faded; master=(ok #<object>)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/play" "audio/halt")
+     :consumes-from ("UI sliders" "settings state")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing an integer like 50 expecting percent — the convention is [0, 1]. Combine with a divide (/ slider 100) to bridge."
+     :when-not-to-use "You want per-source volume — use audio/play's :volume opt. You want a fade curve — build it out of steps yourself.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Set global gain. Small side effect: records intent in cortex. [ok info] return."))
