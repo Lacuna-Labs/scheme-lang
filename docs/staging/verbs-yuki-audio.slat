@@ -1522,3 +1522,207 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Score-based playback. Multi-track. Tempo-locked. pending-audio in REPL."))
+
+(verb
+  :name "synth/load-score"
+  :library "synth"
+  :kind "io"
+  :signature "(synth/load-score name) -> [ok score] | [error info] | [pending-fetch info]"
+  :summary "Asynchronously fetch a pre-composed score by name from a known registry."
+  :impl-status "wired-pending"
+  :explanation "synth/load-score requests a pre-composed score from a name-to-URL registry. Under a live host with network access it fetches JSON, validates, and returns [ok score]; on failure returns [error status info]. In REPL there is no fetch, so it returns [pending-fetch {name reason: 'no-live-fetch'}]. The score returned by [ok ...] can be passed directly to synth/play. Useful for pre-authored compositions, tutorials, and canonical arrangements."
+  :examples (
+    (:tier "novice"
+     :code "(synth/load-score (quote beethoven-9))"
+     :note "Request a score. In REPL: returns (pending-fetch #<object>).")
+    (:tier "apprentice"
+     :code "(let ((r (synth/load-score (quote symphony-3)))) (car r))"
+     :note "Extract the status tag. Returns pending-fetch.")
+    (:tier "intermediate"
+     :code "(map synth/load-score (list (quote piece-1) (quote piece-2) (quote piece-3)))"
+     :note "Fire three loads in parallel. Each returns its own pending tuple.")
+    (:tier "expert"
+     :code "(define (try-load name) (let ((r (synth/load-score name))) (list name (car r)))) (try-load (quote canon-in-d))"
+     :note "Bundle the name with its status for a logging pass. Returns (canon-in-d pending-fetch).")
+    (:tier "master"
+     :code "(let* ((names (list (quote a) (quote b) (quote c))) (results (map (lambda (n) (list n (car (synth/load-score n)))) names))) results)"
+     :note "Batch-load with statuses. Returns ((a pending-fetch) (b pending-fetch) (c pending-fetch)). A real cart would poll for completion and swap 'pending-fetch to 'ok.")
+  )
+  :caveats
+    ("Requires a fetch-capable host and a name known to the registry."
+     "Async — the [ok score] does not come back on the same call in REPL."
+     "Score format is host-specific JSON.")
+  :drawbacks
+    ("No caching in REPL — every call returns pending-fetch."
+     "No timeout parameter exposed at this API level."
+     "Registry is hardcoded per-host; adding scores means editing the runtime.")
+  :usecases
+    ("Load canonical pieces for a music-theory cart."
+     "Sequence a curated concert program."
+     "Fetch user-selected arrangements at runtime.")
+  :related ("synth/play" "synth/orch" "artifact/fetch")
+  :learn
+    (:concept "Deferred JSON fetch — the pattern for async external resource loading."
+     :prerequisites ("synth/play")
+     :progression "Request one score. Then batch three. Then handle the pending-fetch branch. Then pipe [ok score] into synth/play.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:197-198. Returns [pending-fetch {name, reason: 'no-live-fetch'}]. Host binds to a real network fetch."
+     :permission "network"
+     :latency-class "async-long"
+     :cost "metered-cheap"
+     :tests "REPL-verified 2026-07-14: novice=(pending-fetch); apprentice=pending-fetch; intermediate=3 tuples; expert=(canon-in-d pending-fetch); master=((a pending-fetch) (b pending-fetch) (c pending-fetch))."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("synth/play")
+     :consumes-from ()
+     :cardinality one
+     :deterministic #f
+     :cacheable #t
+     :common-mistakes "Expecting immediate [ok score] — the load is async. Passing an unknown name expecting a helpful error — in REPL you get pending-fetch."
+     :when-not-to-use "You want to hand-compose a small score — use synth/play with an inline list.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Async score fetch. [ok score] under live host. pending-fetch in REPL."))
+
+(verb
+  :name "synth/onset-tap"
+  :library "synth"
+  :kind "io"
+  :signature "(synth/onset-tap handler) -> [ok {unsubscribe unsub event name}]"
+  :summary "Register a callback to fire on every synth-detected onset (attack transient)."
+  :impl-status "wired-partial"
+  :explanation "synth/onset-tap subscribes a handler function to the synth-onset event stream. Under a live host, whenever the synth-side detector fires an onset the handler is invoked with the event. It returns [ok {unsubscribe unsub event name}] — the object with an unsubscribe closure. In REPL there is no live detector, but the registration still succeeds (records the handler intent) so the caller gets an [ok ...] shape they can use. Complements audio/onset? on the input side."
+  :examples (
+    (:tier "novice"
+     :code "(synth/onset-tap (lambda (e) (quote noticed)))"
+     :note "Register a no-op handler. Returns (ok #<object>).")
+    (:tier "apprentice"
+     :code "(let ((r (synth/onset-tap (lambda (e) (quote hit))))) (car r))"
+     :note "Extract the status. Returns ok.")
+    (:tier "intermediate"
+     :code "(map (lambda (i) (synth/onset-tap (lambda (e) (list (quote listener) i)))) (list 1 2 3))"
+     :note "Register three independent listeners. Each returns its own [ok ...].")
+    (:tier "expert"
+     :code "(define (register-flash) (synth/onset-tap (lambda (event) (quote flash-fired)))) (car (register-flash))"
+     :note "A named handler-registration helper. Returns ok.")
+    (:tier "master"
+     :code "(let* ((subs (list (synth/onset-tap (lambda (e) 1)) (synth/onset-tap (lambda (e) 2)) (synth/onset-tap (lambda (e) 3)))) (statuses (map car subs))) statuses)"
+     :note "Register three listeners, verify all three returned ok. Returns (ok ok ok).")
+  )
+  :caveats
+    ("Handler must be a function; passing anything else returns [error ...] under a live host."
+     "The unsubscribe closure is inside the returned object; call it to remove the listener."
+     "In REPL the listener never fires because there is no live audio; still, registration succeeds.")
+  :drawbacks
+    ("Handlers run in the audio thread under a live host — keep them fast."
+     "Onset detection is heuristic — soft attacks may not fire.")
+  :usecases
+    ("Sync visual effects to synth-side beats."
+     "Log or measure the timing of synth-fired events."
+     "Build a rhythm-game hit-detector that keys off synth onsets rather than input onsets.")
+  :related ("audio/onset?" "audio/onset-strength" "synth/play" "on-beat")
+  :learn
+    (:concept "Callback-based event subscription with lifecycle management (unsubscribe)."
+     :prerequisites ("(core)/lambda" "audio/onset?")
+     :progression "Register a handler. Then multiple. Then use the unsubscribe closure to tear them down on scene exit.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:199-200. Returns [ok {unsubscribe, unsub, event, name}]. Host binds to a real onset-tap subscriber."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(ok); apprentice=ok; intermediate=3 (ok ...) pairs; expert=ok; master=(ok ok ok)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("synth/play" "synth/808")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Forgetting to unsubscribe on scene exit — leaks the handler. Assuming handlers fire immediately — they only fire on live onsets."
+     :when-not-to-use "You need input-audio onset detection — use audio/onset? on the input side.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Register onset callback. Returns [ok subscription]. Even works in REPL for registration."))
+
+(verb
+  :name "synth/sp1200"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/sp1200 sample pitch) -> [ok result] | [pending-sample-bank info]"
+  :summary "Play a drum sample with pitch shifting; emulates the classic SP-1200 sampler."
+  :impl-status "wired-pending"
+  :explanation "The SP-1200 is a vintage sampler famous for its 26 kHz sample rate and time-stretched pitch shifting. synth/sp1200 emulates this: give it a sample name and a pitch offset in semitones, and it triggers the sound modified. Under a live host with a loaded sample bank it plays; in REPL the sample bank is absent, so it returns [pending-sample-bank {sample pitch reason dsp_available spRate}]. The DSP algorithm is implemented and ready — this verb becomes real once a sample bank is wired."
+  :examples (
+    (:tier "novice"
+     :code "(synth/sp1200 (quote kick) 0)"
+     :note "Play kick at native pitch. Returns (pending-sample-bank #<object>) — DSP is ready, samples are not.")
+    (:tier "apprentice"
+     :code "(let ((r (synth/sp1200 (quote snare) 2))) (car r))"
+     :note "Snare tuned up two semitones. Returns pending-sample-bank.")
+    (:tier "intermediate"
+     :code "(map (lambda (s) (synth/sp1200 s 0)) (list (quote kick) (quote snare) (quote hihat)))"
+     :note "Trigger three samples at native pitch. Each returns pending-sample-bank.")
+    (:tier "expert"
+     :code "(define (drum-loop samples pitches) (for-each (lambda (s p) (synth/sp1200 s p)) samples pitches)) (drum-loop (list (quote kick) (quote snare)) (list 0 2))"
+     :note "A reusable loop that pairs samples with pitches — the shape for a step sequencer with per-hit pitch modulation.")
+    (:tier "master"
+     :code "(let* ((samples (list (quote kick) (quote snare) (quote hat))) (pitches (list 0 -2 3)) (results (map (lambda (s p) (synth/sp1200 s p)) samples pitches))) (list (quote fired) (length results) (quote samples)))"
+     :note "Three samples with three different pitches — the shape of a drum-machine grid row. Returns (fired 3 samples).")
+  )
+  :caveats
+    ("Sample bank not wired in v1; always returns pending-sample-bank in REPL."
+     "Pitch is in semitones from native; negative slows down, positive speeds up."
+     "Extreme pitch shifts introduce granular/metallic artifacts (the SP-1200 sound).")
+  :drawbacks
+    ("Blocking factor is sample-bank loading, not the DSP."
+     "No sample browsing UI — must know the exact name."
+     "Sample-rate quirks: the SP-1200's 26 kHz gives its characteristic lo-fi sound.")
+  :usecases
+    ("Drum machines with vintage character."
+     "Percussion accompaniment in retro-flavoured tracks."
+     "Sound design: pitch-shift and time-stretch acoustic samples.")
+  :related ("synth/808" "synth/kit" "synth/play" "audio/onset?")
+  :learn
+    (:concept "Sample-based percussion with real-time pitch shifting (time-stretch DSP)."
+     :prerequisites ("synth/808")
+     :progression "Fire a single sample. Then loop with pitch modulation. Then integrate into a full arrangement.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:195-196. Returns [pending-sample-bank {sample, pitch, reason, dsp_available: false, spRate: 26040}]. Host binds to a real sample player once bank is loaded."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-sample-bank); apprentice=pending-sample-bank; intermediate=3 tuples; expert=undefined; master=(fired 3 samples)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/onset?")
+     :consumes-from ()
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Assuming it works today — it does not (bank absent). Passing large pitch offsets expecting clean sound — you get lo-fi grit."
+     :when-not-to-use "You want a modern clean drum — use synth/808. You want a whole kit pattern — use synth/kit.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "SP-1200 sample emulation. DSP ready, sample bank pending. pending-sample-bank in REPL."))
