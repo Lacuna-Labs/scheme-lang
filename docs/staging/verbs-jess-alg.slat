@@ -2729,3 +2729,261 @@
   :+ai
     (:deterministic #t
      :cacheable #t))
+
+
+(verb
+  :name "alg/exponent"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/exponent G) -> integer"
+  :summary "Return the exponent of G: the LCM of the orders of all its elements."
+  :impl-status "wired"
+  :explanation "The exponent of G is the smallest positive integer k such that g^k = identity for every g in G. It equals the LCM of the orders of all elements. For a cyclic group C_n, the exponent equals n. For any finite group, the exponent divides |G|. In an abelian group the exponent equals the largest element order (achieved by some g)."
+  :examples (
+    (:tier "novice" :code "(alg/exponent (alg/cyclic 6))"
+     :note "For C_6, exponent = 6 (there is an element of order 6).")
+    (:tier "apprentice" :code "(alg/exponent (alg/cyclic 12))"
+     :note "For C_12, exponent = 12.")
+    (:tier "intermediate" :code "(alg/exponent (alg/dihedral 3))"
+     :note "In D_3, orders are 1, 2, 3; LCM = 6, so exponent = 6.")
+    (:tier "expert" :code "(alg/exponent (alg/dihedral 4))"
+     :note "In D_4, element orders are 1, 2, 4; LCM = 4, so exponent = 4.")
+    (:tier "master" :code "(define (exponent-divides-order? G) (= 0 (modulo (length G) (alg/exponent G)))) (exponent-divides-order? (alg/cyclic 12))"
+     :note "Exponent always divides |G| — verify.")
+  )
+  :caveats
+    ("Exponent is 1 for the trivial group."
+     "Computed via LCM of element orders; O(|G|^2) in the worst case.")
+  :drawbacks
+    ("Slow for large groups — every element's order is computed."
+     "Doesn't identify WHICH element achieves the exponent.")
+  :usecases
+    ("Structural invariant of a group."
+     "Test whether G is cyclic: cyclic iff exponent = |G|."
+     "Determine bounds on subgroup structures.")
+  :related ("alg/element-order" "alg/order" "alg/is-cyclic?")
+  :learn
+    (:concept "The exponent of a group — an important invariant."
+     :prerequisites ("alg/element-order")
+     :progression "exponent -> is-cyclic? -> structure theorems for finite abelian groups.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "LCM over per-element orders computed by iterating powers to identity."
+     :permission "read"
+     :latency-class "sync-slow"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|^2), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/torsion"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/torsion G) -> group"
+  :summary "Return the torsion subgroup: elements of finite order."
+  :impl-status "wired"
+  :explanation "The torsion subgroup of an abelian group G is the set of elements with finite order. In a FINITE group, every element has finite order, so the torsion subgroup is G itself. This verb reflects that fact: it returns all elements of G. For infinite groups (not supported here), the torsion subgroup would be strictly smaller."
+  :examples (
+    (:tier "novice" :code "(alg/torsion (alg/cyclic 6))"
+     :note "In a finite group, every element is torsion. Returns all 6 elements.")
+    (:tier "apprentice" :code "(length (alg/torsion (alg/cyclic 12)))"
+     :note "Length 12 — all elements are torsion in a finite group.")
+    (:tier "intermediate" :code "(= (length (alg/torsion (alg/cyclic 5))) (length (alg/cyclic 5)))"
+     :note "Torsion of a finite group has the same cardinality as the group itself (every element is torsion).")
+    (:tier "expert" :code "(alg/torsion (alg/dihedral 4))"
+     :note "D_4's torsion is all of D_4 — every element has finite order.")
+    (:tier "master" :code "(define (torsion-fraction G) (/ (length (alg/torsion G)) (length G))) (torsion-fraction (alg/cyclic 6))"
+     :note "For finite groups, this is always 1.")
+  )
+  :caveats
+    ("For finite groups, torsion = G. Only interesting for infinite groups (not modeled here)."
+     "Result is the element list, not a Cayley table.")
+  :drawbacks
+    ("Trivially returns G — not much computation, but semantic value in modeling infinite groups."
+     "No distinction between torsion elements of different orders.")
+  :usecases
+    ("Model infinite-group torsion analysis (placeholder for finite case)."
+     "Test whether every element has finite order (always #t here).")
+  :related ("alg/order" "alg/element-order" "alg/exponent")
+  :learn
+    (:concept "Torsion elements — those with finite order."
+     :prerequisites ("alg/element-order")
+     :progression "torsion -> structure theorem for finitely generated abelian groups.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Returns groupElements(G) unchanged."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|), space O(|G|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/rank"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/rank G) -> integer"
+  :summary "Return the minimum number of generators of G (an approximation)."
+  :impl-status "wired"
+  :explanation "The rank of a group is the smallest cardinality of a generating set. For a cyclic group of prime order, rank = 1. For D_n, rank = 2 (a rotation and a reflection). For general finite groups, computing the exact rank is NP-hard; we return 1 if the group is cyclic (detected via prime order for Cayley-table representations), and otherwise an upper bound of ceil(log2 |G|). This is an approximation, not a canonical answer."
+  :examples (
+    (:tier "novice" :code "(alg/rank (alg/cyclic 5))"
+     :note "C_5 is cyclic of prime order: rank 1.")
+    (:tier "apprentice" :code "(alg/rank (alg/cyclic 7))"
+     :note "C_7 is cyclic of prime order: rank 1.")
+    (:tier "intermediate" :code "(alg/rank (alg/cyclic 6))"
+     :note "C_6 has non-prime order (2 * 3); our approximation returns ceil(log2 6) = 3, though true rank is 1.")
+    (:tier "expert" :code "(alg/rank (alg/dihedral 4))"
+     :note "|D_4| = 8 = 2^3. Approximation gives 3, though true rank is 2.")
+    (:tier "master" :code "(alg/rank '())"
+     :note "Empty/trivial group has rank 0.")
+  )
+  :caveats
+    ("Approximation only — computes exact rank only for prime-order cyclic groups."
+     "For general G, returns ceil(log2 |G|) as an upper bound.")
+  :drawbacks
+    ("Exact rank requires enumeration of generating sets — exponential."
+     "Overestimates for non-prime cyclic groups.")
+  :usecases
+    ("Quick upper-bound estimate of group complexity."
+     "Sort groups by 'how generating-set-rich' they appear.")
+  :related ("alg/generators" "alg/is-cyclic?" "alg/subgroup-gen")
+  :learn
+    (:concept "Rank as the minimum generating-set size."
+     :prerequisites ("alg/generators")
+     :progression "rank -> is-cyclic? (rank = 1 case) -> presentation theory.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Prime-order check + log2 fallback."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(sqrt |G|), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/generators"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/generators G) -> list"
+  :summary "Return a small generating set for G."
+  :impl-status "wired"
+  :explanation "Returns a minimal-ish generating set. For dihedral groups D_n, returns a rotation and a reflection ({(rot 1), (ref 0)}). For cyclic groups, returns a single generator of maximum order (a primitive root if it exists). For unknown group representations, returns a single non-identity element as a fallback. Not guaranteed to be canonical — just useful."
+  :examples (
+    (:tier "novice" :code "(alg/generators (alg/cyclic 5))"
+     :note "1 generates C_5 (and so does 2, 3, 4). Returns a single generator.")
+    (:tier "apprentice" :code "(alg/generators (alg/cyclic 6))"
+     :note "C_6 has generator 1 (order 6). Returns (1).")
+    (:tier "intermediate" :code "(alg/generators (alg/dihedral 4))"
+     :note "D_4 needs a rotation + a reflection: ((rot 1) (ref 0)).")
+    (:tier "expert" :code "(length (alg/generators (alg/dihedral 3)))"
+     :note "D_n always has a 2-element generating set.")
+    (:tier "master" :code "(define (regenerates-all? G) (= (length (alg/subgroup-gen G (alg/generators G))) (length G))) (regenerates-all? (alg/cyclic 5))"
+     :note "The reported generators span the entire group under closure — cardinality match.")
+  )
+  :caveats
+    ("Not canonical — different runs may pick different generators."
+     "For cyclic groups with no explicit primitive root, returns a fallback.")
+  :drawbacks
+    ("Doesn't return ALL possible generating sets; just one."
+     "For very complex groups may return non-minimal sets.")
+  :usecases
+    ("Compress a group representation to its generating set."
+     "Seed alg/subgroup-gen with a candidate small set.")
+  :related ("alg/subgroup-gen" "alg/rank" "alg/is-cyclic?")
+  :learn
+    (:concept "Generating sets — the compact description of a group."
+     :prerequisites ("alg/subgroup-gen")
+     :progression "generators -> rank -> group presentations.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Dihedral case: (rot 1) + (ref 0). Cyclic case: element of order |G|."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|), space O(|G|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/random-element"
+  :library "alg"
+  :kind "gated"
+  :signature "(alg/random-element G) -> element"
+  :summary "Return a uniformly random element of G."
+  :impl-status "wired"
+  :explanation "Pick a random element of the group with uniform probability. Uses Math.random(), so results are non-deterministic. Useful for probabilistic tests: randomized commutativity check, random walks on a group, or generating a random sample for Monte Carlo group-theory calculations. Because this is randomized, its output is NOT reproducible unless you seed the RNG externally."
+  :examples (
+    (:tier "novice" :code "(number? (alg/random-element (alg/cyclic 5)))"
+     :note "A random element of Z_5 is a number. Returns #t.")
+    (:tier "apprentice" :code "(define x (alg/random-element (alg/cyclic 10))) (and (>= x 0) (< x 10))"
+     :note "The random element is in [0, 10). Verified.")
+    (:tier "intermediate" :code "(alg/random-element '())"
+     :note "Empty group: no element to pick. Returns nil/null.")
+    (:tier "expert" :code "(define g (alg/random-element (alg/dihedral 3))) (list (car g) (number? (cadr g)))"
+     :note "Random D_3 element is a tagged tuple ('rot k) or ('ref k).")
+    (:tier "master" :code "(define (sample-in-range? G n) (every (lambda (_) (let ((x (alg/random-element G))) (and (>= x 0) (< x n)))) (list 1 2 3 4 5))) (sample-in-range? (alg/cyclic 100) 100)"
+     :note "Draw 5 random elements from Z_100 and check they all sit in [0, 100). Deterministic bound-check on non-deterministic samples.")
+  )
+  :caveats
+    ("Uses Math.random() — non-deterministic, non-seedable."
+     "Empty group returns null."
+     "Not cryptographically secure.")
+  :drawbacks
+    ("Cannot be cached — each call gives a fresh result."
+     "For truly reproducible experiments, use an explicit seeded PRNG.")
+  :usecases
+    ("Monte Carlo group-theory experiments."
+     "Randomized cryptography or hash-based constructions."
+     "Testing algorithms on random inputs.")
+  :related ("alg/order" "(core)/random")
+  :learn
+    (:concept "Uniform sampling from a finite group."
+     :prerequisites ("alg/order")
+     :progression "random-element -> random walks on Cayley graphs -> Ehrenfest / Markov chain analysis.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Math.random() * |G|; floor; return element at that index."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "non-det"
+     :pure #f)
+  :+ai
+    (:deterministic #f
+     :cacheable #f))
