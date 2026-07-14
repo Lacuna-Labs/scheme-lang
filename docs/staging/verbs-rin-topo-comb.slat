@@ -542,3 +542,135 @@
      :entry-provenance "spec-ambiguous"
      :required-fields-present #t
      :entry-summary "Multinomial coefficient. Rest-args form works; list-arg form silently returns 1 (impl/spec drift — flagged for Alfred)."))
+
+(verb
+  :name "comb/partition-count"
+  :library "comb"
+  :signature "(comb/partition-count n) -> integer"
+  :summary "Number of INTEGER partitions of n: distinct ways to write n as a sum of positive integers (order-independent)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/partition-count 5)"
+     :note "Returns 7: the seven integer partitions of 5 are 5, 4+1, 3+2, 3+1+1, 2+2+1, 2+1+1+1, 1+1+1+1+1.")
+    (:tier "apprentice"
+     :code "(comb/partition-count 0)"
+     :note "Returns 1: the empty partition is the only partition of 0. Anchors the boundary for the recurrence.")
+    (:tier "intermediate"
+     :code "(map comb/partition-count (list 0 1 2 3 4 5 6 7 8 9 10))"
+     :note "Returns (1 1 2 3 5 7 11 15 22 30 42) — the partition function p(n). Growth is sub-exponential, given by Hardy-Ramanujan: p(n) ~ exp(pi sqrt(2n/3)) / (4n sqrt(3)).")
+    (:tier "expert"
+     :code "(let ((n 10))\n  (list ':integer-partitions (comb/partition-count n)\n        ':set-partitions (comb/bell n)))"
+     :note "Returns (:integer-partitions 42 :set-partitions 115975). Contrast: integer partitions treat the summands as anonymous positive integers; set partitions (Bell) treat the elements as distinguishable and count subset-groupings. Same n, very different counts.")
+    (:tier "master"
+     :code "(define (integer-decompositions target)\n  (comb/partition-count target))\n(list ':n15 (integer-decompositions 15)\n      ':n30 (integer-decompositions 30)\n      ':n50 (integer-decompositions 50))"
+     :note "Domain: how many distinct ways can n be written as an unordered sum of positive integers? Returns (:n15 176 :n30 5604 :n50 204226). This is the classic partition function studied by Hardy, Ramanujan, and Euler. Note: this counts partitions with UNRESTRICTED part sizes — not coin change with fixed denominations."))
+
+  :related ("comb/bell" "comb/stirling2" "comb/catalan")
+  :caveats ("Counts INTEGER partitions of n, not set partitions (compare comb/bell)." "All positive integers are valid summands — this is unrestricted partition counting, not coin-change with fixed denominations." "p(n) grows sub-exponentially; safe for n up to about 400 within JS number precision.")
+  :drawbacks ("O(n^2) time via the sieve-like DP; for very large n, use the pentagonal-number recurrence for O(n sqrt(n))." "No memoization across calls." "Does not enumerate partitions, only counts them.")
+  :usecases ("Counting distinct integer decompositions in enumerative combinatorics puzzles." "Verifying identities involving Ramanujan-type partition-congruence proofs." "Baseline for exploring restricted partitions (into odd parts, distinct parts, at most k parts, etc.).")
+  :learn (:concept "Integer partition function p(n) counts unordered decompositions of n into positive integers. Fundamental in Hardy-Ramanujan analysis and modular-form theory." :prerequisites ("+") :progression "Compare to comb/bell (set partitions, distinguishable elements) and comb/catalan (balanced structures). Then explore restricted partitions: into odd parts, into distinct parts, into parts of size at most k.")
+
+  :+math
+    (:algebra "Generating function: sum p(n) x^n = product(k=1..inf) 1/(1 - x^k). Euler pentagonal number theorem: p(n) = sum(k) (-1)^(k+1) (p(n - k(3k-1)/2) + p(n - k(3k+1)/2)). Hardy-Ramanujan asymptotic: p(n) ~ exp(pi sqrt(2n/3)) / (4n sqrt(3))."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "positive integer"
+     :proofs "The generating-function identity comes from expanding each factor 1/(1-x^k) = 1 + x^k + x^(2k) + ... as 'choose how many k's appear' — the multiplicative structure exactly encodes independent choice per part size.")
+
+  :+cs
+    (:complexity "Time O(n^2), space O(n) via the standard DP: for i from 1 to n, for j from i to n, p[j] += p[j - i]."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Iterative 1D DP: initialize p[0] = 1, iterate part-size i from 1 to n, and for each i update p[j] += p[j - i] for j from i to n. Space O(n). Simple, correct, plenty fast for n up to a few hundred."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: p(0)=1, p(5)=7, p(10)=42, p(50)=204226; sequence matches OEIS A000041."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/bell" "comb/stirling2")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing with set partitions (Bell numbers). Assuming it models coin change — it counts partitions with ALL positive integers as allowed part sizes, not restricted denominations."
+     :when-not-to-use "You need partitions with restricted part sizes (odd only, distinct only, at most k parts). You need the partitions themselves, not the count.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Integer partition function p(n). O(n^2) DP. Distinguish from set partitions (Bell)."))
+
+(verb
+  :name "comb/pascal-row"
+  :library "comb"
+  :signature "(comb/pascal-row n) -> list-of-integer"
+  :summary "Alias for comb/binomial-coeffs: return the n-th row (C(n,0) ... C(n,n)) of Pascal's triangle."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/pascal-row 5)"
+     :note "Returns (1 5 10 10 5 1) — the 5th row.")
+    (:tier "apprentice"
+     :code "(comb/pascal-row 0)"
+     :note "Returns (1) — the apex of the triangle.")
+    (:tier "intermediate"
+     :code "(let ((row (comb/pascal-row 8)))\n  (list ':entries row ':sum (apply + row) ':expected-sum (expt 2 8)))"
+     :note "Returns entries plus sum. Row-sum equals 2^n identically. :sum 256 :expected-sum 256.")
+    (:tier "expert"
+     :code "(define (symmetric? row)\n  (equal? row (reverse row)))\n(map (lambda (n) (list n (symmetric? (comb/pascal-row n))))\n     (list 0 1 2 5 8 12))"
+     :note "Verify the palindrome symmetry C(n,k) = C(n,n-k) for six choices of n. Returns ((0 #t) (1 #t) (2 #t) (5 #t) (8 #t) (12 #t)).")
+    (:tier "master"
+     :code "(define (fair-coin-pmf n)\n  (let* ((row (comb/pascal-row n)) (tot (expt 2 n)))\n    (map (lambda (c) (/ c tot)) row)))\n(fair-coin-pmf 6)"
+     :note "Build the PMF of Binomial(6, 1/2). Returns (1/64 6/64 15/64 20/64 15/64 6/64 1/64) as decimals — the classic bell shape. Same as comb/binomial-coeffs 6 normalized by 2^6."))
+
+  :related ("comb/binomial-coeffs" "comb/choose" "comb/pascal-triangle")
+  :caveats ("Same impl as comb/binomial-coeffs — kept as a nameable alias for readability where 'pascal-row' reads better in code." "Result is a list of length n+1." "For very large n, JS number precision degrades same as comb/choose.")
+  :drawbacks ("Alias adds no functionality — pick either name for a codebase and stay consistent." "Materializes the whole row; use comb/choose for a single value.")
+  :usecases ("Reading code where 'pascal-row' is clearer than 'binomial-coeffs' (teaching contexts, historical references)." "Everything comb/binomial-coeffs does.")
+  :learn (:concept "Second name for the n-th Pascal row. Preserves the historical naming used in classic combinatorics texts." :prerequisites ("comb/binomial-coeffs") :progression "Study comb/pascal-triangle for the whole triangle, then explore identities: hockey-stick, sums-of-squares of a row, alternating-sign sums.")
+
+  :+math
+    (:algebra "Identical to comb/binomial-coeffs. See that verb's :+math slice."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "list of length n+1 of non-negative integers"
+     :proofs "Same as comb/binomial-coeffs.")
+
+  :+cs
+    (:complexity "Time O(n), space O(n)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Literal duplicate of comb/binomial-coeffs. Both def calls share the same binom helper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: matches comb/binomial-coeffs bit-for-bit."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("apply" "map" "reverse")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming pascal-row is somehow different from binomial-coeffs — it's a strict alias."
+     :when-not-to-use "You want just one coefficient — use comb/choose.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Alias for comb/binomial-coeffs. Returns the n-th Pascal row."))
