@@ -20,6 +20,8 @@ import { installAi } from './ai.js'
 import { installGame, makeGameState } from './game.js'
 import { installGameTheory } from './game-theory.js'
 import { installGameInstances } from './game-instances.js'
+import { installPrefab } from './prefab.js'
+import { installSprite } from './sprite.js'
 import { installJuggle } from './juggle.js'
 import { installScene } from './scene.js'
 import { installCine } from './cine.js'
@@ -31,6 +33,7 @@ import { installWiredVerbs } from './wired-verbs.js'
 import { installWiredVerbsIP } from './wired-verbs-priya-i-p.js'
 import { installWiredVerbsHanaMath } from './wired-verbs-hana-math.js'
 import { installWiredVerbsMarcusMathC } from './wired-verbs-marcus-math-c.js'
+import { installWiredVerbsAdaAH } from './wired-verbs-ada-a-h.js'
 import { installSystem } from './system.js'
 
 /**
@@ -88,6 +91,18 @@ export function makeSakuraEnv(fuel, {
   // game/state, game/running?, game/step, game/stop all work per-id.
   // No rendering, no physics; those live in installGame and elsewhere.
   installGameInstances(env)
+
+  // L3.66 PREFAB — kira-game lane. Reusable spawn recipes. Delegates
+  // to entity/make + entity/tag! from installGame. Wires 2 verbs
+  // (prefab/define, prefab/spawn) — templates keyed by name.
+  installPrefab(env)
+
+  // L3.67 SPRITE — kira-game lane. Cell-cluster sprite layer. Cells
+  // are (x y color) triples; petals are named anchor points inside
+  // the cluster. Wires 3 verbs (sprite/address, sprite/landmarks,
+  // sprite/rasterize) plus a sprite/define helper for authoring
+  // sprites at REPL. Rasterize stamps into the shared media.fb.
+  installSprite(env)
 
   // L3.7 OPS — operations-research primitives (Zain, 2026-07-14). Wires
   // all 35 ops/* verbs (eoq, mm1, mmc, dijkstra, simplex, mip-solve,
