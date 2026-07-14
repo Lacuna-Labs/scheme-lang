@@ -232,3 +232,72 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Paint a pitch on a staff. Silent. Complements note/strike for read-and-hear."))
+
+;; ─── audio/* — 13 verbs ──────────────────────────────────────────
+
+(verb
+  :name "audio/listen"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/listen) -> [status-tag envelope] | descriptor"
+  :summary "Ask the live audio analyser for a two-part status; the guard that all downstream audio/* reads depend on."
+  :impl-status "wired-descriptor"
+  :explanation "audio/listen is the permission gate for the live-audio subsystem. Under a browser host the first call triggers the microphone-permission gesture; subsequent calls return ['ok envelope] once the analyser is warm, or ['pending-audio ...] while it warms up. Under the standalone REPL there is no live analyser, so the verb returns the descriptor ('audio/listen) — callers that check (car result) will see the verb-name string and can branch cleanly. All other audio read verbs (spectrum, tempo, key, lufs, onset?, onset-strength) assume audio/listen has run first."
+  :examples (
+    (:tier "novice"
+     :code "(audio/listen)"
+     :note "Ask the analyser for its status. In REPL: returns (\"audio/listen\") — the guard shape. Under a live host: ('ok envelope) once warm.")
+    (:tier "apprentice"
+     :code "(let ((status (audio/listen))) (if (equal? (car status) (quote ok)) (quote ready) (quote pending)))"
+     :note "Branch on the first element of the status tuple. In REPL: returns 'pending because (car status) is \"audio/listen\", not 'ok.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/listen)) (list 1 2 3))"
+     :note "audio/listen is idempotent and safe to call repeatedly; a poll loop can call it every frame without state damage. Returns three copies of the descriptor.")
+    (:tier "expert"
+     :code "(define (check-audio) (let ((s (audio/listen))) (if (equal? (car s) (quote ok)) (quote go) (quote wait)))) (check-audio)"
+     :note "A reusable `check-audio` guard: returns 'go when the analyser is ready, 'wait otherwise. Standard shape for gating expensive downstream work.")
+    (:tier "master"
+     :code "(let loop ((n 0)) (let ((s (audio/listen))) (if (or (equal? (car s) (quote ok)) (>= n 3)) (list (quote final) (car s) n) (loop (+ n 1)))))"
+     :note "A capped retry loop: try up to 3 times, then return the last-seen status. Handles the browser permission handshake gracefully without hanging.")
+  )
+  :caveats
+    ("Under a live host the first call MUST occur inside a user gesture (click, keypress) — browser audio contexts refuse to start otherwise."
+     "In headless REPL the verb never returns 'ok; callers must accept the descriptor shape and continue."
+     "Idempotent — safe to call every frame."
+     "Returning 'pending-audio is not an error; it just means the caller should retry.")
+  :drawbacks
+    ("No timeout. A stalled permission dialog will keep returning pending forever."
+     "No explicit failure state. If the user denies the microphone, this verb still returns pending — not error.")
+  :usecases
+    ("Guard all downstream audio-reads with audio/listen so a headless run does not crash."
+     "Build a permission-aware UI that shows 'waiting for mic' or 'ready to listen'."
+     "Prime the analyser at cart startup so later spectrum/tempo/key calls are already warm.")
+  :related ("audio/spectrum" "audio/tempo" "audio/key" "audio/lufs" "audio/onset?" "audio/onset-strength" "audio/playing?")
+  :learn
+    (:concept "Permission gates and status tuples — the pattern for accessing async resources cleanly."
+     :prerequisites ("(core)/car" "(core)/if" "(core)/equal?")
+     :progression "Use audio/listen once. Then guard every downstream audio-read with it. Then move on to audio/spectrum for the FFT.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/listen) descriptor. Host surfaces override this to route to a real Web Audio AnalyserNode + permission dance."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/listen); apprentice='pending; intermediate=3 copies; expert='wait; master=('final \"audio/listen\" 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/spectrum" "audio/tempo" "audio/key" "audio/lufs" "audio/onset?" "audio/onset-strength")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming (car result) equals 'ok in REPL — it equals the verb-name string. Test with equal? on both possibilities."
+     :when-not-to-use "You just need to play a sound — use `audio/play` or `note/strike` directly; those do not need listen.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Guard verb for the live audio analyser. Callable in REPL as a descriptor; ok under a live host."))
