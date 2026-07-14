@@ -2987,3 +2987,133 @@
   :+ai
     (:deterministic #f
      :cacheable #f))
+
+
+(verb
+  :name "alg/identity"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/identity n) -> perm"
+  :summary "Alias for alg/perm-identity: return the identity permutation of degree n."
+  :impl-status "wired"
+  :explanation "The identity element of the symmetric group S_n: a permutation that maps every point to itself. Same shape as alg/perm-identity: a list (0 1 2 ... n-1). Kept as a distinct name because 'identity' is the canonical group-theory nomenclature; alg/perm-identity is the permutation-centric spelling. Use whichever reads better at the call site."
+  :examples (
+    (:tier "novice" :code "(alg/identity 3)" :note "Returns (0 1 2).")
+    (:tier "apprentice" :code "(equal? (alg/identity 4) (alg/perm-identity 4))" :note "Alias check.")
+    (:tier "intermediate" :code "(alg/perm-compose (alg/identity 3) '(2 0 1))" :note "Identity acts as left-identity.")
+    (:tier "expert" :code "(alg/identity 0)" :note "Empty permutation: ().")
+    (:tier "master" :code "(equal? (alg/identity 5) (alg/perm-pow (alg/identity 5) 100))" :note "Identity is fixed under any power.")
+  )
+  :caveats ("Same behavior as alg/perm-identity." "Not the group identity for non-permutation representations.")
+  :drawbacks ("Redundant with alg/perm-identity — kept for naming clarity.")
+  :usecases ("Seed group-theory calculations." "Compose-with-identity as a no-op.")
+  :related ("alg/perm-identity" "alg/perm-compose")
+  :learn (:concept "The identity element of S_n." :prerequisites ("alg/perm-identity") :progression "identity -> perm-compose -> subgroup enumeration.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Delegates to permIdentity(n)." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:algebra "identity" :total #t)
+  :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/inverse"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/inverse perm) -> perm"
+  :summary "Return the inverse of a permutation (or group element)."
+  :impl-status "wired"
+  :explanation "Compute the inverse of a permutation given as an image vector. For a permutation p that sends i to p[i], the inverse p^-1 sends p[i] back to i. Aliased with alg/invert; alg/perm-inverse is the more explicit spelling. When p is a valid permutation, p * p^-1 = p^-1 * p = identity."
+  :examples (
+    (:tier "novice" :code "(alg/inverse '(2 0 1))" :note "Inverts the 3-cycle (0 1 2 -> 2 0 1) to (1 2 0).")
+    (:tier "apprentice" :code "(alg/inverse (alg/identity 4))" :note "Identity is its own inverse.")
+    (:tier "intermediate" :code "(alg/perm-compose '(2 0 1) (alg/inverse '(2 0 1)))" :note "p * p^-1 = identity.")
+    (:tier "expert" :code "(equal? (alg/inverse (alg/inverse '(3 1 2 0))) '(3 1 2 0))" :note "Double inverse is original.")
+    (:tier "master" :code "(define (involution? p) (equal? (alg/inverse p) p)) (involution? '(1 0 3 2))" :note "Involutions equal their own inverse.")
+  )
+  :caveats ("Expects a valid permutation." "Result has same length as input.")
+  :drawbacks ("Same cost as alg/perm-inverse; kept for naming.")
+  :usecases ("Solve p * x = q for x." "Compute conjugates.")
+  :related ("alg/perm-inverse" "alg/invert" "alg/perm-conjugate")
+  :learn (:concept "Group inverses." :prerequisites ("alg/perm-compose") :progression "inverse -> perm-conjugate -> group axioms.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Delegates to permInverse; identical to alg/perm-inverse." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:algebra "identity" :total #t)
+  :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/invert"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/invert perm) -> perm"
+  :summary "Alternative name for alg/inverse: invert a permutation."
+  :impl-status "wired"
+  :explanation "Yet another spelling for permutation inversion. Same behavior as alg/inverse and alg/perm-inverse. Kept because different sources use different conventions — SICP-style 'invert', abstract-algebra 'inverse', permutation-group 'perm-inverse'. All three refer to the same operation."
+  :examples (
+    (:tier "novice" :code "(alg/invert '(2 0 1))" :note "Inverts to (1 2 0).")
+    (:tier "apprentice" :code "(equal? (alg/invert '(1 0)) (alg/inverse '(1 0)))" :note "Same as alg/inverse.")
+    (:tier "intermediate" :code "(alg/perm-compose (alg/invert '(3 2 1 0)) '(3 2 1 0))" :note "Yields identity.")
+    (:tier "expert" :code "(alg/invert (alg/invert '(2 0 1)))" :note "Round-trip.")
+    (:tier "master" :code "(equal? (alg/invert (alg/perm-pow '(1 2 0) 2)) (alg/perm-pow (alg/invert '(1 2 0)) 2))" :note "Inverse of a power equals power of the inverse.")
+  )
+  :caveats ("Alias." "Same input/output as alg/inverse.")
+  :drawbacks ("Redundant name; consider standardizing.")
+  :usecases ("Match legacy code that uses 'invert'." "Preserve reference-manual spellings.")
+  :related ("alg/inverse" "alg/perm-inverse")
+  :learn (:concept "Group inverses (alias)." :prerequisites ("alg/perm-inverse") :progression "invert -> inverse -> perm-conjugate.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Alias of alg/inverse." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/element-order"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/element-order perm) -> integer"
+  :summary "Return the order of a permutation: smallest k with p^k = identity."
+  :impl-status "wired"
+  :explanation "The order of a permutation equals the LCM of its cycle lengths. For a k-cycle, order is k; for a product of disjoint cycles, order is the LCM. This verb takes a permutation directly (not a group + element); use alg/perm-order for the same thing under a different name. For general group elements, compute via alg/op iteration."
+  :examples (
+    (:tier "novice" :code "(alg/element-order '(1 2 0))" :note "3-cycle: order 3.")
+    (:tier "apprentice" :code "(alg/element-order (alg/identity 5))" :note "Identity: order 1.")
+    (:tier "intermediate" :code "(alg/element-order '(1 0 3 2))" :note "Two 2-cycles: LCM = 2.")
+    (:tier "expert" :code "(alg/element-order '(1 2 0 4 3))" :note "3-cycle + 2-cycle: LCM(3, 2) = 6.")
+    (:tier "master" :code "(map alg/element-order (list '(0 1 2) '(1 0 2) '(2 0 1)))" :note "Orders of S_3 elements: identity=1, transposition=2, 3-cycle=3.")
+  )
+  :caveats ("Same as alg/perm-order." "For general groups, use per-element iteration.")
+  :drawbacks ("Only works on permutations.")
+  :usecases ("Test cyclic-subgroup structure." "Bound the period of a shuffle.")
+  :related ("alg/perm-order" "alg/perm->cycles" "alg/exponent")
+  :learn (:concept "Order of a permutation via cycle lengths." :prerequisites ("alg/perm->cycles") :progression "element-order -> exponent -> alg/is-cyclic?.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "LCM of cycle lengths via alg/perm->cycles logic." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/cyclic"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/cyclic n) -> group"
+  :summary "Construct the cyclic group Z/nZ under addition modulo n as a Cayley table."
+  :impl-status "wired"
+  :explanation "Returns the additive cyclic group of order n as its Cayley table: an n x n matrix where entry [i][j] is (i + j) mod n. The table completely encodes the group structure; use alg/op to compose. Cyclic groups are the simplest non-trivial groups and the building blocks of finitely generated abelian groups (fundamental theorem)."
+  :examples (
+    (:tier "novice" :code "(length (alg/cyclic 5))" :note "|C_5| = 5.")
+    (:tier "apprentice" :code "(alg/op (alg/cyclic 6) 4 5)" :note "4 + 5 mod 6 = 3.")
+    (:tier "intermediate" :code "(alg/is-abelian? (alg/cyclic 12))" :note "Cyclic groups are always abelian.")
+    (:tier "expert" :code "(alg/is-cyclic? (alg/cyclic 5))" :note "Cyclic groups are (trivially) cyclic.")
+    (:tier "master" :code "(map alg/order (list (alg/cyclic 2) (alg/cyclic 4) (alg/cyclic 8) (alg/cyclic 16)))" :note "Powers-of-2 cyclic groups.")
+  )
+  :caveats ("Cayley-table representation; elements are integers 0..n-1." "n must be positive.")
+  :drawbacks ("O(n^2) storage.")
+  :usecases ("Test abelian-group algorithms." "Build modular-arithmetic examples.")
+  :related ("alg/dihedral" "alg/zn" "alg/order")
+  :learn (:concept "Cyclic groups — the atoms of abelian group theory." :prerequisites ("alg/zn") :progression "cyclic -> dihedral -> symmetric -> alternating.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Existing impl at line 1167 in reference-impls.js; not overridden by src/alg.js." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:algebra "abelian associative commutative identity" :total #t)
+  :+cs (:complexity "time O(n^2), space O(n^2)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
