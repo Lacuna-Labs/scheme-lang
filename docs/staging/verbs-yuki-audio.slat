@@ -1,0 +1,95 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-yuki-audio.slat — Yuki's authored verb entries
+;;
+;; Lane: audio (radio/* + synth/* + note/* + audio/* — 39 verbs)
+;; Author: Yuki (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Also required by architect verifier: :kind :explanation
+;;                                        :caveats :drawbacks :usecases
+;;                                        :related :learn
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval before landing.
+;; Alfred's floor doctrine: We can't lie to people. They trust us.
+;; Audio verbs in a headless REPL return descriptors or [status info]
+;; tuples — the verb is still callable, the shape is stable, and the
+;; caller can inspect it. That is the honest contract.
+;; ═══════════════════════════════════════════════════════════════
+
+
+;; ─── note/* — 3 verbs ────────────────────────────────────────────
+
+(verb
+  :name "note/strike"
+  :library "note"
+  :kind "mut"
+  :signature "(note/strike pitch duration) -> descriptor | undefined"
+  :summary "Sound a musical pitch for a duration; in the headless REPL returns a descriptor that a live audio host can consume."
+  :impl-status "wired-descriptor"
+  :explanation "note/strike is Sakura's monophonic ring-the-bell verb. Give it a pitch (a symbol like 'C4 or 'Fs3, or a MIDI number 0-127) and a duration in seconds, and it schedules a note. Under a live host surface the descriptor becomes an actual attack + sustain + release on the audio thread; under the headless REPL the same call returns the tagged list ('note/strike pitch duration) — the shape a host can inspect and turn into sound. Blocking-style callers should not expect the verb to wait for the note to finish; use `for-each` or `on-beat` to sequence."
+  :examples (
+    (:tier "novice"
+     :code "(note/strike (quote C4) 0.5)"
+     :note "Ring middle C for half a second. In REPL: returns (\"note/strike\" \"C4\" 0.5) — the shape a live host would translate into audio.")
+    (:tier "apprentice"
+     :code "(let ((notes (list (quote C4) (quote E4) (quote G4)))) (for-each (lambda (p) (note/strike p 0.25)) notes))"
+     :note "Sequence a C-major triad as three quarter notes. `for-each` returns undefined; the notes are the side effect.")
+    (:tier "intermediate"
+     :code "(map (lambda (p) (note/strike p 0.2)) (list (quote C4) (quote D4) (quote E4) (quote F4) (quote G4) (quote A4) (quote B4) (quote C5)))"
+     :note "Walk a full C-major scale and collect the eight descriptors into a list. Handy when you want to inspect the sequence you just played.")
+    (:tier "expert"
+     :code "(define (melodic-cell base intervals dur) (for-each (lambda (i) (note/strike (+ base i) dur)) intervals)) (melodic-cell 60 (list 0 2 4 2 0) 0.2)"
+     :note "A reusable melodic cell: pass a MIDI base (60 = middle C) and a list of intervals. Here we play C-D-E-D-C — a shape you can transpose by changing the base.")
+    (:tier "master"
+     :code "(let ((twinkle (list (quote C4) (quote C4) (quote G4) (quote G4) (quote A4) (quote A4) (quote G4) (quote F4) (quote F4) (quote E4) (quote E4) (quote D4) (quote D4) (quote C4)))) (for-each (lambda (p) (note/strike p 0.4)) twinkle))"
+     :note "Play the first two phrases of 'Twinkle, Twinkle, Little Star' as quarter notes. This is what a real cart delivers — a recognizable melody rendered from a plain list.")
+  )
+  :caveats
+    ("Pitch may be a symbol ('C4, 'Fs3, 'Db5) or a MIDI number (0–127). A malformed symbol falls through as its literal name in the descriptor."
+     "Duration is in seconds. Zero or negative durations are still accepted but produce no audible sound."
+     "In the standalone REPL the return is a shape, not a sound. The caller can inspect (car result) to confirm which verb ran."
+     "Not polyphonic: two overlapping (note/strike ...) calls will play sequentially under a hosted engine unless you spawn them across the async loop."
+     "Rapid loops without a rate limiter can starve the audio scheduler; wrap tight loops in `on-tick` or `after`.")
+  :drawbacks
+    ("No envelope shaping — no ADSR, no velocity curve. Use `synth/orch` or `synth/808` when you want a real timbre."
+     "Blocking flavor of the API: the descriptor returns instantly; there's no return value that lets you know the note has ended."
+     "No pitch bend, no vibrato, no slur — a note is a single event, not a phrase. Compose with `note/release` for staccato phrasing.")
+  :usecases
+    ("Teach the melodic-cell pattern: base pitch + interval list."
+     "Sight-read a printed melody one note at a time in a music-theory tutorial cart."
+     "Build a step sequencer over the base scale."
+     "Debug: sound a distinct pitch as a marker inside a long-running loop.")
+  :related ("note/release" "note/place-at" "synth/orch" "synth/play" "audio/play" "on-beat")
+  :learn
+    (:concept "Imperative single-voice note emission — one pitch, one duration, one descriptor per call."
+     :prerequisites ("(core)/for-each" "(core)/list" "(core)/lambda")
+     :progression "Start with (note/strike 'C4 0.5). Then sequence a scale. Then combine with `note/release` for staccato. Then move up to `synth/orch` for a real timbre with dynamics.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:173. Returns a descriptor list ('note/strike pitch duration). Host surfaces override this binding to route to a real audio engine."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('note/strike \"C4\" 0.5); apprentice=undefined (for-each); intermediate=(8 descriptors); expert=undefined; master=undefined (twinkle plays)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("note/release" "on-beat")
+     :consumes-from ("core scale/interval generators")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Passing a duration in milliseconds when the verb expects seconds. Confusing MIDI 60 (middle C) with 'C4 — both work, but mixing them in a list is confusing to read."
+     :when-not-to-use "You need polyphony — use `synth/chord`. You need timbral shaping — use `synth/orch`. You need precise timing across many voices — use `synth/play` with a score.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Sound one pitch for one duration. Bell-clean, single-voice."))
