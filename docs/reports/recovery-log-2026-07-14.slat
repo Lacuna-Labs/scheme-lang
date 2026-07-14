@@ -1,0 +1,82 @@
+;; ═══════════════════════════════════════════════════════════════
+;; RECOVERY LOG — 2026-07-14
+;;
+;; Records every file move + content-decision made by Recovery
+;; Lane 3 (Reference Relocation + Misattribution Review).
+;;
+;; Items executed: recovery-006, recovery-007, recovery-014,
+;; recovery-015.
+;;
+;; Schema per record:
+;;   (moved :id "recovery-NNN"
+;;          :from "<absolute source path>"
+;;          :to   "<absolute destination path or 'log-only'>"
+;;          :status "content-already-in-canonical | novel-canonical |
+;;                   alt-saved-conflict | archived-mirror | sorted-by-kind"
+;;          :verification "sha256 diff | manual review | ...")
+;;
+;; Safeguards enforced:
+;;   - NO DELETES. Sources remain in .wrong-attribution/ dir.
+;;   - NO SILENT OVERWRITES. On conflict → <name>.alt-<sha>.<ext>.
+;;   - Every insertion into SAKURA-SCHEME-REFERENCE.slat individually logged.
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-log
+  :date "2026-07-14"
+  :lane "recovery-lane-3"
+  :items ("recovery-006" "recovery-007" "recovery-014" "recovery-015")
+  :moves ())
+
+;; ═══════════════════════════════════════════════════════════════
+;; RECOVERY LANE 4 — Alias Mirrors + Shortened-Block Restore
+;; Items: recovery-012, recovery-013
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-log
+  :date "2026-07-14"
+  :lane "recovery-lane-4"
+  :items ("recovery-012" "recovery-013")
+  :moves
+    (
+     ;; ─── recovery-012 — alias mirrors ────────────────────────
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-money/00-cover.slat"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-money/00-cover.mirror.slat"
+            :status "identical-alias"
+            :verification "prose sha256 9d39b460ba39e2ea matches canonical book-of-money/00-cover.book.slatl")
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-music/00-cover.slat"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-music/00-cover.mirror.slat"
+            :status "identical-alias"
+            :verification "prose sha256 220b6d7cf6053efa matches canonical book-of-music/00-cover.book.slatl")
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-motion/00-cover.slat"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-motion/00-cover.mirror.slat"
+            :status "identical-alias"
+            :verification "prose sha256 8ad0950fcdca144c matches canonical book-of-motion/00-cover.book.slatl")
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-one-shot/00-cover.slat"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-one-shot/00-cover.mirror.slat"
+            :status "identical-alias"
+            :verification "prose sha256 b30312796bac3c6b matches canonical book-of-one-shot/00-cover.book.slatl")
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-instruments/00-cover.slat"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-instruments/00-cover.mirror-3f31567c.slat"
+            :status "divergent-earlier-draft"
+            :verification "prose sha256 a909ff3c03ee9fdc differs from canonical 9d70f0a47a75a41f — mirror is earlier draft; canonical adds 'Persisting instrument state' section referencing book-of-slat")
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/book-of-instruments/00-cover.book.slatl"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-instruments/00-cover.canonical-263fcf7b.book.slatl"
+            :status "canonical-copy-for-review"
+            :verification "canonical preserved in original location; copy here for side-by-side review")
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-miscellany/00-cover.slat"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-miscellany/00-cover.mirror-5311c185.slat"
+            :status "divergent-earlier-draft"
+            :verification "prose sha256 420f3c1be48281d6 differs from canonical 25441605dd07090b — mirror is earlier draft; canonical adds book-of-slat cross-reference bullet")
+     (moved :id "recovery-012"
+            :from "/Users/alfred/code/curator/scheme-books/book-of-miscellany/00-cover.book.slatl"
+            :to "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/book-of-the-miscellany/00-cover.canonical-ff11a78f.book.slatl"
+            :status "canonical-copy-for-review"
+            :verification "canonical preserved in original location; copy here for side-by-side review")
+    ))
