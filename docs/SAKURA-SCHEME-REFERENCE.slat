@@ -776,6 +776,31 @@
   :ai (:raises ("external-service — sidecar unreachable" "quota-exceeded — provider rate limit" "timeout — provider slow" "bad-input — text too long for provider") :pipes-into ("cond" "eq?" "route-to-*") :consumes-from ("string" "list of symbols") :cardinality "one" :deterministic #f :cacheable #t :common-mistakes "Calling ai/classify without wrapping in a sidecar-availability check; the raw call CRASHES the cart when the provider is down. Always route through a safe-classify helper or check (cortex/read \"llm/provider-status\") first." :when-not-to-use "Deterministic keyword-matching — use string-contains? or a hand-rolled regex. Cheaper, faster, more honest for exact-match cases." :returns-confidence #t)
   :commerce (:cost "external-billed" :fuel-cost "per-token" :needs-consent #f :idempotent #t :cortex-touch "none" :metered-billing #t))
 
+(verb
+  :name "ai/generate"
+  :library "ai"
+  :kind "read"
+  :signature "(ai/generate prompt [options]) → string"
+  :summary "Generate a completion from a prompt. Requires an LLM sidecar."
+  :impl-status "wired"
+  :impl-file "src/ai.js"
+  :impl-notes "Routes through state.llm.complete. When no provider is wired, raises 'requires-python-ml-sidecar'. Alfred: 'we can't lie to people.' No local fallback: text generation without a real model would be either canned text (lie) or nonsense (lie by another name)."
+  :explanation "Ai/generate is the text-generation surface. Give it a prompt (a string), get back generated text (a string). Options is an optional list of :key value pairs the provider interprets — temperature, max-tokens, stop-sequences, seed. Under a wired provider, this is the primary text-in / text-out verb; under standalone REPL it raises the sidecar-required error. That error is the honest answer: there's no way to generate meaningful text without a real model."
+  :examples (
+    (:tier "novice" :code "(ai/generate \"Write a haiku about koi fish\")" :note "Standalone REPL: raises requires-python-ml-sidecar. Wire an LLM to get a real completion.")
+    (:tier "apprentice" :code "(ai/generate \"Summarize this order: 3 items, $49.99\" '(:temperature 0.2 :max-tokens 60))" :note "Optional options list with temperature (0.2 = deterministic-ish) and max-tokens. Under no-provider: same sidecar error.")
+    (:tier "intermediate" :code "(define (safe-generate prompt fallback)\n  (if (eq? (cortex/read \"llm/provider-status\") 'wired)\n      (ai/generate prompt)\n      fallback))\n(safe-generate \"draft a thank-you\" \"Thanks for your order!\")" :note "Guarded generation with a canned-string fallback. Standalone returns the fallback; wired returns model output.")
+    (:tier "expert" :code "(define (compose-reply order-tag)\n  (let ((template (cond ((eq? order-tag 'complaint) \"Apologize + offer credit\")\n                        ((eq? order-tag 'praise)    \"Thank warmly\")\n                        (else                       \"Acknowledge neutrally\"))))\n    (if (eq? (cortex/read \"llm/provider-status\") 'wired)\n        (ai/generate template)\n        (list 'template-only template))))\n(compose-reply 'complaint)" :note "Compose a template, then either generate a real reply or return the template as-is. Cart handles both branches uniformly. Standalone returns (template-only \"Apologize + offer credit\").")
+    (:tier "master" :code "(define (thoughtful-reply text)\n  (let ((status (cortex/read \"llm/provider-status\")))\n    (cond ((eq? status 'wired)\n           (ai/generate\n             (string-append\n               \"Respond warmly and briefly to: \"\n               text)))\n          ((eq? status 'quota-exhausted)\n           \"Thanks for your message — I'll follow up soon.\")\n          (else\n           \"Thanks for your message.\"))))\n(cortex/write \"llm/provider-status\" 'offline)\n(thoughtful-reply \"my order arrived damaged\")" :note "A cart-level composer: real generation when the sidecar is up, a soft canned reply when quota is out, a plain reply otherwise. Sakura uses this shape whenever she has something to SAY — she never leaves the customer without a response because the model is down.")
+  )
+  :caveats ("No standalone fallback — raises requires-python-ml-sidecar without a wired provider. Cart code MUST handle this state." "Options list is provider-specific; :temperature and :max-tokens are near-universal but :seed / :top-p / :stop vary." "Long prompts cost more; check tokens before calling if you're near a quota.")
+  :drawbacks ("Cost per call is high — every generation is a full model forward pass." "Latency 500ms – 30s depending on prompt length and provider; not for tight loops." "Non-deterministic by default: same prompt can return different outputs. Set :temperature 0 for near-determinism.")
+  :usecases ("Composing customer replies from context." "Drafting product descriptions from a short brief." "Generating title / tag suggestions for a listing." "Any 'write a paragraph about X' task in a Sakura conversation.")
+  :related ("ai/summarize" "ai/translate" "ai/classify" "llm/complete" "llm/chat" "cortex/read")
+  :learn (:concept "Text generation is the primary LLM surface. Sakura's ai/generate wraps llm/complete with option-list ergonomics and a provider-agnostic error contract." :prerequisites ("string" "string-append" "cond" "cortex/read") :progression "After ai/generate, learn ai/summarize (specialization for compression) and ai/translate (specialization for language shift); then llm/chat for multi-turn.")
+  :ai (:raises ("external-service — sidecar unreachable" "quota-exceeded — provider rate limit" "timeout — provider slow" "bad-input — prompt too long" "content-filtered — provider refused") :pipes-into ("string-append" "display" "cortex/write") :consumes-from ("string" "list of options") :cardinality "one" :deterministic #f :cacheable #t :common-mistakes "Calling ai/generate without a fallback path. When the sidecar is down, Sakura goes silent — that's worse than a canned reply." :when-not-to-use "Deterministic formatting (dates, currency, addresses) — use string-append + format primitives. Cheaper, faster, correct." :returns-confidence #f)
+  :commerce (:cost "external-billed" :fuel-cost "per-token" :needs-consent #f :idempotent #f :cortex-touch "none" :metered-billing #t))
+
 ; ─── library: alg (59 verbs) ───
 
 (verb
