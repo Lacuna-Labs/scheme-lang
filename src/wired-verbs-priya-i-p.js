@@ -25,7 +25,7 @@
 // return real booleans; mutators update the model and return sensible
 // values; queries read the model.
 
-import { Sym } from './reader.js'
+import { Sym, sym } from './reader.js'
 import { getMediaState } from './media.js'
 
 const nm = (x) => (x instanceof Sym ? x.name : x)
@@ -114,7 +114,7 @@ function guidOf(episode) {
 
 // Standard error triple used by the reference for verbs that document
 // (guid | error-triple) as their return.
-function errorTriple(kind, msg) { return [new Sym('error'), new Sym(kind), String(msg)] }
+function errorTriple(kind, msg) { return [sym('error'), sym(kind), String(msg)] }
 
 // ────────────────────────────────────────────────────────────────────
 // installWiredVerbsIP(env, fuel) — mutate env in place; run AFTER
@@ -189,7 +189,7 @@ export function installWiredVerbsIP(env, _fuel) {
   def('list-item-pluck', (...args) => {
     if (args.length === 1) {
       // Host-side lookup — return descriptor honestly.
-      return [new Sym('list-item-pluck'), args[0]]
+      return [sym('list-item-pluck'), args[0]]
     }
     if (args.length >= 2 && Array.isArray(args[0])) {
       const [lst, id] = args
@@ -213,7 +213,7 @@ export function installWiredVerbsIP(env, _fuel) {
   def('list-item-toss', (...args) => {
     if (args.length === 3) {
       // (id from to) — host-side; return descriptor.
-      return [new Sym('list-item-toss'), args[0], num(args[1]), num(args[2])]
+      return [sym('list-item-toss'), args[0], num(args[1]), num(args[2])]
     }
     if (args.length >= 4 && Array.isArray(args[0])) {
       const [lst, _id, fromI, toI] = args
@@ -329,12 +329,12 @@ export function installWiredVerbsIP(env, _fuel) {
   def('podcast-current', () => podcast.current || false)
 
   def('podcast-state', () => [
-    [new Sym('playing'), podcast.playing],
-    [new Sym('muted'), podcast.muted],
-    [new Sym('volume'), podcast.volume],
-    [new Sym('position'), podcast.seek_position],
-    [new Sym('current-guid'), podcast.current ? guidOf(podcast.current) : false],
-    [new Sym('queue-length'), podcast.queue.length],
+    [sym('playing'), podcast.playing],
+    [sym('muted'), podcast.muted],
+    [sym('volume'), podcast.volume],
+    [sym('position'), podcast.seek_position],
+    [sym('current-guid'), podcast.current ? guidOf(podcast.current) : false],
+    [sym('queue-length'), podcast.queue.length],
   ])
 
   def('podcast-queue', () => podcast.queue.slice())
@@ -464,7 +464,7 @@ export function installWiredVerbsIP(env, _fuel) {
   def('podcast-resolve-tier', (showId) => {
     const s = String(nm(showId))
     const t = podcast.show_tiers[s]
-    return t ? new Sym(t) : new Sym('free')
+    return t ? sym(t) : sym('free')
   })
 
   def('podcast-publish-insight', (insight) => {
@@ -473,7 +473,7 @@ export function installWiredVerbsIP(env, _fuel) {
     }
     // In the full host, this posts to the insight feed. Here we track
     // it in mentions since insights are a form of mention.
-    podcast.mentions.push([new Sym('insight'), insight])
+    podcast.mentions.push([sym('insight'), insight])
     return podcast.mentions.length
   })
 
@@ -509,8 +509,8 @@ export function installWiredVerbsIP(env, _fuel) {
   // Documented return: ((w N) (h N)) alist. In headless REPL the card
   // has no rendered content, so honest return is ((w 0) (h 0)).
   def('measure-content', (_id) => [
-    [new Sym('w'), 0],
-    [new Sym('h'), 0],
+    [sym('w'), 0],
+    [sym('h'), 0],
   ])
 }
 
