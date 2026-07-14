@@ -169,3 +169,71 @@
         :long  "Retrieve a property value from an object or alist, or #f if not found. Handles flat keyword-value pairs, pair-list alists, and plain JS objects. Cannot distinguish missing from #f-valued."
         :for-ai "Total safe accessor; returns #f as the missing sentinel. Handles multiple alist shapes."
         :for-kid "Ask an object what value it stores under a name. If it doesn't know, you get #f (false).")))
+
+;; ─── pixels-wide — canvas width ────────────────────────────────────
+
+(verb
+  :name "pixels-wide"
+  :library "media"
+  :signature "(pixels-wide) -> number"
+  :summary "Return the total width of the drawing surface in pixels."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(pixels-wide)"
+     :note "Returns 80 in the default REPL — the framebuffer defaults to 80x80.")
+    (:tier "apprentice"
+     :code "(display (pixels-wide))\n(newline)\n(display (pixels-tall))"
+     :note "Read both dimensions. In the default REPL both are 80. In a browser or full host the values may differ.")
+    (:tier "intermediate"
+     :code "(let ((center-x (/ (pixels-wide) 2)))\n  (list 'center center-x))"
+     :note "Compute the horizontal center of the surface. Returns (center 40) with default dims. Used for centering avatars, HUDs, and dialogs.")
+    (:tier "expert"
+     :code "(let ((w (pixels-wide))\n      (h (pixels-tall)))\n  (list 'bounds 0 0 w h 'aspect (exact->inexact (/ w h))))"
+     :note "Build a bounds descriptor for camera framing. Returns (bounds 0 0 80 80 aspect 1.0) with the default square framebuffer.")
+    (:tier "master"
+     :code "(define (edge-positions n)\n  (let ((w (pixels-wide))\n        (h (pixels-tall)))\n    (list\n      (list 'top    (/ w 2) 0)\n      (list 'right  (- w 1)  (/ h 2))\n      (list 'bottom (/ w 2) (- h 1))\n      (list 'left   0       (/ h 2)))))\n(edge-positions 4)"
+     :note "Compute the four cardinal edge midpoints for a spawn ring. In real work, feed each to (world/spawn ...) or (sprite ...). Returns ((top 40 0) (right 79 40) (bottom 40 79) (left 0 40))."))
+  :related ("pixels-tall" "camera-frame" "card-screen-rect" "viewport-width")
+  :caveats ("The value is read from the current framebuffer; if the host resizes the canvas at runtime, subsequent reads reflect the new value." "Default REPL framebuffer is 80x80; hosts (browser, iOS) will have different dimensions." "Returns 0 if no framebuffer is attached (headless test env before media init).")
+  :drawbacks ("No cache; each call reads the framebuffer struct. In tight loops, hoist into a let." "No way to change the value from Scheme — the surface is host-configured.")
+  :usecases ("Compute horizontal center for HUDs and dialogs." "Compute bounds for camera framing." "Loop over columns without hardcoding the resolution.")
+  :learn (:concept "Query the width of the current drawing surface in pixels. Read-only; the host owns the value." :prerequisites () :progression "Pair with pixels-tall for full dimensions; then viewport-width for the visible portion under a camera transform.")
+  :+math
+    (:algebra ()
+     :total #t
+     :domain "()"
+     :codomain "non-negative integer"
+     :proofs "Reads a JS integer field; total by construction.")
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects (state)
+     :pure #f
+     :evaluation-order "applicative")
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Reads getMediaState().fb.w. Returns 0 if no fb exists yet."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (pixels-wide) = 80 in default REPL."
+     :since "1.0")
+  :+ai
+    (:raises ()
+     :pipes-into ("/" "-" "world/spawn" "sprite" "camera-frame")
+     :consumes-from ()
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming the value is constant across hosts — it is not. Assuming pixels = logical cells — depends on the sub-pixel scale factor."
+     :when-not-to-use "You need the logical column count — that's a different quantity (typically pixels-wide divided by SUB)."
+     :returns-confidence #f)
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Return the total width of the drawing surface in pixels."
+        :long  "Return the total width of the drawing surface in pixels. Reads the current framebuffer; default REPL is 80x80, hosts vary."
+        :for-ai "Read-only accessor of the framebuffer width. O(1). Not deterministic across hosts."
+        :for-kid "Ask how wide the drawing canvas is right now. In your REPL it's 80.")))
