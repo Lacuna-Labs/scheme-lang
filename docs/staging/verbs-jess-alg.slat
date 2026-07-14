@@ -2469,3 +2469,263 @@
   :+ai
     (:deterministic #t
      :cacheable #t))
+
+
+(verb
+  :name "alg/action"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/action G x act) -> list"
+  :summary "Return the orbit of x under the action of G — same as alg/orbit but named for the action-centric use case."
+  :impl-status "wired"
+  :explanation "A group action is a function act: G x X -> X that respects the group operation. This verb takes a group G, a point x in X, and an action function act, and returns the orbit — the set of images { act(g, x) : g in G }. Behaviorally identical to alg/orbit; the naming difference emphasizes that you're studying the action itself, not just orbits."
+  :examples (
+    (:tier "novice" :code "(alg/action (alg/cyclic 4) 0 (lambda (g x) (modulo (+ g x) 4)))"
+     :note "Additive action on Z_4; orbit of 0 is the full group (0 1 2 3).")
+    (:tier "apprentice" :code "(alg/action (alg/cyclic 6) 1 (lambda (g x) (modulo (* g x) 6)))"
+     :note "Multiplicative action on Z_6; orbit of 1 spans the entire ring.")
+    (:tier "intermediate" :code "(length (alg/action (alg/cyclic 12) 3 (lambda (g x) (modulo (+ g x) 12))))"
+     :note "Additive action; orbit of 3 has length 12 (transitive).")
+    (:tier "expert" :code "(alg/action (alg/dihedral 4) 0 (lambda (g x) (if (equal? (car g) 'rot) (modulo (+ (cadr g) x) 4) (modulo (- x (cadr g)) 4))))"
+     :note "Dihedral action on 4 points via geometry: rotations shift, reflections flip.")
+    (:tier "master" :code "(define (transitive? G x act) (= (length (alg/action G x act)) (length G))) (transitive? (alg/cyclic 5) 0 (lambda (g x) (modulo (+ g x) 5)))"
+     :note "Is the action transitive? For additive Z_5 acting on Z_5, yes.")
+  )
+  :caveats
+    ("act must be a callable — JS function or Scheme lambda."
+     "Return is a deduplicated list of images (the orbit).")
+  :drawbacks
+    ("O(|G|) calls to act per invocation."
+     "Same code path as alg/orbit; the two verbs exist for readability at call sites.")
+  :usecases
+    ("Enumerate orbits of a group action."
+     "Test transitivity: |orbit| = |G| iff action is transitive."
+     "Model geometric or algebraic group actions.")
+  :related ("alg/orbit" "alg/stabilizer" "alg/op")
+  :learn
+    (:concept "Group actions — a group operating on a set."
+     :prerequisites ("alg/op")
+     :progression "action -> orbit -> stabilizer -> Burnside's lemma.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Alias-like impl: iterate groupElements, call act, dedupe."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|), space O(|orbit|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/normalizer"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/normalizer G H) -> group"
+  :summary "Return the normalizer N_G(H) = { g in G : g H g^-1 = H } — the largest subgroup of G in which H is normal."
+  :impl-status "wired"
+  :explanation "The normalizer of H in G is the set of elements g that conjugate H to itself. Equivalently, N_G(H) is the largest subgroup of G in which H is a normal subgroup. If H is already normal in G, then N_G(H) = G. If H is not normal, N_G(H) is a proper subgroup containing H. Useful in Sylow-theorem calculations and structural analysis."
+  :examples (
+    (:tier "novice" :code "(alg/normalizer (alg/cyclic 6) '(0 3))"
+     :note "In abelian Z_6, everything commutes, so N_G(H) = G. Result: (0 1 2 3 4 5).")
+    (:tier "apprentice" :code "(length (alg/normalizer (alg/cyclic 12) '(0 4 8)))"
+     :note "Z_12 abelian: normalizer is the whole group. Length 12.")
+    (:tier "intermediate" :code "(alg/normalizer (alg/dihedral 4) (list '(rot 0) '(rot 2)))"
+     :note "In D_4, the subgroup {(rot 0), (rot 2)} is normal — its normalizer is D_4 itself.")
+    (:tier "expert" :code "(alg/normalizer (alg/cyclic 6) '(0))"
+     :note "The trivial subgroup {0} is normal in everything: normalizer is G.")
+    (:tier "master" :code "(define (normalizer-index G H) (/ (length G) (length (alg/normalizer G H)))) (normalizer-index (alg/cyclic 6) '(0 3))"
+     :note "[G : N_G(H)] counts the number of conjugates of H. Here H is normal so the count is 1.")
+  )
+  :caveats
+    ("H must be a subgroup of G; if not, results are meaningless."
+     "In abelian groups the normalizer is always the whole group.")
+  :drawbacks
+    ("O(|G| * |H|) — one conjugation check per element."
+     "Doesn't return the underlying reason; just the elements.")
+  :usecases
+    ("Sylow-theorem calculations (Sylow subgroups' normalizers)."
+     "Find the largest subgroup where H can be quotiented."
+     "Verify normality: H is normal iff N_G(H) = G.")
+  :related ("alg/centralizer" "alg/is-normal?" "alg/conjugacy-classes")
+  :learn
+    (:concept "The normalizer of a subgroup — its 'domain of normality.'"
+     :prerequisites ("alg/is-normal?")
+     :progression "normalizer -> Sylow theorems -> structure theorems for finite groups.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Iterate G; check gHg^-1 subset H via containment."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G| * |H|), space O(|N|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/centralizer"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/centralizer G x) -> group"
+  :summary "Return the centralizer C_G(x) = { g in G : g x = x g } — the elements that commute with x."
+  :impl-status "wired"
+  :explanation "The centralizer of an element x is the set of group elements that commute with x. It's always a subgroup of G, and by the orbit-stabilizer theorem: |G| = |conjugacy-class-of-x| * |C_G(x)|. The center of G (alg/center) is the intersection of all centralizers. In an abelian group, every centralizer is the whole group."
+  :examples (
+    (:tier "novice" :code "(alg/centralizer (alg/cyclic 6) 3)"
+     :note "In abelian Z_6, everything commutes: C_G(3) = G. Result: (0 1 2 3 4 5).")
+    (:tier "apprentice" :code "(alg/centralizer (alg/dihedral 4) '(rot 2))"
+     :note "In D_4, (rot 2) commutes with all rotations plus certain reflections.")
+    (:tier "intermediate" :code "(length (alg/centralizer (alg/cyclic 12) 5))"
+     :note "In abelian Z_12: |C_G(5)| = 12.")
+    (:tier "expert" :code "(alg/centralizer (alg/dihedral 3) '(rot 0))"
+     :note "(rot 0) is the identity — commutes with everything. Centralizer is D_3 itself.")
+    (:tier "master" :code "(define (conjugacy-class-size G x) (/ (length G) (length (alg/centralizer G x)))) (conjugacy-class-size (alg/cyclic 6) 3)"
+     :note "Orbit-stabilizer: conjugacy class size = |G|/|C_G(x)|. In abelian groups this is 1.")
+  )
+  :caveats
+    ("Centralizer always contains x itself and the identity."
+     "In abelian G, centralizer is always G.")
+  :drawbacks
+    ("O(|G|) — one commutativity check per element."
+     "Doesn't compute the conjugacy class; use for orbit-stabilizer arguments.")
+  :usecases
+    ("Compute the size of conjugacy classes via orbit-stabilizer."
+     "Find elements that commute with a specific x."
+     "Structural analysis of non-abelian groups.")
+  :related ("alg/center" "alg/normalizer" "alg/conjugacy-classes")
+  :learn
+    (:concept "Centralizers — subgroups of commuting elements."
+     :prerequisites ("alg/op")
+     :progression "centralizer -> center -> class-equation techniques.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Iterate G; collect g where alg/op(G, g, x) equals alg/op(G, x, g)."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|), space O(|C|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/commutator"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/commutator G a b) -> element"
+  :summary "Compute the commutator [a, b] = a b a^-1 b^-1 in the group G."
+  :impl-status "wired"
+  :explanation "The commutator [a, b] measures how far a and b are from commuting: if ab = ba then [a, b] = identity. Commutators generate the commutator subgroup (derived subgroup) alg/derived-subgroup, which is the smallest normal subgroup whose quotient is abelian. Commutators are the building blocks of the lower central series and the solvability analysis."
+  :examples (
+    (:tier "novice" :code "(alg/commutator (alg/cyclic 6) 2 3)"
+     :note "In abelian Z_6, all commutators are 0: 2 + 3 - 2 - 3 = 0.")
+    (:tier "apprentice" :code "(alg/commutator (alg/cyclic 12) 5 7)"
+     :note "In abelian Z_12: 5 + 7 - 5 - 7 = 0.")
+    (:tier "intermediate" :code "(alg/commutator (alg/dihedral 4) '(rot 1) '(ref 0))"
+     :note "In non-abelian D_4, this commutator can be non-identity.")
+    (:tier "expert" :code "(alg/commutator (alg/dihedral 3) '(rot 1) '(rot 2))"
+     :note "Two rotations commute in the cyclic subgroup of rotations: commutator is (rot 0).")
+    (:tier "master" :code "(define (abelian-check G) (every (lambda (a) (every (lambda (b) (equal? (alg/commutator G a b) (car (list 0 '(rot 0))))) G)) G)) (abelian-check (alg/cyclic 6))"
+     :note "A group is abelian iff every commutator is identity. This test may be slow.")
+  )
+  :caveats
+    ("Commutator is identity if and only if a and b commute."
+     "The value of the commutator depends on the group's representation (integer identity for cyclic, (rot 0) for dihedral).")
+  :drawbacks
+    ("Three group operations per call."
+     "In abelian groups the commutator is always trivial — no useful info.")
+  :usecases
+    ("Measure non-abelianness of a group."
+     "Build the commutator subgroup [G, G]."
+     "Analyze the lower central series.")
+  :related ("alg/derived-subgroup" "alg/is-abelian?" "alg/op")
+  :learn
+    (:concept "Commutators — the elementary measure of non-abelianness."
+     :prerequisites ("alg/op" "alg/inverse")
+     :progression "commutator -> derived-subgroup -> is-solvable? -> Galois theory.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "aba^-1b^-1 via three calls to alg/op and two to elementInverse."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(1) for Cayley/dihedral, space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/derived-subgroup"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/derived-subgroup G) -> group"
+  :summary "Return [G, G], the commutator subgroup: the smallest subgroup containing all commutators."
+  :impl-status "wired"
+  :explanation "The derived subgroup [G, G] is generated by all commutators [a, b] = aba^-1b^-1. It's a normal subgroup, and G/[G,G] is the largest abelian quotient of G (the abelianization). Iterating gives the derived series G > [G,G] > [[G,G],[G,G]] > ... which terminates at identity iff G is solvable."
+  :examples (
+    (:tier "novice" :code "(alg/derived-subgroup (alg/cyclic 6))"
+     :note "Every abelian group has trivial derived subgroup {0}.")
+    (:tier "apprentice" :code "(length (alg/derived-subgroup (alg/cyclic 12)))"
+     :note "Z_12 abelian; derived subgroup has one element.")
+    (:tier "intermediate" :code "(length (alg/derived-subgroup (alg/dihedral 3)))"
+     :note "D_3's derived subgroup is A_3 (the 3-cycles), so length 3.")
+    (:tier "expert" :code "(length (alg/derived-subgroup (alg/dihedral 4)))"
+     :note "D_4's derived subgroup has 2 elements: {rot 0, rot 2}.")
+    (:tier "master" :code "(define (abelian-of? G) (= 1 (length (alg/derived-subgroup G)))) (abelian-of? (alg/cyclic 6))"
+     :note "A group is abelian iff its derived subgroup is trivial.")
+  )
+  :caveats
+    ("Requires closure iteration; may be slow for large non-abelian groups."
+     "Always contains the identity.")
+  :drawbacks
+    ("O(|G|^3) — generates all |G|^2 commutators then closes under op."
+     "For solvable-series iteration, alg/is-solvable? does this more efficiently.")
+  :usecases
+    ("Compute the largest abelian quotient (via G/[G,G])."
+     "Test whether G is abelian (derived subgroup is trivial)."
+     "Analyze solvability via the derived series.")
+  :related ("alg/commutator" "alg/is-solvable?" "alg/is-abelian?")
+  :learn
+    (:concept "The commutator subgroup — the obstruction to being abelian."
+     :prerequisites ("alg/commutator")
+     :progression "derived-subgroup -> abelianization G/[G,G] -> is-solvable?.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Compute all commutators, close under op, return element list."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|^3), space O(|G|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
