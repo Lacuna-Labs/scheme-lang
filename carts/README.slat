@@ -131,4 +131,12 @@
     (:path "carts/physics/pendulum.scm"
      :summary "simple pendulum, α = -g/L·sin(θ), swinging bob.")
     (:path "carts/physics/particles-explosion.scm"
-     :summary "120 sparks with life, gravity, and cooling color.")))
+     :summary "120 sparks with life, gravity, and cooling color.")
+
+    ;; ── story ──
+    (:path "carts/story/star-money.scm"
+     :summary "the folk motif in prose + a night sky coda.")
+    (:path "carts/story/tortoise-and-hare.scm"
+     :summary "Aesop's fable told, then simulated as a race.")
+    (:path "carts/story/haiku-generator.scm"
+     :summary "5-7-5 lines picked from pools — form as a whole.")))
