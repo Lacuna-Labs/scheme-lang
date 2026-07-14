@@ -11,7 +11,7 @@
 ;; Alfred: every module adopts the new schema, not just the previously
 ;; unimplemented ones).
 
-(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 2)
+(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 3)
 (fail :verb "comb/bell" :lane "rin-topo-comb" :verified-at "2026-07-14T19:26:34.887Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/binomial-coeffs" :lane "rin-topo-comb" :verified-at "2026-07-14T19:27:21.595Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/catalan" :lane "rin-topo-comb" :verified-at "2026-07-14T19:31:56.645Z" :examples-passed 0 :reason "missing fields: kind,explanation")
@@ -19,3 +19,7 @@
 (stamp :verb "note/strike" :lane "yuki-audio" :verified-at "2026-07-14T19:33:30.009Z" :examples-passed 5 :required-fields-present #t)
 (fail :verb "invariants" :lane "priya-math-b" :verified-at "2026-07-14T19:34:16.815Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (stamp :verb "note/release" :lane "yuki-audio" :verified-at "2026-07-14T19:34:17.863Z" :examples-passed 5 :required-fields-present #t)
+(fail :verb "comb/derangement" :lane "rin-topo-comb" :verified-at "2026-07-14T19:35:04.700Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "comb/factorial" :lane "rin-topo-comb" :verified-at "2026-07-14T19:35:04.701Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "comb/multichoose" :lane "rin-topo-comb" :verified-at "2026-07-14T19:35:04.702Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(stamp :verb "note/place-at" :lane "yuki-audio" :verified-at "2026-07-14T19:35:05.788Z" :examples-passed 5 :required-fields-present #t)
