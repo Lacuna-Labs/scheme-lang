@@ -20249,18 +20249,26 @@
   :library "vec"
   :kind "meta"
   :signature "(vec/->string v) -> string"
-  :summary "Convert a vector to human-readable string form \"[a, b, c]\"."
-  :explanation "Produces a compact, human-friendly representation of a vector suitable for logging, display, or REPL output. The result is a string in bracket notation with components comma-separated. Non-numeric components in the input vector will still be rendered (the verb does not validate; use vec/make for construction-time validation)."
+  :summary "Convert a vector to a compact parenthesized string of components."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Formats as \"(c1 c2 c3)\" — s-expression style. NOT bracket notation. The impl uses parens so debug output round-trips through the reader with a leading quote or list."
+  :explanation "Produces a compact string for logging, display, or REPL output. The format uses parentheses and space separators — the same shape the reader accepts, so debug output can be pasted back into code (with a leading quote or list) and it will round-trip. Non-numeric components render as their JS-default toString."
   :examples (
-    (:tier "novice" :code "(define v (vec/make (list 3 4)))\n(vec/->string v)" :note "Constructs a 2-D vector and displays it as \"[3, 4]\".")
-    (:tier "intermediate" :code "(define v1 (vec/make (list 1 2 3)))\n(define v2 (vec/make (list 4 5 6)))\n(display (vec/->string (vec/+ v1 v2)))" :note "Adds two 3-D vectors and converts the result to string for inspection.")
-    (:tier "expert" :code "(define (debug-vector-ops label v)\n  (display (string-append label \": \" (vec/->string v))))\n(let ((orig (vec/make (list 1 2 3))))\n  (debug-vector-ops \"Original\" orig)\n  (debug-vector-ops \"Scaled\" (vec/scale 2 orig)))" :note "Wraps vec/->string in a helper that annotates output during computation inspection.")
+    (:tier "novice" :code "(vec/->string '(3 4))" :note "Bare list works. Returns the string \"(3 4)\".")
+    (:tier "apprentice" :code "(vec/->string (vec/make (list 3 4)))" :note "Same result via vec/make: \"(3 4)\". The vector's underlying shape is a list, so vec/->string doesn't need to know the difference.")
+    (:tier "intermediate" :code "(vec/->string (vec/+ '(1 2 3) '(4 5 6)))" :note "Compose vec/+ with vec/->string for a one-liner debug print. Returns \"(5 7 9)\".")
+    (:tier "expert" :code "(define (debug-vector-ops label v)\n  (string-append label \": \" (vec/->string v)))\n(list (debug-vector-ops \"Original\" '(1 2 3))\n      (debug-vector-ops \"Doubled\" (vec/+ '(1 2 3) '(1 2 3))))" :note "Named debug helper for annotated inspection. Composable — feeds directly into (display ...) or log lines.")
+    (:tier "master" :code "(define (format-transcript ops)\n  ;; ops is a list of (label vec) pairs; render each as one line.\n  (define (fmt-pair p) (string-append (car p) \" = \" (vec/->string (cadr p))))\n  (let loop ((remaining ops) (acc '()))\n    (if (null? remaining)\n        (reverse acc)\n        (loop (cdr remaining)\n              (cons (fmt-pair (car remaining)) acc)))))\n(format-transcript (list (list \"a\" '(1 2))\n                         (list \"b\" '(3 4))\n                         (list \"sum\" (vec/+ '(1 2) '(3 4)))))" :note "Build a transcript of vector operations by pairing each with vec/->string. Three annotated lines — a common pattern when teaching or debugging a linear-algebra derivation.")
   )
-  :caveats ("The string format is for display only; it is not meant to be parsed back into a vector programmatically." "Floating-point components are rendered as-is, preserving precision artifacts." "Does not validate vector structure; a malformed vector may produce unexpected output.")
-  :drawbacks ("Not suitable for serialization or data interchange; use exact/->string or a custom codec for those purposes." "Produces a new string object on every call; avoid in tight loops if output is discarded.")
-  :usecases ("Debugging: examining intermediate vector values in a calculation." "REPL interaction: displaying results of vec/+ or vec/scale for quick feedback." "Logging: recording vector states during a simulation.")
+  :caveats ("Format is parenthesized (\"(1 2 3)\"), not bracketed — the earlier summary said brackets but the impl uses s-expr style." "Not meant to be a serialization format; use it for humans, not for machine round-trips." "Non-numeric components render as their JS-side toString.")
+  :drawbacks ("Produces a new string object per call — avoid in tight inner loops." "No control over precision; Scheme numbers render with JS defaults.")
+  :usecases ("Debugging: examining intermediate vector values in a calculation." "REPL interaction: quick eyeball inspection of vec/+ or vec/scale outputs." "Logging: recording vector states during a simulation.")
   :related ("vec/make" "vec/ref" "vec/dim" "vec/=" "matrix/->string")
-  :learn (:concept "Display and introspection of vector data without mutation." :prerequisites ("vec/make") :progression "After learning vec/->string, inspect results of vec/+, vec/-, and vec/scale to understand composition."))
+  :learn (:concept "Display and introspection of vector data without mutation." :prerequisites ("vec/make") :progression "After learning vec/->string, inspect results of vec/+, vec/-, and vec/scale to understand composition.")
+  :cs (:complexity "time O(d), space O(d) for dimension d" :effects (none) :pure #t)
+  :ai (:deterministic #t :cacheable #t :cardinality one)
+  :hacker (:primitive #f :history "Sakura convention — parens over brackets to match the reader."))
 
 (verb
   :name "vec/="
