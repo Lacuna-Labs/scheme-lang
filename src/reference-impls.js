@@ -2072,7 +2072,7 @@ export function installReferenceImpls(env, fuel) {
     'world/floor!', 'world/frame', 'world/gravity!', 'world/hash',
     'world/impulse!', 'world/link!', 'world/link-rest!', 'world/nearest',
     'world/render', 'world/repel!', 'world/reset!', 'world/restore!',
-    'world/snapshot', 'world/solve!', 'world/spawn', 'world/step',
+    'world/snapshot', 'world/solve!', 'world/step',    // world/spawn has a real impl below — do NOT include here
     'world/sway-all!', 'world/tape-audio', 'world/tape-clear!',
     'world/tape-frames', 'world/tape-hash', 'world/tape-lcamera',
     'world/tape-record!', 'world/tape-recording?', 'world/tape-replay',
