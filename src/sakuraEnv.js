@@ -24,6 +24,7 @@ import { loadAuthFromDisk } from './auth/store.js'
 import { registerReferenceVerbs } from './reference-register.js'
 import { installWiredVerbs } from './wired-verbs.js'
 import { installWiredVerbsIP } from './wired-verbs-priya-i-p.js'
+import { installSystem } from './system.js'
 
 /**
  * makeSakuraEnv — the full L0 → L4 stack. Returns a ready-to-eval Env.
@@ -49,6 +50,12 @@ export function makeSakuraEnv(fuel, {
   const game = gameState || makeGameState()
   installGame(env, game)
 
+  // L3.5 JUGGLE — pure siteswap math. No state; standalone. Wires 6
+  // verbs (juggle/valid? juggle/balls juggle/max-throw juggle/state
+  // juggle/simulate juggle/generate). Must run BEFORE installWiredVerbs
+  // so wired-verbs.js's descriptor stubs for juggle/* are skipped.
+  installJuggle(env)
+
   // L4 COMMERCIAL — etsy/ebay/shopify/meta/google. Every verb is
   // registered; execution is gated by an auth check that reads from
   // the Cortex.
@@ -60,6 +67,13 @@ export function makeSakuraEnv(fuel, {
   if (loadAuth) {
     try { loadAuthFromDisk() } catch { /* first-run OK */ }
   }
+
+  // L4.4 SYSTEM — input/* + system/* real impls (hiroshi-system lane).
+  // Real button state + edge map + permission gate + registry walker.
+  // Runs BEFORE installWiredVerbs so our impls win over the descriptor
+  // stubs there. No hardware attached: state slots default to honest
+  // empty and reads reflect that truthfully.
+  installSystem(env)
 
   // L4.5 WIRED — additional impls that close the reference→env gap.
   // Runs BEFORE the reference registrar so its stub pass sees these
