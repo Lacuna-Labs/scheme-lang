@@ -11,7 +11,7 @@
 ;; Alfred: every module adopts the new schema, not just the previously
 ;; unimplemented ones).
 
-(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 40)
+(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 43)
 (fail :verb "comb/bell" :lane "rin-topo-comb" :verified-at "2026-07-14T19:26:34.887Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/binomial-coeffs" :lane "rin-topo-comb" :verified-at "2026-07-14T19:27:21.595Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/catalan" :lane "rin-topo-comb" :verified-at "2026-07-14T19:31:56.645Z" :examples-passed 0 :reason "missing fields: kind,explanation")
@@ -130,3 +130,6 @@
 (fail :verb "cols" :lane "ada-math-a" :verified-at "2026-07-14T19:44:21.632Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "list-item-toss" :lane "priya-math-b" :verified-at "2026-07-14T19:45:08.275Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "next" :lane "priya-math-b" :verified-at "2026-07-14T19:45:08.276Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(stamp :verb "synth/808" :lane "yuki-audio" :verified-at "2026-07-14T19:45:56.262Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "synth/kit" :lane "yuki-audio" :verified-at "2026-07-14T19:45:57.340Z" :examples-passed 5 :required-fields-present #t)
+(stamp :verb "synth/chord" :lane "yuki-audio" :verified-at "2026-07-14T19:45:58.373Z" :examples-passed 5 :required-fields-present #t)
