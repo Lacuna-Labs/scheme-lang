@@ -705,6 +705,52 @@
   :related ("ai/path" "ai/follow-path" "ai/grid")
   :learn (:concept "Coordinate transformation: convert from grid (discrete) to world (continuous) space." :prerequisites ("ai/path" "ai/grid") :progression "After ai/waypoints, use ai/follow-path to make entities move along the waypoint list."))
 
+; ─── library: ai — semantic / LLM surface (8 verbs) ───
+;
+; These are the AI verbs Sakura calls when she wants to think about
+; TEXT: classify it, embed it, generate more of it, summarize it,
+; translate it, rank it. They sit above llm/* and cortex/*: give
+; them content, get a decision back.
+;
+; Contract: every semantic-AI verb routes through the configured LLM
+; provider. When no provider is wired, the verb raises a
+; requires-python-ml-sidecar error — CALLABLE and HONEST. The error
+; IS the answer. Sakura handling this error correctly is a first-
+; class use case, not an edge case.
+;
+; ai/embed is the one exception: it carries a deterministic 32-dim
+; hash-vector fallback for REPL demos and tests. The fallback is
+; documented :low-fidelity and MUST NOT be used for semantic search
+; in production.
+;
+; Alfred: "We can't lie to people. They trust us." — the whole point
+; of this subsection.
+
+(verb
+  :name "ai/embed"
+  :library "ai"
+  :kind "read"
+  :signature "(ai/embed text) → (vector …)"
+  :summary "Return an embedding vector for text. Standalone REPL uses a deterministic hash-vector fallback."
+  :impl-status "wired"
+  :impl-file "src/ai.js"
+  :impl-notes "Routes through state.llm.embed when a provider is wired. Standalone falls back to a deterministic FNV-1a-flavored 32-dim hash vector — reproducible per input but NOT semantic. Values in [0,1). Real embeddings arrive when the Sakura runtime plugs in an LLM provider via setAiProvider."
+  :explanation "Ai/embed maps a piece of text to a fixed-length numeric vector for downstream similarity search, clustering, and retrieval. When a real LLM provider is wired (production, Sakura runtime), it returns whatever the provider gives — typically 768- to 3072-dim floats. When no provider is wired (standalone REPL, unit tests, book examples), it falls back to a deterministic 32-dim hash vector so scripts can still run and produce stable output. The fallback is :low-fidelity — same-input-same-vector holds, but semantic-similar-inputs-similar-vectors DOES NOT. Never ship the fallback into a search index; wire a provider first."
+  :examples (
+    (:tier "novice" :code "(ai/embed \"hello\")" :note "Return an embedding vector. In standalone REPL, a deterministic 32-dim hash vector; in production, the provider's real embedding.")
+    (:tier "apprentice" :code "(equal? (ai/embed \"hello\") (ai/embed \"hello\"))" :note "Determinism check — same input, same output. Returns #t under both the standalone fallback and any well-behaved LLM provider.")
+    (:tier "intermediate" :code "(define v (ai/embed \"customer wants refund\"))\n(length v)" :note "Store an embedding for later comparison. In standalone REPL (length v) is 32; production varies by model.")
+    (:tier "expert" :code "(define (dot-product a b)\n  (let loop ((i 0) (acc 0))\n    (if (>= i (length a))\n        acc\n        (loop (+ i 1) (+ acc (* (list-ref a i) (list-ref b i)))))))\n(dot-product (ai/embed \"hello\") (ai/embed \"hello\"))" :note "Dot product of two identical embeddings. Confirms determinism and gives a scalar you can compare across pairs.")
+    (:tier "master" :code "(define (find-similar-cortex-key query)\n  (let* ((qv    (ai/embed query))\n         (hits  (cortex/topk \"\" 10))\n         (scored (map (lambda (kv)\n                        (list (car kv)\n                              (dot-product qv (ai/embed (car kv)))))\n                      hits)))\n    scored))\n(cortex/write \"greeting/hi\" \"hello\")\n(cortex/write \"greeting/hey\" \"hey there\")\n(find-similar-cortex-key \"hello\")" :note "A cart-style similarity search: embed the query, embed every stored key, return (key score) pairs. NOTE: with the standalone fallback the scores are per-hash coincidence — not semantic. In production (real provider), this shape gives real semantic ranking. Sakura uses this pattern only when she knows a provider is wired.")
+  )
+  :caveats ("Standalone fallback is :low-fidelity — same input gives the same vector, but semantically similar inputs do NOT get similar vectors." "Vector length depends on the provider — 32 dims in standalone; 768+ in production." "The fallback vector is NOT normalized; l2-normalize yourself for cross-provider portability." "Symbols and strings hash to the same vector only when coerced via String() first; ai/embed handles this internally.")
+  :drawbacks ("Standalone fallback should never reach a production search index — it will return random-looking neighbors." "No per-call caching in the wrapper; if you embed the same text 1000 times, you make 1000 calls (wrap with your own memoize)." "Cost in the wired case: each call is a network round-trip; batch when possible via a provider that exposes an :embed-batch verb.")
+  :usecases ("Similarity search over stored Cortex facts (with a real provider)." "Clustering short texts (product descriptions, listings, feedback) into buckets." "Semantic dedup: two items with cosine > 0.95 are probably the same thing." "Provenance tests: (equal? (ai/embed x) (ai/embed x)) is stable across runs.")
+  :related ("ai/vector-search" "ai/rank" "ai/rerank" "cortex/topk" "llm/embed")
+  :learn (:concept "Embeddings turn text into numbers for downstream math (similarity, clustering, retrieval). Sakura's Scheme surface offers ai/embed above llm/embed so scripts can call it consistently." :prerequisites ("list" "map" "sqrt" "cosine similarity") :progression "After ai/embed, learn ai/vector-search for indexed lookup, ai/rank for query-conditioned ordering, cortex/topk for the substring cousin.")
+  :ai (:raises ("external-service — sidecar unreachable" "quota-exceeded — provider rate limit" "timeout — provider slow") :pipes-into ("dot-product" "ai/vector-search" "sort" "map") :consumes-from ("string" "symbol") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Assuming the standalone fallback is semantic. It isn't — it's a hash. Wire a real provider before relying on similarity." :when-not-to-use "Substring matching or exact-key lookup — cortex/topk is faster and honest for that shape." :returns-confidence #f)
+  :commerce (:cost "external-billed" :fuel-cost "per-token" :needs-consent #f :idempotent #t :cortex-touch "none" :metered-billing #t))
+
 ; ─── library: alg (59 verbs) ───
 
 (verb
