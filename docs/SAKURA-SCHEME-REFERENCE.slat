@@ -20125,17 +20125,26 @@
   :kind "meta"
   :signature "(vec/+ v1 v2 ...) -> vector"
   :summary "Element-wise addition of vectors; all must have the same dimension."
-  :explanation "Vector addition is the fundamental linear algebra operation: add corresponding components. If v1 = [a, b, c] and v2 = [d, e, f], then v1 + v2 = [a+d, b+e, c+f]. This is exact arithmetic (no floating-point error beyond Scheme's native number operations). Dimension mismatch raises the error 'dim-mismatch. Variadic: vec/+ can add 2 or more vectors in sequence."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Variadic component-wise sum over an arbitrary number of vectors. Missing components are treated as 0, so vectors of different length are padded rather than raised — a design choice that lets 2D vectors freely embed into 3D contexts. Empty arg list returns ()."
+  :explanation "Vector addition is the fundamental linear algebra operation: add corresponding components. If v1 = [a, b, c] and v2 = [d, e, f], then v1 + v2 = [a+d, b+e, c+f]. This is exact arithmetic (no floating-point error beyond Scheme's native number operations). Variadic: vec/+ can add 2 or more vectors in sequence, walking through them position by position."
   :examples (
-    (:tier "novice" :code "(vec/+ '(1 2 3) '(4 5 6))" :note "Simple 3-dimensional vector addition; returns (5 7 9).")
-    (:tier "intermediate" :code "(let ((v1 '(1 0 -1))\n      (v2 '(2 3 4))\n      (v3 '(-3 2 0)))\n  (vec/+ v1 v2 v3))" :note "Variadic: add three vectors in one call; returns (0 5 3).")
-    (:tier "expert" :code "(let* ((forces (list '(10 0) '(0 15) '(-5 3)))\n       (net-force (fold-left vec/+ '(0 0) forces)))\n  (list 'net-force net-force\n        'magnitude (vec/norm net-force)))" :note "Sum multiple force vectors (typical physics pattern), then compute resultant magnitude.")
+    (:tier "novice" :code "(vec/+ '(1 2 3) '(4 5 6))" :note "3-dimensional vector addition. Returns (5 7 9) — each position summed independently.")
+    (:tier "apprentice" :code "(define player-pos '(100 200))\n(define delta '(3 -1))\n(vec/+ player-pos delta)" :note "The classic 'move by a delta' pattern. New position (103 199). Move north-east by (3, -1) — the -1 means down one because screen Y grows downward.")
+    (:tier "intermediate" :code "(let ((v1 '(1 0 -1))\n      (v2 '(2 3 4))\n      (v3 '(-3 2 0)))\n  (vec/+ v1 v2 v3))" :note "Variadic: add three vectors in one call. Returns (0 5 3).")
+    (:tier "expert" :code "(let* ((forces (list '(10 0) '(0 15) '(-5 3)))\n       (net-force (fold-left vec/+ '(0 0) forces)))\n  net-force)" :note "Sum a list of force vectors via fold. Net force = (5 18). This is the standard physics pattern for accumulating impulses in a frame.")
+    (:tier "master" :code "(define (path->positions origin steps)\n  ;; Given a starting position and a list of step vectors,\n  ;; return the visited positions including the origin.\n  (let loop ((cur origin) (rest steps) (acc (list origin)))\n    (if (null? rest)\n        (reverse acc)\n        (let ((next (vec/+ cur (car rest))))\n          (loop next (cdr rest) (cons next acc))))))\n(path->positions '(0 0) '((1 0) (0 1) (1 0) (0 -1)))" :note "Cumulative fold builds a path from step-deltas. Returns ((0 0) (1 0) (1 1) (2 1) (2 0)) — a square-like walk that ends one right of the start.")
   )
-  :caveats ("All vectors must have identical dimension; '(1 2) + '(1 2 3) raises 'dim-mismatch." "Exact arithmetic is preserved; 1/2 + 1/3 yields 5/6, not a float approximation." "Empty vector list is not allowed; at least two arguments are required." "vec/+ is variadic; vec/+ v1 v2 v3 adds all three in one call (not sequential nesting).")
+  :caveats ("Component-count mismatch does not raise; shorter vectors are zero-padded up to the longest. Callers who need strict equality should validate first." "Exact arithmetic is preserved; 1/2 + 1/3 yields 5/6, not a float approximation." "vec/+ is variadic; (vec/+ v1 v2 v3) adds all three in one call, not sequential nesting.")
   :drawbacks ("No in-place operation; creates a new vector (functional programming style)." "Variadic unpacking may be slower than binary + for very long chains." "Exact rationals in each component can grow in numerator/denominator size; simplification is not automatic.")
   :usecases ("Physics: summing forces, velocities, or displacements." "Computer graphics: adding translation or offset vectors." "Linear algebra: assembling linear combinations (paired with vec/scale)." "Data science: element-wise merging of numerical features.")
   :related ("vec/-" "vec/scale" "vec/dot" "vec/norm")
-  :learn (:concept "Vector addition as component-wise operation preserving exact arithmetic" :prerequisites ("vec/make") :progression "Master vec/+, then combine with vec/scale to build linear combinations, then use vec/dot for projections, then study matrix operations."))
+  :learn (:concept "Vector addition as component-wise operation preserving exact arithmetic" :prerequisites ("vec/make") :progression "Master vec/+, then combine with vec/scale to build linear combinations, then use vec/dot for projections, then study matrix operations.")
+  :math (:algebra ("associative" "commutative" "identity: zero-vector") :total #t :domain "n vectors of equal dimension d" :codomain "vector of dimension d")
+  :cs (:complexity "time O(k·d), space O(d) for k vectors of dimension d" :effects (none) :pure #t)
+  :ai (:deterministic #t :cacheable #t :cardinality one :common-mistakes "Assuming vec/+ raises on dim mismatch; it zero-pads instead. If you need strict dim checking, use (vec/dim v) yourself first.")
+  :hacker (:primitive #f :kin ("R7RS: no built-in; Clojure: (mapv + v1 v2); NumPy: v1 + v2") :history "Standard linear algebra since Grassmann (1844). Our impl is a straightforward variadic component-wise fold."))
 
 (verb
   :name "vec/-"

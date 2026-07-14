@@ -622,18 +622,35 @@ export function installWiredVerbs(env, fuel) {
 
   // ── 11. vec/* — vector math (real impls) ───────────────────────────
   const vlist = (v) => Array.isArray(v) ? v.map(num) : [num(v)]
-  def('vec/+', (a, b) => {
-    const va = vlist(a), vb = vlist(b)
-    const n = Math.max(va.length, vb.length)
+  // Variadic per the reference: (vec/+ v1 v2 ...) sums all vectors
+  // component-wise. Zero args returns (), one arg returns a copy.
+  def('vec/+', (...vs) => {
+    if (vs.length === 0) return []
+    const lists = vs.map(vlist)
+    const n = Math.max(...lists.map(l => l.length))
     const out = []
-    for (let i = 0; i < n; i++) out.push((va[i] || 0) + (vb[i] || 0))
+    for (let i = 0; i < n; i++) {
+      let s = 0
+      for (const l of lists) s += (l[i] || 0)
+      out.push(s)
+    }
     return out
   })
-  def('vec/-', (a, b) => {
-    const va = vlist(a), vb = vlist(b)
-    const n = Math.max(va.length, vb.length)
+  // (vec/- v1 v2 ...) — subtracts v2..vn from v1. One arg = negate.
+  def('vec/-', (...vs) => {
+    if (vs.length === 0) return []
+    const lists = vs.map(vlist)
+    const n = Math.max(...lists.map(l => l.length))
     const out = []
-    for (let i = 0; i < n; i++) out.push((va[i] || 0) - (vb[i] || 0))
+    if (lists.length === 1) {
+      for (let i = 0; i < n; i++) out.push(-(lists[0][i] || 0))
+      return out
+    }
+    for (let i = 0; i < n; i++) {
+      let s = lists[0][i] || 0
+      for (let j = 1; j < lists.length; j++) s -= (lists[j][i] || 0)
+      out.push(s)
+    }
     return out
   })
   def('vec/=', (a, b) => {
