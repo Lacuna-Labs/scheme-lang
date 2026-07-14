@@ -129,6 +129,70 @@ export async function playNote(midi, duration = 0.25, amplitude = 0.5) {
   return playTone(noteToFreq(midi), duration, amplitude)
 }
 
+// ── polyphonic mix ──────────────────────────────────────────────────
+//
+// Mix up to VOICE_LIMIT notes into a single WAV for sample-accurate
+// simultaneous playback. Beats firing N concurrent afplay processes
+// (which drift because of process-spawn latency ~30-50ms).
+//
+// Each voice is { midi | freq, duration, amplitude?, startOffset? }.
+// Per-voice amplitude is scaled by 1/sqrt(N) so a chord of N voices
+// doesn't clip.
+
+export const VOICE_LIMIT = 16
+
+function mixVoices(voices, totalDuration) {
+  const n = Math.floor(SAMPLE_RATE * totalDuration)
+  const out = new Float32Array(n)
+  const gain = 1 / Math.max(1, Math.sqrt(voices.length))
+  for (const v of voices) {
+    const freq = v.freq != null ? v.freq : noteToFreq(v.midi)
+    const dur  = v.duration != null ? v.duration : 0.25
+    const amp  = (v.amplitude != null ? v.amplitude : 0.5) * gain
+    const off  = Math.floor(SAMPLE_RATE * (v.startOffset || 0))
+    const len  = Math.min(Math.floor(SAMPLE_RATE * dur), n - off)
+    if (len <= 0) continue
+    const fade = Math.min(Math.floor(SAMPLE_RATE * 0.01), Math.floor(len / 4))
+    for (let i = 0; i < len; i++) {
+      let a = amp
+      if (i < fade) a *= (i / fade)
+      if (i > len - fade) a *= ((len - i) / fade)
+      out[off + i] += a * Math.sin(2 * Math.PI * freq * i / SAMPLE_RATE)
+    }
+  }
+  return out
+}
+
+// Play a chord: N notes all attacking simultaneously.
+// `notes` is a list of MIDI numbers (or objects with { midi, amplitude? }).
+export async function playChord(notes, duration = 0.4, amplitude = 0.5) {
+  if (!Array.isArray(notes) || notes.length === 0) return { ok: false, reason: 'no-notes' }
+  const voices = notes.slice(0, VOICE_LIMIT).map(n => {
+    if (typeof n === 'number') return { midi: n, duration, amplitude }
+    return { midi: n.midi, amplitude: n.amplitude != null ? n.amplitude : amplitude, duration }
+  })
+  const samples = mixVoices(voices, duration)
+  return playBuffer(synthWav(samples))
+}
+
+// Play a sequence: notes attack at successive offsets. Each event is a
+// MIDI number OR { midi, duration?, startOffset?, amplitude? }.
+// If startOffset is absent, notes butt up back-to-back.
+export async function playSequence(events, defaultDur = 0.25, amplitude = 0.5) {
+  if (!Array.isArray(events) || events.length === 0) return { ok: false, reason: 'no-events' }
+  let cursor = 0
+  const voices = []
+  for (const e of events) {
+    const midi = typeof e === 'number' ? e : e.midi
+    const dur  = (typeof e === 'object' && e.duration != null) ? e.duration : defaultDur
+    const off  = (typeof e === 'object' && e.startOffset != null) ? e.startOffset : cursor
+    voices.push({ midi, duration: dur, amplitude, startOffset: off })
+    cursor = off + dur
+  }
+  const samples = mixVoices(voices, cursor)
+  return playBuffer(synthWav(samples))
+}
+
 export function isAudioAvailable() {
   return pickPlayer() !== null
 }

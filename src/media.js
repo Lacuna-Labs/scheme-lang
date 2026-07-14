@@ -288,6 +288,38 @@ export function registerMedia(env, fuel) {
     return st.audio.note(p, d, v)
   })
 
+  // (chord notes [dur] [velocity]) — mix up to 16 voices into one WAV and
+  // play them as a single sample-accurate sound. `notes` is a list of MIDI
+  // numbers OR note-name symbols. Beats firing N (note ...) calls in a
+  // row (each has 30-50ms process-spawn latency; mixed chord attacks
+  // together, drift-free).
+  def('chord', (notes, dur, vel) => {
+    const d = dur === undefined ? 0.4 : +dur
+    const v = vel === undefined ? 0.5 : +vel
+    const listArr = Array.isArray(notes) ? notes : []
+    const midis = listArr
+      .map(x => typeof x === 'number' ? x : nameToMidi(nameOf(x) ?? String(x)))
+      .filter(m => Number.isFinite(m))
+    if (midis.length === 0) return undefined
+    import('./audio-driver.js').then(m => m.playChord(midis, d, v)).catch(() => {})
+    return undefined
+  })
+
+  // (melody notes [dur] [velocity]) — a sequence of notes played back to
+  // back at the given per-note duration. `notes` is a list of MIDI numbers
+  // OR note-name symbols. Mixed into one WAV for smooth playback.
+  def('melody', (notes, dur, vel) => {
+    const d = dur === undefined ? 0.2 : +dur
+    const v = vel === undefined ? 0.5 : +vel
+    const listArr = Array.isArray(notes) ? notes : []
+    const midis = listArr
+      .map(x => typeof x === 'number' ? x : nameToMidi(nameOf(x) ?? String(x)))
+      .filter(m => Number.isFinite(m))
+    if (midis.length === 0) return undefined
+    import('./audio-driver.js').then(m => m.playSequence(midis, d, v)).catch(() => {})
+    return undefined
+  })
+
   // (sfx kind freq dur . opts) — a synthesized sound effect.
   def('sfx', (kind, freq, dur, ...opts) => {
     const st = getMediaState()
