@@ -127,3 +127,4 @@
 (stamp :verb "audio/onset-strength" :lane "yuki-audio" :verified-at "2026-07-14T19:43:32.883Z" :examples-passed 5 :required-fields-present #t)
 (stamp :verb "audio/bar-clock" :lane "yuki-audio" :verified-at "2026-07-14T19:43:33.930Z" :examples-passed 5 :required-fields-present #t)
 (stamp :verb "audio/transcribe-with-cloud-help" :lane "yuki-audio" :verified-at "2026-07-14T19:43:34.981Z" :examples-passed 5 :required-fields-present #t)
+(fail :verb "cols" :lane "ada-math-a" :verified-at "2026-07-14T19:44:21.632Z" :examples-passed 0 :reason "missing fields: kind,explanation")
