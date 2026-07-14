@@ -388,3 +388,215 @@
              :long  "True if characters are currently arranged in a named formation. Headless REPL always returns #f."
              :for-ai "Poll before triggering formation-gated actions."
              :for-kid "Ask if everyone is in place. In your REPL nobody's there so it's always no.")))
+
+;; ─── note-dots — dotted-note duration multiplier ─────────────────
+
+(verb
+  :name "note-dots"
+  :library "music"
+  :signature "(note-dots duration-symbol) -> number"
+  :summary "Return the numeric duration multiplier for a dotted note symbol, relative to a whole note."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(note-dots 'quarter)"
+     :note "A plain quarter note. Returns 0.25 (one-quarter of a whole note).")
+    (:tier "apprentice"
+     :code "(list (note-dots 'whole) (note-dots 'half) (note-dots 'quarter) (note-dots 'eighth))"
+     :note "Base durations without dots. Returns (1 0.5 0.25 0.125). Each halves the previous.")
+    (:tier "intermediate"
+     :code "(list\n  (note-dots 'quarter)\n  (note-dots 'quarter-dot)\n  (note-dots 'quarter-dot-dot))"
+     :note "Zero, one, two dots on a quarter. Returns (0.25 0.375 0.4375). Each dot adds half of the previous addition (0.125, then 0.0625).")
+    (:tier "expert"
+     :code "(define (rhythmic-total notes)\n  (fold + 0 (map note-dots notes)))\n(rhythmic-total (list 'quarter 'quarter-dot 'eighth 'quarter))"
+     :note "Sum the durations of a rhythmic phrase. Returns 1.0 (a full bar of 4/4). The dotted quarter (0.375) + eighth (0.125) equals a half beat, which is the classic dotted-eighth-note filler.")
+    (:tier "master"
+     :code "(define (fits-in-bar? notes bar-length)\n  (let ((total (fold + 0 (map note-dots notes))))\n    (list 'total total 'fits? (<= total bar-length))))\n(fits-in-bar? (list 'half-dot 'quarter 'eighth) 1)"
+     :note "Verify a phrase fits a bar. Dotted-half (0.75) + quarter (0.25) + eighth (0.125) = 1.125 — overflows a whole bar. Returns (total 1.125 fits? #f)."))
+  :related ("note" "note-place" "note-strike" "tempo" "sub-position-per-beat")
+  :caveats ("Duration symbols follow the pattern base-dot-dot..., where base is whole/half/quarter/eighth/sixteenth/thirty-second/sixty-fourth." "Trailing '.' characters also count as dots (both note-dots 'quarter-dot and 'quarter. work)." "Unknown base defaults to quarter (0.25) silently. If you need strict parsing, wrap and validate first.")
+  :drawbacks ("No tuplet support (triplets, quintuplets need a different verb)." "No support for ties or slurs — those are compositional, not durational." "Fixed 2-based scale — no explicit tempo multiplier here.")
+  :usecases ("Compute total duration of a rhythmic phrase." "Bar-fit validation before rendering a score." "Feed downstream note-place / note-strike calls that need explicit numeric duration.")
+  :learn (:concept "Convert a symbolic note duration (with optional dot suffixes) into a numeric multiplier relative to a whole note. Each dot adds half of the previous addition." :prerequisites ("map" "fold") :progression "Learn the note verb (which uses these symbols directly); then tempo for beats-per-minute; then sub-position-per-beat for micro-timing.")
+  :+math
+    (:algebra ("Base recurrence: base(n+1) = base(n) / 2. Dot recurrence: dotted(k) = base * (1 + 1/2 + 1/4 + ... + 1/(2^k)) = base * (2 - 1/(2^k)).")
+     :total #t
+     :domain "symbol matching /^(whole|half|quarter|eighth|sixteenth|thirty-second|sixty-fourth)(-dot|.)*$/"
+     :codomain "positive rational number in (0, 2)"
+     :proofs "Dotted addition is a finite geometric sum; the closed form is a bounded product of a base in {1, 1/2, ..., 1/64} and a factor in [1, 2).")
+  :+cs
+    (:complexity "time O(d) where d = number of dots; space O(1)"
+     :effects (none)
+     :pure #t)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Peels trailing -dot / . suffixes off the input symbol name, looks up the base in a small dict, then applies the dotted-note geometric formula."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (note-dots 'quarter) = 0.25; (note-dots 'quarter-dot) = 0.375; (note-dots 'half-dot-dot) = 0.875."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("+" "fold" "note-place") :cardinality one
+     :deterministic #t :cacheable #t
+     :common-mistakes "Adding a raw fraction instead of using note-dots — easy to slip a factor of 2. Confusing dotted with triplet (a triplet is 2/3, not 3/2).")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Return the duration multiplier for a dotted note symbol."
+        :long  "Return the numeric duration multiplier for a dotted note symbol, relative to a whole note. Each dot adds half of the previous addition."
+        :for-ai "Pure math over note-duration symbols. Total, deterministic."
+        :for-kid "A dotted note lasts one and a half of the plain note. Two dots is one and three-quarters. Three dots is one and seven-eighths.")))
+
+;; ─── land-on-downbeat — quantize beat offset to next downbeat ────
+
+(verb
+  :name "land-on-downbeat"
+  :library "music"
+  :signature "(land-on-downbeat offset [bar-length]) -> number"
+  :summary "Quantize a beat offset to the next downbeat, given an optional bar length (default 4)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(land-on-downbeat 3.5)"
+     :note "Round 3.5 up to the next multiple of 4. Returns 4.")
+    (:tier "apprentice"
+     :code "(map (lambda (o) (list o (land-on-downbeat o)))\n     (list 0 1 3 4 5 7 8))"
+     :note "Quantize several offsets to a 4-beat bar. Returns ((0 0) (1 4) (3 4) (4 4) (5 8) (7 8) (8 8)). Note: 0 stays 0.")
+    (:tier "intermediate"
+     :code "(let ((offsets (list 1.25 2.5 3.75)))\n  (map (lambda (o) (land-on-downbeat o 4)) offsets))"
+     :note "Explicit 4-beat bar. Returns (4 4 4). All three fractional beats round up to the same downbeat.")
+    (:tier "expert"
+     :code "(define (schedule-hit onset bar-length)\n  (let ((down (land-on-downbeat onset bar-length)))\n    (list 'onset onset 'downbeat down 'delay (- down onset))))\n(schedule-hit 2.3 4)"
+     :note "Compute the wait time until the next downbeat. Returns (onset 2.3 downbeat 4 delay 1.7).")
+    (:tier "master"
+     :code "(define (align-phrase phrase bar-length)\n  (let loop ((in phrase) (out (list)) (t 0))\n    (if (null? in)\n        (reverse out)\n        (let ((dur (car in)))\n          (loop (cdr in)\n                (cons (land-on-downbeat (+ t dur) bar-length) out)\n                (+ t dur))))))\n(align-phrase (list 0.5 0.75 1.25) 4)"
+     :note "Given a phrase of durations, compute the downbeat each note lands on. Cumulative offsets 0.5, 1.25, 2.5 quantize to 4, 4, 4 (all within the first bar). Returns (4 4 4)."))
+  :related ("note" "note-place-at" "tempo" "sub-position-per-beat")
+  :caveats ("Offsets already ON a downbeat round to themselves (0 → 0, 4 → 4)." "Negative offsets return 0 by convention (no negative downbeats)." "bar-length defaults to 4 (common 4/4 meter). Set explicitly for 3/4, 6/8, etc.")
+  :drawbacks ("Only forward-rounding; no 'nearest downbeat' variant here." "No handling of compound meter (6/8 vs 3/4 with dotted quarters) — you must feed the effective beat count.")
+  :usecases ("Anchor a hit or accent to the nearest downbeat." "Compute wait time until the next bar boundary." "Align a phrase to the metric grid.")
+  :learn (:concept "Given a fractional beat offset, return the next integer beat that is a multiple of the bar length. Forward-rounding, integer-valued." :prerequisites ("modulo" "quotient") :progression "Pair with tempo for wall-clock timing; then explore rhythm/quantize for a more general quantizer.")
+  :+math
+    (:algebra ("land-on-downbeat(o, b) = ceil(o / b) * b for o > 0.")
+     :total #t
+     :domain "any real offset, any positive bar length"
+     :codomain "non-negative multiple of bar-length")
+  :+cs (:complexity "O(1)" :effects (none) :pure #t)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Math.ceil(offset / bar-length) * bar-length. bar-length defaults to 4. Negative offsets return 0."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified: (land-on-downbeat 3.5 4) = 4; (land-on-downbeat 0) = 0; (land-on-downbeat 5 4) = 8."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Forgetting to specify bar-length in 3/4 or 6/8 meter — default is 4."
+     :when-not-to-use "You need nearest-downbeat (not next). Use round instead of ceil.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Quantize a beat offset to the next downbeat."
+        :long  "Round a beat offset up to the next multiple of the bar length (default 4). Zero stays zero."
+        :for-ai "Pure math. Forward-rounding to the metric grid."
+        :for-kid "If the song is in a 4-beat bar and you're 2.3 beats in, the next big beat is at 4.")))
+
+;; ─── measure-content — measure content dimensions of a card ──────
+
+(verb
+  :name "measure-content"
+  :library "card"
+  :signature "(measure-content id) -> ((w number) (h number)) | 'error"
+  :summary "Measure the width and height of a card's content; returns 0x0 in headless REPL."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"
+     :code "(measure-content 'my-card)"
+     :note "In headless REPL there is no live card. Returns ((w 0) (h 0)) as the honest zero-size answer.")
+    (:tier "apprentice"
+     :code "(let ((dims (measure-content 'canvas))) (obj-get dims 'w))"
+     :note "Read the width off the returned alist via obj-get. Returns 0 in the REPL.")
+    (:tier "intermediate"
+     :code "(define (fits-in-viewport id max-w)\n  (let* ((dims (measure-content id))\n         (w (car (cdr (assoc 'w dims)))))\n    (if (> w max-w) 'too-wide 'fits)))\n(fits-in-viewport 'content-card 300)"
+     :note "Bounds check against a viewport. In the REPL width=0 so always 'fits.")
+    (:tier "expert"
+     :code "(define (compare-cards id1 id2)\n  (let ((d1 (measure-content id1))\n        (d2 (measure-content id2)))\n    (list id1 d1 id2 d2)))\n(compare-cards 'header 'body)"
+     :note "Compare two cards. In headless REPL both return ((w 0) (h 0)); in a live host the values reflect actual rendered dimensions.")
+    (:tier "master"
+     :code "(define (auto-scale id target-aspect)\n  (let* ((dims (measure-content id))\n         (w (car (cdr (assoc 'w dims))))\n         (h (max 1 (car (cdr (assoc 'h dims))))))\n    (let ((ratio (/ w h)))\n      (cond ((< ratio target-aspect) 'stretch-width)\n            ((> ratio target-aspect) 'stretch-height)\n            (else 'no-change)))))\n(auto-scale 'canvas 1.5)"
+     :note "Aspect-ratio-driven scale hint. Guards against division by zero via (max 1 h). In REPL 0/1 < 1.5 so returns 'stretch-width."))
+  :related ("card-rect" "card-canvas-rect" "card-open" "obj-get")
+  :caveats ("Headless REPL returns 0x0 honestly; the full host reads from the renderer." "The alist shape ((w N) (h N)) is a two-pair list; use assoc or obj-get to read." "In a full host, dynamic content changes require re-measurement.")
+  :drawbacks ("No sub-pixel precision reported." "No bounding-box vs content-box distinction." "Blocks on renderer state in a full host — may not be sync-fast under heavy layout.")
+  :usecases ("Responsive layout decisions (fit / overflow / auto-scale)." "Aspect-ratio-driven UI." "Debugging card dimensions.")
+  :learn (:concept "Query a card's content bounding box. Read-only. Returns an alist so downstream code can pick w or h without positional order." :prerequisites ("assoc" "obj-get") :progression "Pair with card-open / card-canvas-rect for full geometry; then look at layout-bricklay! for automatic layouts.")
+  :+math (:algebra () :total #t :domain "card id" :codomain "((w N) (h N)) alist or 'error symbol")
+  :+cs (:complexity "O(1) in REPL; host-dependent in a full render pass" :effects (state) :pure #f)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Headless-safe: returns [[Sym 'w, 0], [Sym 'h, 0]]. The full host overrides this with a real renderer query. Signature matches the reference alist shape."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified: (measure-content 'anything) = ((w 0) (h 0))."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming a numeric return — it's an alist. Assuming values are non-zero in headless REPL."
+     :when-not-to-use "You need a real live measurement — use in a full host, not headless REPL.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Measure a card's content dimensions; ((w 0) (h 0)) headless."
+        :long  "Measure the width and height of a card's rendered content. Returns an alist ((w N) (h N)). Headless REPL returns zero-dimensions honestly."
+        :for-ai "Deferred to host renderer in full builds. Zero-safe in headless."
+        :for-kid "Ask how big a card is. In your REPL nothing's drawn so both are zero.")))
+
+;; ─── list-item-pluck — remove item from a list by id ─────────────
+
+(verb
+  :name "list-item-pluck"
+  :library "list"
+  :signature "(list-item-pluck id) | (list-item-pluck lst id) -> list | descriptor"
+  :summary "Remove an item from a list by id; supports both host-ambient (1-arg) and pure (2-arg) forms."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(list-item-pluck (list 'a 'b 'c) 'b)"
+     :note "Pure functional form: remove 'b from the list. Returns (a c).")
+    (:tier "apprentice"
+     :code "(list-item-pluck (list 'x 'y 'z) 'y)"
+     :note "Same shape, different letters. Returns (x z). No mutation — a new list is returned.")
+    (:tier "intermediate"
+     :code "(let ((tasks (list 'wake 'brush 'code 'nap)))\n  (list 'before tasks 'after (list-item-pluck tasks 'brush)))"
+     :note "Drop a task from the list. Returns (before (wake brush code nap) after (wake code nap)).")
+    (:tier "expert"
+     :code "(define (delete-many lst ids)\n  (fold (lambda (acc id) (list-item-pluck acc id))\n        lst\n        ids))\n(delete-many (list 'a 'b 'c 'd 'e) (list 'b 'd))"
+     :note "Batch delete. Returns (a c e). Fold peels one id at a time. Note the arg order: (fold fn init lst) calls fn as (fn acc x) — accumulator first.")
+    (:tier "master"
+     :code "(define (remove-by-tag items tag)\n  (fold\n    (lambda (acc item)\n      (if (equal? (obj-get item 'tag) tag)\n          acc\n          (cons item acc)))\n    (list) items))\n(remove-by-tag\n  (list (list 'name \"a\" 'tag 'x)\n        (list 'name \"b\" 'tag 'y)\n        (list 'name \"c\" 'tag 'x))\n  'x)"
+     :note "General filter-by-tag (semantically what list-item-pluck implements on richer objects). Returns ((name \"b\" tag y)) — the single non-matching item. Note fold arg order: (acc, item) — accumulator first."))
+  :related ("list-item-toss" "filter" "assoc" "fold")
+  :caveats ("Item id may be a bare symbol OR an alist with an :id field; both are matched." "The 1-arg form returns a descriptor (host-ambient store); the 2-arg form is pure." "Order of remaining items is preserved.")
+  :drawbacks ("No batch remove built in — fold or map to batch." "Not stable if duplicates exist — all matching items are removed.")
+  :usecases ("Delete a specific item from a UI list." "Filter out a bad row from tabular data." "Un-append after an experimental append.")
+  :learn (:concept "Removal by identifier from a list; a specialized filter that matches item identity." :prerequisites ("filter" "equal?") :progression "After this look at list-item-toss for reordering, or use filter directly for predicate-based removal.")
+  :+math (:algebra () :total #t :domain "list + id" :codomain "list (possibly shorter)")
+  :+cs (:complexity "O(n)" :effects (none) :pure #t)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Two-arg form filters the list by predicate 'id doesn't match'. One-arg form returns a descriptor for host consumption. Preserves order."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified: (list-item-pluck (list 'a 'b 'c) 'b) = (a c)."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Expecting mutation — the returned list is new; the original is unchanged. Confusing with car/cdr (which trims one end).")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Remove item by id from a list."
+        :long  "Remove an item from a list by id. Two-arg form is pure; one-arg form is a host descriptor."
+        :for-ai "Functional delete-by-id on a list. O(n)."
+        :for-kid "Take one thing out of a list; the list you get back is a bit shorter.")))
