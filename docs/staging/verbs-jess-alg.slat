@@ -1947,3 +1947,266 @@
     (:deterministic #t
      :cacheable #t
      :raises ("(quote use-backend) for |G| > 8")))
+
+
+;; ─── formerly-descriptor-shell verbs (33) — now real impls ──────────
+
+(verb
+  :name "alg/symmetric"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/symmetric n) -> group"
+  :summary "Return the symmetric group S_n as a list of all n! permutations of [0, n)."
+  :impl-status "wired"
+  :explanation "S_n is the group of all bijections of an n-element set — the largest permutation group of degree n. This verb enumerates all n! permutations using Heap's algorithm. For n > 8 the result would be too large (8! = 40320 is already substantial), so we return 'use-backend for larger n. S_n is non-abelian for n >= 3 and has A_n as an index-2 subgroup."
+  :examples (
+    (:tier "novice" :code "(length (alg/symmetric 3))"
+     :note "|S_3| = 6.")
+    (:tier "apprentice" :code "(alg/symmetric 3)"
+     :note "All 6 permutations of {0, 1, 2}.")
+    (:tier "intermediate" :code "(length (alg/symmetric 5))"
+     :note "|S_5| = 120.")
+    (:tier "expert" :code "(alg/symmetric 9)"
+     :note "9! = 362880 is above the cap. Returns 'use-backend.")
+    (:tier "master" :code "(define (even-perms n) (filter (lambda (p) (= (alg/perm-sign p) 1)) (alg/symmetric n))) (length (even-perms 4))"
+     :note "|A_4| = |S_4|/2 = 12.")
+  )
+  :caveats
+    ("Capped at n <= 8; larger n returns 'use-backend."
+     "Uses Heap's algorithm — element order is not lexicographic.")
+  :drawbacks
+    ("O(n * n!) time and space."
+     "Materializing S_n for large n is impractical.")
+  :usecases
+    ("Enumerate all shuffles of n items."
+     "Feed into character-theory or representation-theory computations."
+     "Test permutation-group algorithms on the full group.")
+  :related ("alg/alternating" "alg/perm" "alg/perm-sign")
+  :learn
+    (:concept "The symmetric group S_n — the group of all permutations."
+     :prerequisites ("alg/perm-identity")
+     :progression "symmetric -> alternating -> Cayley's theorem: every finite group embeds in some S_n.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Heap's algorithm; results collected in a list."
+     :permission "read"
+     :latency-class "sync-slow"
+     :since "1.0")
+  :+math
+    (:total #f)
+  :+cs
+    (:complexity "time O(n * n!), space O(n * n!)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/alternating"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/alternating n) -> group"
+  :summary "Return the alternating group A_n as a list of all even permutations of [0, n)."
+  :impl-status "wired"
+  :explanation "A_n is the subgroup of S_n consisting of even permutations (sign +1). It has order n!/2 and is simple for n >= 5 (a fundamental fact used in Galois theory to show quintics are unsolvable by radicals). This verb enumerates A_n via Heap's algorithm, filtered by sign. Capped at n <= 8 for tractability."
+  :examples (
+    (:tier "novice" :code "(length (alg/alternating 3))"
+     :note "|A_3| = 3.")
+    (:tier "apprentice" :code "(alg/alternating 3)"
+     :note "The 3 even permutations of {0, 1, 2}: identity + two 3-cycles.")
+    (:tier "intermediate" :code "(length (alg/alternating 4))"
+     :note "|A_4| = 12.")
+    (:tier "expert" :code "(every (lambda (p) (= (alg/perm-sign p) 1)) (alg/alternating 4))"
+     :note "Every element of A_4 has sign +1. Should be #t.")
+    (:tier "master" :code "(define (index-in-Sn n) (/ (length (alg/symmetric n)) (length (alg/alternating n)))) (index-in-Sn 4)"
+     :note "[S_n : A_n] = 2 for n >= 2 — A_n is always index 2 in S_n.")
+  )
+  :caveats
+    ("Capped at n <= 8; larger n returns 'use-backend."
+     "For n <= 1 the group is trivial ({identity}).")
+  :drawbacks
+    ("Enumerates all of S_n internally before filtering — O(n!) work even for the smaller A_n."
+     "Same time/space limits as alg/symmetric.")
+  :usecases
+    ("Enumerate even permutations for Galois-theory or invariant-theory arguments."
+     "Test whether an element belongs to A_n via alg/perm-sign."
+     "Study A_n as the smallest non-abelian simple group (n >= 5).")
+  :related ("alg/symmetric" "alg/perm-sign")
+  :learn
+    (:concept "The alternating group A_n — the kernel of the sign homomorphism."
+     :prerequisites ("alg/symmetric" "alg/perm-sign")
+     :progression "alternating -> A_5 simplicity -> Galois theory of the quintic.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Heap's algorithm + sign filter."
+     :permission "read"
+     :latency-class "sync-slow"
+     :since "1.0")
+  :+math
+    (:total #f)
+  :+cs
+    (:complexity "time O(n * n!), space O(n * n!/2)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/is-normal?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/is-normal? G H) -> boolean"
+  :summary "Test whether H is a normal subgroup of G: g H g^-1 = H for all g in G."
+  :impl-status "wired"
+  :explanation "A subgroup H is normal in G if it is closed under conjugation by every element of G. Equivalently: left cosets equal right cosets. Normal subgroups are exactly the kernels of homomorphisms, and are precisely the subgroups by which we can form quotient groups G/H. Every subgroup of an abelian group is normal; in non-abelian groups, normality is a special property."
+  :examples (
+    (:tier "novice" :code "(alg/is-normal? (alg/cyclic 6) '(0 3))"
+     :note "In abelian Z_6, every subgroup is normal. Returns #t.")
+    (:tier "apprentice" :code "(alg/is-normal? (alg/cyclic 6) '(0))"
+     :note "The trivial subgroup {0} is normal in any group.")
+    (:tier "intermediate" :code "(alg/is-normal? (alg/cyclic 12) (alg/subgroup-gen (alg/cyclic 12) '(4)))"
+     :note "In abelian Z_12, the cyclic subgroup <4> = {0, 4, 8} is normal.")
+    (:tier "expert" :code "(alg/is-normal? (alg/cyclic 6) '(0 2 4))"
+     :note "{0, 2, 4} is a subgroup of Z_6; it's normal because Z_6 is abelian.")
+    (:tier "master" :code "(define (count-normal-subgroups G) (length (filter (lambda (H) (alg/is-normal? G H)) (alg/subgroups G)))) (count-normal-subgroups (alg/cyclic 6))"
+     :note "Count normal subgroups of Z_6. All subgroups of an abelian group are normal — should equal |subgroups(Z_6)| = 4.")
+  )
+  :caveats
+    ("Assumes H is already a subgroup of G; if not, results are unreliable."
+     "Uses JSON stringification for equality — deep structural.")
+  :drawbacks
+    ("O(|G| * |H|) — quadratic in group size."
+     "No shortcut for abelian G (where every subgroup is trivially normal).")
+  :usecases
+    ("Verify normality before forming a quotient group."
+     "Test the simplicity of a group (only trivial normal subgroups)."
+     "Analyze subgroup lattices.")
+  :related ("alg/subgroup?" "alg/normalizer" "alg/quotient")
+  :learn
+    (:concept "Normal subgroups — the kernels of homomorphisms, the subgroups you can quotient by."
+     :prerequisites ("alg/subgroup?" "alg/perm-conjugate")
+     :progression "is-normal? -> alg/quotient -> homomorphism theorems.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "For each g in G, check that g H g^-1 subset H."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G| * |H|), space O(|H|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/is-solvable?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/is-solvable? G) -> boolean"
+  :summary "Test whether G is solvable: the derived series terminates at the trivial group."
+  :impl-status "wired"
+  :explanation "A group is solvable if its derived series G = G^(0), G^(1) = [G,G], G^(2) = [G^(1), G^(1)], ... eventually reaches the trivial subgroup. Every abelian group is solvable (derived subgroup is trivial). S_3, S_4 are solvable; S_5 and larger S_n are not. Solvability is central to Galois theory: a polynomial is solvable by radicals iff its Galois group is solvable."
+  :examples (
+    (:tier "novice" :code "(alg/is-solvable? (alg/cyclic 6))"
+     :note "Every abelian group is solvable. Returns #t.")
+    (:tier "apprentice" :code "(alg/is-solvable? (alg/cyclic 12))"
+     :note "Z_12 is abelian, so solvable.")
+    (:tier "intermediate" :code "(alg/is-solvable? (alg/dihedral 3))"
+     :note "D_3 (order 6) is solvable — its derived subgroup is the 3-cycle subgroup A_3, whose derived subgroup is trivial.")
+    (:tier "expert" :code "(alg/is-solvable? (alg/dihedral 4))"
+     :note "D_4 is solvable.")
+    (:tier "master" :code "(map (lambda (n) (list n (alg/is-solvable? (alg/cyclic n)))) (list 2 3 4 5 6 7 8))"
+     :note "All cyclic groups are solvable — every entry should be #t.")
+  )
+  :caveats
+    ("For very small groups the derived series terminates quickly; for larger non-abelian groups it may not terminate at all (signaling non-solvability)."
+     "Guard limits at 20 iterations to prevent infinite loops.")
+  :drawbacks
+    ("Computes derived subgroups from scratch each iteration — O(|G|^2) per step."
+     "Doesn't return the derived series itself, just the boolean.")
+  :usecases
+    ("Determine whether a polynomial is solvable by radicals (via its Galois group)."
+     "Classify small groups."
+     "Verify structural properties in group theory.")
+  :related ("alg/derived-subgroup" "alg/commutator" "alg/is-abelian?")
+  :learn
+    (:concept "Solvable groups — the derived series terminates."
+     :prerequisites ("alg/derived-subgroup")
+     :progression "is-solvable? -> Galois theory -> polynomial solvability by radicals.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Iteratively compute derived subgroups; check for stabilization at identity."
+     :permission "read"
+     :latency-class "sync-slow"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(k * |G|^2), space O(|G|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/is-simple?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/is-simple? G) -> boolean | (quote use-backend)"
+  :summary "Test whether G is simple: its only normal subgroups are trivial and G itself."
+  :impl-status "wired"
+  :explanation "A group is simple if it has no non-trivial proper normal subgroups. Simple groups are the atoms of group theory — every finite group is built from simple pieces via composition series. Cyclic groups of prime order are simple; A_n is simple for n >= 5. This verb enumerates all subgroups by bitmask and checks each for normality; capped at |G| <= 8."
+  :examples (
+    (:tier "novice" :code "(alg/is-simple? (alg/cyclic 5))"
+     :note "Z_5 has prime order, so it's simple.")
+    (:tier "apprentice" :code "(alg/is-simple? (alg/cyclic 6))"
+     :note "Z_6 has a normal subgroup {0, 3}, so it's not simple.")
+    (:tier "intermediate" :code "(alg/is-simple? (alg/cyclic 7))"
+     :note "Z_7 is prime, hence simple.")
+    (:tier "expert" :code "(alg/is-simple? (alg/cyclic 4))"
+     :note "Z_4 has the normal subgroup {0, 2}; not simple.")
+    (:tier "master" :code "(map (lambda (n) (list n (alg/is-simple? (alg/cyclic n)))) (list 2 3 5 7))"
+     :note "For prime n <= 8, Z_n is simple. Entries: ((2 #t) (3 #t) (5 #t) (7 #t)). Beyond n=8 the impl escalates 'use-backend.")
+  )
+  :caveats
+    ("Capped at |G| <= 8; larger groups return 'use-backend."
+     "The trivial group (|G| = 1) is NOT considered simple by convention.")
+  :drawbacks
+    ("O(2^|G|) enumeration of subsets — impractical beyond |G| = 8."
+     "Doesn't tell you WHICH normal subgroups exist; just whether any non-trivial ones do.")
+  :usecases
+    ("Test the simplicity of small groups."
+     "Verify classification results (e.g., all simple groups of prime order)."
+     "Build composition series.")
+  :related ("alg/is-normal?" "alg/subgroups" "alg/is-solvable?")
+  :learn
+    (:concept "Simple groups — the atoms of finite group theory."
+     :prerequisites ("alg/is-normal?")
+     :progression "is-simple? -> composition series -> the classification of finite simple groups.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Bitmask enumeration of subsets, closure + inverse + normality checks."
+     :permission "read"
+     :latency-class "sync-slow"
+     :since "1.0")
+  :+math
+    (:total #f)
+  :+cs
+    (:complexity "time O(2^|G| * |G|^2), space O(|G|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t
+     :raises ("(quote use-backend) for |G| > 8")))
