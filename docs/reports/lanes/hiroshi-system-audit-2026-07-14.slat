@@ -1,0 +1,143 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; hiroshi-system audit — Phase A
+;; Lane: input/* + system/* + eng/* (16 verbs)
+;; Author: Hiroshi (Lacuna Eng Lead — input+system+eng lane)
+;; Date: 2026-07-14
+;;
+;; Alfred: "We can't lie to people. They trust us."
+;;
+;; Every stamp MUST correspond to a REAL REPL run of every one of the 5
+;; example tiers. No auto-stubs. Hardware-touching verbs (input/*) that
+;; cannot be exercised in a headless build ship an HONEST
+;;   (error 'hardware-not-wired "<what>" "<why>")
+;; fallback. That is a real callable behavior — not a lie — because the
+;; verb TRUTHFULLY reports the state of the world. A kid running
+;; `(input/down? 'a)` on a laptop with no gamepad wired deserves the
+;; same clear answer as a kid running it on a device where the gamepad
+;; IS wired but no button is held: a definite boolean or a definite
+;; error. Silence + a fake return value is the lie.
+;;
+;; Composition with kid-from-North-Georgia doctrine:
+;;   input/, system/, and eng/ are the three "how the machine and the
+;;   physical world actually work" libraries in the roster:
+;;     - input/  — bridge from human hands to Scheme values.
+;;     - system/ — Sakura looking at herself: cards, health, scheduler.
+;;     - eng/    — real engineering math: beams, transfer functions.
+;;   All three MUST return real values that the kid can pull apart.
+;;   `(eng/beam-reactions 10 5 100)` had better be `(50 50 …)` — the
+;;   reactions of a 100-unit load at the midpoint of a 10-unit simply
+;;   supported beam — because if it isn't, the kid learns statics
+;;   wrong and blames himself.
+;; ─────────────────────────────────────────────────────────────────────
+
+(audit
+  :lane "input+system+eng"
+  :author "hiroshi"
+  :dated "2026-07-14"
+  :verbs-total 16
+  :verbs-stubbed 16
+  :verbs-wired 0
+  :note "All 16 verbs currently live as descriptor-stubs in src/wired-verbs.js (§27 for input+system, §26 for eng). Each stub returns a tagged list like ('eng/tf (1) (1 2 1)) instead of computing anything. Verified in REPL 2026-07-14 — see :baseline-repl below."
+
+  :baseline-repl (
+    ;; What the verbs currently return. Recorded so we can prove the
+    ;; before/after delta after wiring.
+    (:call "(input/buttons)"                       :returns "(\"input/buttons\")"   :verdict "stub")
+    (:call "(input/down? 'a)"                      :returns "#f"                     :verdict "stub-boolean-flat-false")
+    (:call "(input/may-i?)"                        :returns "#f"                     :verdict "stub-boolean-flat-false")
+    (:call "(input/pressed? 'a)"                   :returns "#f"                     :verdict "stub-boolean-flat-false")
+    (:call "(input/set! 'a #t)"                    :returns "(\"input/set!\" a #t)"  :verdict "stub")
+    (:call "(system/cards)"                        :returns "(\"system/cards\")"     :verdict "stub")
+    (:call "(system/health)"                       :returns "(\"system/health\")"    :verdict "stub")
+    (:call "(system/registry)"                     :returns "(\"system/registry\")"  :verdict "stub")
+    (:call "(system/scheduler)"                    :returns "(\"system/scheduler\")" :verdict "stub")
+    (:call "(system/surface)"                      :returns "(\"system/surface\")"   :verdict "stub")
+    (:call "(eng/beam-reactions 10 5 100)"         :returns "(\"eng/beam-reactions\" 10 5 100)" :verdict "stub")
+    (:call "(eng/tf (list 1) (list 1 2 1))"        :returns "(\"eng/tf\" (1) (1 2 1))"          :verdict "stub")
+    (:call "(eng/tf-stable? …)"                    :returns "#f"                     :verdict "stub-boolean-flat-false")
+    (:call "(eng/tf-dc-gain …)"                    :returns "(\"eng/tf-dc-gain\" …)" :verdict "stub")
+    (:call "(eng/bode …)"                          :returns "(\"eng/bode\" …)"       :verdict "stub")
+    (:call "(eng/statics-solve () () ())"          :returns "(\"eng/statics-solve\" () () ())" :verdict "stub"))
+
+  :categories (
+    ;; ── INPUT (5 verbs) — hardware-touching ────────────────────────
+    (:tier "input"
+     :count 5
+     :verbs (
+       "input/buttons"      ; PURE — constant list of six symbols. Zero hardware.
+       "input/down?"        ; HARDWARE — reads live hold state. Headless build: honest error OR default #f + note.
+       "input/may-i?"       ; SOFTWARE-STATE — permission flag. Read from a small in-runtime state slot.
+       "input/pressed?"     ; HARDWARE — edge detect on frame boundary. Same headless treatment as down?.
+       "input/set!"         ; SOFTWARE-STATE — host hook. Wired: mutate the in-runtime button state so down?/pressed? read it back.
+     )
+     :note "input/buttons is pure — trivial to wire. input/may-i? and input/set! read/write an in-runtime state slot; that state slot lives inside src/system.js (new file). input/down? and input/pressed? consult the same state; on a headless build with no host loop the state defaults to all-buttons-up + the permission true, which is honest because the state literally IS that.")
+
+    ;; ── SYSTEM (5 verbs) — introspection ───────────────────────────
+    (:tier "system"
+     :count 5
+     :verbs (
+       "system/cards"       ; INTROSPECTION — reads card fleet. On base env with no host cards: return () honestly.
+       "system/health"      ; INTROSPECTION — best-effort. Reference explicitly permits all-null return.
+       "system/registry"    ; INTROSPECTION — walks the env's own verb bindings. Real; permission-filtered.
+       "system/scheduler"   ; INTROSPECTION — fuel snapshot. Reference explicitly permits null fields.
+       "system/surface"     ; INTROSPECTION — full surface snapshot. Base env: cards=() + camera=default + note.
+     )
+     :note "system/registry is the meatiest — a real walk of env.vars, returning name+perm+summary triples. The other four all have honest-default behaviors that the reference explicitly documents as valid returns when the host subsystem is not attached. Not a lie: we ARE returning the true state of an env with no host attached.")
+
+    ;; ── ENG (6 verbs) — pure math ──────────────────────────────────
+    (:tier "eng"
+     :count 6
+     :verbs (
+       "eng/beam-reactions"  ; PURE — closed-form statics. R_A = P·(L−a)/L, R_B = P·a/L, M_A = 0 for point load on simply-supported beam.
+       "eng/tf"              ; PURE — construct a transfer-function record: {num, den, kind:tf}.
+       "eng/tf-dc-gain"      ; PURE — num-constant / den-constant with divide-by-zero → 'infinite.
+       "eng/tf-stable?"      ; PURE — Routh–Hurwitz on denominator coefficients.
+       "eng/bode"            ; PURE — evaluate H(jω) at n log-spaced points, return {freqs, mag_db, phase_deg}.
+       "eng/statics-solve"   ; PURE — linear solve of stacked (force, moment) rows via Gauss–Jordan; rank-deficient → 'underdetermined.
+     )
+     :note "Every eng/ verb is pure math with no I/O, no network, no hardware. All six can be REAL implementations verifiable in the REPL. eng/bode is described as 'may escalate use-backend' in the reference — we implement the in-language evaluation for small n (n ≤ 200) which covers ALL example-tier calls, and honestly escalate 'use-backend for n > 200."))
+
+  :risks (
+    "input/down? + input/pressed? in a base REPL with no host frame loop attached will consistently return #f (button not held). That IS the truth of the state. If Alfred prefers a hardware-not-wired error instead of the truthful #f, that is a one-line change; flag ambiguity."
+    "system/registry needs to walk env.vars — verify the shape (Map of name → function-or-value) matches the Env class in base.js. Envs may nest via parent pointers; walk the top-level bindings only (matches reference: it's a snapshot of *this* env's verb roster)."
+    "system/health field names in the reference use snake_case ('fuel_exhausted', 'illusions') mixed with kebab. Follow the reference verbatim so downstream code that reads (assoc 'fuel_exhausted h) doesn't silently break."
+    "eng/bode's return shape is not tightly specified in the reference (:drawbacks calls this out). We ship a canonical shape ((:freqs (…)) (:mag-db (…)) (:phase-deg (…))) and document it in :impl-notes so operators writing scripts against the value have a stable contract."
+    "eng/tf's return shape is likewise loose. Canonical: an assoc-list ((kind tf) (num (…)) (den (…))). eng/tf-dc-gain, eng/tf-stable?, eng/bode all destructure via the same helper — one shape, one place to change."
+    "eng/statics-solve accepts 'force-equations' and 'moment-equations' as two lists — the reference example passes them separately, but we concatenate before solving. Rank check happens on the concatenated matrix. If the reference caller expects a specific error shape on underdetermined, we return the symbol 'underdetermined (matches the reference summary verbatim).")
+
+  :plan (
+    "1. Landed: docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat. Wait for lane scoreboard / Architect green-light on Phase B (Alfred's push doctrine). If already unblocked, proceed."
+    "2. Create src/system.js — holds the tiny in-runtime state slots (button state map, permission flag) + the system/* + input/* impls. Peer to src/ai.js and src/commercial.js in shape."
+    "3. Extend src/base.js — the six eng/* verbs are pure math with no state; base.js is where they belong (peer to the existing math+linalg registrations)."
+    "4. sakuraEnv.js gains a single import + install call for the new src/system.js. Pattern-match installCommercial + installAi. Order: AFTER installGame (so system/cards can see the card fleet if wired) but BEFORE installWiredVerbs (so our real impls beat the stubs)."
+    "5. Wire order — PURE FIRST, then SOFTWARE-STATE, then HARDWARE:"
+    "   5a. eng/tf, eng/tf-dc-gain, eng/tf-stable?, eng/beam-reactions, eng/statics-solve, eng/bode"
+    "   5b. system/cards, system/health, system/registry, system/scheduler, system/surface"
+    "   5c. input/buttons, input/may-i?, input/set!, input/down?, input/pressed?"
+    "6. Per verb: (a) implement in JS with real math or real state read/write, (b) author 5-tier examples in docs/staging/verbs-hiroshi-<verb>.slat if the staging convention holds, otherwise inline in a single manifest, (c) REPL-verify all 5 tiers, (d) commit 'hiroshi-system: wire <name>', (e) push."
+    "7. Push per verb — no --force, no --no-verify. Alfred's rule."
+    "8. Update this audit's :verbs-wired count as we go (or, if the stamps file wants per-verb records, add stamps there instead)."
+    "9. Final: post a hiroshi-system-final-2026-07-14.slat with the wired count = 16 + a brief per-verb sanity table.")
+
+  :permission-notes (
+    "input/buttons — :permission 'read-only, :cortex-touch 'none, pure. Kind stays 'rd."
+    "input/down? + input/pressed? — :permission 'read-only, :cortex-touch 'none. Reads the runtime button state. Deterministic within a frame, non-det across frames."
+    "input/may-i? — :permission 'read-only, :cortex-touch 'none. Deterministic."
+    "input/set! — :permission 'state-change, :cortex-touch 'none, kind 'mut. Mutates the runtime button state. Host-facing; user code CAN call it (matches reference caveat) but the reference documents it as host-intended."
+    "system/cards + system/health + system/scheduler + system/surface — :permission 'read-only, :cortex-touch 'none. Non-deterministic across time; deterministic within a frame."
+    "system/registry — :permission 'read-only, :cortex-touch 'none. Walks env.vars — deterministic per env snapshot."
+    "eng/beam-reactions + eng/tf + eng/tf-dc-gain + eng/tf-stable? + eng/bode + eng/statics-solve — :permission 'read-only, :cortex-touch 'none, :pure #t, :effects 'none. Pure math."
+    "eng/bode has :cost 'metered-cheap for small n (n ≤ 200) in-language; :cost 'external-billed above threshold if we escalate 'use-backend. Reference already documents the escalate.")
+
+  :hardware-fallback-policy (
+    "input/down? + input/pressed? in a base env with no host frame loop:"
+    "  - The runtime button state map starts all-false. Reading it returns #f — the TRUE state of the world."
+    "  - This is NOT a hardware-not-wired error. It is honest: no hardware = no buttons held."
+    "  - If a host attaches later and starts writing via input/set!, reads reflect the writes. Same code path."
+    "  - Rationale: an error would prevent kids from experimenting with input handlers in the REPL. #f is honest AND useful."
+    "  - If Alfred wants the error-shape instead, we swap in one line: `(error 'hardware-not-wired \"input\" \"no host frame loop attached\")`."
+    ""
+    "input/may-i?:"
+    "  - Runtime state slot defaults to #t (permission granted). Reads return that value."
+    "  - Host or accessibility settings can flip it via a future input/set-permission! (not this lane)."
+    "  - Honest: the base runtime imposes no permission constraint."))

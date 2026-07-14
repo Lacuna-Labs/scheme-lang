@@ -1,0 +1,355 @@
+;; ═══════════════════════════════════════════════════════════════
+;; NAO — LACUNA ENG COMMERCE + TIME LANE AUDIT
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;; Lane scope: card/* + shoppe/* + time/* + flower/* (~22 verbs)
+;; ═══════════════════════════════════════════════════════════════
+;;
+;; Alfred: "We can't lie to people. They trust us."
+;;
+;; Every verb in scope is currently a STUB.  All of them are installed
+;; by wired-verbs.js as `descriptor(...)` tuples — they parse, they
+;; register, they return a shape — but they do not do the work the
+;; reference manual describes.  The REPL confirms:
+;;
+;;   sakura> (shoppe/open)
+;;   ("shoppe/open")
+;;   sakura> (card/emit 'hi '())
+;;   ("card/emit" hi ())
+;;   sakura> (time/delta)
+;;   ("time/delta")
+;;   sakura> (flower/paint 0 100 100)
+;;   ("flower/paint" 0 100 100)
+;;
+;; That is honest for L4-runtime-only verbs (etsy/* etc., which need
+;; a provider), but for the lane in scope MOST of these have honest
+;; local semantics we can wire without any external service.  A card
+;; activity is a local record.  A shoppe balance is Cortex-backed.
+;; A time delta is a wall-clock read.  A flower is a framebuffer paint.
+;;
+;; This report enumerates every verb, its current state, its target
+;; wiring destination, and the honesty budget (what can be verified
+;; standalone vs. what must be marked :entry-provenance
+;; "author-blocked" because it needs a live host — audio HW, a real
+;; big-bang loop, a running commerce backend).
+
+(audit
+  :lane   "nao-commerce"
+  :author "Nao (Lacuna Eng Lead)"
+  :date   "2026-07-14"
+  :branch "verbs/wire-596-2026-07-14"
+  :schema-version "1.0"
+  :verb-count 25
+  :phase "A — audit before wiring"
+
+  :summary
+   ("card/*   — 10 verbs (reference has 10; lane brief said ~7). ALL STUBS."
+    "shoppe/* —  7 verbs. ALL STUBS."
+    "time/*   —  7 verbs. ALL STUBS (time/across signature marked *[verify]* in reference)."
+    "flower/* —  1 verb. STUB."
+    "Total: 25 verbs. Zero already-wired. Zero real implementations.")
+
+  :destinations
+   ((card    "src/commercial.js" "extend beyond etsy/etc — add card runtime store")
+    (shoppe  "src/commercial.js" "extend beyond etsy/etc — add Cortex-backed shoppe state")
+    (time    "src/base.js"       "wall-clock reads + FRP-lite clause combinators")
+    (flower  "src/framebuffer.js" "flower rasterizer method on Framebuffer + verb in media.js or wired-verbs.js"))
+
+  :provenance-notes
+   ("Reference file is docs/SAKURA-SCHEME-REFERENCE.slat (21,472 lines)."
+    "Schema at docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat (loaded 2026-07-14)."
+    "Every audit line below verified via bin/sakura-scheme eval; each stub"
+    "returned a `descriptor` tuple (name + args) — no thrown errors, no real work."))
+
+; ─── card/* — 10 verbs ────────────────────────────────────────────
+
+(verb-audit
+  :name "card/activity"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1013 (cardExtras loop)"
+  :ref-line 2781
+  :target-file "src/commercial.js"
+  :wire-plan "in-process card store: Map<cardId, { activities: Map<activityId,{label,expected,progress}> }>"
+  :verify-shape "returns opaque activity-id symbol; card/activity-done + card/activity-progress interact with same store"
+  :standalone-verifiable? #t
+  :notes "Local bookkeeping; no external service needed. Reference example expects activity-id return.")
+
+(verb-audit
+  :name "card/activity-done"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1013"
+  :ref-line 2799
+  :target-file "src/commercial.js"
+  :wire-plan "look up activity in local store; mark done; idempotent — returns 'ok even on missing id"
+  :verify-shape "returns symbol 'ok in every case (per reference caveat)"
+  :standalone-verifiable? #t
+  :notes "Reference is explicit about idempotency: 'Calling ... twice with the same ID is safe; second call still returns ok'.")
+
+(verb-audit
+  :name "card/activity-progress"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1013"
+  :ref-line 2817
+  :target-file "src/commercial.js"
+  :wire-plan "validate progress is finite number; look up activity; set progress field; error on missing id or non-finite"
+  :verify-shape "returns 'ok on success, error list on invalid progress"
+  :standalone-verifiable? #t
+  :notes "Reference: 'Progress must be a finite number; infinity, NaN, or non-numeric values trigger an error.'")
+
+(verb-audit
+  :name "card/ask"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1014"
+  :ref-line 2835
+  :target-file "src/commercial.js"
+  :wire-plan "look up card handler in card store; call handler(question, context); if no handler, return descriptor + note"
+  :verify-shape "returns whatever handler returns (non-deterministic per reference)"
+  :standalone-verifiable? #t
+  :notes "Standalone REPL has no handlers registered; verb returns a well-shaped 'no-handler descriptor. Live surface (Curator) supplies real handlers.")
+
+(verb-audit
+  :name "card/audio-pulse"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1014"
+  :ref-line 2853
+  :target-file "src/commercial.js"
+  :wire-plan "set card.audio-pulse property in card store; parse opts alist; clamp intensity to [0,1]"
+  :verify-shape "returns 'ok on success, error list on invalid cardId"
+  :standalone-verifiable? #t
+  :notes "Effect is visual; standalone can only verify state change, not rendered animation. Reference caveat notes this: 'card ID doesn't exist, the pulse is set anyway but has no visible effect'.")
+
+(verb-audit
+  :name "card/audio-pulse-off"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1014"
+  :ref-line 2871
+  :target-file "src/commercial.js"
+  :wire-plan "clear card.audio-pulse property; safe on cards without a pulse"
+  :verify-shape "returns 'ok"
+  :standalone-verifiable? #t
+  :notes "Cleaner symmetry with card/audio-pulse via same card store.")
+
+(verb-audit
+  :name "card/do"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1014"
+  :ref-line 2889
+  :target-file "src/commercial.js"
+  :wire-plan "look up handler map for card; dispatch by verb-name symbol; error if unknown"
+  :verify-shape "returns handler return value"
+  :standalone-verifiable? #t
+  :notes "Standalone can register test handlers via a helper. Deterministic dispatch — no external service.")
+
+(verb-audit
+  :name "card/emit"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1014"
+  :ref-line 2907
+  :target-file "src/commercial.js"
+  :wire-plan "look up listeners in event bus (Map<eventName, [fn]>); synchronously call all with payload"
+  :verify-shape "returns #t on success, #f on invalid address"
+  :standalone-verifiable? #t
+  :notes "Reference specifies synchronous fan-out. Standalone verifies via test listener registered before emit.")
+
+(verb-audit
+  :name "card/physics!"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js (not in cardExtras loop — check)"
+  :ref-line 2925
+  :target-file "src/commercial.js"
+  :wire-plan "validate name is one of slide/no-slide/dematerialize/waft/chubby-walk; store on card; return name or #f"
+  :verify-shape "returns physics-name symbol on success, #f on unknown"
+  :standalone-verifiable? #t
+  :notes "Pure store operation. Reduced-motion override happens at render time (host concern, not verb concern).")
+
+(verb-audit
+  :name "card/transition"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js (not in cardExtras loop — check)"
+  :ref-line 2943
+  :target-file "src/commercial.js"
+  :wire-plan "look up card physics; record transition intent in card store; emit descriptor for host to consume"
+  :verify-shape "returns #t on success, #f on invalid card"
+  :standalone-verifiable? #t
+  :notes "Standalone records intent; live host (Curator) picks it up. Reference explicitly permits this pattern: 'implementation may delegate complex teardowns ... to an illusion module if wired'.")
+
+; ─── shoppe/* — 7 verbs ───────────────────────────────────────────
+
+(verb-audit
+  :name "shoppe/balance"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1027"
+  :ref-line 17797
+  :target-file "src/commercial.js"
+  :wire-plan "read from Cortex key 'shoppe/tokens; return alist ((tokens N) (currency 'sakura-token))"
+  :verify-shape "returns alist / dict-shaped record"
+  :standalone-verifiable? #t
+  :notes "Reference says 'Network call—may fail or timeout'. Standalone reads Cortex directly (honest local surrogate). If Cortex has no key, returns (tokens 0) — HONESTLY represents fresh account.")
+
+(verb-audit
+  :name "shoppe/buy-merch"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1027"
+  :ref-line 17815
+  :target-file "src/commercial.js"
+  :wire-plan "validate sku against local merch table; deduct tokens from Cortex; append transaction; return dict"
+  :verify-shape "returns alist ((ok #t/#f) (reason ...) (sku ...))"
+  :standalone-verifiable? #t
+  :notes "Cortex-backed. `:needs-consent #t` (real spend gate). Standalone honestly deducts local tokens; live host swaps in real API call.")
+
+(verb-audit
+  :name "shoppe/buy-pack"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1027"
+  :ref-line 17833
+  :target-file "src/commercial.js"
+  :wire-plan "validate size-tokens > 0; record intent in Cortex; return payment-url stub for standalone"
+  :verify-shape "returns alist ((ok #t/#f) (payment-url string) (reason ...))"
+  :standalone-verifiable? #t
+  :notes "Standalone can't complete real payment; returns a well-shaped intent record. Live host swaps in real gateway.")
+
+(verb-audit
+  :name "shoppe/close"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1028"
+  :ref-line 17851
+  :target-file "src/commercial.js"
+  :wire-plan "set Cortex key 'shoppe/open? to #f; return symbol 'closed"
+  :verify-shape "returns 'closed"
+  :standalone-verifiable? #t
+  :notes "Reference: 'Always returns closed'. Trivial local state.")
+
+(verb-audit
+  :name "shoppe/open"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1028"
+  :ref-line 17869
+  :target-file "src/commercial.js"
+  :wire-plan "set Cortex key 'shoppe/open? to #t; return symbol 'opened"
+  :verify-shape "returns 'opened"
+  :standalone-verifiable? #t
+  :notes "Reference: 'Always returns opened'. Trivial local state. DOM event dispatch is a host concern.")
+
+(verb-audit
+  :name "shoppe/savings"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1028"
+  :ref-line 17887
+  :target-file "src/commercial.js"
+  :wire-plan "pure math: look up pack price table + tier; compute discount vs. single-token price; return alist"
+  :verify-shape "returns alist ((savedDollars N) (percent N) (vsFree N) (vsCurrentSubscription N|null))"
+  :standalone-verifiable? #t
+  :notes "PURE. No network. Uses a small local pricing table. Reference: 'Pure computation of financial data'.")
+
+(verb-audit
+  :name "shoppe/transactions"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1029"
+  :ref-line 17905
+  :target-file "src/commercial.js"
+  :wire-plan "read Cortex key 'shoppe/tx-log (list of alists); slice by limit; return list"
+  :verify-shape "returns list of alists"
+  :standalone-verifiable? #t
+  :notes "Cortex-backed. Empty log returns '(). Honest.")
+
+; ─── time/* — 7 verbs ─────────────────────────────────────────────
+
+(verb-audit
+  :name "time/across"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1069"
+  :ref-line 19457
+  :target-file "src/base.js"
+  :wire-plan "AUTHOR-BLOCKED — reference signature is *[verify]* and behavior is undocumented"
+  :verify-shape "unknown"
+  :standalone-verifiable? #f
+  :entry-provenance "author-blocked"
+  :entry-provenance-reason "Reference explicitly marks (:signature \"*[verify]*\" and examples as \"*[verify]* — exact behavior unconfirmed\"). Alfred rule: no hallucination. Flag and move on; do not invent semantics."
+  :notes "Escalate to Alfred: what is time/across supposed to do? Options: (a) frame-locked interval a la time/every-ms but per-frame, (b) span/distribute behavior across N frames, (c) something else. Refuse to guess.")
+
+(verb-audit
+  :name "time/delta"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1069"
+  :ref-line 19475
+  :target-file "src/base.js"
+  :wire-plan "wall clock diff between successive calls, converted by unit symbol: ms/s/m/h/d"
+  :verify-shape "returns number (delta in requested unit); NaN sentinel for unknown unit"
+  :standalone-verifiable? #t
+  :notes "Honest local semantic. First call in a session gets a small delta (init-time recorded in installBase).")
+
+(verb-audit
+  :name "time/during"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1069"
+  :ref-line 19493
+  :target-file "src/base.js"
+  :wire-plan "meta-verb; returns a tagged clause (list 'clause/during pred body); big-bang honors tag"
+  :verify-shape "returns list starting with 'clause/during"
+  :standalone-verifiable? #t
+  :notes "Clause builder — pure data construction. Consumer is big-bang. Standalone verifies shape only.")
+
+(verb-audit
+  :name "time/every-ms"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1069"
+  :ref-line 19511
+  :target-file "src/base.js"
+  :wire-plan "meta-verb; returns tagged clause (list 'clause/every-ms ms body)"
+  :verify-shape "returns list starting with 'clause/every-ms"
+  :standalone-verifiable? #t
+  :notes "Same clause-builder pattern.")
+
+(verb-audit
+  :name "time/then"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1070"
+  :ref-line 19529
+  :target-file "src/base.js"
+  :wire-plan "meta-verb; returns tagged clause (list 'clause/then a b)"
+  :verify-shape "returns list starting with 'clause/then"
+  :standalone-verifiable? #t
+  :notes "Sequential clause composition.")
+
+(verb-audit
+  :name "time/until"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1070"
+  :ref-line 19547
+  :target-file "src/base.js"
+  :wire-plan "meta-verb; returns tagged clause (list 'clause/until pred body)"
+  :verify-shape "returns list starting with 'clause/until"
+  :standalone-verifiable? #t
+  :notes "End-condition clause.")
+
+(verb-audit
+  :name "time/when"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1070"
+  :ref-line 19565
+  :target-file "src/base.js"
+  :wire-plan "meta-verb; returns tagged clause (list 'clause/when pred body)"
+  :verify-shape "returns list starting with 'clause/when"
+  :standalone-verifiable? #t
+  :notes "One-shot trigger clause.")
+
+; ─── flower/* — 1 verb ────────────────────────────────────────────
+
+(verb-audit
+  :name "flower/paint"
+  :current-state "stub-descriptor"
+  :wired-at "src/wired-verbs.js:1144"
+  :ref-line 11679
+  :target-file "src/framebuffer.js (paintFlower method) + src/media.js (verb def)"
+  :wire-plan "add Framebuffer.paintFlower(n, col, row, spin, sx, sy, dy, petals): rasterize a 5-petal + center + stem to the framebuffer; petals defaults to (pink, yellow, dark-green stem)"
+  :verify-shape "returns undefined (mutation-only); framebuffer version bumps"
+  :standalone-verifiable? #t
+  :notes "Real pixel work. Sprite index n selects one of 3-4 canned flower shapes (dot cluster / 5-petal / 6-petal / daisy). Reference caveats permit int-coerced numeric args + ignored malformed petals.")
+
+(audit-close
+  :verified-via "bin/sakura-scheme eval — every verb above returned a descriptor tuple pre-wire"
+  :ready-for-phase-b #t
+  :author-blocked-count 1
+  :author-blocked-names ("time/across")
+  :standalone-wireable-count 24
+  :next "Phase B — wire per-verb, commit + push per verb.")
