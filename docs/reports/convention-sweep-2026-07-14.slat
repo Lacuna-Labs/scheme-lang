@@ -1,0 +1,2052 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SAKURA SCHEME — CONVENTION SWEEP
+;;
+;; Every non-R7RS pattern found in docs/SAKURA-SCHEME-REFERENCE.slat.
+;; One (convention-finding …) record per finding.
+;;
+;; Dispatched 2026-07-14 by Alfred. Doctrine:
+;;   "They've tried things and talked about it longer than I have, so
+;;    I trust their judgment." — stay close to R7RS-small unless a
+;;    real reason justifies a break. Where we break, log a decision
+;;    in docs/ENGINEERING-DECISIONS.slat.
+;;
+;; Pattern kinds → decision-ref (where the policy lives):
+;;   keyword-arg-syntax        → decision-001 (no interp kw-args)
+;;   racket-keyword-syntax     → decision-001
+;;   get-verb                  → decision-002 (no polymorphic get)
+;;   forbidden-primitive       → decision-004/005/006
+;;   clojure-map-literal       → decision-009 (alist / hash-table)
+;;   non-r7rs-record-form      → decision-009
+;;   naming-underscore         → decision-013 (kebab-case)
+;;   naming-camelcase          → decision-013
+;;   naming-snake-in-examples  → decision-013
+;;   sig-return-null-but-used  → decision-014 (sig matches reality)
+;;   non-r7rs-primitive        → no decision yet (first/rest/last)
+;;   srfi-1-primitive          → no decision yet (filter/find)
+;;   match-form                → no decision yet
+;;   square-bracket-literal    → no decision yet
+;;   common-lisp-idiom         → no decision yet
+;; ═══════════════════════════════════════════════════════════════
+
+(sweep-header
+  :name "convention-sweep-2026-07-14"
+  :date "2026-07-14"
+  :author "convention-sweep lane"
+  :verbs-scanned 1168
+  :findings-total 151
+  :companion "docs/ENGINEERING-DECISIONS.slat"
+)
+
+; ── summary by pattern kind ──
+(sweep-summary-by-kind
+  :srfi-1-primitive 73
+  :keyword-arg-syntax 26
+  :non-r7rs-primitive 20
+  :square-bracket-literal 9
+  :get-verb 9
+  :match-form 5
+  :clojure-map-literal 2
+  :racket-keyword-syntax 2
+  :forbidden-primitive 2
+  :naming-snake-in-examples 2
+  :common-lisp-idiom 1
+)
+
+; ── top verbs by finding count ──
+(sweep-top-verbs
+  ("phys/same-dimension?" 3)
+  ("radio/next" 3)
+  ("radio/play" 3)
+  ("ai/pursue" 2)
+  ("ai/seek" 2)
+  ("calc/critical-points-1d" 2)
+  ("audio-perceptual-bands" 2)
+  ("card-canvas-rect" 2)
+  ("read-gmail-folder" 2)
+  ("read-inbox" 2)
+  ("juggle/state" 2)
+  ("math/compare" 2)
+  ("motion/arc" 2)
+  ("nt/divisible?" 2)
+  ("nt/divisors" 2)
+)
+
+; ── findings ──
+
+(convention-finding
+  :verb "ai/follow-path"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:456"
+  :pattern-kind "square-bracket-literal"
+  :example "[10 20]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "3 occurrence(s), sample: [10 20] | [30 40]"
+)
+
+(convention-finding
+  :verb "ai/grid"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:474"
+  :pattern-kind "square-bracket-literal"
+  :example "[25 25]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "5 occurrence(s), sample: [25 25] | [25 26]"
+)
+
+(convention-finding
+  :verb "ai/passable?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:510"
+  :pattern-kind "srfi-1-primitive"
+  :example "(find ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 find (adopt with decision entry) or manual member+predicate"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=find, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "ai/pursue"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:582"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :id, :id"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "ai/pursue"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:582"
+  :pattern-kind "clojure-map-literal"
+  :example "{:kind \"enemy\" :id 10}"
+  :severity "high"
+  :proposed-fix "(list (cons 'k v) (cons 'k v) ...) as alist OR (make-hash-table) + (hash-set!) — per decision-009"
+  :alternative "SRFI-146 imm-map — not adopted; adds surface"
+  :recommendation "alist for small; hash-table (SRFI-69) for large — decision-009"
+  :requires-decision-entry #f
+  :note "2 map literal(s) in examples"
+)
+
+(convention-finding
+  :verb "ai/seek"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:600"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :id"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "ai/seek"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:600"
+  :pattern-kind "clojure-map-literal"
+  :example "{:kind \"bot\" :id 5}"
+  :severity "high"
+  :proposed-fix "(list (cons 'k v) (cons 'k v) ...) as alist OR (make-hash-table) + (hash-set!) — per decision-009"
+  :alternative "SRFI-146 imm-map — not adopted; adds surface"
+  :recommendation "alist for small; hash-table (SRFI-69) for large — decision-009"
+  :requires-decision-entry #f
+  :note "1 map literal(s) in examples"
+)
+
+(convention-finding
+  :verb "ai/wall!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:654"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "ai/generate"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:779"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :max-tokens"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "ai/summarize"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:804"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :style, :style"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "ai/rank"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:854"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/apply-symmetry"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:931"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/element-order"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1075"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/index"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1147"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/is-field?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1237"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter a"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/perm-conjugate"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1561"
+  :pattern-kind "square-bracket-literal"
+  :example "[1,0]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "2 occurrence(s), sample: [1,0] | [0,1]"
+)
+
+(convention-finding
+  :verb "alg/subgroup?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1813"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/symmetric"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1831"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/symmetry-group"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1849"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "alg/transpose"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:1867"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "artifact/list"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2087"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(artifact/list [:kind kind] [:bot bot-id] [:tag tag] [:limit n]) -> ['pending' msg]"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "artifact/save"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2105"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(artifact/save :kind kind :payload data [:title title] [:bot bot-id] [:tags tags] [:source-url url]) -> ['pending' msg]"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "audio/play"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2289"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :volume, :loop"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "cadence/may-propose?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2421"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(last ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: (car (list-tail lst (- (length lst) 1)))"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for (car (list-tail lst (- (length lst) 1)))"
+  :recommendation "rewrite to (car (list-tail lst (- (length lst) 1)))"
+  :requires-decision-entry #f
+  :note "verb=last, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "calc/critical-points-1d"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2531"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "calc/critical-points-1d"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2531"
+  :pattern-kind "match-form"
+  :example "(match (filter (lambda (e) (< (abs (- (car e) x)) 1e-6)) extrema)))"
+  :severity "medium"
+  :proposed-fix "(cond ((equal? ...) ...) (else ...)) or nested (case ...) — both R7RS-small"
+  :alternative "adopt SRFI-200 / SRFI-241 pattern matching with new decision entry"
+  :recommendation "rewrite to cond/case; match is not R7RS"
+  :requires-decision-entry #f
+  :note "match is Racket/Chez idiom, not R7RS-small"
+)
+
+(convention-finding
+  :verb "calc/differentiable?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2585"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "calc/extrema-1d"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2639"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "calc/second-derivative"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:2855"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card/activity-progress"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:3037"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest i"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card/audio-pulse"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:3073"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :source, :intensity, :source"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "const/ln2"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:4021"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "app-of"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:4457"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter\n            ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "audio-perceptual-bands"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:4673"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(first b"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: car"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for car"
+  :recommendation "rewrite to car"
+  :requires-decision-entry #f
+  :note "verb=first, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "audio-perceptual-bands"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:4673"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(last b"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: (car (list-tail lst (- (length lst) 1)))"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for (car (list-tail lst (- (length lst) 1)))"
+  :recommendation "rewrite to (car (list-tail lst (- (length lst) 1)))"
+  :requires-decision-entry #f
+  :note "verb=last, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "begin-frame"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:4799"
+  :pattern-kind "common-lisp-idiom"
+  :example "bare `nil` token"
+  :severity "high"
+  :proposed-fix "R7RS: use '() (empty list) or #f (false), never bare `nil`"
+  :alternative "none"
+  :recommendation "'() for empty list, #f for false"
+  :requires-decision-entry #f
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "button-list"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:4853"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-canvas-rect"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5501"
+  :pattern-kind "get-verb"
+  :example "(get r1 'x"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "18 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-canvas-rect"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5501"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-get"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5663"
+  :pattern-kind "get-verb"
+  :example "(get remote-data 'version"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-open"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5789"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-open-then"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5807"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "card-pluck"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:5825"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "cards-list"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:6023"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "done"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:6866"
+  :pattern-kind "racket-keyword-syntax"
+  :example "#:status"
+  :severity "high"
+  :proposed-fix "same fix as keyword-arg-syntax: positional or property-list (decision-001)"
+  :alternative "none — #:kw is Racket-only, not portable"
+  :recommendation "positional (<=5) or property-list (>5)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+  :note "#:status"
+)
+
+(convention-finding
+  :verb "eval"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7010"
+  :pattern-kind "forbidden-primitive"
+  :example "(eval ...)"
+  :severity "high"
+  :proposed-fix "pre-compile at author time; pass values through apply, not source"
+  :alternative "none — decision-005 forbids this"
+  :recommendation "pre-compile at author time; pass values through apply, not source"
+  :requires-decision-entry #f
+  :decision-ref "005"
+  :note "3 occurrence(s); forbidden by decision-005"
+)
+
+(convention-finding
+  :verb "fleet-do"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7064"
+  :pattern-kind "racket-keyword-syntax"
+  :example "#:filter"
+  :severity "high"
+  :proposed-fix "same fix as keyword-arg-syntax: positional or property-list (decision-001)"
+  :alternative "none — #:kw is Racket-only, not portable"
+  :recommendation "positional (<=5) or property-list (>5)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+  :note "#:filter, #:filter, #:parallel"
+)
+
+(convention-finding
+  :verb "form-list"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7172"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "grid-cell-state"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7262"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "imagine"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7514"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(imagine word-or-symbol [:seconds N]) -> result"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "nav-map"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:7820"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(nav-map :mode 'data | 'grouped | nil) -> list-of-tuples"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "on-frame"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8000"
+  :pattern-kind "forbidden-primitive"
+  :example "(set-car! ...)"
+  :severity "high"
+  :proposed-fix "(set! xs (cons new-head (cdr xs)))"
+  :alternative "none — decision-006 forbids this"
+  :recommendation "(set! xs (cons new-head (cdr xs)))"
+  :requires-decision-entry #f
+  :decision-ref "006"
+  :note "1 occurrence(s); forbidden by decision-006"
+)
+
+(convention-finding
+  :verb "podcast-clips"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8288"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "podcast-delete-clip"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8324"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "podcast-followed-speakers"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8396"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "podcast-seek"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8720"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter\n                             ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "podcast-set-show-tier"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8738"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter\n                         ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "podcast-subscriptions"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8810"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest s"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "podcast-unsubscribe"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8846"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "random-int"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8972"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "random-pick"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:8990"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "read-desktop-text"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9044"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "read-gmail-folder"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9062"
+  :pattern-kind "get-verb"
+  :example "(get m 'read?"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "4 occurrence(s)"
+)
+
+(convention-finding
+  :verb "read-gmail-folder"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9062"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "read-inbox"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9080"
+  :pattern-kind "get-verb"
+  :example "(get m 'subject"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "5 occurrence(s)"
+)
+
+(convention-finding
+  :verb "read-inbox"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9080"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "read-open-returns"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9116"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "release-listing"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9170"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "surface-paint-text"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9674"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :grid, :supersample"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "unpublish-listing"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:9836"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "curve/curvature-2d"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10180"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "curve/normal"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10432"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "curve/second-form"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10504"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(second ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cadr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cadr"
+  :recommendation "rewrite to cadr"
+  :requires-decision-entry #f
+  :note "verb=second, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "eng/tf-stable?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10796"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "entity/alive?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10834"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "entity/distance"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10924"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "entity/drag!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10942"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/friction!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10960"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/get"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10978"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/get-set!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:10996"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/glide!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11014"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/goto!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11032"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/gravity-scale!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11050"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/hp!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11068"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :kind, :kind, :kind"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "entity/team!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11464"
+  :pattern-kind "match-form"
+  :example "(match new-team"
+  :severity "medium"
+  :proposed-fix "(cond ((equal? ...) ...) (else ...)) or nested (case ...) — both R7RS-small"
+  :alternative "adopt SRFI-200 / SRFI-241 pattern matching with new decision entry"
+  :recommendation "rewrite to cond/case; match is not R7RS"
+  :requires-decision-entry #f
+  :note "match is Racket/Chez idiom, not R7RS-small"
+)
+
+(convention-finding
+  :verb "exact/="
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11718"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "exact/>"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11736"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "floor/problem?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:11900"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "game/running?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:12030"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter g"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "game/surreal-eq?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:12174"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "geom/polygon-area"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:12914"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "geom/pythagoras-leg"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:13004"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "juggle/balls"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:13813"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "juggle/state"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:13885"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "juggle/state"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:13885"
+  :pattern-kind "square-bracket-literal"
+  :example "[1 0 0]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "2 occurrence(s), sample: [1 0 0] | [1 1 1]"
+)
+
+(convention-finding
+  :verb "juggle/valid?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:13903"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter j"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "math/compare"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14339"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "math/compare"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14339"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "math/mixed-number"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14537"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "math/sum"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14717"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter n"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "matrix/*"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14737"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "matrix/+"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14760"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "matrix/->string"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14806"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest o"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "matrix/cols"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14852"
+  :pattern-kind "square-bracket-literal"
+  :example "[[1 2 3]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "11 occurrence(s), sample: [[1 2 3] | [4 5 6]"
+)
+
+(convention-finding
+  :verb "matrix/determinant"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14870"
+  :pattern-kind "square-bracket-literal"
+  :example "[[3 8]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "7 occurrence(s), sample: [[3 8] | [4 6]"
+)
+
+(convention-finding
+  :verb "matrix/identity"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:14888"
+  :pattern-kind "square-bracket-literal"
+  :example "[[1 2 3]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "5 occurrence(s), sample: [[1 2 3] | [4 5 6]"
+)
+
+(convention-finding
+  :verb "motion/arc"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15016"
+  :pattern-kind "get-verb"
+  :example "(get arc-curve 'ok"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "8 occurrence(s)"
+)
+
+(convention-finding
+  :verb "motion/arc"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15016"
+  :pattern-kind "naming-snake-in-examples"
+  :example "phrase_arc, duration_ms"
+  :severity "medium"
+  :proposed-fix "rename tokens to kebab-case in example bodies: phrase-arc, duration-ms"
+  :alternative "if the token is a foreign field name (Google API, JSON key), wrap in a string"
+  :recommendation "kebab-case (decision-013)"
+  :requires-decision-entry #f
+  :decision-ref "013"
+  :note "2 distinct snake_case token(s)"
+)
+
+(convention-finding
+  :verb "motion/cadence"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15034"
+  :pattern-kind "get-verb"
+  :example "(get cad 'ok"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "8 occurrence(s)"
+)
+
+(convention-finding
+  :verb "motion/drop"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15052"
+  :pattern-kind "get-verb"
+  :example "(get drop-pattern 'articulation"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "7 occurrence(s)"
+)
+
+(convention-finding
+  :verb "motion/move-to"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15106"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(motion/move-to target x y :ms duration :curve easing-name) -> descriptor"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "motion/pocket"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15124"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(motion/pocket :tolerance-ms tolerance :count n) -> descriptor"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "motion/with-feel"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15142"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(motion/with-feel tensor-id :articulation style) -> descriptor"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "motion/with-pace"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15160"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(motion/with-pace tensor-id :intensity level) -> descriptor"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "nt/composite?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15274"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter n"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/coprime?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15310"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/divisible?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15382"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/divisible?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15382"
+  :pattern-kind "srfi-1-primitive"
+  :example "(find ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 find (adopt with decision entry) or manual member+predicate"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=find, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/divisors"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15436"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/divisors"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15436"
+  :pattern-kind "srfi-1-primitive"
+  :example "(find ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 find (adopt with decision entry) or manual member+predicate"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=find, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/is-perfect?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15562"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter n"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/odd?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15688"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter n"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "nt/prime-factorization"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15706"
+  :pattern-kind "match-form"
+  :example "(match (assoc (car pa) fb)))"
+  :severity "medium"
+  :proposed-fix "(cond ((equal? ...) ...) (else ...)) or nested (case ...) — both R7RS-small"
+  :alternative "adopt SRFI-200 / SRFI-241 pattern matching with new decision entry"
+  :recommendation "rewrite to cond/case; match is not R7RS"
+  :requires-decision-entry #f
+  :note "match is Racket/Chez idiom, not R7RS-small"
+)
+
+(convention-finding
+  :verb "nt/prime?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:15724"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter n"
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "ops/knapsack"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:16108"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "phys/rlc-damping"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17122"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "phys/same-dimension?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17140"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(first ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: car"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for car"
+  :recommendation "rewrite to car"
+  :requires-decision-entry #f
+  :note "verb=first, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "phys/same-dimension?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17140"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "phys/same-dimension?"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17140"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "radio/next"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17542"
+  :pattern-kind "get-verb"
+  :example "(get info 'name"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "radio/next"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17542"
+  :pattern-kind "match-form"
+  :example "(match result"
+  :severity "medium"
+  :proposed-fix "(cond ((equal? ...) ...) (else ...)) or nested (case ...) — both R7RS-small"
+  :alternative "adopt SRFI-200 / SRFI-241 pattern matching with new decision entry"
+  :recommendation "rewrite to cond/case; match is not R7RS"
+  :requires-decision-entry #f
+  :note "match is Racket/Chez idiom, not R7RS-small"
+)
+
+(convention-finding
+  :verb "radio/next"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17542"
+  :pattern-kind "square-bracket-literal"
+  :example "[('pending-stations _) (display \"Loading stations...\")]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "2 occurrence(s), sample: [('pending-stations _) (display \"Loading stations...\")] | [_ (escalate 'next-failed result)]"
+)
+
+(convention-finding
+  :verb "radio/play"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17596"
+  :pattern-kind "get-verb"
+  :example "(get info 'name"
+  :severity "high"
+  :proposed-fix "shape-specific accessor: (hash-ref h k) | (assq k alist) | (vector-ref v i) | (record-accessor v)"
+  :alternative "if x can be any shape, wrap in a helper the caller names for their data (still shape-specific inside)"
+  :recommendation "shape-specific accessor"
+  :requires-decision-entry #f
+  :decision-ref "002"
+  :note "1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "radio/play"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17596"
+  :pattern-kind "match-form"
+  :example "(match result"
+  :severity "medium"
+  :proposed-fix "(cond ((equal? ...) ...) (else ...)) or nested (case ...) — both R7RS-small"
+  :alternative "adopt SRFI-200 / SRFI-241 pattern matching with new decision entry"
+  :recommendation "rewrite to cond/case; match is not R7RS"
+  :requires-decision-entry #f
+  :note "match is Racket/Chez idiom, not R7RS-small"
+)
+
+(convention-finding
+  :verb "radio/play"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17596"
+  :pattern-kind "square-bracket-literal"
+  :example "[('error _ details) (escalate 'station-not-found details)]"
+  :severity "medium"
+  :proposed-fix "use #(a b c) for vector literals (R7RS §6.8) or (list a b c) for lists"
+  :alternative "if these are cond/match brackets, use () and rewrite the form"
+  :recommendation "#( ... ) for vectors, ( ... ) for lists"
+  :requires-decision-entry #f
+  :note "1 occurrence(s), sample: [('error _ details) (escalate 'station-not-found details)]"
+)
+
+(convention-finding
+  :verb "scene/imagine"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:17798"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(scene/imagine [:kw val …] action-result …) -> scene-spec"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "shoppe/transactions"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18180"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "stat/count"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18492"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest d"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "stat/iqr"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18551"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "stat/z-score"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18818"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "surface/describe"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:18856"
+  :pattern-kind "keyword-arg-syntax"
+  :example "(surface/describe [:detail 'brief|'full]) -> state-object"
+  :severity "high"
+  :proposed-fix "positional args (<= 5 params); reorder signature so required args come first, optional last"
+  :alternative "property-list: pass options as (list (cons 'key val) ...)"
+  :recommendation "positional (<=5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "system/cards"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19456"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "system/health"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19474"
+  :pattern-kind "naming-snake-in-examples"
+  :example "fuel_exhausted"
+  :severity "medium"
+  :proposed-fix "rename tokens to kebab-case in example bodies: fuel-exhausted"
+  :alternative "if the token is a foreign field name (Google API, JSON key), wrap in a string"
+  :recommendation "kebab-case (decision-013)"
+  :requires-decision-entry #f
+  :decision-ref "013"
+  :note "1 distinct snake_case token(s)"
+)
+
+(convention-finding
+  :verb "system/registry"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:19492"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter\n           ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "vec/+"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20388"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest s"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "vec/="
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20468"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 2 occurrence(s)"
+)
+
+(convention-finding
+  :verb "vec/angle-between"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20494"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest c"
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "vec/dim"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20538"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "weather/conjure"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:20676"
+  :pattern-kind "keyword-arg-syntax"
+  :example "example uses :at, :at, :scale"
+  :severity "high"
+  :proposed-fix "property-list: pass options as a single alist last arg — (list (cons 'key val) ...)"
+  :alternative "thunk-and-set!: split into a builder verb + one setter per option"
+  :recommendation "property-list (>5 args)"
+  :requires-decision-entry #f
+  :decision-ref "001"
+)
+
+(convention-finding
+  :verb "world/link-rest!"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:21002"
+  :pattern-kind "non-r7rs-primitive"
+  :example "(rest ("
+  :severity "medium"
+  :proposed-fix "replace with R7RS-small: cdr"
+  :alternative "keep as Sakura extension (log new decision entry); document as sugar for cdr"
+  :recommendation "rewrite to cdr"
+  :requires-decision-entry #f
+  :note "verb=rest, 1 occurrence(s)"
+)
+
+(convention-finding
+  :verb "world/tape-audio"
+  :location "docs/SAKURA-SCHEME-REFERENCE.slat:21200"
+  :pattern-kind "srfi-1-primitive"
+  :example "(filter ("
+  :severity "low"
+  :proposed-fix "adopt SRFI-1 explicitly (new decision entry) OR replace: SRFI-1 filter (adopt with decision entry) or manual (fold cons)"
+  :alternative "inline the loop; SRFI-1 becomes a hard dependency if we do not bundle it"
+  :recommendation "adopt SRFI-1 with decision-entry"
+  :requires-decision-entry #t
+  :note "verb=filter, 1 occurrence(s)"
+)
