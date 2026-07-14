@@ -14,7 +14,7 @@
 // caller who hits an unimplemented verb learns EXACTLY what the verb
 // was supposed to do.
 
-import { loadReference } from './reference-loader.js'
+import { loadReference, loadSchema, validateEntry } from './reference-loader.js'
 import { installReferenceImpls } from './reference-impls.js'
 import { setVerbStatus } from './registry.js'
 
@@ -88,12 +88,50 @@ export function registerReferenceVerbs(env, fuel, options = {}) {
     }
   }
 
+  // ── Schema validation pass (Phase A, wire-596). Never crashes boot —
+  // Alfred's ask was "make it impossible to miss", not "block startup".
+  // We collect entries that fail the schema's required-fields check
+  // and expose them via `validationMisses` on the return value. A
+  // one-line summary warning fires only when the caller opts in with
+  // options.warnOnMissingSchema — during the 596-verb wire-up the
+  // warning would fire on every REPL boot for months otherwise.
+  let schema = null
+  const validationMisses = []
+  try {
+    schema = loadSchema()
+  } catch (e) {
+    if (typeof options.onWarn === 'function') {
+      options.onWarn(`schema-load failed: ${e.message}`)
+    }
+  }
+  if (schema) {
+    for (const v of ref.verbList) {
+      const res = validateEntry(v, schema)
+      if (!res.ok) validationMisses.push({ name: v.name, missing: res.missingRequired })
+    }
+    if (options.warnOnMissingSchema && validationMisses.length > 0) {
+      const RED = process.stderr && process.stderr.isTTY ? '\x1b[31m' : ''
+      const RESET = process.stderr && process.stderr.isTTY ? '\x1b[0m' : ''
+      try {
+        const total = ref.verbList.length
+        const pct = ((validationMisses.length / total) * 100).toFixed(1)
+        console.warn(
+          `${RED}[reference] ${validationMisses.length}/${total} verb entries (${pct}%) ` +
+          `missing required schema fields.${RESET} ` +
+          `See docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat for the required list. ` +
+          `Sample: ${validationMisses.slice(0, 3).map((m) => `${m.name}[${m.missing.join(',')}]`).join('; ')}`,
+        )
+      } catch { /* never break on a log call */ }
+    }
+  }
+
   return {
     total: ref.verbList.length,
     implemented,
     stubbed,
     preBound: preBound.size,
     missingImpls,
+    validationMisses,
   }
 }
 

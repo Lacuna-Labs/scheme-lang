@@ -18,6 +18,7 @@
 import { makeBaseEnv } from './base.js'
 import { installAi } from './ai.js'
 import { installGame, makeGameState } from './game.js'
+import { installGameTheory } from './game-theory.js'
 import { installJuggle } from './juggle.js'
 import { installCommercial } from './commercial.js'
 import { loadAuthFromDisk } from './auth/store.js'

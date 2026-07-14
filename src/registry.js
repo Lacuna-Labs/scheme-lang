@@ -42,6 +42,8 @@
 // 'organize' / 'summon'). We err on the side of failing fast so a new
 // verb cannot ship without thinking about its tier.
 
+import { getVerbEntry } from './reference-loader.js'
+
 const REGISTRY = new Map()
 
 // Canonical perm vocabulary — the closed set CARD-MANIFEST-CONTRACT.md §3.2
@@ -193,6 +195,51 @@ export function defaultMetaFor(name) {
   }
   // Pure / arithmetic / list primitives — language values, perm 'read'.
   return { perm: 'read', confirm: false, rateLimit: null, schema: null, idempotent: true, _inferred: true }
+}
+
+/**
+ * registerPrimitive(env, name, fn, meta?) — gated verb installation.
+ *
+ * The primitive registration entry point that REFUSES to bind a verb
+ * with no reference entry. This is the hard-gate Phase A of the
+ * wire-596 push added: every JS primitive we ship MUST have a
+ * hand-authored entry in docs/SAKURA-SCHEME-REFERENCE.slat first.
+ *
+ * Alfred: "we can't lie to people. They trust us." — no auto-stub
+ * pattern. If the reference is silent, refuse the registration.
+ *
+ * Behaviour:
+ *   - Looks up the verb's reference entry via `getVerbEntry(name)`.
+ *   - If missing: throws a loud error naming the missing entry and
+ *     pointing to the schema file. The verb is NOT bound.
+ *   - If present: falls through to the existing `env.define(name, fn,
+ *     meta)` path (which registers meta via `registerVerbMeta`).
+ *
+ * Existing installers that still use `env.define(...)` directly are
+ * unchanged; this is a new, opt-in entry point that any wire-lane
+ * agent may adopt as they hand-author entries.
+ */
+export function registerPrimitive(env, name, fn, meta) {
+  if (!env || typeof env.define !== 'function') {
+    throw new Error('registerPrimitive: env must be an Env with a .define(name, fn, meta) method')
+  }
+  if (typeof name !== 'string' || !name) {
+    throw new Error('registerPrimitive: name must be a non-empty string')
+  }
+  if (typeof fn !== 'function') {
+    throw new Error(`registerPrimitive(${name}): fn must be a function`)
+  }
+  const entry = getVerbEntry(name)
+  if (!entry) {
+    throw new Error(
+      `registerPrimitive: refusing to bind '${name}' — ` +
+      'no entry in docs/SAKURA-SCHEME-REFERENCE.slat. ' +
+      'Author the entry first (see docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat ' +
+      'for the required fields). Alfred: "we can\'t lie to people. They trust us." ' +
+      'No auto-stubs, no ML approximations.',
+    )
+  }
+  env.define(name, fn, meta)
 }
 
 /**
