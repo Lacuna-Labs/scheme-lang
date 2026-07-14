@@ -1046,4 +1046,231 @@
   :entry-provenance "authored")
 
 
+;; ─── Markov chains ────────────────────────────────────────────────
+
+(verb
+  :name "ops/markov"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/markov transition-matrix) -> matrix | 'invalid"
+  :summary "Validate a Markov transition matrix — each row must sum to 1 within numerical tolerance."
+  :impl-status "wired"
+  :explanation "Passes through a matrix if every row sums to 1.0 (within 1e-6), else returns the sentinel 'invalid. A Markov transition matrix P has P[i][j] = probability of moving from state i to state j; the row constraint says that from any state we go SOMEWHERE with probability 1. This is a validation gate for ops/markov-step, ops/stationary, and ops/absorbing-*. Not itself a computation — a health check."
+  :examples (
+    (:tier "novice"
+     :code "(ops/markov (list (list 0.5 0.5) (list 0.3 0.7)))"
+     :note "Both rows sum to 1.0 → returned as-is. This is a valid 2-state Markov chain.")
+    (:tier "apprentice"
+     :code "(ops/markov (list (list 0.6 0.4) (list 0.2 0.8) (list 0.1 0.9)))"
+     :note "3-state chain, all rows sum to 1 → valid, returned unchanged.")
+    (:tier "intermediate"
+     :code "(let ((bad-P (list (list 0.5 0.4) (list 0.3 0.7)))) (ops/markov bad-P))"
+     :note "First row sums to 0.9 → not stochastic → returns the sentinel 'invalid. Catch this early.")
+    (:tier "expert"
+     :code "(define (safe-markov P) (let ((res (ops/markov P))) (if (eq? res (quote invalid)) (list (quote reject) (quote non-stochastic-rows)) (list (quote accept) res)))) (safe-markov (list (list 0.4 0.6) (list 0.55 0.45)))"
+     :note "Predicate wrapper: report accept/reject rather than mixing sentinel and matrix. Both rows sum to 1 here → accepted.")
+    (:tier "master"
+     :code "(let* ((candidates (list (list (list 0.5 0.5) (list 0.3 0.7)) (list (list 0.5 0.4) (list 0.3 0.7)) (list (list 0.9 0.1) (list 0.1 0.9)))) (validated (map ops/markov candidates))) (list (quote candidates) candidates (quote results) validated))"
+     :note "Batch validation: pass three candidate matrices through ops/markov. The middle one (row 1 sums to 0.9) comes back as 'invalid.")
+  )
+  :caveats
+    ("Tolerance is 1e-6. Rows summing to 0.999999 pass; 0.9999 fail."
+     "Matrix must be square (n × n) for downstream ops (markov-step, stationary, absorbing-*); this verb doesn't enforce that."
+     "Non-list input returns 'invalid without inspection.")
+  :drawbacks
+    ("Only validates row sums; does not check for negative entries or entries > 1."
+     "Cannot 'fix' a matrix — just accepts or rejects.")
+  :usecases
+    ("Guard the input to ops/stationary or ops/markov-step."
+     "Sanity-check a matrix constructed from empirical data."
+     "Curriculum: introduce the row-sum constraint before diving into simulation.")
+  :related ("ops/markov-step" "ops/stationary" "ops/absorbing-probs" "ops/absorbing-steps")
+  :learn
+    (:concept "A stochastic matrix: rows are probability distributions."
+     :prerequisites ("probability sums to 1")
+     :progression "Validate. Then step forward with ops/markov-step. Then converge with ops/stationary.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/markov-step"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/markov-step pi P k) -> pi-after-k-steps"
+  :summary "Advance a state distribution π forward k steps through Markov transition matrix P: π_k = π · P^k."
+  :impl-status "wired"
+  :explanation "Given an initial state distribution π (a vector summing to 1), a transition matrix P (rows sum to 1), and a nonneg integer k, computes the distribution after k discrete time steps. Left-multiplies π by P iteratively: π_1 = π · P, π_2 = π_1 · P, and so on. When k = 0, returns π unchanged. When k → ∞, π_k approaches the stationary distribution (ops/stationary)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/markov-step (list 1 0) (list (list 0.5 0.5) (list 0.3 0.7)) 3)"
+     :note "Start in state 0, step 3 times. Distribution converges toward the stationary (~0.375, 0.625).")
+    (:tier "apprentice"
+     :code "(ops/markov-step (list 0.5 0.5) (list (list 0.9 0.1) (list 0.2 0.8)) 5)"
+     :note "Slow-mixing chain (heavy diagonal). 5 steps from uniform start; still not yet stationary.")
+    (:tier "intermediate"
+     :code "(let ((P (list (list 0.5 0.5) (list 0.3 0.7))) (pi0 (list 1 0))) (list (ops/markov-step pi0 P 0) (ops/markov-step pi0 P 1) (ops/markov-step pi0 P 5) (ops/markov-step pi0 P 100)))"
+     :note "Track the same chain at k=0,1,5,100. Convergence to the stationary is visible.")
+    (:tier "expert"
+     :code "(define (transient-decay pi0 P n) (map (lambda (k) (list k (ops/markov-step pi0 P k))) (iota n))) (transient-decay (list 1 0) (list (list 0.6 0.4) (list 0.2 0.8)) 6)"
+     :note "Build a table of (step, distribution) pairs — the transient decay of a chain. Useful for visualizing mixing time.")
+    (:tier "master"
+     :code "(let* ((weather-P (list (list 0.8 0.2) (list 0.4 0.6))) (start-sunny (list 1 0)) (start-rainy (list 0 1)) (final-sunny (ops/markov-step start-sunny weather-P 30)) (final-rainy (ops/markov-step start-rainy weather-P 30))) (list (quote from-sunny) final-sunny (quote from-rainy) final-rainy))"
+     :note "Weather Markov chain: probability of sunny/rainy after 30 days from either start. Both converge to the same distribution — the past washes out.")
+  )
+  :caveats
+    ("π and P must be dimensionally consistent (length matches n)."
+     "k ≥ 0. Negative k is rounded to 0 (no time-reversal implemented)."
+     "For large k, use ops/stationary directly — power iteration is faster than 1000 explicit steps.")
+  :drawbacks
+    ("O(k · n²) — for large k prefer ops/stationary."
+     "No matrix-caching between calls; repeated ops/markov-step with the same P doesn't share work.")
+  :usecases
+    ("Simulate the evolution of a state distribution over time."
+     "Estimate 'convergence time' by watching successive π_k values."
+     "Explain the stationary distribution as the limit of iteration.")
+  :related ("ops/markov" "ops/stationary" "ops/absorbing-probs")
+  :learn
+    (:concept "Left-multiplication by P is the fundamental Markov operation."
+     :prerequisites ("matrix-vector multiplication" "row-stochastic constraint")
+     :progression "One step. Then a few steps. Then compare k=100 with ops/stationary.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/stationary"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/stationary P [tol max-iter]) -> stationary-distribution"
+  :summary "Stationary distribution of a Markov chain via power iteration. π · P = π."
+  :impl-status "wired"
+  :explanation "Given a Markov transition matrix P, computes the unique distribution π satisfying π · P = π (a fixed point of the transition operator). Uses power iteration: start uniform, repeatedly multiply by P until successive iterates differ by less than tol (default 1e-9) or max-iter reached (default 1000). For an irreducible aperiodic chain, π is unique and this converges. Reducible chains may converge to different distributions depending on initial choice."
+  :examples (
+    (:tier "novice"
+     :code "(ops/stationary (list (list 0.5 0.5) (list 0.3 0.7)))"
+     :note "2-state chain. Stationary ≈ (0.375, 0.625). State 1 is stickier so gets more mass.")
+    (:tier "apprentice"
+     :code "(ops/stationary (list (list 0.9 0.1) (list 0.5 0.5)))"
+     :note "Highly asymmetric chain. State 0 is very persistent → high stationary probability there.")
+    (:tier "intermediate"
+     :code "(let* ((P (list (list 0.5 0.3 0.2) (list 0.1 0.7 0.2) (list 0.2 0.2 0.6))) (pi (ops/stationary P))) (list (quote stationary) pi (quote sum) (apply + pi)))"
+     :note "3-state chain. Stationary sums to 1 (up to float precision).")
+    (:tier "expert"
+     :code "(define (mixing-comparison P0 P1) (let ((pi0 (ops/stationary P0)) (pi1 (ops/stationary P1))) (list (quote chain-0) pi0 (quote chain-1) pi1))) (mixing-comparison (list (list 0.5 0.5) (list 0.5 0.5)) (list (list 0.99 0.01) (list 0.01 0.99)))"
+     :note "Both chains have symmetric structure → both stationaries are (0.5, 0.5). But the second one mixes much slower — stationary doesn't reveal mixing time.")
+    (:tier "master"
+     :code "(let* ((weather (list (list 0.7 0.2 0.1) (list 0.3 0.4 0.3) (list 0.2 0.3 0.5))) (long-run (ops/stationary weather))) (list (quote states) (list (quote sunny) (quote cloudy) (quote rainy)) (quote long-run-fraction) long-run))"
+     :note "Weather chain with three states. Long-run fraction of days in each state via stationary distribution.")
+  )
+  :caveats
+    ("Requires an irreducible aperiodic chain for uniqueness — periodic chains may fail to converge (result is average of oscillation)."
+     "Tolerance defaults to 1e-9. Very tight tolerance may exceed max-iter."
+     "Starts from uniform π₀; reducible chains may need a specific π₀ to find the correct component.")
+  :drawbacks
+    ("Power iteration is slow near unit eigengap; better to solve (P^T − I)π = 0 with a linear solver for large chains."
+     "No eigenvalue reporting; can't tell how close to periodicity you are.")
+  :usecases
+    ("Long-run fraction of time in each state."
+     "Google PageRank's underlying stationary distribution."
+     "Equilibrium modeling of processes with memory-1 dynamics."
+     "Cross-check ops/pagerank against ops/stationary on the same transition matrix.")
+  :related ("ops/markov" "ops/markov-step" "ops/pagerank")
+  :learn
+    (:concept "Fixed point of the Markov operator: the distribution that doesn't change."
+     :prerequisites ("Markov chains" "power iteration intuition")
+     :progression "Compute stationary. Compare with ops/markov-step at large k. Use for PageRank-like ranking.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/absorbing-probs"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/absorbing-probs P) -> absorption-matrix | 'no-absorbing | 'invalid | 'singular"
+  :summary "Absorption probabilities matrix B[i][j] = probability of eventually being absorbed into absorbing state j starting from transient state i."
+  :impl-status "wired"
+  :explanation "For a Markov chain with both absorbing states (rows with 1 on the diagonal, 0 elsewhere) and transient states, computes B = N · R, where N = (I − Q)⁻¹ is the fundamental matrix (Q is the transient-to-transient submatrix) and R is the transient-to-absorbing submatrix. B[i][j] gives the probability that starting from transient state i, the chain eventually gets absorbed into absorbing state j. Returns 'no-absorbing if no absorbing states exist, 'singular if I − Q is singular (rare, indicates ill-formed chain)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/absorbing-probs (list (list 0.5 0.3 0.2) (list 0.0 1.0 0.0) (list 0.0 0.0 1.0)))"
+     :note "3-state chain: state 0 transient, states 1 and 2 absorbing. From state 0: 60% absorb into 1, 40% into 2.")
+    (:tier "apprentice"
+     :code "(ops/absorbing-probs (list (list 0.6 0.2 0.2) (list 0.1 0.9 0.0) (list 0.0 0.0 1.0)))"
+     :note "Only state 2 is absorbing (state 1 has 0.9 on diagonal but 0.1 off — not absorbing). All transient states end up in 2 → all 1's.")
+    (:tier "intermediate"
+     :code "(let ((P (list (list 0.5 0.4 0.1) (list 0.2 0.3 0.5) (list 0.0 0.0 1.0)))) (ops/absorbing-probs P))"
+     :note "Two transient states 0, 1 → one absorbing state 2. Both transient states absorb into 2 with probability 1.")
+    (:tier "expert"
+     :code "(define (absorption-summary P) (let ((B (ops/absorbing-probs P))) (cond ((symbol? B) (list (quote error) B)) ((pair? B) (list (quote absorption-matrix) B (quote transient-states) (length B))) (else (list (quote unexpected) B))))) (absorption-summary (list (list 0.6 0.3 0.1) (list 0.2 0.5 0.3) (list 0.0 0.0 1.0)))"
+     :note "Wrap the result with a summary. Handles sentinel-symbol results honestly.")
+    (:tier "master"
+     :code "(let* ((gambler-P (list (list 0.6 0.4 0.0) (list 0.4 0.2 0.4) (list 0.0 0.0 1.0))) (win-state 2) (absorb (ops/absorbing-probs gambler-P))) (list (quote absorption-into-win) absorb))"
+     :note "Simplified gambler's ruin: two transient wealth levels and a winning boundary. Absorption probabilities give the chance of winning from each start.")
+  )
+  :caveats
+    ("Absorbing state detection: row has 1 on diagonal and 0 elsewhere. Rounding tolerance is 1e-9."
+     "Requires at least one absorbing state; else returns 'no-absorbing."
+     "Requires (I − Q) to be invertible. Almost always holds; singular case returns 'singular."
+     "Result rows correspond to transient states in their order in P.")
+  :drawbacks
+    ("Does not name states — result is indexed by their position among transients."
+     "Ill-conditioned Q near singularity produces numerically wobbly answers.")
+  :usecases
+    ("Gambler's ruin: probability of hitting a target vs going bust."
+     "Reliability engineering: probability of eventual system failure vs eventual repair."
+     "Cross-check simulation results against the analytical answer.")
+  :related ("ops/absorbing-steps" "ops/markov" "ops/stationary")
+  :learn
+    (:concept "Canonical form and the fundamental matrix N = (I − Q)⁻¹."
+     :prerequisites ("matrix inverse" "understanding transient vs absorbing states")
+     :progression "Solve small chains by hand. Then ops/absorbing-probs. Pair with ops/absorbing-steps.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/absorbing-steps"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/absorbing-steps P) -> expected-steps-vector | 'no-absorbing | 'invalid | 'singular"
+  :summary "Expected number of steps to absorption from each transient state — t = N·1 (row sums of the fundamental matrix)."
+  :impl-status "wired"
+  :explanation "Given a Markov chain with absorbing and transient states, computes for each transient state the expected number of steps before absorption. The answer is t[i] = sum over j of N[i][j] where N = (I − Q)⁻¹ is the fundamental matrix. Complements ops/absorbing-probs: that tells you WHERE you'll be absorbed; this tells you HOW LONG it takes."
+  :examples (
+    (:tier "novice"
+     :code "(ops/absorbing-steps (list (list 0.5 0.3 0.2) (list 0.0 1.0 0.0) (list 0.0 0.0 1.0)))"
+     :note "Only state 0 is transient. Expected steps from 0 to absorption = 1/(1-0.5) = 2.")
+    (:tier "apprentice"
+     :code "(ops/absorbing-steps (list (list 0.5 0.4 0.1) (list 0.2 0.3 0.5) (list 0.0 0.0 1.0)))"
+     :note "Two transient states. Both take a few steps to reach absorbing state 2.")
+    (:tier "intermediate"
+     :code "(let* ((P (list (list 0.7 0.2 0.1) (list 0.3 0.4 0.3) (list 0.0 0.0 1.0))) (steps (ops/absorbing-steps P))) (list (quote steps-from-state-0) (car steps) (quote steps-from-state-1) (cadr steps)))"
+     :note "Two transient states. Extract expected steps for each — the more 'stuck' state takes longer.")
+    (:tier "expert"
+     :code "(define (extinction-time-estimate reproduction-matrix) (let ((steps (ops/absorbing-steps reproduction-matrix))) (if (symbol? steps) (list (quote error) steps) (list (quote expected-generations) steps)))) (extinction-time-estimate (list (list 0.4 0.4 0.2) (list 0.3 0.3 0.4) (list 0.0 0.0 1.0)))"
+     :note "Model: extinction of a population as absorption into state 2. Expected generations before extinction from each starting size.")
+    (:tier "master"
+     :code "(let* ((chain (list (list 0.6 0.3 0.1 0.0) (list 0.2 0.5 0.2 0.1) (list 0.1 0.2 0.6 0.1) (list 0.0 0.0 0.0 1.0))) (probs (ops/absorbing-probs chain)) (steps (ops/absorbing-steps chain))) (list (quote absorption-probs) probs (quote expected-steps) steps))"
+     :note "Full analysis: for a 4-state chain with 1 absorbing state, both absorption probabilities (all 1 here) and expected steps from each transient state.")
+  )
+  :caveats
+    ("Result is a vector indexed by transient state order in P."
+     "'no-absorbing when the chain has no absorbing state — nothing to absorb into."
+     "Ill-conditioned (I − Q) gives 'singular.")
+  :drawbacks
+    ("Gives only the MEAN — no variance or distribution of absorption times."
+     "Cannot distinguish between different absorbing states (use ops/absorbing-probs for that)."
+     "Slow for very large chains (matrix inverse is O(n³)).")
+  :usecases
+    ("Mean-time-to-failure or mean-time-to-recovery."
+     "Expected duration of a random walk to hit a boundary."
+     "Population dynamics: expected time to extinction."
+     "Curriculum: separate the 'where' (probs) from the 'when' (steps).")
+  :related ("ops/absorbing-probs" "ops/markov" "ops/stationary")
+  :learn
+    (:concept "N·1 gives expected hitting time; complementary to N·R for absorption probability."
+     :prerequisites ("ops/absorbing-probs" "matrix multiplication")
+     :progression "Compute absorption probs. Then compute steps. Interpret side by side.")
+  :entry-provenance "authored")
+
+
+
 
