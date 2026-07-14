@@ -773,3 +773,342 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Detected key: (root mode confidence). Descriptor in REPL."))
+
+(verb
+  :name "audio/lufs"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/lufs) -> number | #f | descriptor"
+  :summary "Read the analyser's integrated LUFS loudness measurement."
+  :impl-status "wired-descriptor"
+  :explanation "LUFS (Loudness Units, Full Scale) is a perceptual loudness standard used in broadcast and streaming. Under a live host, audio/lufs returns the integrated loudness over a short (~400ms) window as a number, typically negative (0 = clipping, -Inf = silence). Under headless REPL there is no live analyser, so the verb returns the descriptor ('audio/lufs). Callers use `number?` to distinguish live vs headless. Useful for perceptual gain matching and loudness normalisation."
+  :examples (
+    (:tier "novice"
+     :code "(audio/lufs)"
+     :note "Query loudness. In REPL: returns (\"audio/lufs\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((l (audio/lufs))) (if (number? l) l (quote no-signal)))"
+     :note "Return the LUFS number under live host, or 'no-signal in headless. Returns 'no-signal here.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/lufs)) (list 1 2 3))"
+     :note "Poll three times. LUFS is a windowed integrated measure — consecutive reads may hardly differ.")
+    (:tier "expert"
+     :code "(define (loudness-tier) (let ((l (audio/lufs))) (cond ((not (number? l)) (quote unknown)) ((< l -30) (quote quiet)) ((< l -18) (quote comfortable)) (else (quote loud))))) (loudness-tier)"
+     :note "Bin the loudness into quiet / comfortable / loud. Returns 'unknown in REPL.")
+    (:tier "master"
+     :code "(let loop ((n 0)) (if (>= n 3) (quote done-polling) (begin (audio/lufs) (loop (+ n 1)))))"
+     :note "Sample-poll three times. The shape of a rolling-loudness estimator that averages several probes for stability.")
+  )
+  :caveats
+    ("Integrated measure — instantaneous peaks are NOT captured. Use audio/spectrum + audio/onset-strength for transients."
+     "Requires audio/listen 'ok under a live host."
+     "Values are unbounded below; approaching -Inf for silence.")
+  :drawbacks
+    ("~400ms window lags real-time changes. Do not rely on it for sub-frame triggers."
+     "Adds cost — requires a warm analyser + integration buffer.")
+  :usecases
+    ("Adaptive gain: match perceived loudness across sources."
+     "Loudness meter in a mixing UI."
+     "Broadcast/podcast normalisation to -16 or -14 LUFS.")
+  :related ("audio/listen" "audio/spectrum" "audio/master-volume" "audio/tempo")
+  :learn
+    (:concept "Perceptual loudness — LUFS as a psychoacoustic measure — versus raw dBFS."
+     :prerequisites ("audio/listen")
+     :progression "Read audio/lufs. Then compute a target-difference. Then apply as an audio/master-volume gain change.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/lufs) descriptor. Host binds to a real LUFS integrator."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/lufs); apprentice='no-signal; intermediate=3 copies; expert='unknown; master='done-polling."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/master-volume")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Using LUFS for transient detection — it averages over ~400ms. Assuming LUFS ranges match dB gain sliders."
+     :when-not-to-use "You want transient detection — use audio/onset? or audio/onset-strength.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Integrated LUFS loudness. Descriptor in REPL. Number under live host."))
+
+(verb
+  :name "audio/onset?"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/onset?) -> boolean | descriptor"
+  :summary "Edge-triggered detection: is there an audio-onset (attack/hit) THIS frame?"
+  :impl-status "wired-descriptor"
+  :explanation "audio/onset? is a per-frame predicate. Under a live host it returns #t for exactly one frame per detected onset (drum hit, note attack, sharp transient) and #f otherwise. In headless REPL there is no live analyser, so the verb returns the descriptor ('audio/onset?). Callers use `pair?` to check for descriptor first, then treat #t/#f as the truth value. Must be called every frame to catch events — skipping frames drops onsets."
+  :examples (
+    (:tier "novice"
+     :code "(audio/onset?)"
+     :note "Ask if there's an onset. In REPL: returns (\"audio/onset?\"), a descriptor.")
+    (:tier "apprentice"
+     :code "(if (pair? (audio/onset?)) (quote no-live) (if (audio/onset?) (quote hit) (quote silence)))"
+     :note "Three-way branch: descriptor / hit / silence. Returns 'no-live in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/onset?)) (list 1 2 3))"
+     :note "Poll three times. Under a live host each poll is a fresh frame; in REPL all three return descriptors.")
+    (:tier "expert"
+     :code "(define (count-hits n) (let loop ((i 0) (hits 0)) (if (>= i n) hits (loop (+ i 1) (if (and (audio/onset?) (not (pair? (audio/onset?)))) (+ hits 1) hits))))) (count-hits 10)"
+     :note "Count onsets across 10 poll iterations. Returns 0 in REPL because no onsets fire in headless mode.")
+    (:tier "master"
+     :code "(let loop ((n 0)) (if (>= n 3) (quote done) (begin (audio/onset?) (loop (+ n 1)))))"
+     :note "The tight-loop pattern: check onset every frame, respond immediately. In a rhythm game this is where you register a beat hit.")
+  )
+  :caveats
+    ("MUST be called every frame under a live host — missing a frame drops the onset."
+     "May false-positive on noise/pops, false-negative on soft attacks."
+     "Timing lag: 10-50ms depending on FFT window."
+     "Descriptor in REPL is a truthy list; wrap in `pair?` guard.")
+  :drawbacks
+    ("Boolean only — no strength info. Use audio/onset-strength for a continuous score."
+     "Not sample-accurate — the frame it fires may lag the actual transient.")
+  :usecases
+    ("Rhythm-game beat detection."
+     "One-shot animation trigger on drum hits."
+     "Live-vocal detection for a lyrics scroller."
+     "Silence-vs-activity gating.")
+  :related ("audio/onset-strength" "audio/listen" "audio/spectrum" "audio/tempo")
+  :learn
+    (:concept "Edge-triggered event polling; the difference between a continuous signal and a discrete event."
+     :prerequisites ("audio/listen" "(core)/if" "(core)/pair?")
+     :progression "Read audio/onset? every frame. Then combine with audio/onset-strength to filter weak onsets. Then use audio/tempo for beat expectation.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/onset?) descriptor. Host binds to a real transient detector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/onset?); apprentice='no-live; intermediate=3 copies; expert=0 hits; master='done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("card-effect" "note/strike")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming missed frames don't matter — they do. Treating a REPL descriptor as truthy without pair? guard."
+     :when-not-to-use "You need transient strength — use audio/onset-strength. You need bar-relative timing — use audio/bar-clock.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Onset event predicate. Descriptor in REPL. #t/#f live."))
+
+(verb
+  :name "audio/onset-strength"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/onset-strength) -> number | descriptor"
+  :summary "Continuous onset intensity score; higher on stronger transients."
+  :impl-status "wired-descriptor"
+  :explanation "audio/onset-strength returns a continuous score reflecting how sharp the current spectral transient is. Under a live host it is a number, typically near 0 for stable audio and rising with the strength of a hit. In headless REPL there is no live analyser, so it returns the descriptor ('audio/onset-strength). Use `number?` to gate. Combines well with audio/onset? — the predicate tells you when an onset FIRES, the strength tells you HOW LOUD it hit."
+  :examples (
+    (:tier "novice"
+     :code "(audio/onset-strength)"
+     :note "Read the current onset intensity. In REPL: returns (\"audio/onset-strength\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((s (audio/onset-strength))) (if (number? s) s (quote no-live)))"
+     :note "Return the number under live host, or 'no-live in headless. Returns 'no-live here.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/onset-strength)) (list 1 2 3))"
+     :note "Sample three times. Read-only and idempotent.")
+    (:tier "expert"
+     :code "(define (smoothed prev raw a) (if (number? raw) (+ (* prev (- 1 a)) (* raw a)) prev)) (smoothed 0 (audio/onset-strength) 0.2)"
+     :note "One-pole low-pass filter: output = prev*(1-a) + raw*a with a smoothing coefficient a. Handles the descriptor case by returning prev unchanged. Returns 0.")
+    (:tier "master"
+     :code "(let loop ((n 0) (peak 0)) (if (>= n 5) (list (quote peak) peak) (loop (+ n 1) (let ((s (audio/onset-strength))) (if (number? s) (max peak s) peak)))))"
+     :note "Peak-hold across 5 samples: track the maximum seen. Returns (peak 0) in REPL.")
+  )
+  :caveats
+    ("Raw and jittery — apply smoothing before using as animation input."
+     "No fixed upper bound; extreme loud transients can produce arbitrarily high values."
+     "Falls through to 0 or descriptor when audio/listen has not returned 'ok.")
+  :drawbacks
+    ("No unit — arbitrary intensity scale."
+     "Frame-rate-dependent smoothing coefficients across hosts.")
+  :usecases
+    ("Modulate a visualiser scale by transient strength."
+     "Threshold to filter weak onsets for a beat-sync trigger."
+     "Feed into a compressor-like envelope follower.")
+  :related ("audio/onset?" "audio/spectrum" "audio/listen" "audio/lufs")
+  :learn
+    (:concept "Continuous transient measurement complementary to the discrete audio/onset? event."
+     :prerequisites ("audio/listen" "(core)/max" "(core)/+")
+     :progression "Read audio/onset-strength. Smooth it. Threshold it. Compare to audio/onset? edges.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/onset-strength) descriptor. Host binds to a live spectral-flux measure."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/onset-strength); apprentice='no-live; intermediate=3 copies; expert=0; master=(peak 0)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Using the raw value directly for animation — it jitters. Smooth first."
+     :when-not-to-use "You need a boolean beat-hit — use audio/onset? instead.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Continuous onset intensity. Descriptor in REPL. Number under live host."))
+
+(verb
+  :name "audio/bar-clock"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/bar-clock handle [bars-per-rotation]) -> BarClockHandle | descriptor"
+  :summary "Create or query a bar-clock handle tied to a playing audio stream; the returned handle exposes phase and radians."
+  :impl-status "wired-descriptor"
+  :explanation "audio/bar-clock synchronises visual motion to musical bars. Give it an audio handle and optionally a bar-count that defines one full rotation; the returned handle carries phase (0..1) and radians. Under a live host, the handle updates every frame as the audio plays. In headless REPL the verb returns the descriptor ('audio/bar-clock handle bars-per-rotation) — a shape a host can consume. Useful for choreographies that pin animation to the audio's rhythm."
+  :examples (
+    (:tier "novice"
+     :code "(audio/bar-clock (quote h))"
+     :note "Create a bar-clock tied to handle 'h. In REPL: returns (\"audio/bar-clock\" h), a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((clock (audio/bar-clock (quote handle) 4))) (car clock))"
+     :note "Extract the tag from the handle. Returns \"audio/bar-clock\" in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (bars) (audio/bar-clock (quote h) bars)) (list 2 4 8 16))"
+     :note "Create four bar-clocks at 2, 4, 8, and 16 bars per rotation — each a different pacing.")
+    (:tier "expert"
+     :code "(define (make-clock h bars) (audio/bar-clock h bars)) (make-clock (quote track-1) 4)"
+     :note "Reusable helper: given a handle and bar count, return the clock. Composition-ready.")
+    (:tier "master"
+     :code "(let* ((clocks (map (lambda (b) (audio/bar-clock (quote h) b)) (list 1 2 4 8)))) (list (quote made) (length clocks) (quote clocks)))"
+     :note "Build a rotation-per-bar palette: 1-bar, 2-bar, 4-bar, 8-bar clocks — each drives a different animation layer.")
+  )
+  :caveats
+    ("Requires a valid audio handle; without one, the clock is a bare descriptor."
+     "bars-per-rotation defaults vary per host; pass explicitly for portability."
+     "In REPL the clock does not advance — it is a descriptor, not a running state.")
+  :drawbacks
+    ("No way to reset the clock without recreating."
+     "Global to the handle; multiple clocks on one handle read the same underlying phase.")
+  :usecases
+    ("Rotate a visual element every N bars."
+     "Beat-synced choreography for cards."
+     "Bar-relative scheduling of overlays.")
+  :related ("audio/tempo" "audio/onset?" "audio/listen" "across-beats")
+  :learn
+    (:concept "Bar-relative timing — deriving visual motion from musical structure."
+     :prerequisites ("audio/tempo" "audio/listen")
+     :progression "Create a bar-clock. Then use its phase to drive rotation. Then combine with audio/onset? for beat-accented motion.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/bar-clock handle bars) descriptor. Host binds to a phase-tracking closure."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/bar-clock h); apprentice=\"audio/bar-clock\"; intermediate=4 descriptors; expert=('audio/bar-clock track-1 4); master=(made 4 clocks)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/play" "audio/tempo")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming the clock advances in REPL — it does not. Sharing a handle across clocks without realising they read the same phase."
+     :when-not-to-use "You want beat-level (not bar-level) sync — use audio/onset? and audio/tempo directly.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Bar-clock tied to audio handle. Descriptor in REPL."))
+
+(verb
+  :name "audio/transcribe-with-cloud-help"
+  :library "audio"
+  :kind "io"
+  :signature "(audio/transcribe-with-cloud-help audio-clip) -> [pending-audio info] | text"
+  :summary "Send an audio clip to a cloud speech-to-text service; returns text or pending-audio in headless REPL."
+  :impl-status "wired-pending"
+  :explanation "audio/transcribe-with-cloud-help asks an external speech-to-text service to transcribe an audio clip. Under a wired live provider it returns the transcribed text; in the standalone REPL there is no cloud provider, so it returns [pending-audio {audio reason: 'no-cloud-provider-configured'}]. The verb is honest about the deferred nature of the operation — the caller can inspect (car result) to know whether to wait, retry, or fall back."
+  :examples (
+    (:tier "novice"
+     :code "(audio/transcribe-with-cloud-help (quote clip1))"
+     :note "Request transcription for clip1. In REPL: returns (pending-audio #<object>) — no cloud provider configured.")
+    (:tier "apprentice"
+     :code "(let ((r (audio/transcribe-with-cloud-help (quote spoken-clip)))) (car r))"
+     :note "Extract the status tag. Returns pending-audio (a Sym) in REPL.")
+    (:tier "intermediate"
+     :code "(map audio/transcribe-with-cloud-help (list (quote c1) (quote c2)))"
+     :note "Batch two transcription requests. Each returns its own pending tuple.")
+    (:tier "expert"
+     :code "(define (transcribe-batch clips) (map (lambda (c) (list c (car (audio/transcribe-with-cloud-help c)))) clips)) (transcribe-batch (list (quote clip-a) (quote clip-b)))"
+     :note "Bundle each clip with its status. Returns ((clip-a pending-audio) (clip-b pending-audio)) — shape ready for a status-render pass.")
+    (:tier "master"
+     :code "(let* ((results (map audio/transcribe-with-cloud-help (list (quote c1) (quote c2) (quote c3)))) (pending-count (length results))) (list (quote total) pending-count))"
+     :note "Fire off three transcription jobs, count them. Real carts would then poll for completion or receive callbacks.")
+  )
+  :caveats
+    ("Requires a cloud-provider configuration; otherwise always returns pending-audio."
+     "Provider selection and API key handling is out-of-band."
+     "Costs money per request under a real provider — meter accordingly.")
+  :drawbacks
+    ("No local fallback; deferred until a provider is wired."
+     "No language hint parameter exposed at this API level."
+     "Latency is provider-dependent — often > 500ms.")
+  :usecases
+    ("Transcribe voice memos for indexing."
+     "Speech-to-text for accessibility captions."
+     "Ingest voice commands and route to a command interpreter.")
+  :related ("audio/play" "audio/listen" "ai/summarize")
+  :learn
+    (:concept "Deferred network I/O with an honest pending-status return."
+     :prerequisites ("audio/play" "(core)/map")
+     :progression "Fire a single transcription. Then a batch. Then handle the pending-status branch. Then integrate a completion callback.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:405-406. Returns [pending-audio {audio reason: 'no-cloud-provider-configured'}]. Host binds to a real cloud STT."
+     :permission "network"
+     :latency-class "async-long"
+     :cost "external-billed"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=pending-audio; intermediate=2 tuples; expert=((clip-a pending-audio) (clip-b pending-audio)); master=(total 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("ai/summarize" "ai/classify")
+     :consumes-from ("audio/play")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Expecting text return in REPL — it's always pending. Missing the API-key configuration step under live host."
+     :when-not-to-use "You need low-latency transcription — this is async and expensive. You need pitch/note detection — use audio/key or audio/spectrum.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Cloud speech-to-text. Deferred. Pending-audio in REPL."))
