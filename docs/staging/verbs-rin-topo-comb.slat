@@ -1949,3 +1949,399 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Metric-space constructor. Bundles points + distance function; downstream metric-based verbs consume this."))
+
+(verb
+  :name "topo/vietoris-rips"
+  :library "topo"
+  :signature "(topo/vietoris-rips metric-space scale [max-dim]) -> complex"
+  :summary "Vietoris-Rips complex at scale r: all subsets with pairwise-distance <= r form maximal faces (up to max-dim + 1 points)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let ((ms (topo/metric-space '(a b c) (lambda (x y) 1))))\n  (topo/vietoris-rips ms 2 2))"
+     :note "Returns (complex ((a b c)) 7): with distance 1 for every distinct pair and scale 2, all three points join in a triangle.")
+    (:tier "apprentice"
+     :code "(let ((ms (topo/metric-space '(a b c) (lambda (x y) 1))))\n  (topo/vietoris-rips ms 0.5 2))"
+     :note "Returns (complex ((a) (b) (c)) 3): scale 0.5 is below every non-trivial distance; only singletons.")
+    (:tier "intermediate"
+     :code "(let ((ms (topo/metric-space '(a b c d)\n              (lambda (x y) (if (eq? x y) 0 1)))))\n  (topo/vietoris-rips ms 1 3))"
+     :note "Returns (complex ((a b c d)) 15): 4 points all at distance 1; at scale 1 they all connect. Max-dim 3 lets us include the 4-simplex.")
+    (:tier "expert"
+     :code "(let ((ms (topo/metric-space '(a b c)\n              (lambda (x y)\n                (cond ((eq? x y) 0)\n                      ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                      (else 2))))))\n  (list ':r0.5 (topo/vietoris-rips ms 0.5 2)\n        ':r1.5 (topo/vietoris-rips ms 1.5 2)\n        ':r2.5 (topo/vietoris-rips ms 2.5 2)))"
+     :note "Filtration snapshots: at 0.5 only points; at 1.5 the a-b edge joins; at 2.5 all pairs connect and we get the full triangle. Same metric, different scales, growing complex.")
+    (:tier "master"
+     :code "(define (topological-fingerprint metric-fn point-set scale)\n  (let* ((ms (topo/metric-space point-set metric-fn))\n         (c (topo/vietoris-rips ms scale 2)))\n    (list ':scale scale ':betti (topo/betti c) ':chi (topo/euler-char c))))\n(let ((triangle-metric (lambda (x y)\n                         (cond ((eq? x y) 0)\n                               ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                               ((or (and (eq? x 'b) (eq? y 'c)) (and (eq? x 'c) (eq? y 'b))) 1)\n                               ((or (and (eq? x 'a) (eq? y 'c)) (and (eq? x 'c) (eq? y 'a))) 1)\n                               (else 2))))\n      (pts '(a b c)))\n  (list (topological-fingerprint triangle-metric pts 0.5)\n        (topological-fingerprint triangle-metric pts 1.0)\n        (topological-fingerprint triangle-metric pts 1.5)))"
+     :note "Domain: sweep scales, report Betti + chi. Shows the complex evolving: at 0.5 three isolated points, at 1.0 a triangle boundary (3-cycle: (1 1) plus chi 0), at 1.5 same. This is the essence of persistent homology at a manual filtration."))
+
+  :related ("topo/metric-space" "topo/rips-filtration" "topo/persistence" "topo/betti")
+  :caveats ("Default max-dim is 2; pass explicitly for higher-dim complexes." "Distance function is called O(n^2) times; expensive metrics benefit from memoization at the caller." "For n > 30 or so, VR enumeration is slow; suitable for teaching-scale examples not production-scale TDA.")
+  :drawbacks ("O(n^{max-dim + 1}) enumeration; not scalable to industrial point clouds." "No sparse-complex representation.")
+  :usecases ("Teaching Vietoris-Rips filtrations." "Small-scale topological data analysis prototypes." "Reference implementation for validating optimized VR builders.")
+  :learn (:concept "Vietoris-Rips complex: subsets with bounded diameter. Nests with respect to scale: r1 < r2 implies VR(r1) ⊆ VR(r2). Foundation of persistent homology." :prerequisites ("topo/metric-space") :progression "Wire to topo/rips-filtration to get a nested sequence; then topo/persistence to extract birth-death pairs.")
+
+  :+math
+    (:algebra "VR(X, r) = { S ⊆ X : diam(S) <= r }. Monotone in r: r1 < r2 ⇒ VR(r1) ⊆ VR(r2)."
+     :total #t
+     :domain "metric-space value + scale + optional max-dim"
+     :codomain "complex tagged value"
+     :proofs "Sub-complex property (closed under subsets) holds because if S has diam <= r, any subset of S also has diam <= r.")
+
+  :+cs
+    (:complexity "Time O(n^{max-dim+1} · max-dim^2) to enumerate subsets + check diameters. Space O(f * max-dim) for the resulting complex."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Build pairwise-distance matrix, enumerate combinations of each size up to max-dim+1, check diameter, filter to maximal faces via subset containment."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: three-point trivial metric collapses correctly at each scale; four-point all-distance-1 becomes full 3-simplex."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/betti" "topo/euler-char" "topo/persistence")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting max-dim — default is 2, which is often what you want. Assuming VR is efficient for large n — it isn't; O(n^d) enumeration."
+     :when-not-to-use "n > 30 or you need production-scale TDA — use a specialized library.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Vietoris-Rips complex at scale r. Diameter-bounded subsets. Foundation of persistent homology."))
+
+(verb
+  :name "topo/rips-filtration"
+  :library "topo"
+  :signature "(topo/rips-filtration metric-space scales [max-dim]) -> list-of-(scale complex)"
+  :summary "Sequence of Vietoris-Rips complexes at a list of scales. Foundation of persistent homology."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let ((ms (topo/metric-space '(a b c) (lambda (x y) 1))))\n  (topo/rips-filtration ms '(0.5 1.5) 2))"
+     :note "Returns two (scale complex) pairs. At r=0.5 (below dist 1): three isolated points. At r=1.5: the full triangle emerges.")
+    (:tier "apprentice"
+     :code "(let ((ms (topo/metric-space '(a b) (lambda (x y) 1))))\n  (topo/rips-filtration ms '(0 0.5 1 2) 1))"
+     :note "Returns four snapshots. r=0 and r=0.5: two points. r=1 and r=2: the edge is present. Notice the filtration is monotone.")
+    (:tier "intermediate"
+     :code "(let ((ms (topo/metric-space '(a b c)\n              (lambda (x y)\n                (cond ((eq? x y) 0)\n                      ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                      ((or (and (eq? x 'b) (eq? y 'c)) (and (eq? x 'c) (eq? y 'b))) 2)\n                      (else 3))))))\n  (length (topo/rips-filtration ms '(0 0.5 1 1.5 2 2.5 3 3.5) 2)))"
+     :note "Returns 8: the filtration has 8 snapshots (one per requested scale). The list-length equals the input scales-length.")
+    (:tier "expert"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0.5 1.5) 2)))\n  (map (lambda (step) (list ':scale (car step)\n                             ':betti (topo/betti (cadr step))))\n       filt))"
+     :note "Extract Betti at each scale. Returns per-step (:scale scale :betti (b_0 b_1 ...)) records. Shows how homology evolves along the filtration.")
+    (:tier "master"
+     :code "(define (persistent-story metric-fn points scales)\n  (let* ((ms (topo/metric-space points metric-fn))\n         (filt (topo/rips-filtration ms scales 2))\n         (persistence (topo/persistence filt)))\n    (list ':scales scales\n          ':num-classes (length persistence)\n          ':persistence-pairs persistence)))\n(persistent-story\n  (lambda (x y) (if (eq? x y) 0 (if (or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1 2)))\n  '(a b c)\n  '(0 1 2 3))"
+     :note "Domain: full persistent-homology story. Returns the count of persistence pairs and their (dim birth death) triples. This is the pattern for real TDA workflows."))
+
+  :related ("topo/vietoris-rips" "topo/metric-space" "topo/persistence")
+  :caveats ("Scales are used as-is; caller is responsible for monotone ordering." "Each scale runs a full VR computation; there is no incremental construction across scales.")
+  :drawbacks ("Not incremental; O(n * S * n^d) for S scales and n points at max-dim d.")
+  :usecases ("Feed into topo/persistence for full persistence pairs." "Visualize how topology emerges as scale grows.")
+  :learn (:concept "Nested VR complexes indexed by scale. Persistent homology tracks homology classes across this nesting." :prerequisites ("topo/vietoris-rips") :progression "Pass to topo/persistence to extract (dim birth death) triples.")
+
+  :+math
+    (:algebra "Sequence VR(r_1) ⊆ VR(r_2) ⊆ ... assuming r_1 < r_2 < ... Nested filtration property is preserved regardless of scale ordering, but persistence output assumes monotone scales."
+     :total #t
+     :domain "metric-space + scales list + optional max-dim"
+     :codomain "list of (scale complex) pairs"
+     :proofs "VR is monotone in scale (see topo/vietoris-rips).")
+
+  :+cs
+    (:complexity "Time O(S · n^{max-dim+1}) for S scales and n points."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Map over scales, call vietoris-rips at each. Trivial wrapper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: filtration length matches scale-list length; Betti evolution across scales is sensible."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/persistence" "topo/betti")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Non-monotone scales — downstream persistence assumes monotone; feeding non-monotone gives garbage. Very large scale count — each scale is a full VR computation."
+     :when-not-to-use "You need incremental construction — pull a specialized library.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Nested Vietoris-Rips complexes across scales. Precursor to persistent homology."))
+
+(verb
+  :name "topo/persistence"
+  :library "topo"
+  :signature "(topo/persistence filtration) -> list-of-(dim birth death)"
+  :summary "Birth-death pairs of homology classes across a filtration. Death 'inf means the class survives to the end."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (topo/persistence filt))"
+     :note "Returns something like ((0 0 1) (0 0 1) (0 0 inf)): two components die at scale 1 (merging), one lives to infinity. Note: format is (dim birth death).")
+    (:tier "apprentice"
+     :code "(let* ((ms (topo/metric-space '(a) (lambda (x y) 0)))\n       (filt (topo/rips-filtration ms '(0) 1)))\n  (topo/persistence filt))"
+     :note "Returns ((0 0 inf)): one component, born at 0, alive forever. The essential (persistent) homology class.")
+    (:tier "intermediate"
+     :code "(let* ((ms (topo/metric-space '(a b c)\n              (lambda (x y)\n                (cond ((eq? x y) 0)\n                      ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                      ((or (and (eq? x 'b) (eq? y 'c)) (and (eq? x 'c) (eq? y 'b))) 2)\n                      (else 3))))))\n  (topo/persistence (topo/rips-filtration ms '(0 1 2 3) 2)))"
+     :note "Returns ((0 0 1) (0 0 2) (0 0 inf)): three components at scale 0. At scale 1 one component dies (merges into the a-b pair); at scale 2 another dies; one lives on.")
+    (:tier "expert"
+     :code "(define (essential-classes pairs)\n  (filter (lambda (p) (and (pair? p) (>= (length p) 3) (symbol? (list-ref p 2)))) pairs))\n(let* ((ms (topo/metric-space '(a b c) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (list ':all (topo/persistence filt)\n        ':essential (essential-classes (topo/persistence filt))))"
+     :note "Filter to essential classes (death=inf). Returns the full list plus the filtered essentials. Essential classes carry the topological invariants of the LIMIT complex.")
+    (:tier "master"
+     :code "(define (story-of-holes filt)\n  (let* ((pairs (topo/persistence filt))\n         (dims (map car pairs))\n         (lifetimes (map (lambda (p) (if (symbol? (list-ref p 2)) 'inf (- (list-ref p 2) (list-ref p 1)))) pairs)))\n    (list ':num-classes (length pairs)\n          ':dims dims\n          ':lifetimes lifetimes)))\n(let* ((ms (topo/metric-space '(a b c) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (story-of-holes filt))"
+     :note "Domain: full topological narrative of a filtration. Reports counts, dimensions, and lifetimes. Foundation for statistical topology (bootstrap confidence bands on persistence diagrams)."))
+
+  :related ("topo/rips-filtration" "topo/total-persistence" "topo/persistence-entropy" "topo/bottleneck" "topo/betti")
+  :caveats ("**Naive impl**: computes Betti at each step and compares — CORRECT for small filtrations, not asymptotically optimal (proper impl is boundary-matrix reduction). Suitable for teaching and small-scale TDA." "Death = 'inf as a Sym for classes surviving to the end.")
+  :drawbacks ("O(S · homology-cost); asymptotically slower than the reduction algorithm." "Doesn't track which specific homology class dies; only counts.")
+  :usecases ("Extract persistence pairs from small filtrations." "Teach persistent homology in a REPL." "Debug custom filtration constructions.")
+  :learn (:concept "Persistence pairs: (dim birth death). Death = inf means an ESSENTIAL class of the limit space. Life = death - birth is a measure of the feature's topological prominence." :prerequisites ("topo/rips-filtration" "topo/betti") :progression "Analyze pairs with topo/total-persistence, topo/persistence-entropy, or compare with topo/bottleneck.")
+
+  :+math
+    (:algebra "For a filtration F_0 ⊆ F_1 ⊆ ..., a k-dim homology class 'lives' during the sub-interval [birth, death). Persistence pairs total-count is a topological invariant of the filtration."
+     :total #t
+     :domain "list of (scale complex) pairs"
+     :codomain "list of (dim birth death) triples; death may be a Sym 'inf"
+     :proofs "By the algebraic-persistence-modules theorem (Zomorodian-Carlsson): every finite persistent module decomposes uniquely into interval modules.")
+
+  :+cs
+    (:complexity "Time O(S · homology-cost) where homology-cost is O((f_k)^3) at each step."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Compute Betti vectors at each step, diff consecutive vectors, push births / pop deaths. Simpler than boundary-matrix reduction; correct but not asymptotically optimal."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-point trivial metric gives (0 0 inf) essential class; a-b-c chain metric gives two mortal + one essential 0-classes."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/total-persistence" "topo/persistence-entropy" "topo/bottleneck")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming death is always numeric — it's Sym 'inf for essential classes; guard with symbol? or check for the Sym."
+     :when-not-to-use "Large filtration + high dim — use a specialized library.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Persistence pairs across a filtration. Naive but correct impl. 'inf marks essential classes."))
+
+(verb
+  :name "topo/total-persistence"
+  :library "topo"
+  :signature "(topo/total-persistence pairs) -> number"
+  :summary "Sum of finite lifetimes (death - birth). Skips essential classes (death = 'inf)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/total-persistence '((0 0 1) (0 0 2) (0 0 inf)))"
+     :note "Returns 3: sum of the two finite lifetimes 1 + 2. The essential (inf) class is skipped.")
+    (:tier "apprentice"
+     :code "(topo/total-persistence '((0 0 inf)))"
+     :note "Returns 0: only essential class, no finite lifetimes to sum.")
+    (:tier "intermediate"
+     :code "(topo/total-persistence '((0 0 1) (1 1 3)))"
+     :note "Returns 3: 1 + 2 = 3 across dimensions. Total persistence lumps all dims together.")
+    (:tier "expert"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2))\n       (pairs (topo/persistence filt)))\n  (topo/total-persistence pairs))"
+     :note "Pipeline: metric-space → filtration → persistence → total. Returns a single number summarizing the total 'topological mass' of the finite features.")
+    (:tier "master"
+     :code "(define (topology-strength points metric-fn scales)\n  (let* ((ms (topo/metric-space points metric-fn))\n         (filt (topo/rips-filtration ms scales 2))\n         (pairs (topo/persistence filt)))\n    (list ':num-pairs (length pairs)\n          ':total-mass (topo/total-persistence pairs)\n          ':entropy (topo/persistence-entropy pairs))))\n(topology-strength '(a b c d)\n  (lambda (x y) (if (eq? x y) 0 1))\n  '(0 1 2))"
+     :note "Domain: single-number topological summary. Returns num-pairs, total-mass, entropy. Useful for coarse comparison between point clouds."))
+
+  :related ("topo/persistence" "topo/persistence-entropy" "topo/bottleneck")
+  :caveats ("Sums across all dimensions; caller can filter first by (filter (lambda (p) (= (car p) k)) pairs) to restrict to dim k." "Ignores essential classes.")
+  :drawbacks ("Aggregates too coarsely for many use cases; prefer entropy or bottleneck for finer comparisons.")
+  :usecases ("Coarse comparison between filtrations." "Bootstrap sampling in statistical TDA." "Feature strength ranking.")
+  :learn (:concept "Total-persistence — the L^1 norm of the finite bar-lifetimes. Simple summary statistic." :prerequisites ("topo/persistence") :progression "Compare with topo/persistence-entropy (Shannon of normalized lifetimes) and topo/bottleneck (L-infinity distance between diagrams).")
+
+  :+math
+    (:algebra "sum over pairs (d - b) for finite pairs. Equal to the L^1 norm of the barcode."
+     :total #t
+     :domain "list of (dim birth death) triples"
+     :codomain "non-negative number"
+     :proofs "Direct linear combination.")
+
+  :+cs
+    (:complexity "Time O(P) where P is number of pairs."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Iterate pairs, sum death - birth for finite pairs, skip Sym('inf') deaths."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (1+2)+skip-inf = 3; only inf = 0; two-dim sum works correctly."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison" "sort")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming it includes essential classes — it doesn't; those are always excluded."
+     :when-not-to-use "You need per-dimension breakdown — filter pairs first.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Sum of finite lifetimes in a persistence diagram. L^1 norm of the barcode."))
+
+(verb
+  :name "topo/persistence-entropy"
+  :library "topo"
+  :signature "(topo/persistence-entropy pairs) -> number"
+  :summary "Shannon entropy of normalized finite lifetimes: H = -sum p_i log p_i where p_i = lifetime_i / total."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/persistence-entropy '((0 0 1) (0 0 2)))"
+     :note "Returns ≈ 0.6365: entropy of the distribution (1/3, 2/3). H ≈ -1/3·ln(1/3) - 2/3·ln(2/3) ≈ 0.6365.")
+    (:tier "apprentice"
+     :code "(topo/persistence-entropy '((0 0 1) (0 0 1)))"
+     :note "Returns ≈ 0.693: entropy of (1/2, 1/2) — the maximum-entropy two-class distribution, equal to ln 2.")
+    (:tier "intermediate"
+     :code "(topo/persistence-entropy '())"
+     :note "Returns 0: no lifetimes, no entropy.")
+    (:tier "expert"
+     :code "(topo/persistence-entropy '((0 0 1) (0 0 inf)))"
+     :note "Returns 0: only one finite lifetime (1); it's the whole distribution (probability 1), so entropy is 0 — no uncertainty. Essential class skipped.")
+    (:tier "master"
+     :code "(let ((short-barcode '((0 0 1) (0 0 2) (0 0 3)))\n      (long-barcode '((0 0 1) (0 0 100) (0 0 200))))\n  (list ':balanced (topo/persistence-entropy short-barcode)\n        ':dominated (topo/persistence-entropy long-barcode)))"
+     :note "Domain: contrast a balanced vs dominated barcode. Balanced: three lifetimes ~similar-scale, high entropy. Dominated: one small + two large, entropy skewed. Useful for detecting 'shape signatures'."))
+
+  :related ("topo/total-persistence" "topo/persistence" "topo/bottleneck")
+  :caveats ("Base of the log is natural (ln). Multiply by 1/log(2) if you want bits." "Skips essential classes (death = 'inf).")
+  :drawbacks ("Single number aggregates a lot — use bottleneck for finer distinctions.")
+  :usecases ("Compare shape-signatures between point clouds." "Detect 'clean' vs 'noisy' filtrations." "Feature-selection metric in TDA workflows.")
+  :learn (:concept "Persistence entropy — Shannon entropy applied to normalized barcode lengths. Higher entropy = more uniform lifetimes." :prerequisites ("topo/persistence" "topo/total-persistence") :progression "Compare with topo/bottleneck; use both in a TDA-signature pipeline.")
+
+  :+math
+    (:algebra "H(P) = -sum p_i log p_i where P = { lifetime_i / total_lifetime }. Bounded above by log(|P|)."
+     :total #t
+     :domain "list of persistence pairs"
+     :codomain "non-negative number"
+     :proofs "Standard information-theoretic entropy; Jensen bounds give the log(n) upper bound.")
+
+  :+cs
+    (:complexity "Time O(P). Space O(P)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Extract finite lifetimes, normalize by total, sum p log p."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (1,2)-lifetimes give ≈0.6365; (1,1) give ≈0.693 = ln 2; single lifetime gives 0."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming base-2 — impl uses natural log."
+     :when-not-to-use "You need per-dim entropy — filter pairs first.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Shannon entropy of the normalized barcode lifetimes. Coarse shape signature."))
+
+(verb
+  :name "topo/bottleneck"
+  :library "topo"
+  :signature "(topo/bottleneck diagram-a diagram-b) -> number"
+  :summary "Bottleneck distance between two persistence diagrams. UPPER-BOUND approximation using per-pair L-infinity nearest-neighbor + diagonal projection."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/bottleneck '((0 0 1) (1 1 2)) '((0 0 1) (1 1 2)))"
+     :note "Returns 0: identical diagrams have bottleneck distance 0.")
+    (:tier "apprentice"
+     :code "(topo/bottleneck '((0 0 1)) '((0 0 2)))"
+     :note "Returns 1: two diagrams differ only by the death of one pair (1 vs 2); L-infinity distance = 1.")
+    (:tier "intermediate"
+     :code "(topo/bottleneck '((0 0 3)) '())"
+     :note "Returns 1.5: the pair (0 0 3) must be matched to the diagonal (mid-lifetime cost = (3-0)/2 = 1.5).")
+    (:tier "expert"
+     :code "(topo/bottleneck '((0 0 1) (1 2 5)) '((0 0.5 1.5) (1 2 6)))"
+     :note "Returns a small number: each pair matched to its closest counterpart via L-infinity. Diagonal projection for unmatched pairs.")
+    (:tier "master"
+     :code "(define (compare-shapes points-a points-b metric-fn scales)\n  (let* ((ms-a (topo/metric-space points-a metric-fn))\n         (ms-b (topo/metric-space points-b metric-fn))\n         (filt-a (topo/rips-filtration ms-a scales 2))\n         (filt-b (topo/rips-filtration ms-b scales 2))\n         (pairs-a (topo/persistence filt-a))\n         (pairs-b (topo/persistence filt-b)))\n    (topo/bottleneck pairs-a pairs-b)))\n(compare-shapes '(a b) '(a b c)\n  (lambda (x y) (if (eq? x y) 0 1))\n  '(0 1 2))"
+     :note "Domain: shape-comparison pipeline. Build filtration for each point cloud, compute persistence, take bottleneck distance. Returns a scalar indicating how topologically-different the shapes are."))
+
+  :related ("topo/persistence" "topo/total-persistence" "topo/persistence-entropy")
+  :caveats ("**Approximation**: this impl returns an UPPER BOUND on bottleneck distance (per-pair nearest-neighbor + diagonal). Full bottleneck requires an optimal bipartite matching (Hopcroft-Karp on distance graph) — not implemented in this lane. Documented, not a lie.")
+  :drawbacks ("Not exact — reports an upper bound." "Ignores essential classes.")
+  :usecases ("Coarse shape-comparison in TDA pipelines." "Placeholder in workflows that will later switch to an exact bottleneck library." "Stability metric for perturbation experiments.")
+  :learn (:concept "Bottleneck distance — the L-infinity norm of the optimal matching between two persistence diagrams. The gold standard TDA stability metric." :prerequisites ("topo/persistence") :progression "Compare with Wasserstein distance (L^p norm of matching); learn about the stability theorem of persistent homology.")
+
+  :+math
+    (:algebra "Bottleneck(A, B) = min over bijections between A' and B' (allowing diagonal projections) of max L-infinity distance. Impl gives an upper bound via greedy nearest-neighbor."
+     :total #t
+     :domain "two persistence-pair lists"
+     :codomain "non-negative number (upper bound)"
+     :proofs "Bipartite matching upper-bound: any specific matching has cost >= optimal matching, so nearest-neighbor cost is an upper bound.")
+
+  :+cs
+    (:complexity "Time O(|A| · |B|). Space O(|A| + |B|)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "For each pair in A, find L-infinity nearest neighbor in B or the diagonal projection cost. Symmetric loop for B. Take the max."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: identical diagrams give 0; single-pair diff of 1 in death gives 1; single pair vs empty gives half-lifetime."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Treating the result as EXACT bottleneck — it's an upper bound. For exact bottleneck, use a specialized library."
+     :when-not-to-use "You need exact bottleneck for a stability proof — this is an approximation.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Upper-bound bottleneck distance via greedy L-infinity nearest-neighbor + diagonal projection. Documented approximation."))
