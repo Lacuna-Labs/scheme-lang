@@ -18,10 +18,12 @@
 import { makeBaseEnv } from './base.js'
 import { installAi } from './ai.js'
 import { installGame, makeGameState } from './game.js'
+import { installJuggle } from './juggle.js'
 import { installCommercial } from './commercial.js'
 import { loadAuthFromDisk } from './auth/store.js'
 import { registerReferenceVerbs } from './reference-register.js'
 import { installWiredVerbs } from './wired-verbs.js'
+import { installWiredVerbsIP } from './wired-verbs-priya-i-p.js'
 
 /**
  * makeSakuraEnv — the full L0 → L4 stack. Returns a ready-to-eval Env.
@@ -66,6 +68,11 @@ export function makeSakuraEnv(fuel, {
   // shaped descriptors for the long tail (podcast-*, canvas-*, etc.)
   // so book examples read cleanly in standalone REPL.
   installWiredVerbs(env, fuel)
+
+  // L4.6 WIRED-IP — Priya's lane (no-namespace i-p). Overrides shaped
+  // descriptors from installWiredVerbs with real REPL-safe impls where
+  // the semantics allow, and installs an honest podcast state model.
+  installWiredVerbsIP(env, fuel)
 
   // L5 REFERENCE — every documented verb from SAKURA-SCHEME-REFERENCE.slat.
   // Curated impls replace stubs; anything without an impl gets a
