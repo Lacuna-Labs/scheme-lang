@@ -4162,7 +4162,7 @@
   :name "cortex/read"
   :library "cortex"
   :kind "read"
-  :signature "(cortex/read key) → value | nil"
+  :signature "(cortex/read key) → value | '()"
   :summary "Read a value from Cortex by key. Returns the nil sentinel if the key is absent."
   :impl-status "wired"
   :impl-file "src/wired-verbs.js"
@@ -4617,7 +4617,7 @@
   :name "audio-bpm"
   :library "core"
   :kind "rd"
-  :signature "(audio-bpm) -> number | false"
+  :signature "(audio-bpm) -> number | #f"
   :summary "Returns the detected beats-per-minute of the playing audio, or false if no valid tempo is detected."
   :explanation "Reads the audio engine's BPM estimator. If the engine has detected a stable tempo, returns a positive number (e.g., 120.0 for 120 BPM); if no tempo is available or BPM is not detected, returns false. This is useful for calculating beat durations, scheduling events at fractional-beat intervals, or synchronizing visual timing to the song. The BPM is updated continuously as audio plays."
   :examples (
@@ -4821,7 +4821,7 @@
   :examples (
     (:tier "novice" :code "(begin-frame 'canvas)\n(paint-cell 'canvas 10 20 'red 1)\n(end-frame 'canvas)" :note "Wrap a paint call in begin/end frame; essential for correct rendering.")
     (:tier "intermediate" :code "(define (draw-grid cols rows)\n  (begin-frame 'canvas)\n  (for-each (lambda (col)\n    (for-each (lambda (row)\n      (paint-cell 'canvas col row 'blue 0.5))\n      (list-range 0 rows)))\n    (list-range 0 cols))\n  (end-frame 'canvas))\n(draw-grid 20 15)" :note "Frame a nested loop of paint calls; batch all drawing in one frame.")
-    (:tier "expert" :code "(define (render-scene scene-data)\n  (cond ((begin-frame 'main-canvas)\n         (for-each (lambda (layer)\n           (let ((color (car layer))\n                 (cells (cdr layer)))\n             (for-each (lambda (cell)\n               (paint-cell 'main-canvas (car cell) (cadr cell) color 1))\n               cells)))\n           scene-data)\n         (end-frame 'main-canvas))\n        (else (escalate 'no-surface nil))))\n(render-scene '((red (0 0) (1 1)) (blue (2 2) (3 3))))" :note "Render layers of cells in one frame; escalate if the surface is unavailable.")
+    (:tier "expert" :code "(define (render-scene scene-data)\n  (cond ((begin-frame 'main-canvas)\n         (for-each (lambda (layer)\n           (let ((color (car layer))\n                 (cells (cdr layer)))\n             (for-each (lambda (cell)\n               (paint-cell 'main-canvas (car cell) (cadr cell) color 1))\n               cells)))\n           scene-data)\n         (end-frame 'main-canvas))\n        (else (escalate 'no-surface '()))))\n(render-scene '((red (0 0) (1 1)) (blue (2 2) (3 3))))" :note "Render layers of cells in one frame; escalate if the surface is unavailable.")
   )
   :caveats ("Returns #f silently if the surface does not exist; use card-visible? to check surface state first." "Must pair with end-frame; forgetting end-frame leaves the buffer uncommitted and may cause artifacts." "Only one frame can be active per surface at a time; nested begin-frame calls on the same surface are undefined." "Surface name is a symbol; passing a string or wrong type will fail silently.")
   :drawbacks ("No way to abort a frame after begin-frame; you must call end-frame to clean up." "Framing overhead per paint operation; do not call begin/end-frame for every pixel." "Frame rate is tied to the display refresh; blocking inside a frame will cause visible jank." "No query for current frame state; you cannot inspect the buffer mid-frame.")
@@ -5307,7 +5307,7 @@
   :examples (
     (:tier "novice" :code "(canvas-clear-region 5 5 3 3)" :note "Clears a 3×3 block starting at (5,5). Returns true if successful.")
     (:tier "intermediate" :code "(let ((w (canvas-cols))\n      (h (canvas-rows)))\n  (canvas-clear-region 0 0 w h))" :note "Wipes the entire canvas by clearing a region as wide and tall as the substrate.")
-    (:tier "expert" :code "(define (clear-if-crowded threshold)\n  (let ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n    (if (> live threshold)\n        (canvas-clear-region 0 0 (canvas-cols) (canvas-rows))\n        false)))\n(clear-if-crowded 500)" :note "Conditionally clears the entire canvas if live cells exceed a threshold, composing region inspection with clearing.")
+    (:tier "expert" :code "(define (clear-if-crowded threshold)\n  (let ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n    (if (> live threshold)\n        (canvas-clear-region 0 0 (canvas-cols) (canvas-rows))\n        #f)))\n(clear-if-crowded 500)" :note "Conditionally clears the entire canvas if live cells exceed a threshold, composing region inspection with clearing.")
   )
   :caveats ("Rate-limited per caller; exceeding the limit returns false instead of clearing." "Arguments are coerced to integers; fractional inputs are truncated." "Clearing persists immediately; no rollback available." "Requires perm: 'state-change' (Sakura tier and above; untrusted code denied).")
   :drawbacks ("Clearing large regions consumes budget quickly on untrusted tiers." "No partial success: the entire region clears atomically or not at all." "If the canvas substrate is uninitialized, returns false silently.")
@@ -5342,8 +5342,8 @@
   :explanation "Halts the cellular automaton's update cycle, leaving all cells in their current state. Useful for inspection, breakpoints in a simulation, or manual debugging. Returns true if the pause succeeded, false if the substrate is unavailable. Paused canvas remains readable; rules do not apply until resumed."
   :examples (
     (:tier "novice" :code "(canvas-pause)" :note "Immediately stops canvas evolution. Returns true on success.")
-    (:tier "intermediate" :code "(let ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n  (if (> live 1000)\n      (canvas-pause)\n      false))" :note "Pauses only if the live-cell count exceeds a threshold.")
-    (:tier "expert" :code "(define (inspect-and-maybe-resume should-resume?)\n  (canvas-pause)\n  (let ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n    (if (should-resume? live)\n        (canvas-resume)\n        true)))\n(inspect-and-maybe-resume (lambda (count) (< count 100)))" :note "Pauses, inspects the live count, and conditionally resumes based on a predicate.")
+    (:tier "intermediate" :code "(let ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n  (if (> live 1000)\n      (canvas-pause)\n      #f))" :note "Pauses only if the live-cell count exceeds a threshold.")
+    (:tier "expert" :code "(define (inspect-and-maybe-resume should-resume?)\n  (canvas-pause)\n  (let ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n    (if (should-resume? live)\n        (canvas-resume)\n        #t)))\n(inspect-and-maybe-resume (lambda (count) (< count 100)))" :note "Pauses, inspects the live count, and conditionally resumes based on a predicate.")
   )
   :caveats ("Pausing is immediate; no grace period or pending evolution." "While paused, the canvas remains readable and writable, but rules do not tick." "Pausing multiple times in succession is idempotent (returns true each time)." "Requires perm: 'state-change' (Sakura tier and above; untrusted code denied).")
   :drawbacks ("Paused canvas can consume memory if left in that state for long periods." "No query to check if already paused; you must track pause state yourself or call canvas-power-tier." "Expensive if called in a tight loop; intended for deliberate checkpoints, not per-tick pauses.")
@@ -5361,7 +5361,7 @@
   :examples (
     (:tier "novice" :code "(canvas-power-tier)" :note "Returns a symbol like 'full or 'paused indicating the current tier.")
     (:tier "intermediate" :code "(case (canvas-power-tier)\n  ((full) (list 'status 'fast))\n  ((half quarter) (list 'status 'slow))\n  ((paused) (list 'status 'stopped)))" :note "Branches on the tier to decide how to react.")
-    (:tier "expert" :code "(define (adaptive-paint-budget)\n  (let ((tier (canvas-power-tier)))\n    (case tier\n      ((full) 100)\n      ((half) 50)\n      ((quarter) 25)\n      ((paused) 0)\n      (else 10))))\n(let ((budget (adaptive-paint-budget)))\n  (if (> budget 0)\n      (canvas-clear-region 0 0 10 10)\n      false))" :note "Computes a painting budget based on the power tier before attempting a mutation.")
+    (:tier "expert" :code "(define (adaptive-paint-budget)\n  (let ((tier (canvas-power-tier)))\n    (case tier\n      ((full) 100)\n      ((half) 50)\n      ((quarter) 25)\n      ((paused) 0)\n      (else 10))))\n(let ((budget (adaptive-paint-budget)))\n  (if (> budget 0)\n      (canvas-clear-region 0 0 10 10)\n      #f))" :note "Computes a painting budget based on the power tier before attempting a mutation.")
   )
   :caveats ("The tier is read-only; you cannot set it directly from Scheme (the dispatcher manages tiers)." "The tier changes asynchronously with system load; do not assume it remains constant between calls." "Defaults to 'full if the substrate is uninitialized." "The symbols are lowercase with a leading quote: 'full, 'half, 'quarter, 'paused.")
   :drawbacks ("Tier is advisory only; no guarantee that the canvas will stay at that level." "High-frequency polling of canvas-power-tier in a loop is wasteful; check once per major decision." "Cannot be used to detect transitions; only snapshots the current state.")
@@ -5379,7 +5379,7 @@
   :examples (
     (:tier "novice" :code "(canvas-region-live-count 10 10 5 5)" :note "Counts live cells in a 5×5 box at (10,10). Returns an integer like 12 or 0.")
     (:tier "intermediate" :code "(let ((total (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n  (if (= total 0) 'extinct 'alive))" :note "Queries the entire canvas; returns 'extinct if no cells are alive.")
-    (:tier "expert" :code "(define (clear-sparse-region c r w h threshold)\n  (let ((live (canvas-region-live-count c r w h)))\n    (if (< live threshold)\n        (canvas-clear-region c r w h)\n        false)))\n(clear-sparse-region 0 0 20 20 5)" :note "Inspects a region's live count and clears it only if the population is below a threshold.")
+    (:tier "expert" :code "(define (clear-sparse-region c r w h threshold)\n  (let ((live (canvas-region-live-count c r w h)))\n    (if (< live threshold)\n        (canvas-clear-region c r w h)\n        #f)))\n(clear-sparse-region 0 0 20 20 5)" :note "Inspects a region's live count and clears it only if the population is below a threshold.")
   )
   :caveats ("Arguments are integer-coerced; fractional inputs are truncated." "A region fully outside the canvas bounds may return 0 without error." "The count is a snapshot at call time; it changes immediately if the canvas ticks." "No argument to specify a pattern; counts all alive cells regardless of state values.")
   :drawbacks ("Full-canvas queries (0, 0, cols, rows) are expensive if called every frame; cache results or sample." "Returns 0 if the substrate is unavailable, making it impossible to distinguish 'empty' from 'unreachable'." "No filter: you cannot count cells matching a predicate (e.g., age > 3).")
@@ -5397,7 +5397,7 @@
   :examples (
     (:tier "novice" :code "(canvas-resume)" :note "Restarts canvas evolution immediately after a pause. Returns true on success.")
     (:tier "intermediate" :code "(canvas-pause)\n(let ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n  (if (> live 100)\n      (canvas-clear-region 0 0 (canvas-cols) (canvas-rows))\n      (canvas-resume)))" :note "Pauses, inspects, either clears or resumes conditionally.")
-    (:tier "expert" :code "(define (monitor-and-throttle threshold)\n  (canvas-pause)\n  (let loop ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n    (cond ((> live (* threshold 2)) (canvas-clear-region 0 0 (canvas-cols) (canvas-rows)) (loop (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n          ((< live threshold) (canvas-resume) true)\n          (else (loop live)))))\n(monitor-and-throttle 50)" :note "Pauses and loops, clearing and re-querying until live count stabilizes below threshold, then resumes.")
+    (:tier "expert" :code "(define (monitor-and-throttle threshold)\n  (canvas-pause)\n  (let loop ((live (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n    (cond ((> live (* threshold 2)) (canvas-clear-region 0 0 (canvas-cols) (canvas-rows)) (loop (canvas-region-live-count 0 0 (canvas-cols) (canvas-rows))))\n          ((< live threshold) (canvas-resume) #t)\n          (else (loop live)))))\n(monitor-and-throttle 50)" :note "Pauses and loops, clearing and re-querying until live count stabilizes below threshold, then resumes.")
   )
   :caveats ("Resuming is immediate; evolution resumes at the next tick." "Calling resume on an already-running canvas is idempotent (returns true, no-op)." "The canvas may not actually resume if the dispatcher denies the operation (untrusted tier)." "Requires perm: 'state-change' (Sakura tier and above; untrusted code denied).")
   :drawbacks ("No way to check if the canvas is already running before resume; you must track state yourself or query canvas-power-tier." "Resuming in a tight loop is wasteful; intended for deliberate checkpoints." "If the canvas was paused by external factors (e.g., system load), resume may not succeed or may be overridden.")
@@ -5432,8 +5432,8 @@
   :explanation "Queries the substrate for its active cellular-automaton rule as a symbol (e.g., 'conway for Conway's Game of Life). A read-only operation useful for understanding or logging the current evolution mode. Defaults to 'conway if the substrate is unavailable."
   :examples (
     (:tier "novice" :code "(canvas-rule)" :note "Returns the current rule as a symbol, e.g., 'conway or 'life-34.")
-    (:tier "intermediate" :code "(if (eq? (canvas-rule) 'conway)\n    (canvas-rule-set! 'life-34)\n    false)" :note "Checks the current rule; if it is 'conway, switches to a different rule.")
-    (:tier "expert" :code "(define (rule-sequence rules)\n  (let loop ((remaining rules))\n    (if (null? remaining)\n        false\n        (let ((next (car remaining)))\n          (canvas-rule-set! next)\n          (and (eq? (canvas-rule) next)\n               (or (null? (cdr remaining))\n                   (loop (cdr remaining))))))))\n(rule-sequence (list 'conway 'life-34 'conway))" :note "Cycles through a sequence of rules, verifying each change with a read before proceeding.")
+    (:tier "intermediate" :code "(if (eq? (canvas-rule) 'conway)\n    (canvas-rule-set! 'life-34)\n    #f)" :note "Checks the current rule; if it is 'conway, switches to a different rule.")
+    (:tier "expert" :code "(define (rule-sequence rules)\n  (let loop ((remaining rules))\n    (if (null? remaining)\n        #f\n        (let ((next (car remaining)))\n          (canvas-rule-set! next)\n          (and (eq? (canvas-rule) next)\n               (or (null? (cdr remaining))\n                   (loop (cdr remaining))))))))\n(rule-sequence (list 'conway 'life-34 'conway))" :note "Cycles through a sequence of rules, verifying each change with a read before proceeding.")
   )
   :caveats ("The rule is read-only from this verb; use canvas-rule-set! to change it." "Defaults to 'conway if the substrate is unavailable." "Rule names are lowercase symbols; e.g., 'conway, 'life-34." "Changing the rule mid-evolution may not take effect until the next tick.")
   :drawbacks ("No description of what the rule does; only the name is returned." "No list of available rules; you must know the valid rule symbols in advance." "Cannot query the rule's parameters or complexity; only the name is exposed.")
@@ -5517,13 +5517,13 @@
   :name "card-canvas-rect"
   :library "core"
   :kind "rd"
-  :signature "(card-canvas-rect card-id) -> {x y width height} | false"
+  :signature "(card-canvas-rect card-id) -> {x y width height} | #f"
   :summary "Retrieve the bounding rectangle of a card in canvas coordinates."
   :explanation "Cards exist in space and have a visual footprint. This verb returns the card's bounding box relative to the canvas (not the viewport). The result is a map-like object with keys x, y, width, height. Returns false if the card does not exist or is not visible in the canvas. Use this to check overlap, containment, or spatial relationships between cards."
   :examples (
     (:tier "novice" :code "(card-canvas-rect \"card-42\")" :note "Get the rectangle of card-42 in canvas space; returns {x: 10, y: 20, width: 100, height: 50} or false")
-    (:tier "intermediate" :code "(define (cards-overlap? id1 id2)\n  (let ((r1 (card-canvas-rect id1))\n        (r2 (card-canvas-rect id2)))\n    (if (and r1 r2)\n      (and (< (get r1 'x) (+ (get r2 'x) (get r2 'width)))\n           (< (get r2 'x) (+ (get r1 'x) (get r1 'width)))\n           (< (get r1 'y) (+ (get r2 'y) (get r2 'height)))\n           (< (get r2 'y) (+ (get r1 'y) (get r1 'height)))))\n      false)))\n(cards-overlap? \"card-1\" \"card-2\")" :note "Check if two cards' rectangles overlap (AABB collision test)")
-    (:tier "expert" :code "(define (find-cards-in-region top-left-x top-left-y width height)\n  (let ((ids (card-list)))\n    (filter (lambda (id)\n      (let ((r (card-canvas-rect id)))\n        (if r\n          (and (>= (get r 'x) top-left-x)\n               (>= (get r 'y) top-left-y)\n               (<= (+ (get r 'x) (get r 'width)) (+ top-left-x width))\n               (<= (+ (get r 'y) (get r 'height)) (+ top-left-y height))))\n          false)))\n      ids)))\n(find-cards-in-region 0 0 200 200)" :note "Return all cards whose rectangles fit entirely within a given canvas region")
+    (:tier "intermediate" :code "(define (cards-overlap? id1 id2)\n  (let ((r1 (card-canvas-rect id1))\n        (r2 (card-canvas-rect id2)))\n    (if (and r1 r2)\n      (and (< (get r1 'x) (+ (get r2 'x) (get r2 'width)))\n           (< (get r2 'x) (+ (get r1 'x) (get r1 'width)))\n           (< (get r1 'y) (+ (get r2 'y) (get r2 'height)))\n           (< (get r2 'y) (+ (get r1 'y) (get r1 'height)))))\n      #f)))\n(cards-overlap? \"card-1\" \"card-2\")" :note "Check if two cards' rectangles overlap (AABB collision test)")
+    (:tier "expert" :code "(define (find-cards-in-region top-left-x top-left-y width height)\n  (let ((ids (card-list)))\n    (filter (lambda (id)\n      (let ((r (card-canvas-rect id)))\n        (if r\n          (and (>= (get r 'x) top-left-x)\n               (>= (get r 'y) top-left-y)\n               (<= (+ (get r 'x) (get r 'width)) (+ top-left-x width))\n               (<= (+ (get r 'y) (get r 'height)) (+ top-left-y height))))\n          #f)))\n      ids)))\n(find-cards-in-region 0 0 200 200)" :note "Return all cards whose rectangles fit entirely within a given canvas region")
   )
   :caveats ("Returns false, not an empty rectangle, if the card does not exist or is off-canvas." "Coordinates are in canvas space, not screen/viewport space; use card-screen-rect for viewport coordinates." "The rectangle is a snapshot; it does not update if the card moves between calls." "Invisible or hidden cards may not have a valid rectangle; the behavior depends on the implementation.")
   :drawbacks ("No caching: repeated calls for the same card recompute the rectangle." "Does not account for rotation or non-axis-aligned transforms." "The format of the returned map is opaque; you must use get to access fields (not direct field access).")
@@ -5877,13 +5877,13 @@
   :name "card-rect"
   :library "core"
   :kind "rd"
-  :signature "(card-rect id) -> rect | false"
+  :signature "(card-rect id) -> rect | #f"
   :summary "Returns the layout rectangle of a card in viewport coordinates, or false if the card does not exist."
   :explanation "Every card occupies a rectangular region on screen. This verb queries that region in the coordinate system of the viewport (the user-facing window). The rectangle is useful for geometric reasoning—checking overlap, positioning relative elements, or deciding whether to animate. Returns false if the card ID is invalid or the card has been removed, making it safe to use in conditionals."
   :examples (
     (:tier "novice" :code "(let ((r (card-rect 'music-player)))\n  (if r\n    (display (list 'card-is-at r))\n    (display 'card-not-found)))" :note "Safely read a card's rectangle and branch on existence.")
-    (:tier "intermediate" :code "(define (card-bottom-y id)\n  (let ((r (card-rect id)))\n    (if r (+ (car r) (caddr r)) false)))\n(card-bottom-y 'podcast-player)" :note "Extract a derived value (bottom edge) from the rectangle; returns false if card missing.")
-    (:tier "expert" :code "(define (card-overlaps-region? id min-x min-y max-x max-y)\n  (let ((r (card-rect id)))\n    (if r\n      (and (< (car r) max-x)\n           (< (cadr r) max-y)\n           (> (+ (car r) (caddr r)) min-x)\n           (> (+ (cadr r) (cadddr r)) min-y))\n      false)))\n(card-overlaps-region? 'banner 100 50 400 200)" :note "Compose card-rect with geometric logic to test AABB collision with a region.")
+    (:tier "intermediate" :code "(define (card-bottom-y id)\n  (let ((r (card-rect id)))\n    (if r (+ (car r) (caddr r)) #f)))\n(card-bottom-y 'podcast-player)" :note "Extract a derived value (bottom edge) from the rectangle; returns false if card missing.")
+    (:tier "expert" :code "(define (card-overlaps-region? id min-x min-y max-x max-y)\n  (let ((r (card-rect id)))\n    (if r\n      (and (< (car r) max-x)\n           (< (cadr r) max-y)\n           (> (+ (car r) (caddr r)) min-x)\n           (> (+ (cadr r) (cadddr r)) min-y))\n      #f)))\n(card-overlaps-region? 'banner 100 50 400 200)" :note "Compose card-rect with geometric logic to test AABB collision with a region.")
   )
   :caveats ("Returns false rather than null; use it directly in if/when/cond without null-checking." "Rectangle is in viewport (screen) coordinates, not world or canvas space; use card-canvas-rect for game physics." "Stale if card is removed or unmounted; call fresh each time you need the current value.")
   :drawbacks ("Does not tell you the card's visual bounds if it is scaled, rotated, or clipped by CSS—only the DOM element's bounding rect." "If you need the card's position in canvas or world space (e.g. for game entity linkage), use card-canvas-rect or card-screen-rect instead.")
@@ -5900,7 +5900,7 @@
   :explanation "The card surface is the collection of all open cards in the viewport. This verb gives you the full roster as a Scheme list, so you can iterate, filter, or query across all cards at once. It is the entry point for card-wide reasoning—use it to find cards by kind, aggregate their state, or trigger batch operations."
   :examples (
     (:tier "novice" :code "(define all-cards (card-rows))\n(display (list 'card-count (length all-cards)))" :note "Get the roster and report its length.")
-    (:tier "intermediate" :code "(define (first-card-of-kind k)\n  (let loop ((cards (card-rows)))\n    (if (null? cards) false\n      (if (equal? (card-kind (car cards)) k)\n        (car cards)\n        (loop (cdr cards))))))\n(first-card-of-kind 'podcast-player)" :note "Filter card-rows to find the first card matching a kind.")
+    (:tier "intermediate" :code "(define (first-card-of-kind k)\n  (let loop ((cards (card-rows)))\n    (if (null? cards) #f\n      (if (equal? (card-kind (car cards)) k)\n        (car cards)\n        (loop (cdr cards))))))\n(first-card-of-kind 'podcast-player)" :note "Filter card-rows to find the first card matching a kind.")
     (:tier "expert" :code "(define (card-state-summary)\n  (fold-left (lambda (acc card)\n              (let ((k (card-kind card))\n                    (state (card-get card 'state)))\n                (cons (list k state) acc)))\n            '()\n            (card-rows)))\n(card-state-summary)" :note "Fold over all cards to build a summary of kind and state pairs.")
   )
   :caveats ("Returns a snapshot at call time; does not include cards opened during the current frame if this is called early." "The list is not a reference; mutations to the list itself do not affect the surface." "Card objects in the list are opaque to Scheme; use card-get, card-set!, and card-kind to query and mutate them.")
@@ -5913,13 +5913,13 @@
   :name "card-screen-rect"
   :library "core"
   :kind "rd"
-  :signature "(card-screen-rect id) -> rect | false"
+  :signature "(card-screen-rect id) -> rect | #f"
   :summary "Returns the on-screen bounding rectangle of a card in screen (CSS pixel) coordinates, or false if the card does not exist."
   :explanation "Similar to card-rect, this returns the card's rectangular bounds, but in screen space (the logical pixel coordinate system of the DOM). This is the space used by CSS layouts, click handlers, and most drawing libraries. Use this verb when you need to reason about a card's visual footprint for UI purposes (tooltips, highlights, drag-and-drop)."
   :examples (
     (:tier "novice" :code "(let ((sr (card-screen-rect 'banner)))\n  (if sr\n    (display (list 'screen-bounds sr))\n    (display 'card-gone)))" :note "Read a card's screen rectangle; gracefully handle the missing case.")
-    (:tier "intermediate" :code "(define (center-of-card id)\n  (let ((r (card-screen-rect id)))\n    (if r\n      (list (+ (car r) (/ (caddr r) 2))\n            (+ (cadr r) (/ (cadddr r) 2)))\n      false)))\n(center-of-card 'music-player)" :note "Compute the card's center point in screen space for positioning a tooltip.")
-    (:tier "expert" :code "(define (highlight-card-at-point id px py)\n  (let ((r (card-screen-rect id)))\n    (if (and r\n             (>= px (car r))\n             (>= py (cadr r))\n             (< px (+ (car r) (caddr r)))\n             (< py (+ (cadr r) (cadddr r))))\n      (card-set! id 'highlight true)\n      (card-set! id 'highlight false))))\n(highlight-card-at-point 'podcast-player 250 150)" :note "Test point-in-rect using screen-rect, then update card state conditionally.")
+    (:tier "intermediate" :code "(define (center-of-card id)\n  (let ((r (card-screen-rect id)))\n    (if r\n      (list (+ (car r) (/ (caddr r) 2))\n            (+ (cadr r) (/ (cadddr r) 2)))\n      #f)))\n(center-of-card 'music-player)" :note "Compute the card's center point in screen space for positioning a tooltip.")
+    (:tier "expert" :code "(define (highlight-card-at-point id px py)\n  (let ((r (card-screen-rect id)))\n    (if (and r\n             (>= px (car r))\n             (>= py (cadr r))\n             (< px (+ (car r) (caddr r)))\n             (< py (+ (cadr r) (cadddr r))))\n      (card-set! id 'highlight #t)\n      (card-set! id 'highlight #f))))\n(highlight-card-at-point 'podcast-player 250 150)" :note "Test point-in-rect using screen-rect, then update card state conditionally.")
   )
   :caveats ("Returns false if the card is not found or not currently visible in the DOM." "Screen space is the CSS pixel grid, not world or canvas coordinates; use card-canvas-rect for game physics." "If a card is offscreen or hidden (display: none, visibility: hidden), its rect may still be reportable but click handlers will not fire.")
   :drawbacks ("Requires a DOM query each time; calling repeatedly in a tight loop is inefficient." "Does not account for CSS transforms, perspective, or clipping—only the element's bounding box." "If you need coordinates in world or canvas space, use card-canvas-rect instead.")
@@ -5935,8 +5935,8 @@
   :summary "Sets a property on a card, mutating its state immediately."
   :explanation "Cards are mutable objects on the surface. This verb lets you change any property—state, appearance, metadata—by key. The mutation is immediate and visible to the rest of the Scheme program and the React UI layer. Use it to update card appearance, drive animations, or change internal state in response to user actions or logic."
   :examples (
-    (:tier "novice" :code "(card-set! 'music-player 'playing true)\n(card-set! 'podcast-player 'progress 0.5)" :note "Update simple boolean and numeric properties.")
-    (:tier "intermediate" :code "(define (start-playback id)\n  (card-set! id 'playing true)\n  (card-set! id 'play-start-time (audio-time))\n  (display (list 'playback-started-on id)))\n(start-playback 'podcast-episode)" :note "Chain multiple mutations to set up a coordinated state change.")
+    (:tier "novice" :code "(card-set! 'music-player 'playing #t)\n(card-set! 'podcast-player 'progress 0.5)" :note "Update simple boolean and numeric properties.")
+    (:tier "intermediate" :code "(define (start-playback id)\n  (card-set! id 'playing #t)\n  (card-set! id 'play-start-time (audio-time))\n  (display (list 'playback-started-on id)))\n(start-playback 'podcast-episode)" :note "Chain multiple mutations to set up a coordinated state change.")
     (:tier "expert" :code "(define (sync-player-state id remote-state)\n  (card-set! id 'playing (card-get remote-state 'playing))\n  (card-set! id 'progress (card-get remote-state 'progress))\n  (card-set! id 'current-track (card-get remote-state 'current-track))\n  (card-set! id 'last-sync (audio-time)))\n(sync-player-state 'local-player 'remote-mirror)" :note "Copy multiple properties from one card to another to synchronize state.")
   )
   :caveats ("The mutation happens immediately in the card's state object; there is no transaction or rollback." "If the property does not exist on the card, it is created; there is no validation or schema enforcement." "The React UI layer will re-render if the property is declared as part of the card's schema; unschemaed properties may not update the display.")
@@ -5955,7 +5955,7 @@
   :examples (
     (:tier "novice" :code "(card-settle-breath 'podcast-player)" :note "Play the settle-breath animation on a card with no setup.")
     (:tier "intermediate" :code "(define (open-and-breathe card-id)\n  (card-open card-id)\n  (wait 'card-open-done)\n  (card-settle-breath card-id))\n(open-and-breathe 'music-player)" :note "Open a card, wait for it to complete, then animate a settling breath.")
-    (:tier "expert" :code "(define (land-card id fx fy tx ty)\n  (card-toss id fx fy tx ty)\n  (wait 'card-toss-done)\n  (card-settle-breath id)\n  (card-set! id 'interactive true))\n(land-card 'banner 0 0 200 200)" :note "Chain a toss, wait for completion, settle, then re-enable interaction.")
+    (:tier "expert" :code "(define (land-card id fx fy tx ty)\n  (card-toss id fx fy tx ty)\n  (wait 'card-toss-done)\n  (card-settle-breath id)\n  (card-set! id 'interactive #t))\n(land-card 'banner 0 0 200 200)" :note "Chain a toss, wait for completion, settle, then re-enable interaction.")
   )
   :caveats ("The animation runs asynchronously; there is no callback or completion event you can wait on directly (use time/delta or a fixed delay)." "If card-settle-breath is called on a card that is not in the DOM or is hidden, the animation may not be visible." "Multiple animations on the same card may conflict; the CSS class is applied and removed, so rapid calls may cause jank.")
   :drawbacks ("No parameterization: you cannot adjust the duration, intensity, or easing of the breath; it is hard-coded in CSS." "If the card's DOM element changes between calls, the animation may not apply." "Power and performance: triggering many settle-breath calls at once can stress the animation budget.")
@@ -5991,7 +5991,7 @@
   :examples (
     (:tier "novice" :code "(card-unfocus!)\n(display 'focus-cleared)" :note "Clear focus unconditionally.")
     (:tier "intermediate" :code "(define (close-focused-card)\n  (card-unfocus!)\n  (wait 50)\n  (if (card-visible? 'music-player)\n    (card-focus! 'music-player)))\n(close-focused-card)" :note "Clear focus, wait, then move focus to a specific card if it exists.")
-    (:tier "expert" :code "(define (reset-surface)\n  (card-unfocus!)\n  (for-each (lambda (card)\n             (card-set! card 'highlight false))\n           (card-rows))\n  (display 'surface-reset))\n(reset-surface)" :note "As part of a reset operation, clear focus and remove all highlight state from all cards.")
+    (:tier "expert" :code "(define (reset-surface)\n  (card-unfocus!)\n  (for-each (lambda (card)\n             (card-set! card 'highlight #f))\n           (card-rows))\n  (display 'surface-reset))\n(reset-surface)" :note "As part of a reset operation, clear focus and remove all highlight state from all cards.")
   )
   :caveats ("Takes no arguments; there is no way to specify which card to unfocus. If you need to be selective, use card-focus! with a different target." "If no card is currently focused, card-unfocus! still succeeds and emits an event." "The unfocus event is logged; calling it repeatedly may generate spam in the audit trail.")
   :drawbacks ("No return value indicating whether a card was actually unfocused; use card-get to query the current focus state if you need to know." "Cannot be parameterized to, e.g., unfocus only if a specific card is focused; you must query first with card-get if you need that.")
@@ -6183,7 +6183,7 @@
   :name "conway-cell-mixed-parents"
   :library "core"
   :kind "null"
-  :signature "(conway-cell-mixed-parents col row) -> list or false"
+  :signature "(conway-cell-mixed-parents col row) -> list or #f"
   :summary "Returns a 3-element list of tribe indices if the cell has mixed-lineage parents, or false if the cell is dead, out of bounds, or pure-lineage."
   :explanation "When a new cell is born from three neighbors in Conway's Game of Life, those neighbors may belong to different tribes. If all three are the same tribe, the offspring inherits that tribe (pure). If they differ, the cell is marked as L_MIXED and stores the three parent tribe indices. This verb returns those parent indices [p0, p1, p2] if the cell is mixed, or false otherwise. Mixed-lineage cells represent evolutionary junctions and can be rendered with special colors or effects."
   :examples (
@@ -6260,8 +6260,8 @@
   :explanation "This verb reifies the idea of audio-driven gameplay: when audio levels (RMS, root-mean-square) exceed a threshold, a tribe's corner gets 'fed' — new cells spawn to reinforce that tribe. The lin parameter selects which of the 4 tribes (0–3) to feed. The rms parameter is the current audio level (0–1 typical range). threshold (default 0.15) sets the activation bar; maxCells (default 3) caps how many cells spawn this call. Returns true if cells were spawned, false otherwise. Useful for keeping a tribe alive during silence or giving a team a boost during loud moments."
   :examples (
     (:tier "novice" :code "(conway-feed-corner 0 0.5)" :note "Feed tribe 0 if RMS 0.5 exceeds the default threshold (0.15); spawn up to 3 cells.")
-    (:tier "intermediate" :code "(define (feed-on-beat audio-level beat-index)\n  (define tribe (modulo beat-index 4))\n  (if (> audio-level 0.2)\n    (conway-feed-corner tribe audio-level 0.2 5)\n    false))" :note "Cycle through tribes on beats; feed each tribe only during loud moments with a custom threshold.")
-    (:tier "expert" :code "(define (audio-driven-game audio-bands)\n  (let loop ((band-idx 0) (fed? false))\n    (if (< band-idx 4)\n      (let* ((rms (list-ref audio-bands band-idx))\n             (tribe band-idx)\n             (this-feed (conway-feed-corner tribe rms 0.12 2)))\n        (loop (+ band-idx 1) (or fed? this-feed)))\n      fed?)))\n(audio-driven-game (list 0.3 0.1 0.25 0.08))" :note "Each of 4 audio bands feeds its corresponding tribe; accumulate whether any tribe was fed.")
+    (:tier "intermediate" :code "(define (feed-on-beat audio-level beat-index)\n  (define tribe (modulo beat-index 4))\n  (if (> audio-level 0.2)\n    (conway-feed-corner tribe audio-level 0.2 5)\n    #f))" :note "Cycle through tribes on beats; feed each tribe only during loud moments with a custom threshold.")
+    (:tier "expert" :code "(define (audio-driven-game audio-bands)\n  (let loop ((band-idx 0) (fed? #f))\n    (if (< band-idx 4)\n      (let* ((rms (list-ref audio-bands band-idx))\n             (tribe band-idx)\n             (this-feed (conway-feed-corner tribe rms 0.12 2)))\n        (loop (+ band-idx 1) (or fed? this-feed)))\n      fed?)))\n(audio-driven-game (list 0.3 0.1 0.25 0.08))" :note "Each of 4 audio bands feeds its corresponding tribe; accumulate whether any tribe was fed.")
   )
   :caveats ("The verb returns true only if cells were actually spawned; if RMS is below threshold, nothing happens and false is returned." "lin must be 0–3 (clamped to int); out-of-range values wrap or are invalid." "rms is expected to be 0–1 (typical audio range); very large values are accepted but may exceed practical thresholds." "threshold and maxCells default to 0.15 and 3; omitting them uses these defaults.")
   :drawbacks ("Spawning is stochastic or based on grid availability; no guarantee that maxCells cells are born if the corner region is full." "No feedback on how many cells were actually spawned; the return is just true/false." "Spawning in corners only; cannot feed arbitrary regions (use conway-spawn-cell for custom placement).")
@@ -6278,8 +6278,8 @@
   :explanation "A special visual effect that launches a glider-like entity with rainbow coloring in a diagonal trajectory. This is typically triggered by game events (e.g., when audio peaks or a rare condition occurs) to create a celebratory or dramatic moment. The rainbow streak animates independently from regular cell evolution, providing visual feedback and spectacle. Calling this multiple times may queue or reset the effect depending on implementation. Always returns true."
   :examples (
     (:tier "novice" :code "(conway-fire-rainbow)" :note "Fire the rainbow effect; commonly called during a high moment or boss fight.")
-    (:tier "intermediate" :code "(define (rainbow-on-peak audio-rms)\n  (if (> audio-rms 0.8)\n    (conway-fire-rainbow)\n    false))" :note "Trigger the rainbow effect when audio reaches a peak.")
-    (:tier "expert" :code "(define (check-and-animate)\n  (let ((rms (audio-rms)))\n    (cond\n      ((> rms 0.8) (conway-fire-rainbow))\n      ((conway-rainbow-active?) (conway-tick-rainbow))\n      (else false))))\n(check-and-animate)" :note "Fire rainbow on peak, then tick the animation each frame if active; shows lifecycle management.")
+    (:tier "intermediate" :code "(define (rainbow-on-peak audio-rms)\n  (if (> audio-rms 0.8)\n    (conway-fire-rainbow)\n    #f))" :note "Trigger the rainbow effect when audio reaches a peak.")
+    (:tier "expert" :code "(define (check-and-animate)\n  (let ((rms (audio-rms)))\n    (cond\n      ((> rms 0.8) (conway-fire-rainbow))\n      ((conway-rainbow-active?) (conway-tick-rainbow))\n      (else #f))))\n(check-and-animate)" :note "Fire rainbow on peak, then tick the animation each frame if active; shows lifecycle management.")
   )
   :caveats ("Calling conway-fire-rainbow while an existing rainbow is active may reset or queue it (behavior undefined; check fireRainbowGlider)." "The rainbow is a visual-only effect; it does not affect cell state or tribe counts." "Requires conway-tick-rainbow to be called each frame to animate; without it, the effect may not display.")
   :drawbacks ("No control over rainbow direction, speed, or color; it is a fixed hardcoded effect." "Cannot cancel an active rainbow mid-animation; must let it complete." "Performance cost if multiple rainbows are active; system may limit concurrent effects.")
@@ -6918,12 +6918,12 @@
   :name "emoji-by-name"
   :library "core"
   :kind "null"
-  :signature "(emoji-by-name name) -> string | false"
+  :signature "(emoji-by-name name) -> string | #f"
   :summary "Look up an emoji character by its Unicode name or identifier."
   :explanation "Sakura includes a built-in emoji tree registry mapping short names (like 'heart', 'star', 'fire') to their Unicode glyphs. emoji-by-name accepts a name (string, symbol, or object with a name field) and returns the corresponding emoji glyph string, or false if not found. This is a convenience for scripting; it avoids pasting literal Unicode into your code and makes emoji references readable."
   :examples (
     (:tier "novice" :code "(let ((heart (emoji-by-name 'heart)))\n  (if heart\n    (surface-paint-text 'main 'ui 0 heart)\n    (display 'error 'emoji-not-found)))" :note "Look up the heart emoji by name; paint it if found, else log an error.")
-    (:tier "intermediate" :code "(define (paint-status status-name)\n  (let ((icon (case status-name\n               (('ok) (emoji-by-name 'check-mark))\n               (('warn) (emoji-by-name 'warning))\n               (('error) (emoji-by-name 'x-mark))\n               (else false))))\n    (if icon\n      (surface-paint-text 'main 'status 10 icon)\n      (surface-paint-text 'main 'status 10 '?))))\n(paint-status 'ok)" :note "Map status symbols to emoji names; use case to dispatch and emoji-by-name to retrieve the glyph.")
+    (:tier "intermediate" :code "(define (paint-status status-name)\n  (let ((icon (case status-name\n               (('ok) (emoji-by-name 'check-mark))\n               (('warn) (emoji-by-name 'warning))\n               (('error) (emoji-by-name 'x-mark))\n               (else #f))))\n    (if icon\n      (surface-paint-text 'main 'status 10 icon)\n      (surface-paint-text 'main 'status 10 '?))))\n(paint-status 'ok)" :note "Map status symbols to emoji names; use case to dispatch and emoji-by-name to retrieve the glyph.")
     (:tier "expert" :code "(define (animate-emoji-sequence emoji-names speed-hz surface layer-name)\n  (let ((glyphs (map emoji-by-name emoji-names))\n        (frame (modulo (ctx-get 'frame ctx) (length emoji-names))))\n    (let ((glyph (list-ref glyphs frame)))\n      (if glyph\n        (emoji-paint-pixel glyph 64 64 'large)\n        (surface-paint-text surface layer-name 0 '(no-glyph))))))\n(animate-emoji-sequence '(fire spark star) 10 'main 'effect)" :note "Build a lookup table of glyphs from names; cycle through them frame-by-frame for animation.")
   )
   :caveats ("If the name is not in the registry, emoji-by-name returns false, not an error. Always check before using the result." "Symbols are converted to strings via their description; the exact matching rule depends on the registry (may be case-insensitive or case-sensitive)." "Emoji glyphs can render differently across platforms; a glyph that looks good on the host may appear unexpected elsewhere.")
@@ -7086,7 +7086,7 @@
   :examples (
     (:tier "novice" :code "(fleet-do 'entity/move! 0 -5)" :note "Move every entity in the fleet up by 5 units (dy = -5).")
     (:tier "intermediate" :code "(fleet-do 'entity/damage! 10 #:filter (lambda (id) (> (entity/x id) 500)))" :note "Damage only entities with x > 500; use the filter keyword arg.")
-    (:tier "expert" :code "(define (stun-wave origin-id radius)\n  (fleet-do 'entity/set-vel! 0 0\n    #:filter (lambda (id)\n      (< (entity/distance origin-id id) radius))\n    #:parallel true))\n(stun-wave player-id 100)" :note "Parallel stop all entities within radius of origin; filter by distance.")
+    (:tier "expert" :code "(define (stun-wave origin-id radius)\n  (fleet-do 'entity/set-vel! 0 0\n    #:filter (lambda (id)\n      (< (entity/distance origin-id id) radius))\n    #:parallel #t))\n(stun-wave player-id 100)" :note "Parallel stop all entities within radius of origin; filter by distance.")
   )
   :caveats ("verb-name must be a valid, registered verb; unknown verbs error at execution time." "filter, if provided, must be a callable (lambda or function); non-callables are ignored or error." "fleet-do is async; it does not return a plain value but a control structure for the host." "parallel is a hint; the host may ignore it and run sequentially anyway." "If the fleet is empty, fleet-do still succeeds and returns an empty result list.")
   :drawbacks ("No early-exit: all entities (or all filtered entities) are processed, even if one fails." "Error handling is opaque: if a verb errors on one entity, the fleet-do result reflects that, but cleanup is the caller's responsibility." "Parallel execution introduces race conditions if verbs share mutable state; use with caution." "Filtering is per-entity; no way to express 'apply to 5 random entities' directly—filter lambda must sample.")
@@ -7260,7 +7260,7 @@
   :name "grid-cell-set!"
   :library "core"
   :kind "mut"
-  :signature "(grid-cell-set! col row state) -> boolean (true if changed)"
+  :signature "(grid-cell-set! col row state) -> boolean (#t if changed)"
   :summary "Set a cell's state in the grid; coerces input to 0..3 (or 0..1 for binary grids)."
   :explanation "This verb writes a new state value to the grid at (col, row), updating the underlying state array (g_alive). It coerces the input: true or truthy becomes 1, false/null becomes 0, numbers are clamped to 0..3. Out-of-bounds writes are silently ignored (no-op, returns false). The verb tracks state changes for live-count bookkeeping and returns true if the cell's state actually changed. Use this to seed patterns, apply rules, or manually toggle cells."
   :examples (
@@ -7571,8 +7571,8 @@
   :explanation "This is a deprecated alias for input/may-i?. It returns a boolean indicating whether the host permits input (e.g., microphone, camera, or button state) to be read by the program. Use the namespaced input/may-i? instead. This verb is read-only and deterministic: the same permission state is returned on every call within a frame."
   :examples (
     (:tier "novice" :code "(if (input-may-i?)\n  (display \"input allowed\")\n  (display \"input denied\"))" :note "Check if input is permitted before relying on button state.")
-    (:tier "intermediate" :code "(define (safe-read-input)\n  (if (input-may-i?)\n    (list (input/down? 'a) (input/down? 'b))\n    '(false false)))\n(safe-read-input)" :note "Wrap input reads in a guard that only reads if permission is granted.")
-    (:tier "expert" :code "(define (poll-if-allowed buttons)\n  (if (input-may-i?)\n    (map (lambda (btn) (input/down? btn)) buttons)\n    (map (lambda (_) false) buttons)))\n(poll-if-allowed (input/buttons))" :note "Map over all button names, polling only if input is permitted; return false for all if denied.")
+    (:tier "intermediate" :code "(define (safe-read-input)\n  (if (input-may-i?)\n    (list (input/down? 'a) (input/down? 'b))\n    '(#f #f)))\n(safe-read-input)" :note "Wrap input reads in a guard that only reads if permission is granted.")
+    (:tier "expert" :code "(define (poll-if-allowed buttons)\n  (if (input-may-i?)\n    (map (lambda (btn) (input/down? btn)) buttons)\n    (map (lambda (_) #f) buttons)))\n(poll-if-allowed (input/buttons))" :note "Map over all button names, polling only if input is permitted; return false for all if denied.")
   )
   :caveats ("This is a legacy alias; prefer input/may-i? in new code." "Permission state is determined by the host at runtime; it may change between frames." "Returning true does not guarantee input data will be available; it only grants permission to read.")
   :drawbacks ("Legacy status means this may be deprecated in the future." "No way to request or change permissions from within Scheme; permission is host-controlled.")
@@ -7836,7 +7836,7 @@
   :name "nav-map"
   :library "core"
   :kind "rd"
-  :signature "(nav-map :mode 'data | 'grouped | nil) -> list-of-tuples"
+  :signature "(nav-map :mode 'data | 'grouped | '()) -> list-of-tuples"
   :summary "Retrieve the global navigation map: all available controls, surfaces, and navigation paths."
   :explanation "nav-map exposes the host's internal navigation graph as a queryable data structure. Pass :mode 'data to get a flat list of (id surface label how) tuples, one per navigable control. Pass :mode 'grouped (or omit :mode) to get a hierarchical structure: (surface (label . how) ...) grouped by surface area. The 'how' field describes the navigation method (e.g., a key binding, button, or gesture). Use nav-map to build custom navigation UIs, to understand the current app's surface topology, or to implement custom navigation logic."
   :examples (
@@ -7859,7 +7859,7 @@
   :explanation "next is a core control-flow verb for cart/state-machine programming. It returns a special tuple (not a normal list) that tells the host: 'leave the current state handler and enter the state named state-name, passing context as the initial context.' Unlike Scheme function calls, next does not cause a return; instead, the host's state dispatcher reads the tuple and switches states. Use next whenever a state handler completes and must yield control to the next state. The context argument (typically a modified version of the input context) carries all state data forward."
   :examples (
     (:tier "novice" :code "(define (idle ctx)\n  (next 'wait-for-input ctx))\n(define (wait-for-input ctx)\n  (next 'idle ctx))" :note "Simple state alternation: idle → wait → idle.")
-    (:tier "intermediate" :code "(define (fetch ctx)\n  (act 'api/get-status (list) 'handle-status))\n(define (handle-status ctx)\n  (let ((result (ctx-result ctx)))\n    (if (equal? (result 'ok) true)\n      (next 'process-data (ctx-set 'data result ctx))\n      (escalate 'fetch-failed result))))" :note "Transition between states, updating context with results.")
+    (:tier "intermediate" :code "(define (fetch ctx)\n  (act 'api/get-status (list) 'handle-status))\n(define (handle-status ctx)\n  (let ((result (ctx-result ctx)))\n    (if (equal? (result 'ok) #t)\n      (next 'process-data (ctx-set 'data result ctx))\n      (escalate 'fetch-failed result))))" :note "Transition between states, updating context with results.")
     (:tier "expert" :code "(define (plan ctx)\n  (act 'ask/reasoner (list 'plan) 'check-plan))\n(define (check-plan ctx)\n  (let* ((plan (ctx-result ctx))\n         (valid? (and (pair? plan) (not (null? plan)))))\n    (cond\n      (valid? (next 'execute (ctx-set 'plan plan ctx)))\n      ((need/deep-think? 'replan 'fallback) (next 'plan (ctx-set 'attempt (+ (ctx-get 'attempt ctx 0) 1) ctx)))\n      (else (escalate 'plan-failed null)))))" :note "Multi-state choreography: plan → check → execute (or retry/escalate).")
   )
   :caveats ("next returns a special tuple, not a regular Scheme value. Treating it as a list or trying to manipulate it with car/cdr may break." "The state-name must be defined (as a state handler function) in the current cart; referencing an undefined state causes a dispatcher error." "context is passed verbatim; if you do not call ctx-set to update it, the next state receives an unmodified context." "next must be the last expression evaluated in a state handler; any code after next is unreachable (the handler returns the tuple to the host).")
@@ -7980,7 +7980,7 @@
   :name "obj-get"
   :library "core"
   :kind "null"
-  :signature "(obj-get object key) -> value | false"
+  :signature "(obj-get object key) -> value | #f"
   :summary "Retrieve a property value from a JavaScript object, or false if not found."
   :explanation "Safely accesses a property of a JavaScript object by key. If the object is null, undefined, or not an object, returns false. If the key exists in the object and its value is truthy, returns the value; if the key does not exist or its value is undefined/null, returns false. This is a bridge verb for interoperating with JS objects that may come from system APIs (e.g., camera-state returns a plain object). It never throws."
   :examples (
@@ -9497,7 +9497,7 @@
   :explanation "Instead of calling `stop` imperatively inside a callback, `stop-when` lets you declare termination declaratively as a clause in `big-bang`. You provide a predicate function that receives the current state; if it returns true, the loop exits after that frame. This is cleaner than embedding stop in on-tick, because it separates the exit logic from the state update logic. It is the preferred way to end a loop based on a state condition."
   :examples (
     (:tier "novice" :code "(big-bang\n  (initial 10)\n  (on-tick (lambda (s) (- s 1)))\n  (stop-when (lambda (s) (= s 0))))" :note "Count down from 10; exit when state reaches 0.")
-    (:tier "intermediate" :code "(big-bang\n  (initial (list 'hero (list 100 100) 100 true))\n  (on-tick (lambda (state)\n    (let* ((pos (cadr state)) (hp (list-ref state 2)))\n      (if (> (random-int 100) 80) ; take damage 20% of time\n        (list (car state) pos (- hp 1) true)\n        state))))\n  (stop-when (lambda (state) (<= (list-ref state 2) 0))))" :note "Simulate combat damage; exit when HP reaches 0. No explicit (stop) call needed.")
+    (:tier "intermediate" :code "(big-bang\n  (initial (list 'hero (list 100 100) 100 #t))\n  (on-tick (lambda (state)\n    (let* ((pos (cadr state)) (hp (list-ref state 2)))\n      (if (> (random-int 100) 80) ; take damage 20% of time\n        (list (car state) pos (- hp 1) #t)\n        state))))\n  (stop-when (lambda (state) (<= (list-ref state 2) 0))))" :note "Simulate combat damage; exit when HP reaches 0. No explicit (stop) call needed.")
     (:tier "expert" :code "(define (all-objectives-met state)\n  (and (>= (state-cash state) 1000)\n       (>= (state-reputation state) 50)\n       (null? (state-enemies state))))\n(big-bang\n  (initial (game-start-state))\n  (on-tick game-loop-step)\n  (on-frame render-frame)\n  (stop-when all-objectives-met))" :note "Compose multiple conditions (cash, reputation, enemies cleared) into a single exit check.")
   )
   :caveats ("The predicate is called every frame; if it is expensive, consider caching intermediate results in the state." "If the predicate throws, the exception bubbles to the studio (loop halts, error is surfaced)." "Multiple stop-when clauses are all evaluated; the loop exits on the first one that returns true.")
@@ -9582,7 +9582,7 @@
   :name "summon"
   :library "core"
   :kind "null"
-  :signature "(summon kind) -> nil"
+  :signature "(summon kind) -> '()"
   :summary "Request the creation of a new card of a given kind."
   :explanation "The summon verb broadcasts a request to open a new card (a UI panel or view) of the specified kind. It dispatches a custom event that the curator surface listens for, then emits a card event into the replay log for record-keeping. The summon is best-effort; if the card kind is not registered or the browser environment is unavailable, it fails silently."
   :examples (
@@ -9600,7 +9600,7 @@
   :name "surface-curtain"
   :library "core"
   :kind "null"
-  :signature "(surface-curtain alpha [duration-ms]) -> nil"
+  :signature "(surface-curtain alpha [duration-ms]) -> '()"
   :summary "Fade the entire canvas in or out globally (legacy alias of surface/curtain)."
   :explanation "The surface-curtain verb animates a full-screen alpha fade, useful for transitions between scenes or states. A value of 0 is fully transparent (invisible), 1 is fully opaque (visible). It is a legacy alias; new code should prefer surface/curtain for consistency. The animation is deterministic and changes the 'look.changed' chip."
   :examples (
@@ -9618,7 +9618,7 @@
   :name "surface-dim"
   :library "core"
   :kind "null"
-  :signature "(surface-dim alpha) -> nil"
+  :signature "(surface-dim alpha) -> '()"
   :summary "Set the global canvas dim level (overlay darkness)."
   :explanation "The surface-dim verb adjusts the global canvas dim alpha, adding a semi-transparent dark overlay. Unlike surface-curtain (which fades in/out), dim is a steady-state darkening that makes the entire scene appear to recede or focus attention. A value of 0 is no dim (full brightness), 1 is maximum darkness. It is a legacy alias; new code should prefer surface/dim."
   :examples (
@@ -9762,7 +9762,7 @@
   :name "sway!"
   :library "core"
   :kind "mut"
-  :signature "(sway! entity-id period amplitude) -> true|'entity-not-found"
+  :signature "(sway! entity-id period amplitude) -> #t|'entity-not-found"
   :summary "Apply a periodic sine-wave rotation (sway) to a single entity."
   :explanation "sway! modulates an entity's spin (rotational velocity or state) with a sine curve. The entity oscillates back and forth over the given period (in frames) with the given amplitude (in radians or degrees, depending on context). Each call computes the current phase based on world frame count and sets the entity's internal __spin state. Use it to create gentle bobbing, swaying trees, or pendulum-like motions. Returns true on success, or the symbol 'entity-not-found if the entity ID is invalid."
   :examples (
@@ -9875,7 +9875,7 @@
   :explanation "viewport returns an object containing the camera's current x, y position and width (w) and height (h) in canvas/world coordinates. This defines what portion of the world is visible on screen. Use it to query camera state for layout, collision detection, or on-screen checks. Returns null if no viewport is active (rare in normal operation)."
   :examples (
     (:tier "novice" :code "(let ((vp (viewport)))\n  (if vp\n    (display (list 'width (vp :w) 'height (vp :h)))\n    (display 'no-viewport)))" :note "Check if viewport exists and print its dimensions; handle the null case.")
-    (:tier "intermediate" :code "(define (on-screen? entity-x entity-y)\n  (let ((vp (viewport)))\n    (if (not vp) false\n      (and (>= entity-x (vp :x))\n           (<= entity-x (+ (vp :x) (vp :w)))\n           (>= entity-y (vp :y))\n           (<= entity-y (+ (vp :y) (vp :h)))))))\n\n(if (on-screen? 512 256) (display 'visible))" :note "Build a collision test: is a point within the viewport bounds? Used for culling or event handling.")
+    (:tier "intermediate" :code "(define (on-screen? entity-x entity-y)\n  (let ((vp (viewport)))\n    (if (not vp) #f\n      (and (>= entity-x (vp :x))\n           (<= entity-x (+ (vp :x) (vp :w)))\n           (>= entity-y (vp :y))\n           (<= entity-y (+ (vp :y) (vp :h)))))))\n\n(if (on-screen? 512 256) (display 'visible))" :note "Build a collision test: is a point within the viewport bounds? Used for culling or event handling.")
     (:tier "expert" :code "(define (fit-card-in-view card-id)\n  (let* ((rect (card-screen-rect card-id))\n         (vp (viewport))\n         (offset-x (- (rect :x) (vp :x)))\n         (offset-y (- (rect :y) (vp :y))))\n    (if (or (< offset-x 0) (> offset-x (vp :w)))\n      (camera-pan-to (+ (vp :x) (rect :x)) (vp :y))\n      (if (or (< offset-y 0) (> offset-y (vp :h)))\n        (camera-pan-to (vp :x) (+ (vp :y) (rect :y)))))))" :note "Pan camera to keep a card on-screen; compute viewport-relative offsets to decide panning direction.")
   )
   :caveats ("viewport returns the *world* bounding box of the visible area, not screen pixels. Coordinates are in world space." "The returned object keys are lowercase (:x, :y, :w, :h); use keyword access, not dot notation." "Viewport is a snapshot at query time; it may change on the next frame if camera is moving.")
@@ -9893,7 +9893,7 @@
   :explanation "viewport-width is a convenience accessor that returns just the width of the current camera view. It extracts the :w field from viewport and returns it, or 0 if no viewport is active. Use it when you only care about the horizontal span of what's visible—common for responsive layout, horizontal scrolling bounds, and edge detection."
   :examples (
     (:tier "novice" :code "(display (viewport-width))" :note "Print the current viewport width; always returns a non-negative number.")
-    (:tier "intermediate" :code "(define (card-fits-horizontally? card-id)\n  (let ((rect (card-screen-rect card-id))\n        (vp-w (viewport-width)))\n    (if vp-w\n      (<= (rect :w) vp-w)\n      false)))\n\n(card-fits-horizontally? 'my-card)" :note "Check if a card's width fits within the current viewport width; handles missing viewport gracefully.")
+    (:tier "intermediate" :code "(define (card-fits-horizontally? card-id)\n  (let ((rect (card-screen-rect card-id))\n        (vp-w (viewport-width)))\n    (if vp-w\n      (<= (rect :w) vp-w)\n      #f)))\n\n(card-fits-horizontally? 'my-card)" :note "Check if a card's width fits within the current viewport width; handles missing viewport gracefully.")
     (:tier "expert" :code "(define (reflow-columns ctx)\n  (let* ((vp-w (viewport-width))\n         (col-width (/ vp-w 3))\n         (cards (card-list)))\n    (for-each (lambda (card-id i)\n      (card-set! card-id 'x (* col-width (modulo i 3))))\n      cards)))" :note "Divide the viewport into three columns and reflow cards into them based on viewport width; responsive layout pattern.")
   )
   :caveats ("Returns 0 if viewport is unavailable, not an error. Always check for zero before division." "Width is in world coordinates, not screen pixels. If the camera is zoomed, world units per pixel changes." "viewport-width is a snapshot; it does not update live as the camera moves unless you call it again each frame.")
@@ -10256,7 +10256,7 @@
   :examples (
     (:tier "novice" :code "(define (lagrangian-harmonic q q-dot)\n  ;; Simple harmonic oscillator: L = (1/2)·m·q̇² − (1/2)·k·q²\n  (- (* 0.5 q-dot q-dot) (* 0.5 q q)))\n(curve/euler-lagrange-residual lagrangian-harmonic 1.0 0.5 -1.0)" :note "For a harmonic oscillator at q=1, q̇=0.5, q̈=-1 (near equilibrium), the residual should be small.")
     (:tier "intermediate" :code "(define (lagrangian-projectile q q-dot)\n  ;; Projectile: L = (1/2)·m·q̇² + m·g·q (y-coordinate)\n  (- (* 0.5 q-dot q-dot) (* 10 q)))\n(let ((t-vals (list 0.0 0.5 1.0)))\n  (map (lambda (t)\n         (let ((q (- 5 (* 5 t t))))\n           (list t (curve/euler-lagrange-residual lagrangian-projectile q (* -10 t) -10))))\n       t-vals))" :note "Verify that a parabolic trajectory y = 5 − 5t² (with gravity g=10) nearly satisfies Euler–Lagrange at multiple points.")
-    (:tier "expert" :code "(define (verify-brachistochrone)\n  ;; For a true brachistochrone, the residual of the action functional should be zero\n  ;; This is a symbolic check; in practice, numerical residuals measure discretization error\n  (let ((L (lambda (q q-dot)\n             ;; Effective Lagrangian for brachistochrone (T − V with reparametrization)\n             (/ q-dot (sqrt (+ 1 (* q-dot q-dot)))))))\n    (define (check-point t q-val q-dot-val q-accel-val)\n      (list 't t\n            'residual (curve/euler-lagrange-residual L q-val q-dot-val q-accel-val)))\n    (map (lambda (t) (check-point t 1 0.5 (- 0.5)))\n         (list 0.1 0.2 0.3))))\n(verify-brachistochrone)" :note "Check whether points on a proposed brachistochrone path satisfy the Euler–Lagrange equation (residual ≈ 0).")
+    (:tier "expert" :code "(define (verify-brachistochrone)\n  ;; For a #t brachistochrone, the residual of the action functional should be zero\n  ;; This is a symbolic check; in practice, numerical residuals measure discretization error\n  (let ((L (lambda (q q-dot)\n             ;; Effective Lagrangian for brachistochrone (T − V with reparametrization)\n             (/ q-dot (sqrt (+ 1 (* q-dot q-dot)))))))\n    (define (check-point t q-val q-dot-val q-accel-val)\n      (list 't t\n            'residual (curve/euler-lagrange-residual L q-val q-dot-val q-accel-val)))\n    (map (lambda (t) (check-point t 1 0.5 (- 0.5)))\n         (list 0.1 0.2 0.3))))\n(verify-brachistochrone)" :note "Check whether points on a proposed brachistochrone path satisfy the Euler–Lagrange equation (residual ≈ 0).")
   )
   :caveats ("Residual is a numerical approximation; use appropriate step sizes and error tolerances." "The verb does not check whether the Lagrangian is well-defined or differentiable at the query point." "d/dt(∂L/∂q̇) is approximated via finite differences; for noisy trajectories, residuals will be large and unreliable." "The sign convention and normalization depend on the problem definition; consult the physics literature.")
   :drawbacks ("Expensive to call for many points along a trajectory; batch processing is recommended." "Does not validate that a solution is a minimum rather than a saddle point or maximum." "Numerical instability near discontinuities or non-smooth regions." "Does not solve the Euler–Lagrange equation; only measures deviation from it.")
@@ -11250,9 +11250,9 @@
   :summary "Pin or unpin an entity, making it an immovable anchor when pinned."
   :explanation "A pinned entity is immune to forces, collisions, and velocity changes — it becomes a fixed point in space. Pinning is useful for anchors, walls, or temporarily locking an entity in place. Call with id and true to pin; true returns true, false or nil to unpin. Pinned entities still exist and interact as collision geometry, but do not move."
   :examples (
-    (:tier "novice" :code "(let ((wall (world/spawn 10 5 (list ':solid true))))\n  (entity/pin! wall true))" :note "Pin a wall to lock it in place; it will not move on collision.")
-    (:tier "intermediate" :code "(define (spike-trap x y)\n  (let ((trap (world/spawn x y (list ':shape '((0 0) (1 0) (0 1)) ':solid true))))\n    (entity/pin! trap true)\n    trap))" :note "Define a helper that spawns and immediately pins a spike obstacle.")
-    (:tier "expert" :code "(define (toggle-anchor id pinned?)\n  (entity/pin! id pinned?)\n  (if pinned?\n    (entity/set! id 'anchor-state 'locked)\n    (entity/set! id 'anchor-state 'free)))\n(let ((chain-start (world/spawn 0 0 '())))\n  (toggle-anchor chain-start true)\n  (world/link! chain-start (world/spawn 5 0 '()) 5))" :note "Toggle a chain's anchor point and track state; pinned end becomes the constraint root.")
+    (:tier "novice" :code "(let ((wall (world/spawn 10 5 (list ':solid #t))))\n  (entity/pin! wall #t))" :note "Pin a wall to lock it in place; it will not move on collision.")
+    (:tier "intermediate" :code "(define (spike-trap x y)\n  (let ((trap (world/spawn x y (list ':shape '((0 0) (1 0) (0 1)) ':solid #t))))\n    (entity/pin! trap #t)\n    trap))" :note "Define a helper that spawns and immediately pins a spike obstacle.")
+    (:tier "expert" :code "(define (toggle-anchor id pinned?)\n  (entity/pin! id pinned?)\n  (if pinned?\n    (entity/set! id 'anchor-state 'locked)\n    (entity/set! id 'anchor-state 'free)))\n(let ((chain-start (world/spawn 0 0 '())))\n  (toggle-anchor chain-start #t)\n  (world/link! chain-start (world/spawn 5 0 '()) 5))" :note "Toggle a chain's anchor point and track state; pinned end becomes the constraint root.")
   )
   :caveats ("Pinning an entity does not remove existing velocity; call entity/set-vel! to zero it first if needed." "Pinned entities still collide and report overlaps (entity/collisions)." "Unpin (entity/pin! id false) to restore motion; the entity retains its last velocity state.")
   :drawbacks ("Pinned entities incur memory overhead for the flag; use sparingly for very large static environments (prefer world/floor! for ground)." "Cannot pin an entity that does not exist; returns 'entity-not-found.")
@@ -11282,7 +11282,7 @@
   :name "entity/pose!"
   :library "entity"
   :kind "mut"
-  :signature "(entity/pose! id [spin] [sx] [sy]) -> true|'entity-not-found"
+  :signature "(entity/pose! id [spin] [sx] [sy]) -> #t|'entity-not-found"
   :summary "Set rotation (spin), horizontal scale (sx), and vertical scale (sy) for entity rendering."
   :explanation "entity/pose! controls how an entity's sprite or shape is drawn: spin rotates it (in degrees or radians, engine-dependent), sx/sy scale it horizontally and vertically (1.0 is normal, 2.0 is double size, 0.5 is half). All three are independent; omitted arguments default to spin=0, sx=1, sy=1. This is purely visual and does not affect physics collision shapes."
   :examples (
@@ -11300,13 +11300,13 @@
   :name "entity/sensor!"
   :library "entity"
   :kind "mut"
-  :signature "(entity/sensor! id bool) -> true|'entity-not-found"
+  :signature "(entity/sensor! id bool) -> #t|'entity-not-found"
   :summary "Mark an entity as a trigger zone: it reports collisions but is not separated or bounced."
   :explanation "A sensor entity is like a tripwire or invisible alarm—other bodies pass through it, but when they do, the sensor entity records the collision and emits a report. This is distinct from solid (which blocks and bounces). Use sensors for detection areas, invisible walls that count visitors, or game logic triggers. The entity itself does not move on collision; other entities slide through as if it were not there, but the collision is logged."
   :examples (
-    (:tier "novice" :code "(let ((goal-zone (world/spawn 50 50 '())))\n  (entity/sensor! goal-zone true))" :note "Create a goal trigger that reports when other entities enter.")
-    (:tier "intermediate" :code "(define (spawn-goal x y)\n  (let ((goal (world/spawn x y (list ':shape '((0 0) (10 0) (0 10))))))\n    (entity/sensor! goal true)\n    (entity/set! goal 'type 'goal-zone)\n    goal))\n(let ((collisions (entity/collisions (spawn-goal 30 40))))\n  collisions)" :note "Create a goal helper and query collisions; sensor allows the goal to not block movement.")
-    (:tier "expert" :code "(define (handle-triggers entity-id)\n  (let ((collisions (entity/collisions entity-id)))\n    (for-each (lambda (other-id)\n                (let ((other-type (entity/get other-id 'type)))\n                  (cond ((eq? other-type 'player) (act 'game/player-touched-goal other-id))\n                        ((eq? other-type 'enemy) (act 'game/enemy-touched-goal other-id)))))\n              collisions)))\n(let ((goal (world/spawn 100 100 '())))\n  (entity/sensor! goal true)\n  (handle-triggers goal))" :note "Dispatch game logic based on which entity types enter a sensor zone.")
+    (:tier "novice" :code "(let ((goal-zone (world/spawn 50 50 '())))\n  (entity/sensor! goal-zone #t))" :note "Create a goal trigger that reports when other entities enter.")
+    (:tier "intermediate" :code "(define (spawn-goal x y)\n  (let ((goal (world/spawn x y (list ':shape '((0 0) (10 0) (0 10))))))\n    (entity/sensor! goal #t)\n    (entity/set! goal 'type 'goal-zone)\n    goal))\n(let ((collisions (entity/collisions (spawn-goal 30 40))))\n  collisions)" :note "Create a goal helper and query collisions; sensor allows the goal to not block movement.")
+    (:tier "expert" :code "(define (handle-triggers entity-id)\n  (let ((collisions (entity/collisions entity-id)))\n    (for-each (lambda (other-id)\n                (let ((other-type (entity/get other-id 'type)))\n                  (cond ((eq? other-type 'player) (act 'game/player-touched-goal other-id))\n                        ((eq? other-type 'enemy) (act 'game/enemy-touched-goal other-id)))))\n              collisions)))\n(let ((goal (world/spawn 100 100 '())))\n  (entity/sensor! goal #t)\n  (handle-triggers goal))" :note "Dispatch game logic based on which entity types enter a sensor zone.")
   )
   :caveats ("A sensor entity does not bounce or separate; it is permeable to all bodies." "Collisions are still reported (entity/collisions) and can emit events; the sensor is not invisible, just non-blocking." "If an entity is sensor=true, it will pass through solid=true entities. To revert, call (entity/sensor! id false)." "Sensors still have a collision shape; use entity/shape! to define the trigger area.")
   :drawbacks ("Sensors add to the collision check cost; many sensors can slow the solver." "Sensor collisions are ephemeral (per-frame); if you need persistent state, store it with entity/set!.")
@@ -11336,7 +11336,7 @@
   :name "entity/set-pos!"
   :library "entity"
   :kind "mut"
-  :signature "(entity/set-pos! id x y) -> true|'entity-not-found"
+  :signature "(entity/set-pos! id x y) -> #t|'entity-not-found"
   :summary "Teleport an entity to a new position instantly."
   :explanation "entity/set-pos! moves an entity to [x, y] in one frame with no interpolation or physics—a true jump. Use it for level transitions, respawns, or when you need to override physics. Unlike entity/move! (which nudges by a delta), this is absolute positioning. The entity's velocity is not changed; only position is updated. Teleporting into a solid will not trigger separation this frame; collision resolves on the next world/step."
   :examples (
@@ -11354,7 +11354,7 @@
   :name "entity/set-vel!"
   :library "entity"
   :kind "mut"
-  :signature "(entity/set-vel! id vx vy) -> true|'entity-not-found"
+  :signature "(entity/set-vel! id vx vy) -> #t|'entity-not-found"
   :summary "Set an entity's velocity to [vx, vy] instantly."
   :explanation "entity/set-vel! overwrites the entity's current velocity with a new [vx, vy] vector in world units per frame. Use it to cancel motion, change direction abruptly, or apply a kick without adding to existing velocity. Unlike entity/accel! (which adds a force), this is direct assignment. Useful for air-dashing, knockback, or resetting momentum after a collision."
   :examples (
@@ -11372,7 +11372,7 @@
   :name "entity/shape!"
   :library "entity"
   :kind "mut"
-  :signature "(entity/shape! id cells [alphas]) -> true|'entity-not-found|'bad-arg"
+  :signature "(entity/shape! id cells [alphas]) -> #t|'entity-not-found|'bad-arg"
   :summary "Define an entity's collision and render shape as a list of [x, y] cell offsets."
   :explanation "entity/shape! sets the geometric footprint of an entity as a list of cell coordinates relative to the entity's center. For example, (entity/shape! my-entity '((0 0) (1 0) (0 1))) creates an L-shaped entity occupying three cells. The shape is used for both collision detection and rendering (world/render draws each cell). Optionally provide alphas, a parallel list of opacity values (0.0–1.0) for each cell. This decouples shape from the sprite identity, enabling custom collision geometry."
   :examples (
@@ -13818,9 +13818,9 @@
   :summary "Host hook: set a button's held state."
   :explanation "Input/set! is a host-facing mutation verb that directly sets the held state of a button. It is not intended for game code; instead, it is used by the host runtime or external input systems (e.g., hardware controllers, testing frameworks) to inject button state into the running program. When called, it mutates the input state so that subsequent calls to input/down? or input/pressed? reflect the new state. Use with care: calling this from user code will short-circuit normal input polling."
   :examples (
-    (:tier "novice" :code "(input/set! 'a true)\n(display (input/down? 'a))" :note "Inject 'a' into the pressed state; it is now readable via input/down?. (Host use only.)")
-    (:tier "intermediate" :code "(input/set! 'up true)\n(input/set! 'right true)\n(let ((v (input-vector)))\n  (input/set! 'up false)\n  (input/set! 'right false)\n  v)" :note "Simulate a diagonal move by injecting two buttons, computing the result, then releasing them. (Testing use.)")
-    (:tier "expert" :code "(define (replay-input-sequence seq)\n  (for-each\n    (lambda (frame)\n      (for-each\n        (lambda (btn)\n          (input/set! btn true))\n        (car frame))\n      (for-each\n        (lambda (btn)\n          (input/set! btn false))\n        (cdr frame)))\n    seq))\n(replay-input-sequence recorded-moves)" :note "Replay a recorded sequence of input frames by injecting and releasing buttons. (Host/test harness use.)")
+    (:tier "novice" :code "(input/set! 'a #t)\n(display (input/down? 'a))" :note "Inject 'a' into the pressed state; it is now readable via input/down?. (Host use only.)")
+    (:tier "intermediate" :code "(input/set! 'up #t)\n(input/set! 'right #t)\n(let ((v (input-vector)))\n  (input/set! 'up #f)\n  (input/set! 'right #f)\n  v)" :note "Simulate a diagonal move by injecting two buttons, computing the result, then releasing them. (Testing use.)")
+    (:tier "expert" :code "(define (replay-input-sequence seq)\n  (for-each\n    (lambda (frame)\n      (for-each\n        (lambda (btn)\n          (input/set! btn #t))\n        (car frame))\n      (for-each\n        (lambda (btn)\n          (input/set! btn #f))\n        (cdr frame)))\n    seq))\n(replay-input-sequence recorded-moves)" :note "Replay a recorded sequence of input frames by injecting and releasing buttons. (Host/test harness use.)")
   )
   :caveats ("This is a host-facing verb; calling it from user code will override normal input polling." "Setting a button to true from false triggers a press edge; setting to true from true does not." "No validation; invalid button names are silently ignored by the host.")
   :drawbacks ("Using input/set! in game logic breaks encapsulation and makes testing harder, not easier." "Multiple calls in one frame may cause unexpected edge transitions." "The host controls the canonical input state; overriding it may cause frame-sync issues.")
@@ -13929,7 +13929,7 @@
   :explanation "A siteswap is valid if the landing times (beat + throw height, modulo period) form a permutation — that is, no two throws land at the same time, and no throw lands outside the period. juggle/valid? tests this constraint. This is the gatekeeper: before using juggle/balls, juggle/max-throw, or juggle/simulate, call juggle/valid? to ensure the pattern is playable. It returns a boolean (true or false), not 'nan."
   :examples (
     (:tier "novice" :code "(juggle/valid? '(3))" :note "Returns true; a single throw of height 3 is always valid.")
-    (:tier "intermediate" :code "(juggle/valid? '(5 3 1))\n;; Landings: (0+5)%3=2, (1+3)%3=1, (2+1)%3=0 → all distinct → true\n(juggle/valid? '(3 3))\n;; Landings: (0+3)%2=1, (1+3)%2=0 → all distinct → true\n(juggle/valid? '(2 2))\n;; Landings: (0+2)%2=0, (1+2)%2=1 → all distinct → true" :note "Three examples: first and second are valid; third is also valid.")
+    (:tier "intermediate" :code "(juggle/valid? '(5 3 1))\n;; Landings: (0+5)%3=2, (1+3)%3=1, (2+1)%3=0 → all distinct → #t\n(juggle/valid? '(3 3))\n;; Landings: (0+3)%2=1, (1+3)%2=0 → all distinct → #t\n(juggle/valid? '(2 2))\n;; Landings: (0+2)%2=0, (1+2)%2=1 → all distinct → #t" :note "Three examples: first and second are valid; third is also valid.")
     (:tier "expert" :code "(define (safe-ball-count p)\n  (if (juggle/valid? p)\n    (juggle/balls p)\n    'invalid))\n(define (find-all-valid period ball-count)\n  (filter juggle/valid? (juggle/generate period ball-count)))\n(find-all-valid 4 5)" :note "Always validate before extracting ball count. Also, juggle/generate should already return only valid patterns, but double-check if paranoid.")
   )
   :caveats ("juggle/valid? tests the permutation constraint only; it does not check physical playability (e.g. hand switches, collision risk)." "An input that is not a list or vector of non-negative integers returns false (or 'nan, depending on implementation)." "juggle/valid? is strict: a siteswap like '(3 4.5) with a non-integer throw is invalid.")
@@ -14238,7 +14238,7 @@
   :examples (
     (:tier "novice" :code "(define M (matrix/make 2 2 (list 1 0 0 1)))\n(linalg/rank M)\n;; => 2 — both rows are independent" :note "A 2×2 identity has rank 2 (full rank)")
     (:tier "intermediate" :code "(define M (matrix/make 3 3 (list 1 2 3 2 4 6 1 2 3)))\n(linalg/rank M)\n;; => 1 — rows 2 and 3 are multiples of row 1" :note "Rank-deficient matrix: row 2 is 2×row 1, row 3 is row 1; only 1 independent direction")
-    (:tier "expert" :code "(define M (matrix/make 4 3 (list 1 0 0 0 1 0 0 0 1 0 0 0)))\n(linalg/rank M)\n;; => 3 — three independent columns (even though 4 rows)\n(= (linalg/rank M) (matrix/cols M)) ;; => true (full column rank)" :note "Rank tells us whether we have a unique least-squares solution (rank=cols) or infinitely many (rank<cols)")
+    (:tier "expert" :code "(define M (matrix/make 4 3 (list 1 0 0 0 1 0 0 0 1 0 0 0)))\n(linalg/rank M)\n;; => 3 — three independent columns (even though 4 rows)\n(= (linalg/rank M) (matrix/cols M)) ;; => #t (full column rank)" :note "Rank tells us whether we have a unique least-squares solution (rank=cols) or infinitely many (rank<cols)")
   )
   :caveats ("Uses floating-point arithmetic with a tolerance; rank is deterministic within a device but may vary across platforms" "Tolerance is applied relative to largest matrix element; very small matrices with large condition numbers may give unexpected results" "Rank of a 0×0 matrix is 0")
   :drawbacks ("Does not tell you which rows/columns are dependent (use Gaussian elimination manually for that)" "Expensive for very large matrices (O(m²n) or O(mn²) depending on shape)")
@@ -14256,7 +14256,7 @@
   :examples (
     (:tier "novice" :code "(define A (matrix/make 2 2 (list 2 1 1 2)))\n(define b (list 5 4))\n(linalg/solve A b)\n;; => (2 1) — because 2*2 + 1*1 = 5 and 1*2 + 2*1 = 4" :note "Simple 2×2 system: solve 2x + y = 5, x + 2y = 4")
     (:tier "intermediate" :code "(define A (matrix/make 3 3 (list 1 2 3 0 1 4 5 6 0)))\n(define b (list 9 5 12))\n(linalg/solve A b)\n;; => a 3-vector x such that A·x = b" :note "Larger system; Gaussian elimination handles the row operations automatically")
-    (:tier "expert" :code "(define A (matrix/make 4 4 (list 1 0 1 0 0 2 0 1 1 0 1 0 0 1 0 2)))\n(define measurements (list 10 8 12 6))\n(define state (linalg/solve A measurements))\n;; state is now the unknown vector that produced those measurements\n(define check (matrix/* A state)) ;; verify: should equal measurements\n(equal? check measurements) ;; => true (within floating-point error)" :note "Physical example: A is a sensor matrix, measurements are what we observe, state is what we infer")
+    (:tier "expert" :code "(define A (matrix/make 4 4 (list 1 0 1 0 0 2 0 1 1 0 1 0 0 1 0 2)))\n(define measurements (list 10 8 12 6))\n(define state (linalg/solve A measurements))\n;; state is now the unknown vector that produced those measurements\n(define check (matrix/* A state)) ;; verify: should equal measurements\n(equal? check measurements) ;; => #t (within floating-point error)" :note "Physical example: A is a sensor matrix, measurements are what we observe, state is what we infer")
   )
   :caveats ("A must be square (m=n) and non-singular; singular or near-singular matrices escalate with 'singular" "b must be a vector with the same dimension as A's column count" "For overdetermined systems (more equations than unknowns), use linalg/least-squares instead")
   :drawbacks ("O(n³) complexity; slow for very large systems (use iterative methods in practice, but not exposed here)" "Numerically unstable for very ill-conditioned matrices (try linalg/qr-based solve instead, or use linalg/svd as a fallback)" "No built-in regularization; singular systems give no solution")
@@ -14273,8 +14273,8 @@
   :explanation "SVD is the most powerful and general matrix factorization: it works for any shape (rectangular or square) and reveals the true spectral structure of a matrix. U and V are orthogonal; Σ is a diagonal matrix of singular values (always non-negative, ordered largest-first). SVD is used for rank determination, null-space computation, image compression, and regularization. However, SVD is NOT yet implemented in this Sakura instance; attempting to call it escalates with 'not-implemented."
   :examples (
     (:tier "novice" :code "(linalg/svd (matrix/make 2 2 (list 1 0 0 1)))\n;; => escalates 'not-implemented" :note "SVD is not currently available; the verb exists as a stub")
-    (:tier "intermediate" :code ";; Example of what SVD *would* do (pseudocode):\n;; (define (list U Sigma V) (linalg/svd M))\n;; (define reconstructed (matrix/* U (matrix/* Sigma (matrix/transpose V))))\n;; (equal? reconstructed M) ;; => true" :note "When implemented, SVD will factor any matrix into orthogonal U, diagonal Σ, and orthogonal V^T")
-    (:tier "expert" :code ";; Rank via SVD (when implemented):\n;; (define (list U Sigma V) (linalg/svd M))\n;; (define tol 1e-10)\n;; (define rank (count (lambda (s) (> s tol)) (matrix/diag Sigma)))\n;; rank is now the true numerical rank" :note "SVD will provide the most robust rank determination via singular-value thresholding")
+    (:tier "intermediate" :code ";; Example of what SVD *would* do (pseudocode):\n;; (define (list U Sigma V) (linalg/svd M))\n;; (define reconstructed (matrix/* U (matrix/* Sigma (matrix/transpose V))))\n;; (equal? reconstructed M) ;; => #t" :note "When implemented, SVD will factor any matrix into orthogonal U, diagonal Σ, and orthogonal V^T")
+    (:tier "expert" :code ";; Rank via SVD (when implemented):\n;; (define (list U Sigma V) (linalg/svd M))\n;; (define tol 1e-10)\n;; (define rank (count (lambda (s) (> s tol)) (matrix/diag Sigma)))\n;; rank is now the #t numerical rank" :note "SVD will provide the most robust rank determination via singular-value thresholding")
   )
   :caveats ("Currently NOT IMPLEMENTED; all calls escalate with 'not-implemented" "No workaround; use linalg/qr or linalg/rank for rank determination in the interim" "When implemented, expect high computational cost (much slower than QR or LU)")
   :drawbacks ("O(m·n·min(m,n)) or worse; expensive for large matrices" "Not yet available in this release" "No singular-value truncation (shrinkage/regularization) exposed")
@@ -14897,7 +14897,7 @@
   :examples (
     (:tier "novice" :code "(matrix/determinant '[[3 8] [4 6]])" :note "Returns 3*6 − 8*4 = 18 − 32 = −14; a 2×2 determinant.")
     (:tier "intermediate" :code "(let ((A '[[1 2 3] [0 4 5] [0 0 6]]))\n  (matrix/determinant A))" :note "Upper triangular: determinant is product of diagonal = 1*4*6 = 24.")
-    (:tier "expert" :code "(define (is-invertible? M)\n  (let ((det (matrix/determinant M)))\n    (if (eq? det 'not-square)\n        (begin (display \"not square\") false)\n        (not (= det 0)))))\n(is-invertible? '[[2 1] [1 2]])" :note "Helper to check invertibility; det ≠ 0 ⟺ M is invertible.")
+    (:tier "expert" :code "(define (is-invertible? M)\n  (let ((det (matrix/determinant M)))\n    (if (eq? det 'not-square)\n        (begin (display \"not square\") #f)\n        (not (= det 0)))))\n(is-invertible? '[[2 1] [1 2]])" :note "Helper to check invertibility; det ≠ 0 ⟺ M is invertible.")
   )
   :caveats ("Only for square matrices; non-square returns 'not-square." "For n > 3, uses Gaussian elimination; accumulated rounding error is possible." "Singular matrices (det ≈ 0) are numerically unstable; use linalg/rank or linalg/inverse for robustness." "Zero determinant does not guarantee rank-deficiency under floating-point errors; use tolerance-based checks if needed.")
   :drawbacks ("O(n³) time via Gaussian elimination; expensive for large n." "Not numerically stable for ill-conditioned matrices; use linalg/lu for decomposition." "Cannot distinguish rank deficiency from near-singular behavior; use linalg/rank instead.")
@@ -15073,7 +15073,7 @@
   :name "motion/drop"
   :library "motion"
   :kind "null"
-  :signature "(motion/drop [targetBeat] [totalBeats]) -> {kind: 'drop', ok: true, targetBeat: num, totalBeats: num, articulation: list}"
+  :signature "(motion/drop [targetBeat] [totalBeats]) -> {kind: 'drop', ok: #t, targetBeat: num, totalBeats: num, articulation: list}"
   :summary "Generate a beat-aligned articulation curve: high intensity on a target beat, lower elsewhere."
   :explanation "Motion/drop creates an articulation pattern (a list of intensity values, typically 0–1) over a given number of beats, with emphasis (intensity ~0.95) on a target beat and lower intensity (~0.35) on others. The pattern repeats every 4 beats by default. Use this to generate rhythm-aware emphasis in motion: a dancer hits hard on beat 3, moves softly on the others."
   :examples (
@@ -15168,7 +15168,7 @@
   :explanation "motion/with-feel wraps a timing tensor (a reusable set of articulation ratios) and applies a named articulation style to motion. Articulation controls how smoothly or percussively a movement unfolds: 'legato' is connected and fluid, 'staccato' is short and clipped, 'marcato' is accented. The verb recalls a timing tensor by ID (cached in the host) and returns a descriptor that carries both the tensor and the articulation choice. Use this when you want movement to match the phrasing of the music or to create a particular character feel (bouncy, heavy, deliberate)."
   :examples (
     (:tier "novice" :code "(motion/with-feel 'my-tensor-42 :articulation 'legato)" :note "Apply legato (smooth, connected) phrasing to a timing tensor.")
-    (:tier "intermediate" :code "(let ((feel (motion/with-feel 'sweep-tensor :articulation 'staccato)))\n  (if (equal? (feel 'ok) true)\n    (card-do my-card 'animate feel)\n    (escalate 'timing-not-ready null)))" :note "Check if the tensor is ready before using it; escalate if pending.")
+    (:tier "intermediate" :code "(let ((feel (motion/with-feel 'sweep-tensor :articulation 'staccato)))\n  (if (equal? (feel 'ok) #t)\n    (card-do my-card 'animate feel)\n    (escalate 'timing-not-ready null)))" :note "Check if the tensor is ready before using it; escalate if pending.")
     (:tier "expert" :code "(define (choreograph-bounce ctx)\n  (let ((light-feel (motion/with-feel 'light-bounce :articulation 'staccato))\n        (heavy-feel (motion/with-feel 'heavy-bounce :articulation 'marcato)))\n    (card-do (card-find-by-kind 'light ctx) 'animate light-feel)\n    (card-do (card-find-by-kind 'heavy ctx) 'animate heavy-feel)))\n(next 'idle ctx)" :note "Apply different articulations to different cards to create a composite animation feel.")
   )
   :caveats ("Requires a timing tensor to be pre-cached in the host. If the tensor ID is unknown or not yet loaded, the verb returns { ok: false }." "If :articulation is not recognized, it defaults to 'legato'." "The descriptor is lazy; the actual phrasing is applied only when the host animates using this descriptor." "Changing the articulation style after animation starts has no effect on in-flight motion.")
@@ -17707,7 +17707,7 @@
   :name "radio/unmute"
   :library "radio"
   :kind "null"
-  :signature "(radio/unmute) -> [ok { muted: false }]"
+  :signature "(radio/unmute) -> [ok { muted: #f }]"
   :summary "Unmute the radio, restoring audio output."
   :explanation "Sets the mute flag to false, allowing audio from the radio to be heard. This is a simple state setter; unmuting does not change the station, playback position, or volume level—it only toggles the mute gate. Returns an ok tuple confirming the new muted state."
   :examples (
@@ -18351,7 +18351,7 @@
   :summary "Test whether three numbers a, b, c form a Pythagorean triple (a² + b² = c²)."
   :explanation "A Pythagorean triple is a set of three positive integers that satisfy the Pythagorean theorem: a² + b² = c², where c is the hypotenuse. This verb checks membership in that infinite set. True triples include (3, 4, 5), (5, 12, 13), (8, 15, 17), and all their multiples. The mental model: can these side lengths form a right triangle?"
   :examples (
-    (:tier "novice" :code "(solve/pythagorean-triple? 3 4 5)\n;; => true\n;; 3² + 4² = 9 + 16 = 25 = 5²" :note "The canonical (3, 4, 5) triple; always a good sanity check.")
+    (:tier "novice" :code "(solve/pythagorean-triple? 3 4 5)\n;; => #t\n;; 3² + 4² = 9 + 16 = 25 = 5²" :note "The canonical (3, 4, 5) triple; always a good sanity check.")
     (:tier "intermediate" :code "(let ((sides (list 5 12 13)))\n  (if (apply solve/pythagorean-triple? sides)\n    (display \"right triangle\")\n    (display \"not a right triangle\")))\n;; => \"right triangle\"\n;; 5² + 12² = 25 + 144 = 169 = 13²" :note "Unpack a list of three sides and test whether they form a right triangle.")
     (:tier "expert" :code "(define (find-hypotenuse a b)\n  (let loop ((c (+ a b)))\n    (if (solve/pythagorean-triple? a b c)\n      c\n      (loop (+ c 1)))))\n(find-hypotenuse 3 4)\n;; => 5" :note "Generate the hypotenuse by searching: given two legs, find the smallest integer c that completes the triple.")
   )
@@ -21259,7 +21259,7 @@
   :name "world/tape-clear!"
   :library "world"
   :kind "mut"
-  :signature "(world/tape-clear!) → true"
+  :signature "(world/tape-clear!) → #t"
   :summary "Discard the replay tape and disarm recording; always returns true."
   :explanation "world/tape-clear! resets the replay recording system. If a replay is currently recording (via world/tape-record!), it is halted and all frames are discarded. The tape buffer is emptied. Calling world/tape-clear! when no tape is active is a no-op. This is useful to free memory or restart recording from a clean state. Always returns true (a success marker)."
   :examples (
@@ -21301,7 +21301,7 @@
   :examples (
     (:tier "novice" :code "(begin\n  (world/tape-record! 200)\n  (world/step)\n  (world/step)\n  (let ((h1 (world/tape-hash)))\n    (display h1)))" :note "Compute the hash of a short 3-frame recording to verify it is captured.")
     (:tier "intermediate" :code "(begin\n  (world/tape-record! 1000)\n  (dotimes (i 50) (world/step))\n  (let ((h-live (world/tape-hash)))\n    (world/tape-stop!)\n    (if (equal? h-live 0)\n      (escalate 'hash-empty null)\n      (display (list 'tape-hash h-live)))))" :note "Stop recording and check that the hash is non-zero (tape has content).")
-    (:tier "expert" :code "(define (validate-replay ctx)\n  (let ((saved-tape (world/tape-save))\n        (h-original (ctx-get 'replay-hash ctx)))\n    (begin\n      (world/tape-clear!)\n      (world/tape-record! 5000)\n      ;; (simulate replay path here)\n      (let ((h-replay (world/tape-hash)))\n        (if (= h-original h-replay)\n          (next 'success (ctx-set 'verified true ctx))\n          (escalate 'replay-mismatch (list h-original h-replay)))))))" :note "Store the original tape hash, then replay and compare. Mismatch means non-determinism or corrupted input.")
+    (:tier "expert" :code "(define (validate-replay ctx)\n  (let ((saved-tape (world/tape-save))\n        (h-original (ctx-get 'replay-hash ctx)))\n    (begin\n      (world/tape-clear!)\n      (world/tape-record! 5000)\n      ;; (simulate replay path here)\n      (let ((h-replay (world/tape-hash)))\n        (if (= h-original h-replay)\n          (next 'success (ctx-set 'verified #t ctx))\n          (escalate 'replay-mismatch (list h-original h-replay)))))))" :note "Store the original tape hash, then replay and compare. Mismatch means non-determinism or corrupted input.")
   )
   :caveats ("Hash is 32-bit; collisions are theoretically possible but vanishingly rare in practice." "Hash changes if *any* entity position, kind, or sprite differs between two recordings—even sub-pixel deltas." "Hash is computed over the current tape state; it changes as frames are added (rolling window may discard old frames).")
   :drawbacks ("Does not identify *which* frame or entity caused a mismatch; only signals that tapes differ." "Requires full tape in memory; cannot stream-validate very long recordings." "If tape is empty, hash is well-defined but not useful for asserting content (use `world/tape-frames > 0` first).")
@@ -21331,7 +21331,7 @@
   :name "world/tape-record!"
   :library "world"
   :kind "mut"
-  :signature "(world/tape-record! [cap]) -> true"
+  :signature "(world/tape-record! [cap]) -> #t"
   :summary "Arm the motion tape and capture the current world frame; optionally set a rolling-window capacity."
   :explanation "Begin recording the world's motion. Each call to `world/step` appends a new frame to the tape. You can supply an optional capacity `cap` (a positive integer) to limit memory: once the tape reaches `cap` frames, older frames roll off. If `cap` is omitted or non-finite, the tape grows without bound. Always returns `true`. Call `world/tape-stop!` to halt recording (tape is retained), or `world/tape-clear!` to discard it."
   :examples (
