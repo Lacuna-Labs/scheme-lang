@@ -1,0 +1,143 @@
+;; ═══════════════════════════════════════════════════════════════════════
+;; kira-game — Phase B final report
+;; Lane: game/* sprite/* entity/* prefab/*
+;; Date: 2026-07-14
+;; Author: Kira (Lacuna Eng Lead — game wiring lane)
+;;
+;; Doctrine (Alfred): "We can't lie to people. They trust us."
+;; ═══════════════════════════════════════════════════════════════════════
+
+(phase-b
+  :lane "kira-game"
+  :date "2026-07-14"
+  :verbs-wired 33
+  :verbs-author-blocked 1
+  :new-files ("src/game-theory.js" "src/game-instances.js" "src/prefab.js" "src/sprite.js")
+  :commits ("541ae2a Phase A audit"
+            "5e78bc8 game-theory.js (real 456-line kit; author cred taken by placeholder commit)"
+            "924e492 game-instances (6 verbs)"
+            "237a8ee prefab (2 verbs) + sprite (3 verbs + 1 helper)"))
+
+;; ─── Wired subsystems ─────────────────────────────────────────────────
+
+(subsystem :name "game-theory"
+  :file "src/game-theory.js"
+  :verbs 22
+  :install-order "L3.6 in sakuraEnv (before installWiredVerbs)"
+  :wired (
+    "game/nim-sum"          ; XOR fold, variadic or list
+    "game/nim-outcome"      ; 'P or 'N classification
+    "game/mex"              ; minimum excludant
+    "game/grundy"           ; memoized Grundy recursion
+    "game/star-n"           ; nimber construction
+    "game/wythoff-p?"       ; Beatty's-theorem P-position test
+    "game/surreal"          ; {L|R} construction
+    "game/surreal-lit"      ; dyadic-rational → surreal
+    "game/surreal-simplest" ; simplest-between (Conway's simplicity rule)
+    "game/surreal-eq?"      ; game-equality (le both ways)
+    "game/surreal-le?"      ; Conway's <= recursion, memoized
+    "game/surreal-is-number?" ; number-condition check
+    "game/surreal-birthday" ; ordinal depth
+    "game/surreal-neg"      ; {-R | -L}
+    "game/surreal-add"      ; recursive addition, memoized
+    "game/surreal-sub"      ; sub via neg
+    "game/surreal-mul"      ; Conway's four-term formula, memoized
+    "game/to-real"          ; real value of a number-shaped surreal
+    "game/temperature"      ; 0 for numbers; L-R-stop gap for fuzzy
+    "game/ttt-value"        ; minimax value under perfect play
+    "game/ttt-best-move"    ; optimal cell 0..8
+    ))
+
+(subsystem :name "game-instances"
+  :file "src/game-instances.js"
+  :verbs 6
+  :install-order "L3.65 in sakuraEnv"
+  :wired (
+    "big-bang"       ; create instance, return integer id
+    "game/state"     ; state read by id
+    "game/frame"     ; frame counter by id
+    "game/running?"  ; liveness boolean
+    "game/step"      ; advance one frame, return status Sym
+    "game/stop"      ; halt, return #t/#f
+    ))
+
+(subsystem :name "prefab"
+  :file "src/prefab.js"
+  :verbs 2
+  :install-order "L3.66 in sakuraEnv"
+  :wired (
+    "prefab/define" ; register a spawn template alist by name
+    "prefab/spawn"  ; instantiate — delegates to entity/make + entity/tag!
+    ))
+
+(subsystem :name "sprite"
+  :file "src/sprite.js"
+  :verbs 3
+  :extras 1
+  :install-order "L3.67 in sakuraEnv"
+  :wired (
+    "sprite/address"    ; (sprite-ref petal-ref) → (x y) | error
+    "sprite/landmarks"  ; sprite-ref → list-of-petal-syms | error
+    "sprite/rasterize"  ; stamp cluster into media.fb with rot/scale/alpha
+    "sprite/define"     ; authoring helper (not in reference — needed for tests)
+    ))
+
+;; ─── Author-blocked ───────────────────────────────────────────────────
+
+(author-blocked :verb "entity/get"
+  :ref-signature "(entity/get id key) → value | 'nan"
+  :reason "The reference spec calls for a per-entity KV scratch value ('nan when absent). The current impl in src/game.js is (entity/get id) → list — a bulk read of position/velocity/size. Two different verbs sharing a name. Overriding the 1-arg form would break existing books that use it as a bulk-read. Alfred should disambiguate: EITHER rename the reference verb (e.g. entity/attr) OR migrate the 1-arg use-sites and reserve entity/get for the KV shape. Not shipping a lie."
+  :entry-provenance "author-blocked")
+
+;; ─── entity/tag! — false-alarm in Phase A audit ───────────────────────
+
+(correction :verb "entity/tag!"
+  :phase-a-said "stubbed"
+  :actual "wired in src/game.js line 210 — the missingImpls set counted it as
+           missing because the check was against makeBaseEnv (no game layer),
+           not makeSakuraEnv. Once installGame runs, entity/tag! is real."
+  :verified "(entity/make 'ball 10 10) (entity/tag! 'ball 'toy) (entity/has-tag? 'ball 'toy) => #t")
+
+;; ─── Verification protocol used ───────────────────────────────────────
+
+(verify :harness "./bin/sakura-scheme eval '<code>'"
+  :per-verb "smoke-tested via inline REPL eval; every wired verb returns
+             its documented shape, not a descriptor list. Full multi-verb
+             smoke script in commits."
+  :caveats ("game-theory.js content was authored by kira but committed under
+             priya-math-b's name via architect coordination (commit 5e78bc8).
+             Content in that commit is the full 456-line real kit, not the
+             no-op stub the commit message describes. Attribution honesty
+             note: the message is misleading but the code is real."
+            "SLAT entry upgrades to new schema (:impl-status \"wired\",
+             :entry-provenance \"authored\", 5-tier examples) were NOT
+             completed. Concurrent-lane collisions on
+             docs/SAKURA-SCHEME-REFERENCE.slat made per-verb SLAT edits
+             unsafe. Deferred to a follow-up pass when the branch
+             stabilizes."))
+
+;; ─── Environmental notes for architect ────────────────────────────────
+
+(notes :author "kira" :for "architect"
+  :items (
+    "Massive concurrent-edit churn on src/sakuraEnv.js and shared files.
+     Each lane's Read/Edit is racing every other lane's Read/Edit. My
+     game-theory.js NEW-file was clobbered TWICE during Phase B before
+     finally landing via architect commit 5e78bc8. Later commits
+     (game-instances, prefab, sprite) landed clean by being atomic
+     new-file + single sakuraEnv edit."
+    "Bug: reference-loader.js briefly lost its loadSchema + validateEntry
+     exports (concurrent-lane revert) while reference-register.js started
+     importing them, breaking every lane's build. Ada scaffold-schema +
+     Alfred fixup commit 9542a59 restored them. Consider a pre-commit
+     hook or a lint pass that blocks landing a change which references
+     a not-yet-existing export."
+    "SLAT entry upgrades will need a coordinated pass. Suggest a single
+     lane owning schema-field additions (:impl-status + :entry-provenance
+     + 5-tier examples) across all 1160 verbs after wiring stabilizes.
+     Doing it in parallel with wire-up caused too many merge collisions."
+    "Multi-instance game state: big-bang creates a game/state via a
+     separate INSTANCES Map in src/game-instances.js — NOT the game.state
+     Map in src/game.js. The two systems coexist. If a future lane wants
+     unified state, game-instances is a thin shim that could adopt the
+     game.js Map directly."))
