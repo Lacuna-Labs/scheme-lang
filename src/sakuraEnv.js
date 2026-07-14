@@ -20,6 +20,8 @@ import { installAi } from './ai.js'
 import { installGame, makeGameState } from './game.js'
 import { installGameTheory } from './game-theory.js'
 import { installJuggle } from './juggle.js'
+import { installScene } from './scene.js'
+import { installCine } from './cine.js'
 import { installOps } from './ops.js'
 import { installCommercial } from './commercial.js'
 import { loadAuthFromDisk } from './auth/store.js'
@@ -27,6 +29,7 @@ import { registerReferenceVerbs } from './reference-register.js'
 import { installWiredVerbs } from './wired-verbs.js'
 import { installWiredVerbsIP } from './wired-verbs-priya-i-p.js'
 import { installWiredVerbsHanaMath } from './wired-verbs-hana-math.js'
+import { installWiredVerbsMarcusMathC } from './wired-verbs-marcus-math-c.js'
 import { installSystem } from './system.js'
 
 /**
@@ -58,6 +61,19 @@ export function makeSakuraEnv(fuel, {
   // juggle/simulate juggle/generate). Must run BEFORE installWiredVerbs
   // so wired-verbs.js's descriptor stubs for juggle/* are skipped.
   installJuggle(env)
+
+  // L3.55 SCENE — level orchestration verbs that mutate game.entities.
+  // Wires 5 (scene/clear scene/grid scene/spawn-many scene/imagine
+  // scene/load). Must run AFTER installGame (needs the entities Map)
+  // and BEFORE installWiredVerbs.
+  installScene(env, game)
+
+  // L3.56 CINE — cinematography verbs. Camera state + shot vocabulary +
+  // frame/shot records. Reads entity positions from game.entities for
+  // aabb computation. Wires 7 (cine/comfort cine/follow cine/following?
+  // cine/frame cine/shot cine/shots cine/stop). Same install-order
+  // reasoning as scene: after game, before wired-verbs.
+  installCine(env, game)
 
   // L3.6 GAME THEORY — kira-game lane. Pure combinatorial-game-theory
   // verbs: nim/mex/Grundy/Wythoff, surreal numbers, tic-tac-toe minimax.
