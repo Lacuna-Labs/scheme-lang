@@ -20,11 +20,13 @@ import { installAi } from './ai.js'
 import { installGame, makeGameState } from './game.js'
 import { installGameTheory } from './game-theory.js'
 import { installJuggle } from './juggle.js'
+import { installOps } from './ops.js'
 import { installCommercial } from './commercial.js'
 import { loadAuthFromDisk } from './auth/store.js'
 import { registerReferenceVerbs } from './reference-register.js'
 import { installWiredVerbs } from './wired-verbs.js'
 import { installWiredVerbsIP } from './wired-verbs-priya-i-p.js'
+import { installWiredVerbsHanaMath } from './wired-verbs-hana-math.js'
 import { installSystem } from './system.js'
 
 /**
@@ -57,6 +59,21 @@ export function makeSakuraEnv(fuel, {
   // so wired-verbs.js's descriptor stubs for juggle/* are skipped.
   installJuggle(env)
 
+  // L3.6 GAME THEORY — kira-game lane. Pure combinatorial-game-theory
+  // verbs: nim/mex/Grundy/Wythoff, surreal numbers, tic-tac-toe minimax.
+  // Real math, no live subsystem. Runs BEFORE installWiredVerbs so the
+  // fake descriptor-stubs there for game/surreal-* / game/ttt-* / etc.
+  // are skipped and our authored impls win.
+  installGameTheory(env)
+
+  // L3.7 OPS — operations-research primitives (Zain, 2026-07-14). Wires
+  // all 35 ops/* verbs (eoq, mm1, mmc, dijkstra, simplex, mip-solve,
+  // pagerank, absorbing-probs, …). All pure computation, no I/O. Runs
+  // BEFORE installWiredVerbs so the ops descriptor stubs there are
+  // skipped by the preExisting check. Real algorithms, no descriptor
+  // lies. Alfred: "we can't lie to people. They trust us."
+  installOps(env)
+
   // L4 COMMERCIAL — etsy/ebay/shopify/meta/google. Every verb is
   // registered; execution is gated by an auth check that reads from
   // the Cortex.
@@ -88,6 +105,12 @@ export function makeSakuraEnv(fuel, {
   // descriptors from installWiredVerbs with real REPL-safe impls where
   // the semantics allow, and installs an honest podcast state model.
   installWiredVerbsIP(env, fuel)
+
+  // L4.7 WIRED-HANA-MATH — Hana's lane (solve/plot/seq/calc). Overrides
+  // descriptor stubs for the 26 calc/*, 14 plot/*, and 1 seq/* verbs
+  // with real numerical impls. Plot verbs rasterize into the shared
+  // framebuffer AND return an inspectable plot record.
+  installWiredVerbsHanaMath(env, fuel)
 
   // L5 REFERENCE — every documented verb from SAKURA-SCHEME-REFERENCE.slat.
   // Curated impls replace stubs; anything without an impl gets a

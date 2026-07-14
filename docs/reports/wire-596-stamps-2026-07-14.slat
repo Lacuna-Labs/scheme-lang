@@ -14,3 +14,4 @@
 (stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 0)
 (fail :verb "comb/bell" :lane "rin-topo-comb" :verified-at "2026-07-14T19:26:34.887Z" :examples-passed 0 :reason "missing fields: kind,explanation")
 (fail :verb "comb/binomial-coeffs" :lane "rin-topo-comb" :verified-at "2026-07-14T19:27:21.595Z" :examples-passed 0 :reason "missing fields: kind,explanation")
+(fail :verb "comb/catalan" :lane "rin-topo-comb" :verified-at "2026-07-14T19:31:56.645Z" :examples-passed 0 :reason "missing fields: kind,explanation")
