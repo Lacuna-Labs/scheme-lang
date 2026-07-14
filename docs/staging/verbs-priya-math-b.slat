@@ -1,0 +1,98 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-priya-math-b.slat — Priya's authored verb entries
+;;
+;; Lane: no-namespace verbs, first letter i-p (77 verbs)
+;; Author: Priya (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;   Slices: :general, +math, +cs, +eng, +commerce, +hacker, +ai, +meta
+;;
+;; Doctrine (Alfred): reference IS the language. We can't lie to people.
+;;   - If a verb's true semantics need a live host (framebuffer surface,
+;;     audio hardware, card runtime, input runtime, music engine), the
+;;     entry ships :impl-status "deferred" with :impl-notes explaining
+;;     what the host actually does. Never a lie.
+;;   - Every example REPL-verified via bin/sakura-scheme eval.
+;;   - Kid-from-North-Georgia test: a kid types (paint-cell 'world 5 3
+;;     'red). The entry should be readable enough that they understand
+;;     what would happen under the full host, even if the REPL returns
+;;     a descriptor.
+;; ═══════════════════════════════════════════════════════════════
+
+;; ─── invariants — declaration verb ─────────────────────────────────
+
+(verb
+  :name "invariants"
+  :library "core"
+  :signature "(invariants rule ...) -> null"
+  :summary "Declare state-machine invariants for lint and simulator; no runtime effect."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(invariants '(counter >= 0))"
+     :note "One invariant, no runtime cost. Returns null. The linter reads the rule; the driver ignores it.")
+    (:tier "apprentice"
+     :code "(begin\n  (invariants '(counter >= 0) '(counter <= 100))\n  (display \"invariants declared\"))"
+     :note "Multiple invariants in one call. The display line executes normally; invariants leave no trace at runtime.")
+    (:tier "intermediate"
+     :code "(define (count-up ctx)\n  (invariants '(counter >= 0) '(counter <= 100))\n  (let ((c (ctx-get 'counter ctx)))\n    (if (< c 100)\n      (next 'count-up (ctx-set 'counter (+ c 1) ctx))\n      (done))))"
+     :note "Inline in a state handler. The invariants read as documentation for a linter or simulator; the runtime path is unchanged. If a static tool notices the ctx-set violates the range, it can warn.")
+    (:tier "expert"
+     :code "(define (stateful-loop ctx)\n  (invariants\n    '(mode in (read write idle))\n    '(buffer-size <= max-capacity)\n    '(error-count >= 0))\n  (let ((mode (ctx-get 'mode ctx)))\n    (cond ((eq? mode 'read)  (act 'read-data '() 'on-read))\n          ((eq? mode 'write) (act 'write-data '() 'on-write))\n          (else (done)))))"
+     :note "Three invariants together: an enum membership, a bound on a variable, and a non-negativity. These are exactly the shapes a lint pass can machine-check against the ctx-set calls elsewhere.")
+    (:tier "master"
+     :code "(define (elevator ctx)\n  (invariants\n    '(floor in (1 2 3 4 5))\n    '(doors in (open closed))\n    '(direction in (up down idle))\n    '(when (doors = open) (direction = idle)))\n  (let ((cmd (ctx-get 'command ctx)))\n    (cond ((eq? cmd 'call-up)   (next 'seek-up   ctx))\n          ((eq? cmd 'call-down) (next 'seek-down ctx))\n          (else (next 'idle ctx)))))"
+     :note "In a full cart: invariants become the safety contract for a critical system. The last rule is the safety property — doors open implies not moving. A simulator can exhaustively check this against every path through the state machine."))
+  :related ("next" "done" "ctx-get" "ctx-set" "act")
+  :caveats ("invariants have NO runtime cost or effect — they are purely for static analysis." "If an invariant is violated, the linter or simulator will warn, but the driver will not stop execution." "Rule syntax is free-form; the linter and simulator must understand the rule language you use (quoted lists or symbolic constraints).")
+  :drawbacks ("No enforcement at runtime; nothing stops a live program from violating them." "Rule syntax is not standardized — different tools may parse differently." "Cannot be composed or manipulated as data at runtime (they evaluate to null immediately).")
+  :usecases ("Documenting the safety contract of a state handler." "Feeding a lint pass that can check ctx-set against declared bounds." "Feeding a bounded model checker or simulator to verify safety properties.")
+  :learn (:concept "A declaration verb whose only purpose is to leave a machine-readable trace for external tools. The runtime treats it as a no-op." :prerequisites ("define" "next") :progression "After this, look at how the simulator or linter consumes these — the invariants become predicates it evaluates against symbolic execution paths.")
+
+  :+math
+    (:algebra ("null is the identity of sequencing (begin), so (invariants ...) is trivially absorbed into any code path.")
+     :total #t
+     :domain "one or more rule expressions"
+     :codomain "null"
+     :proofs "By definition of a no-op: forall inputs, result = null; forall traces including this call, trace is unchanged.")
+
+  :+cs
+    (:complexity "time O(1) — arguments are not evaluated for their meaning, only passed."
+     :effects (none)
+     :pure #t
+     :special-form #f
+     :evaluation-order "applicative — arguments are evaluated but their values discarded")
+
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "def('invariants', (..._rules) => null). Returns null unconditionally. Documented as a lint/simulator hook; the driver has no consumer."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (invariants '(x >= 0)) returns null."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ()
+     :cardinality void
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Expecting invariants to fire an error at runtime. They do not. They are pure documentation for static tools."
+     :when-not-to-use "You need runtime enforcement — use assert or a guard instead. You need invariants that hold across concurrent handlers — the tool must be trace-aware, and free-form rules may confuse it."
+     :returns-confidence #f)
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Declare state-machine invariants for lint and simulator; no runtime effect."
+        :long  "Declare state-machine invariants for lint and simulator; no runtime effect. Rules are free-form; tools that understand your rule language machine-check them; the driver treats the call as a no-op."
+        :for-ai "Use to document safety contracts for state handlers. Zero runtime cost. Rules are consumed by lint/simulator, not the driver."
+        :for-kid "A note to the robot that reads code before it runs. It says 'these things should always be true here.' The robot may warn you if they aren't; the program keeps running either way.")))
