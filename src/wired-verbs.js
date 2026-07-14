@@ -937,10 +937,14 @@ export function installWiredVerbs(env, fuel) {
   def('solve/unit-circle', (theta) => [Math.cos(num(theta)), Math.sin(num(theta))])
 
   // ── 18. const/* — math constants ───────────────────────────────────
-  def('const/ln2', () => Math.LN2)
-  def('const/ln10', () => Math.LN10)
-  def('const/sqrt2', () => Math.SQRT2)
-  def('const/sqrt3', () => Math.sqrt(3))
+  // marcus-math-c fix: these are NUMBERS, not thunks. The reference
+  // declares const/ln2 -> 0.69314…, which is a bare number. Wrapping
+  // in a thunk made (const/ln2) return `#<procedure>` at the REPL —
+  // a lie the kid discovers on their first log-base-2 attempt.
+  def('const/ln2', Math.LN2)
+  def('const/ln10', Math.LN10)
+  def('const/sqrt2', Math.SQRT2)
+  def('const/sqrt3', Math.sqrt(3))
 
   // ── 19. calc/* — descriptors + simple derivs ───────────────────────
   const calcExtras = [
