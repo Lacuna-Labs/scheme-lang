@@ -278,3 +278,201 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Binomial coefficient. Point-lookup in Pascal's triangle. Foundation for probability, statistics, and combinatorial enumeration."))
+
+(verb
+  :name "comb/derangement"
+  :library "comb"
+  :signature "(comb/derangement n) -> integer"
+  :summary "Derangement number D(n) or !n: count of permutations of n items where no item stays in its original position."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/derangement 4)"
+     :note "Returns 9: of the 24 permutations of {1,2,3,4}, exactly 9 have no fixed point (no element sitting in its own slot).")
+    (:tier "apprentice"
+     :code "(comb/derangement 0)"
+     :note "Returns 1: the empty permutation is a derangement by convention (there are no fixed points because there are no points). D(1) = 0 — the only permutation has one fixed point.")
+    (:tier "intermediate"
+     :code "(map comb/derangement (list 0 1 2 3 4 5 6 7))"
+     :note "Returns (1 0 1 2 9 44 265 1854). Note D(1) = 0 (the identity can't be avoided in a 1-permutation) and the sequence grows like n!/e.")
+    (:tier "expert"
+     :code "(let ((n 6)) (list (comb/derangement n) (comb/factorial n)))"
+     :note "Returns (265 720). D(6) / 6! = 265/720 ≈ 0.368. The ratio D(n)/n! approaches 1/e ≈ 0.3679 as n grows — a probability limit theorem hiding in combinatorics.")
+    (:tier "master"
+     :code "(define (secret-santa-fair-probability n)\n  (/ (comb/derangement n) (comb/factorial n)))\n(list ':n3 (secret-santa-fair-probability 3)\n      ':n5 (secret-santa-fair-probability 5)\n      ':n10 (secret-santa-fair-probability 10))"
+     :note "Model: n friends draw names for Secret Santa; the draw is 'fair' iff nobody draws themselves — a derangement. Returns (:n3 0.333 :n5 0.367 :n10 0.368). Even for small n, chance of a valid random draw is already ≈ 1/e."))
+
+  :related ("comb/factorial" "comb/permute" "comb/choose")
+  :caveats ("D(1) = 0: no way to derange a single item." "D(0) = 1 by convention (empty product / empty permutation)." "For large n, D(n) approaches n!/e; the impl returns exact integers via the recurrence D(n) = (n-1)(D(n-1) + D(n-2)).")
+  :drawbacks ("Not memoized across calls." "For very large n (n > 20), D(n) exceeds JS safe integer precision — same limit as comb/factorial." "Doesn't enumerate derangements, only counts them.")
+  :usecases ("Secret Santa or 'don't-draw-yourself' probability calculations." "Message-envelope problem: how likely is it that a random shuffle leaves nobody in their intended slot." "Fixed-point-free permutation enumeration in group theory." "Probability approximations near 1/e for large-n random-permutation questions.")
+  :learn (:concept "Derangement is a permutation with no fixed points. The count D(n)/n! → 1/e as n → ∞ — the ubiquitous 'about 37% chance' benchmark for permutation problems." :prerequisites ("comb/factorial" "comb/permute") :progression "Study inclusion-exclusion (of which D(n) is the canonical example: D(n) = n! sum(k=0..n) (-1)^k / k!); then look at fixed-point-free permutations in group theory.")
+
+  :+math
+    (:algebra "Closed form: D(n) = n! sum(k=0..n) (-1)^k / k! = nearest-integer(n!/e). Recurrence: D(n) = (n-1)(D(n-1) + D(n-2)), or D(n) = n·D(n-1) + (-1)^n. Limit: D(n)/n! → 1/e."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "non-negative integer"
+     :proofs "By inclusion-exclusion on the set of permutations with at least one fixed point. The alternating sum sum(k) (-1)^k n!/k! subtracts, adds, subtracts permutations with 1, 2, 3, … forced fixed points.")
+
+  :+cs
+    (:complexity "Time O(n) via the two-term linear recurrence. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Iterative dynamic-programming table via D(n) = (n-1)(D(n-1) + D(n-2)) starting from D(0) = 1, D(1) = 0. Result is a JavaScript number."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: D(0)=1, D(1)=0, D(4)=9, D(7)=1854; D(6)/6! ≈ 0.3681 (close to 1/e = 0.3679)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/factorial" "/")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming D(1) = 1 like a factorial — it's 0 (impossible). Ignoring the (-1)^n term in the linear form. Treating D(n) as approximately n!/e for very small n where the approximation is poor."
+     :when-not-to-use "You need to enumerate the derangements themselves. You need any specific structural property beyond the count.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Count permutations with no fixed points. D(n)/n! → 1/e. Canonical inclusion-exclusion example."))
+
+(verb
+  :name "comb/factorial"
+  :library "comb"
+  :signature "(comb/factorial n) -> integer"
+  :summary "Factorial n! = 1 · 2 · 3 · … · n. By convention 0! = 1."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/factorial 5)"
+     :note "Returns 120: 5! = 5·4·3·2·1 = 120.")
+    (:tier "apprentice"
+     :code "(comb/factorial 0)"
+     :note "Returns 1: the empty product is 1 by convention. This makes formulas involving 0! (e.g., in binomial coefficients) work cleanly at the boundary.")
+    (:tier "intermediate"
+     :code "(map comb/factorial (list 0 1 2 3 4 5 6 7 8 9 10))"
+     :note "Returns (1 1 2 6 24 120 720 5040 40320 362880 3628800). Factorial grows explosively — 10! is already over three million.")
+    (:tier "expert"
+     :code "(define (binom-verify n k)\n  (equal? (comb/choose n k)\n          (/ (comb/factorial n)\n             (* (comb/factorial k) (comb/factorial (- n k))))))\n(map (lambda (p) (binom-verify (car p) (cadr p)))\n     (list (list 5 2) (list 10 3) (list 8 4) (list 6 6)))"
+     :note "Verify the direct-form binomial identity C(n,k) = n! / (k! (n-k)!) for four (n,k) pairs. Returns (#t #t #t #t). The choose impl uses a faster iterative form, but the definitions align.")
+    (:tier "master"
+     :code "(define (permutations-of-word word-length)\n  (comb/factorial word-length))\n(list ':three-letters (permutations-of-word 3)\n      ':five-letters (permutations-of-word 5)\n      ':seven-letters (permutations-of-word 7))"
+     :note "Domain: how many distinct anagrams of an all-distinct-letter word? Answer is word-length!. Returns (:three-letters 6 :five-letters 120 :seven-letters 5040). 5040 is the number of ways to seat 7 dinner guests in a row."))
+
+  :related ("comb/choose" "comb/permute" "comb/multichoose" "comb/multinomial" "comb/derangement")
+  :caveats ("Grows explosively: 20! ≈ 2.4e18, past JS safe-integer limit (2^53 - 1 ≈ 9e15)." "For n > 18 the result loses low-bit precision; for n > 21 it enters floating-point range." "Negative n falls through the loop and returns 1 (empty product); this is an undocumented behavior — assume n >= 0.")
+  :drawbacks ("No arbitrary-precision — use log-space for large-n manipulations." "Iterative loop; no memoization across calls." "For quotients like n!/(n-k)! or n!/k!, prefer computing the falling factorial or the binomial coefficient directly to avoid intermediate overflow.")
+  :usecases ("Counting permutations of distinct items." "Denominator in binomial and multinomial expansions." "Denominator in Poisson probability: e^(-λ) λ^k / k!." "Base cases for many combinatorial recurrences.")
+  :learn (:concept "Factorial n! counts orderings of n distinct items. Empty product 0! = 1 anchors the boundary case in every formula that uses it." :prerequisites ("*") :progression "Follow with comb/permute (enumerate them), comb/choose (unordered subsets), comb/multinomial (ordered groups), comb/derangement (permutations with no fixed points).")
+
+  :+math
+    (:algebra "Recurrence: n! = n · (n-1)!, base 0! = 1. Stirling's approximation: n! ~ sqrt(2πn) (n/e)^n. Gamma extension: Γ(n+1) = n! for non-negative integer n; extends to non-integer arguments."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "positive integer"
+     :proofs "Direct combinatorial: n! counts linear orderings of n items — n choices for the first slot, n-1 for the second, and so on.")
+
+  :+cs
+    (:complexity "Time O(n), space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Iterative for-loop multiplying an accumulator by k for k = 2..n. Base case n <= 1 returns 1. Result is a JavaScript number; precision degrades past n = 18."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 0!=1, 5!=120, 10!=3628800; binomial identity cross-check for (5,2), (10,3), (8,4), (6,6) all pass."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/choose" "comb/permute" "comb/multinomial" "expt" "/")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting 0! = 1. Trying to use factorials for n > 18 without switching to log-space or big-integer. Computing n!/(n-k)! directly and hitting overflow before the divide."
+     :when-not-to-use "You need very large n — switch to log-space (gamma-log-factorial) or big-int. You need only a ratio like n!/(n-k)!; compute the falling factorial directly.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Factorial n! counts orderings of n distinct items. 0! = 1 by convention. Grows explosively; safe for n ≤ 18 in JS numbers."))
+
+(verb
+  :name "comb/multichoose"
+  :library "comb"
+  :signature "(comb/multichoose n k) -> integer"
+  :summary "Multiset coefficient — combinations with replacement — C(n+k-1, k): count of size-k multisets drawn from n distinct types."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/multichoose 3 2)"
+     :note "Returns 6: from 3 flavors of ice cream, there are 6 ways to build a 2-scoop cup where scoops can repeat — {AA, AB, AC, BB, BC, CC}.")
+    (:tier "apprentice"
+     :code "(comb/multichoose 5 0)"
+     :note "Returns 1: exactly one way to choose an empty multiset — the empty one. Boundary case matches C(n-1, 0) = 1.")
+    (:tier "intermediate"
+     :code "(map (lambda (k) (comb/multichoose 4 k)) (list 0 1 2 3 4 5))"
+     :note "Returns (1 4 10 20 35 56): the number of multisets of size k from 4 types, for k = 0..5. Notice these are diagonal entries in Pascal's triangle (also called 'triangle of tetrahedral numbers' for the k=3 column).")
+    (:tier "expert"
+     :code "(define (verify-stars-bars n k)\n  (equal? (comb/multichoose n k)\n          (comb/choose (+ n k -1) k)))\n(map (lambda (p) (verify-stars-bars (car p) (cadr p)))\n     (list (list 3 2) (list 5 4) (list 10 3) (list 7 5)))"
+     :note "Verify the stars-and-bars identity: multichoose(n,k) = C(n+k-1, k). Returns (#t #t #t #t) — the impl uses exactly this identity.")
+    (:tier "master"
+     :code "(define (ways-to-buy-donuts flavors dozen-size)\n  (comb/multichoose flavors dozen-size))\n(list ':three-flavors-six (ways-to-buy-donuts 3 6)\n      ':six-flavors-dozen (ways-to-buy-donuts 6 12)\n      ':baker-dozen-6-flavors (ways-to-buy-donuts 6 13))"
+     :note "Domain: donut shop offers `flavors` types; how many distinct boxes of size `dozen-size` can you buy? Order doesn't matter, repeats OK. Returns (:three-flavors-six 28 :six-flavors-dozen 6188 :baker-dozen-6-flavors 8568). This is a textbook stars-and-bars application."))
+
+  :related ("comb/choose" "comb/binomial-coeffs" "comb/multinomial")
+  :caveats ("Same numeric limits as comb/choose (safe integer range around C(60, 30))." "Order of arguments matters: (comb/multichoose n k) means 'choose k items with replacement from n types', so n is the number of types and k is the sample size.")
+  :drawbacks ("No enumeration of the multisets — count only." "Same JS number precision limits — big enough n and k exceed 2^53.")
+  :usecases ("Counting size-k multisets from n categories (donuts, coins, colors)." "Counting monomials of degree k in n variables (multichoose(n+1, k))." "Bosonic-particle state counting in statistical mechanics." "Menu-combination counters for e-commerce recommendation UIs.")
+  :learn (:concept "Multiset coefficient — the with-replacement cousin of choose. Reduces to a Pascal lookup via stars-and-bars." :prerequisites ("comb/choose") :progression "Follow with comb/multinomial for ordered groupings, and stat/negative-binomial for the probability-mass extension.")
+
+  :+math
+    (:algebra "Closed form: multichoose(n, k) = C(n+k-1, k) = (n+k-1)! / (k! (n-1)!). Stars-and-bars proof: k stars and n-1 bars in a row have C(n+k-1, k) arrangements."
+     :total #t
+     :domain "non-negative integers n and k; n = 0 with k > 0 returns 0 (no types to sample from)"
+     :codomain "non-negative integer"
+     :proofs "Stars-and-bars: arrange k stars (items) and n-1 bars (dividers between n types) in a line; the arrangement fully specifies a multiset. Count of arrangements is (k + n - 1)! / (k! (n-1)!).")
+
+  :+cs
+    (:complexity "Time O(min(k, n-1)) via the underlying comb/choose call. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "One-liner: multichoose(n, k) = binom(n + k - 1, k). Reuses the shared binom helper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/multichoose 3 2) = 6; (comb/multichoose 5 0) = 1; stars-and-bars identity holds for (3,2), (5,4), (10,3), (7,5)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/choose")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Reversing the argument order — n is the count of types, k the sample size. Confusing with (comb/choose n k) which is WITHOUT replacement."
+     :when-not-to-use "You need combinations without replacement — use comb/choose. You need permutations (ordered) — different verb entirely.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Multiset coefficient (with-replacement combinations). Stars-and-bars: multichoose(n,k) = C(n+k-1, k)."))
