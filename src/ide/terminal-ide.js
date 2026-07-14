@@ -248,9 +248,20 @@ export function startIde({
       if (handleBookKey(state, key, scheduleRedraw)) return
     }
 
-    // Global keys — Ctrl-C / Ctrl-Q quit
-    if (key === '\x03') { quit(); return }  // Ctrl-C
-    if (key === '\x11') { quit(); return }  // Ctrl-Q
+    // Global keys — Ctrl-C / Ctrl-Q / Ctrl-D always exit.
+    // If unsaved, first press warns; second press forces. Ctrl-D and Ctrl-Q always force.
+    if (key === '\x03') {  // Ctrl-C
+      if (state.modified && !state._ctrlCArmed) {
+        state._ctrlCArmed = true
+        state.status = 'Ctrl-C again to force-quit (unsaved changes)'
+        scheduleRedraw()
+        setTimeout(() => { if (state._ctrlCArmed) { state._ctrlCArmed = false; scheduleRedraw() } }, 2000)
+        return
+      }
+      quit(true); return
+    }
+    if (key === '\x11') { quit(true); return }  // Ctrl-Q — always force
+    if (key === '\x04') { quit(true); return }  // Ctrl-D — always force
 
     // Ctrl-Shift-P / Ctrl-P — command palette / fuzzy file finder
     // (Ctrl-P alone = fuzzy; Ctrl-Shift-P has no distinct terminal code so
@@ -314,7 +325,9 @@ export function startIde({
     else if (action === 'save') { doSave(state); scheduleRedraw() }
     else if (action === 'run')  { runBuffer(state, scheduleRedraw) }
     else if (action === 'quit') { quit() }
+    else if (action === 'quit-force') { quit(true) }
     else if (typeof action === 'object' && action) {
+      if (action.kind === 'save-then-quit') { doSave(state); quit(true); return }
       // Actions can be command envelopes { kind: 'theme', name } etc.
       handleAction(state, action)
       scheduleRedraw()
@@ -325,11 +338,12 @@ export function startIde({
     scheduleRedraw()
   })
 
-  function quit() {
-    if (state.modified) {
+  function quit(force = false) {
+    if (state.modified && !force) {
       // Guard-rail: user must accept discard via `:q!` (vim) or C-x C-c (emacs);
-      // otherwise flash a status warning and stay open.
-      state.status = 'unsaved changes — :q! to force-quit (vim), or save first'
+      // otherwise flash a status warning and stay open. Force-quit path (:q!, :wq, :x, Ctrl-C twice)
+      // bypasses the guard.
+      state.status = 'unsaved changes — :q! to force-quit (vim), or save first (:w, :wq). Ctrl-C also always exits.'
       scheduleRedraw()
       return
     }

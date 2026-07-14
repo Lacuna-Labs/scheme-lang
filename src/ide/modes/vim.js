@@ -169,9 +169,18 @@ export function makeVimMode() {
           if (rest[0]) return { kind: 'save-as', path: rest[0] }
           return 'save'
         case 'q':
-          return state.modified ? { kind: 'status', msg: 'unsaved — use :q! to force-quit' } : 'quit'
-        case 'q!': return 'quit'
-        case 'wq': return 'save'  // save first; controller can chain
+        case 'quit':
+        case 'exit':
+          return state.modified ? { kind: 'status', msg: 'unsaved — use :q! or :wq (also try Ctrl-C anytime)' } : 'quit'
+        case 'q!':
+        case 'quit!':
+        case 'exit!':
+          return 'quit-force'
+        case 'wq':
+        case 'x':
+        case 'wq!':
+        case 'x!':
+          return { kind: 'save-then-quit' }
         case 'theme':
           if (rest[0]) return { kind: 'theme', name: rest[0] }
           return { kind: 'status', msg: 'usage: :theme <name>' }
