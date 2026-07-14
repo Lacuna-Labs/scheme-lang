@@ -282,6 +282,14 @@ export function installR7rsSmall(env, fuel) {
     if (!Array.isArray(lst)) return ''
     return lst.map((c) => c instanceof Ch ? c.value : String(c)).join('')
   })
+  // R7RS §6.7 string-ref returns a character. base.js was returning a
+  // 1-char string; we override to return Ch here so `(char? (string-ref
+  // "hi" 0))` is #t. This is a behavior CHANGE: any code that compared
+  // (string-ref s i) to a bare string must now compare to a Ch or use
+  // (char=? (string-ref s i) #\a). Most existing code either compares
+  // via a helper (which we can update) or reaches into string-append,
+  // which still accepts strings.
+  def('string-ref', (s, i) => ch(String(s).charAt(i | 0)))
 
   // ── §6.8 Vectors (missing pieces) ──────────────────────────────────
 

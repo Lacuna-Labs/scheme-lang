@@ -296,9 +296,14 @@ export function makeBaseEnv(fuel) {
   def('number?', (x) => typeof x === 'number')
   def('string?', (x) => typeof x === 'string')
   def('boolean?', (x) => x === true || x === false)
-  def('string-append', (...a) => a.map(String).join(''))
+  // string-append accepts strings AND Ch values (R7RS §6.7).
+  const _asStr = (x) => (x && x.value !== undefined && typeof x.value === 'string' && x.constructor && x.constructor.name === 'Ch') ? x.value : String(x)
+  def('string-append', (...a) => a.map(_asStr).join(''))
   def('string-length', (s) => String(s).length)
-  def('string-ref', (s, i) => String(s).charAt(i))   // → single-char string
+  // NOTE: overridden in r7rs-small.js to return Ch (R7RS §6.7). Kept
+  // here for source-order clarity — the r7rs-small install runs LAST
+  // and installs the Ch-returning version.
+  def('string-ref', (s, i) => String(s).charAt(i))
   def('string-eq?', (a, b) => String(a) === String(b))
   def('string=?', (a, b) => String(a) === String(b))
   def('vector-ref', (v, i) => (Array.isArray(v) ? v[i] : null))
