@@ -365,9 +365,9 @@
      :note "The identity moves nothing. Returns the empty list.")
     (:tier "intermediate" :code "(length (alg/perm-support '(1 0 2 3 4)))"
      :note "A single transposition has support size 2 regardless of the ambient degree.")
-    (:tier "expert" :code "(define (disjoint-support? p q) (null? (filter (lambda (x) (member x (alg/perm-support q))) (alg/perm-support p)))) (disjoint-support? '(1 0 2 3) '(0 1 3 2))"
+    (:tier "expert" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (disjoint-support? p q) (null? (filter (lambda (x) (member x (alg/perm-support q))) (alg/perm-support p)))) (disjoint-support? '(1 0 2 3) '(0 1 3 2))"
      :note "Check whether two permutations have disjoint supports — a condition for their commutativity.")
-    (:tier "master" :code "(define (small-support-perms lst) (filter (lambda (p) (<= (length (alg/perm-support p)) 2)) lst)) (small-support-perms (list '(1 0 2) '(2 1 0) '(0 1 2)))"
+    (:tier "master" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (small-support-perms lst) (filter (lambda (p) (<= (length (alg/perm-support p)) 2)) lst)) (small-support-perms (list '(1 0 2) '(2 1 0) '(0 1 2)))"
      :note "Filter permutations by support size. Support <= 2 means identity or a single transposition.")
   )
   :caveats
@@ -417,7 +417,7 @@
      :note "p(1) = 2, so 1 is not fixed. Returns #f.")
     (:tier "intermediate" :code "(map (lambda (i) (alg/perm-fixed? '(0 2 1 3) i)) (list 0 1 2 3))"
      :note "Test every point. Returns (#t #f #f #t) — the fixed-point indicator function.")
-    (:tier "expert" :code "(define (count-fixed p) (length (filter (lambda (i) (alg/perm-fixed? p i)) (map (lambda (k) k) (alg/perm-identity (length p)))))) (count-fixed '(0 2 1 3 4))"
+    (:tier "expert" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (count-fixed p) (length (filter (lambda (i) (alg/perm-fixed? p i)) (map (lambda (k) k) (alg/perm-identity (length p)))))) (count-fixed '(0 2 1 3 4))"
      :note "Count fixed points — a derangement has zero fixed points; this permutation has 3 (0, 3, 4).")
     (:tier "master" :code "(define (identity? p) (define n (length p)) (define (all-fixed? i) (or (>= i n) (and (alg/perm-fixed? p i) (all-fixed? (+ i 1))))) (all-fixed? 0)) (identity? (alg/perm-identity 5))"
      :note "Recursive identity check via perm-fixed?. Every point must be fixed for a permutation to be the identity.")
@@ -576,7 +576,7 @@
      :note "A 3-cycle is even: it equals two transpositions. Sign is +1.")
     (:tier "expert" :code "(equal? (alg/perm-sign (alg/perm-compose '(1 0 2 3) '(0 1 3 2))) (* (alg/perm-sign '(1 0 2 3)) (alg/perm-sign '(0 1 3 2))))"
      :note "Sign is multiplicative: sign(p q) = sign(p) sign(q). This is the homomorphism property.")
-    (:tier "master" :code "(define (even? p) (= (alg/perm-sign p) 1)) (filter even? (list '(0 1 2) '(1 0 2) '(1 2 0) '(2 0 1) '(2 1 0) '(0 2 1)))"
+    (:tier "master" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (even? p) (= (alg/perm-sign p) 1)) (filter even? (list '(0 1 2) '(1 0 2) '(1 2 0) '(2 0 1) '(2 1 0) '(0 2 1)))"
      :note "Filter S_3 down to its even elements — the alternating subgroup A_3.")
   )
   :caveats
@@ -1968,7 +1968,7 @@
      :note "|S_5| = 120.")
     (:tier "expert" :code "(alg/symmetric 9)"
      :note "9! = 362880 is above the cap. Returns 'use-backend.")
-    (:tier "master" :code "(define (even-perms n) (filter (lambda (p) (= (alg/perm-sign p) 1)) (alg/symmetric n))) (length (even-perms 4))"
+    (:tier "master" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (even-perms n) (filter (lambda (p) (= (alg/perm-sign p) 1)) (alg/symmetric n))) (length (even-perms 4))"
      :note "|A_4| = |S_4|/2 = 12.")
   )
   :caveats
@@ -2072,7 +2072,7 @@
      :note "In abelian Z_12, the cyclic subgroup <4> = {0, 4, 8} is normal.")
     (:tier "expert" :code "(alg/is-normal? (alg/cyclic 6) '(0 2 4))"
      :note "{0, 2, 4} is a subgroup of Z_6; it's normal because Z_6 is abelian.")
-    (:tier "master" :code "(define (count-normal-subgroups G) (length (filter (lambda (H) (alg/is-normal? G H)) (alg/subgroups G)))) (count-normal-subgroups (alg/cyclic 6))"
+    (:tier "master" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (count-normal-subgroups G) (length (filter (lambda (H) (alg/is-normal? G H)) (alg/subgroups G)))) (count-normal-subgroups (alg/cyclic 6))"
      :note "Count normal subgroups of Z_6. All subgroups of an abelian group are normal — should equal |subgroups(Z_6)| = 4.")
   )
   :caveats
@@ -2384,7 +2384,7 @@
      :note "Multiplication by 3 mod 4 — since gcd(3,4)=1, this is a bijection. Is it a homomorphism under +? phi(a+b) = 3(a+b) mod 4 = 3a + 3b mod 4 = phi(a) + phi(b). Yes.")
     (:tier "expert" :code "(alg/isomorphism? (alg/cyclic 4) (alg/cyclic 4) (lambda (x) (modulo (* 2 x) 4)))"
      :note "Multiplication by 2 is NOT bijective (gcd(2,4)=2); should return #f.")
-    (:tier "master" :code "(define (find-automorphisms G) (filter (lambda (m) (alg/isomorphism? G G (lambda (x) (modulo (* m x) (length G))))) (list 1 2 3 4 5))) (find-automorphisms (alg/cyclic 5))"
+    (:tier "master" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (find-automorphisms G) (filter (lambda (m) (alg/isomorphism? G G (lambda (x) (modulo (* m x) (length G))))) (list 1 2 3 4 5))) (find-automorphisms (alg/cyclic 5))"
      :note "Find multiplicative automorphisms of Z_5 — should be {1, 2, 3, 4} (the units).")
   )
   :caveats
@@ -2436,7 +2436,7 @@
      :note "Trivial homomorphism (everything to 0) IS a homomorphism.")
     (:tier "expert" :code "(alg/is-homomorphism? (alg/cyclic 6) (alg/cyclic 6) (lambda (x) (modulo (* 2 x) 6)))"
      :note "Doubling is a homomorphism: 2(a+b) = 2a + 2b mod 6. Returns #t.")
-    (:tier "master" :code "(define (count-homomorphisms G H maps) (length (filter (lambda (phi) (alg/is-homomorphism? G H phi)) maps))) (count-homomorphisms (alg/cyclic 6) (alg/cyclic 6) (list (lambda (x) 0) (lambda (x) x) (lambda (x) (modulo (* 2 x) 6))))"
+    (:tier "master" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (count-homomorphisms G H maps) (length (filter (lambda (phi) (alg/is-homomorphism? G H phi)) maps))) (count-homomorphisms (alg/cyclic 6) (alg/cyclic 6) (list (lambda (x) 0) (lambda (x) x) (lambda (x) (modulo (* 2 x) 6))))"
      :note "All 3 of these are homomorphisms from Z_6 to itself.")
   )
   :caveats
@@ -3158,7 +3158,7 @@
     (:tier "apprentice" :code "(alg/is-abelian? (alg/dihedral 3))" :note "D_3 is non-abelian: #f.")
     (:tier "intermediate" :code "(alg/is-abelian? (alg/cyclic 12))" :note "Every cyclic group is abelian.")
     (:tier "expert" :code "(alg/is-abelian? (alg/cyclic 100))" :note "All cyclic groups are abelian.")
-    (:tier "master" :code "(filter alg/is-abelian? (list (alg/cyclic 3) (alg/dihedral 3) (alg/cyclic 6) (alg/dihedral 4)))" :note "Filter abelian groups from a list.")
+    (:tier "master" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter alg/is-abelian? (list (alg/cyclic 3) (alg/dihedral 3) (alg/cyclic 6) (alg/dihedral 4)))" :note "Filter abelian groups from a list.")
   )
   :caveats ("Requires Cayley-table representation for the current impl." "Non-abelian dihedral groups return #f.")
   :drawbacks ("O(|G|^2) full check; no shortcut for known-abelian.")

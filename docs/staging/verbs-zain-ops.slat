@@ -1111,7 +1111,7 @@
      :code "(let ((P (list (list 0.5 0.5) (list 0.3 0.7))) (pi0 (list 1 0))) (list (ops/markov-step pi0 P 0) (ops/markov-step pi0 P 1) (ops/markov-step pi0 P 5) (ops/markov-step pi0 P 100)))"
      :note "Track the same chain at k=0,1,5,100. Convergence to the stationary is visible.")
     (:tier "expert"
-     :code "(define (transient-decay pi0 P n) (map (lambda (k) (list k (ops/markov-step pi0 P k))) (iota n))) (transient-decay (list 1 0) (list (list 0.6 0.4) (list 0.2 0.8)) 6)"
+     :code "(define (iota n)\n  (let loop ((i 0) (acc '()))\n    (if (= i n) (reverse acc) (loop (+ i 1) (cons i acc)))))\n(define (transient-decay pi0 P n) (map (lambda (k) (list k (ops/markov-step pi0 P k))) (iota n))) (transient-decay (list 1 0) (list (list 0.6 0.4) (list 0.2 0.8)) 6)"
      :note "Build a table of (step, distribution) pairs — the transient decay of a chain. Useful for visualizing mixing time.")
     (:tier "master"
      :code "(let* ((weather-P (list (list 0.8 0.2) (list 0.4 0.6))) (start-sunny (list 1 0)) (start-rainy (list 0 1)) (final-sunny (ops/markov-step start-sunny weather-P 30)) (final-rainy (ops/markov-step start-rainy weather-P 30))) (list (quote from-sunny) final-sunny (quote from-rainy) final-rainy))"

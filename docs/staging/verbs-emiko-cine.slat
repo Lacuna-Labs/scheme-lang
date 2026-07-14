@@ -219,7 +219,7 @@
      :code "(map (lambda (rec) (list-ref rec 3)) (juggle/simulate '(4 4 1)))"
      :note "Returns (L R L). Extract the hand column from the schedule to inspect the hand pattern.")
     (:tier "master"
-     :code "(define (hand-of throw) (symbol->string (list-ref throw 3)))\n(define (throws-per-hand p)\n  (let ((sched (juggle/simulate p)))\n    (if (not (list? sched)) 'invalid\n        (let ((left  (length (filter (lambda (r) (equal? (hand-of r) \"L\")) sched)))\n              (right (length (filter (lambda (r) (equal? (hand-of r) \"R\")) sched))))\n          (list 'L left 'R right)))))\n(list (throws-per-hand '(3)) (throws-per-hand '(3 3)) (throws-per-hand '(5 3 1)))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (hand-of throw) (symbol->string (list-ref throw 3)))\n(define (throws-per-hand p)\n  (let ((sched (juggle/simulate p)))\n    (if (not (list? sched)) 'invalid\n        (let ((left  (length (filter (lambda (r) (equal? (hand-of r) \"L\")) sched)))\n              (right (length (filter (lambda (r) (equal? (hand-of r) \"R\")) sched))))\n          (list 'L left 'R right)))))\n(list (throws-per-hand '(3)) (throws-per-hand '(3 3)) (throws-per-hand '(5 3 1)))"
      :note "Returns ((L 1 R 0) (L 1 R 1) (L 2 R 1)). Real analysis: how many throws each hand makes in one period. Useful for identifying hand-imbalanced patterns. Uses symbol->string because sym objects don't equal? even when their names match (a base-env quirk shared with tick/*).")
   )
   :caveats ("Hand assignment is simple alternating — L on even beats, R on odd. This is a modeling convention; real jugglers sometimes vary this (e.g. synchronous patterns)." "The schedule is per-period; a real performance loops the schedule indefinitely.")
@@ -253,13 +253,13 @@
      :code "(length (juggle/generate 2 3))"
      :note "Returns 7. There are 7 valid 2-beat siteswaps averaging to 3 balls: (0 6) (1 5) (2 4) (3 3) (4 2) (5 1) (6 0). Rotational duplicates and zero-throw patterns are NOT filtered — this is the full mathematical enumeration.")
     (:tier "intermediate"
-     :code "(filter (lambda (p) (and (positive? (car p)) (positive? (cadr p)))) (juggle/generate 2 3))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter (lambda (p) (and (positive? (car p)) (positive? (cadr p)))) (juggle/generate 2 3))"
      :note "Returns ((1 5) (2 4) (3 3) (4 2) (5 1)). Filter out patterns with zero-throw beats — the 'practical' subset for actual juggling.")
     (:tier "expert"
-     :code "(define (canonical-only patterns)\n  (define (canonical p) (let loop ((rots (list p)) (rem p))\n    (if (equal? (append (cdr rem) (list (car rem))) p) rots\n        (let ((r (append (cdr rem) (list (car rem)))))\n          (loop (cons r rots) r)))))\n  (define (max-first p) (equal? p (car (sort (canonical p) (lambda (a b) (> (car a) (car b)))))))\n  (filter max-first patterns))\n(canonical-only (filter (lambda (p) (and (positive? (car p)) (positive? (cadr p)))) (juggle/generate 2 3)))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (canonical-only patterns)\n  (define (canonical p) (let loop ((rots (list p)) (rem p))\n    (if (equal? (append (cdr rem) (list (car rem))) p) rots\n        (let ((r (append (cdr rem) (list (car rem)))))\n          (loop (cons r rots) r)))))\n  (define (max-first p) (equal? p (car (sort (canonical p) (lambda (a b) (> (car a) (car b)))))))\n  (filter max-first patterns))\n(canonical-only (filter (lambda (p) (and (positive? (car p)) (positive? (cadr p)))) (juggle/generate 2 3)))"
      :note "Returns ((3 3) (4 2) (5 1)) — canonical representatives (lex-max first element) of each rotation class. The three distinct 2-beat 3-ball patterns as they usually appear in siteswap tables.")
     (:tier "master"
-     :code "(define (patterns-under-height max-h) (lambda (p) (<= (apply max p) max-h)))\n(define (no-zeros p) (not (any zero? p)))\n(length (filter no-zeros (filter (patterns-under-height 5) (juggle/generate 3 3))))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (patterns-under-height max-h) (lambda (p) (<= (apply max p) max-h)))\n(define (no-zeros p) (not (any zero? p)))\n(length (filter no-zeros (filter (patterns-under-height 5) (juggle/generate 3 3))))"
      :note "Returns 13. Enumerate 3-beat 3-ball patterns with all throws in [1, 5] — a real curriculum-selection query: 'show me the 3-ball patterns I can practice in a room with a 5-unit ceiling'. The 13 include (3 3 3), (5 3 1), (4 4 1), (5 2 2), etc.")
   )
   :caveats ("Returns the FULL mathematical enumeration. Common tools filter to canonical rotations and exclude zero-throw beats — that filtering is up to the caller (see the expert tier for a canonical-only recipe)." "Very large period × ball-count spaces exceed the 20000-node fuel cap and return Sym 'fuel-budget. As a rough guide, period × ball-count <= 15 is safe.")
@@ -337,7 +337,7 @@
      :code "(length (scene/grid 'coin 5 2 30 40 100 100))"
      :note "Returns 10. 5 columns x 2 rows = 10 coins, spaced 30 apart horizontally and 40 apart vertically, starting at (100, 100).")
     (:tier "expert"
-     :code "(begin (scene/clear) (scene/grid 'brick 4 3 16 16 0 0) (length (filter (lambda (id) (entity/has-tag? id 'brick)) (entity/all))))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(begin (scene/clear) (scene/grid 'brick 4 3 16 16 0 0) (length (filter (lambda (id) (entity/has-tag? id 'brick)) (entity/all))))"
      :note "Returns 12. Spawn a 4x3 brick grid and verify by tag lookup — every scene/grid entity carries a tag equal to the prefab name.")
     (:tier "master"
      :code "(define (cell-id kind i j) (string->symbol (string-append (symbol->string kind) \"-\" (number->string i) \"-\" (number->string j))))\n(define (checkerboard cols rows)\n  (scene/clear)\n  (let outer ((j 0))\n    (if (>= j rows) (entity/count)\n        (begin\n          (let inner ((i 0))\n            (if (>= i cols) (outer (+ j 1))\n                (begin\n                  (entity/make (cell-id (if (even? (+ i j)) 'light 'dark) i j) (* i 16) (* j 16))\n                  (inner (+ i 1))))))))\n(checkerboard 4 4)"

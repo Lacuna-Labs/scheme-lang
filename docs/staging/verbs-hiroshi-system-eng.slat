@@ -63,7 +63,7 @@
      :code "(map (lambda (b) (list b (input/down? b))) (input/buttons))"
      :note "Poll every button and return a list of (name held?) pairs.")
     (:tier "expert"
-     :code "(filter (lambda (b) (input/pressed? b)) (input/buttons))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter (lambda (b) (input/pressed? b)) (input/buttons))"
      :note "Collect the buttons that were freshly pressed since the last frame — useful for menu navigation.")
     (:tier "master"
      :code "(define (input-mask) (fold-left (lambda (acc b) (if (input/down? b) (cons b acc) acc)) (quote ()) (input/buttons))) (input-mask)"
@@ -143,7 +143,7 @@
      :code "(if (input/pressed? (quote a)) (quote jump) (quote nothing))"
      :note "One-shot: fire 'jump only on the press frame, never during the hold.")
     (:tier "expert"
-     :code "(filter (lambda (b) (input/pressed? b)) (input/buttons))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter (lambda (b) (input/pressed? b)) (input/buttons))"
      :note "Collect all buttons pressed this frame — useful for detecting chords or menu selection.")
     (:tier "master"
      :code "(define (handle-menu index items) (cond ((input/pressed? (quote up))   (max 0 (- index 1))) ((input/pressed? (quote down)) (min (- (length items) 1) (+ index 1))) (else index))) (handle-menu 2 (quote (a b c d)))"
@@ -186,7 +186,7 @@
      :code "(define (safe-vector) (if (input/may-i?) (list (if (input/down? (quote right)) 1 -1) (if (input/down? (quote up)) 1 -1)) (list 0 0))) (safe-vector)"
      :note "Full input vector, with a graceful fallback to zero when permission is denied.")
     (:tier "master"
-     :code "(define (build-input-mask) (if (input/may-i?) (filter (lambda (b) (input/down? b)) (input/buttons)) (quote ()))) (build-input-mask)"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (build-input-mask) (if (input/may-i?) (filter (lambda (b) (input/down? b)) (input/buttons)) (quote ()))) (build-input-mask)"
      :note "Enumerate held buttons — but only when permitted. Composes with input/buttons and input/down? into one honest read."))
   :caveats ("Base runtime returns #t; only a host with a permission subsystem returns #f." "Not granular — a coarse allow/deny bit.")
   :drawbacks ("Can't be flipped from Scheme.")
@@ -587,7 +587,7 @@
      :code "(eng/tf-stable? (eng/tf (quote (1)) (quote (1 3 3 1))))"
      :note "(s+1)³ — all poles at -1 → stable → #t.")
     (:tier "expert"
-     :code "(filter (lambda (k) (eng/tf-stable? (eng/tf (list k) (quote (1 3 2))))) (quote (1 5 10 20)))"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter (lambda (k) (eng/tf-stable? (eng/tf (list k) (quote (1 3 2))))) (quote (1 5 10 20)))"
      :note "Sweep controller gains; keep only those producing a stable closed loop.")
     (:tier "master"
      :code "(map (lambda (den) (eng/tf-stable? (eng/tf (quote (1)) den))) (quote ((1 2 1) (1 -1) (1 0 1) (1 3 3 1) (1 -2 1))))"
