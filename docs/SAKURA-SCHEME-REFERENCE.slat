@@ -20565,14 +20565,19 @@
   :library "vec"
   :kind "meta"
   :signature "(vec/ref v i) -> number"
-  :summary "Extract the i-th component of vector v (0-based indexing); out-of-range indices return the symbol 'nan."
-  :explanation "Vectors in Sakura Scheme are sequences of numeric components. vec/ref provides positional access by index, just as car and cdr work on lists. Index 0 is the first component, index 1 the second, and so on. This verb is the foundation for component-wise operations and for inspecting vector structure."
+  :summary "Extract the i-th component of vector v (0-based indexing)."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Positional lookup on the underlying list. Out-of-range index returns () (empty list), NOT the 'nan symbol earlier docs promised. Guard with (vec/dim v) first if a signaled miss matters."
+  :explanation "Vectors in Sakura Scheme are sequences of numeric components. vec/ref provides positional access by index, like car and cdr on lists. Index 0 is the first component, 1 the second, and so on."
   :examples (
-    (:tier "novice" :code "(define v (list 10 20 30))\n(vec/ref v 0)\n(vec/ref v 1)" :note "Returns 10, then 20. Index 0 is the first component.")
-    (:tier "intermediate" :code "(define center (list 320 240))\n(define x-offset (vec/ref center 0))\n(define y-offset (vec/ref center 1))\n(camera-pan (+ x-offset 50) (+ y-offset 50))" :note "Extract x and y from a position vector, then use them in camera motion.")
-    (:tier "expert" :code "(define (component-wise-op vec f)\n  (let loop ((i 0) (result '()))\n    (if (>= i (vec/dim vec))\n      (reverse result)\n      (loop (+ i 1) (cons (f (vec/ref vec i)) result)))))\n(component-wise-op (list 2 3 4) (lambda (x) (* x x)))" :note "Iterate through all components using vec/ref and vec/dim to build a new result.")
+    (:tier "novice" :code "(vec/ref '(10 20 30) 0)" :note "First component. Returns 10.")
+    (:tier "apprentice" :code "(vec/ref '(10 20 30) 2)" :note "Third component (index 2). Returns 30.")
+    (:tier "intermediate" :code "(define center '(320 240))\n(list (vec/ref center 0) (vec/ref center 1))" :note "Extract x and y from a 2-D position vector. Returns (320 240).")
+    (:tier "expert" :code "(define (component-wise-op v f)\n  (let loop ((i 0) (result '()))\n    (if (>= i (vec/dim v))\n        (reverse result)\n        (loop (+ i 1)\n              (cons (f (vec/ref v i)) result)))))\n(component-wise-op '(2 3 4) (lambda (x) (* x x)))" :note "Iterate all components using vec/ref and vec/dim to build a new result. Returns (4 9 16) — component squares.")
+    (:tier "master" :code "(define (dot-via-ref u v)\n  (let loop ((i 0) (acc 0))\n    (if (>= i (vec/dim u))\n        acc\n        (loop (+ i 1)\n              (+ acc (* (vec/ref u i) (vec/ref v i)))))))\n(dot-via-ref '(1 2 3) '(4 5 6))" :note "Hand-rolled dot product via vec/ref + vec/dim. Returns 32. Prefer the built-in vec/dot in real code; this shows the pattern.")
   )
-  :caveats ("Indices are 0-based; the first component is at index 0, not 1." "Out-of-range indices silently return 'nan, not an error; always check vector dimension first if uncertain." "vec/ref does not modify the vector; it is read-only.")
+  :caveats ("Indices are 0-based." "Out-of-range indices return () (empty list), not 'nan or an error. Guard with (vec/dim v) if a signaled miss matters." "vec/ref does not modify the vector; it is read-only.")
   :drawbacks ("For bulk operations (e.g., scaling all components), it is more efficient to use vec/scale, vec/+, or vec/- rather than looping with vec/ref." "No bounds checking exception; relies on the 'nan sentinel, which may hide logic errors if not tested explicitly.")
   :usecases ("Extract a single coordinate (x, y, or z) from a position or velocity vector." "Implement custom component-wise logic not covered by vec/+, vec/-, vec/scale, etc." "Validate or log individual vector components for debugging." "Iterate through vector components in a custom map or fold.")
   :related ("vec/dim" "vec/make" "vec/+" "vec/-" "vec/scale")
