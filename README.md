@@ -40,37 +40,31 @@ If you know Scheme, this will feel small and stable. If you don't, [the Book of 
 
 ## Install
 
-> **Note.** Sakura Scheme is currently **internal to Lacuna Labs** while we sort the release surface. If you're here you have access. Public one-line installers and an npm publish are coming — the mechanics work; we just haven't decided the shape yet.
-
 **Requirements:** Node 18+ and `git`. Nothing else.
 
-**Clone and run in place** (works everywhere the org has SSH set up):
+**One-liner** (macOS / Linux):
 
 ```
-git clone git@github.com:Lacuna-Labs/scheme-lang.git
+curl -fsSL https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.sh | sh
+```
+
+The installer clones into `~/.scheme-lang/repo`, symlinks `sakura-scheme` and `scheme-lang` onto your PATH (via `~/.local/bin`, `/usr/local/bin`, or `~/bin` — whichever is writable), and adds the PATH line to your shell rc if needed. Open a new terminal and you're in.
+
+**Windows (PowerShell):**
+
+```
+iwr -useb https://raw.githubusercontent.com/Lacuna-Labs/scheme-lang/main/install.ps1 | iex
+```
+
+**Clone and run in place** (if you want to hack on the interpreter):
+
+```
+git clone https://github.com/Lacuna-Labs/scheme-lang.git
 cd scheme-lang
 ./bin/sakura-scheme
 ```
 
-That's it. You're in the REPL.
-
-**Local install to `~/.local/bin`** — if you want `sakura-scheme` on your PATH from any directory:
-
-macOS / Linux:
-```
-git clone git@github.com:Lacuna-Labs/scheme-lang.git ~/.scheme-lang/repo
-./~/.scheme-lang/repo/install.sh
-```
-
-Windows (PowerShell):
-```
-git clone git@github.com:Lacuna-Labs/scheme-lang.git $env:LOCALAPPDATA\scheme-lang\repo
-& $env:LOCALAPPDATA\scheme-lang\repo\install.ps1
-```
-
-Public `curl | sh` and `npm install -g sakura-scheme` will work once we open the repo and publish to npm — the scripts already handle both paths. For now, you're clone-and-run.
-
-Homebrew tap coming when we open the repo.
+Homebrew tap and `npm install -g sakura-scheme` coming next.
 
 **Uninstall:**
 
