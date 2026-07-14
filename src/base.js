@@ -71,13 +71,8 @@ export function makeBaseEnv(fuel) {
 
   def('for-each', (fn, lst) => { for (const x of lst) apply(fn, [x], fuel); return undefined })
   def('map', (fn, lst) => lst.map((x) => apply(fn, [x], fuel)))
-  def('filter', (fn, lst) => lst.filter((x) => apply(fn, [x], fuel) !== false))
-  def('reduce', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
-  def('fold', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
-  def('fold-left', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
-  def('foldl', (fn, init, lst) => lst.reduce((acc, x) => apply(fn, [acc, x], fuel), init))
-  def('fold-right', (fn, init, lst) => lst.reduceRight((acc, x) => apply(fn, [x, acc], fuel), init))
-  def('foldr', (fn, init, lst) => lst.reduceRight((acc, x) => apply(fn, [x, acc], fuel), init))
+  // SRFI-1 helpers (filter, fold, fold-right, reduce) removed per decision-018.
+  // Users compose these from R7RS-small primitives via named-let.
   // (apply fn args) — invoke `fn` with the list `args` as the argument
   // list. Same fuel budget as a direct call.
   def('apply', (fn, args) => apply(fn, Array.isArray(args) ? args : [args], fuel))
@@ -183,28 +178,9 @@ export function makeBaseEnv(fuel) {
     return new Sym(name)
   })
 
-  // ── SRFI 1 essentials (per Dr. Imani's research — what every Scheme
-  // author reaches for first; we already have map/filter/reduce/append/
-  // reverse/first/last/nth; add the remainder so a cart authored in
-  // any other Scheme runs here without a port).
-  def('any', (pred, lst) => {
-    if (!Array.isArray(lst)) return false
-    for (const x of lst) if (apply(pred, [x], fuel) !== false) return true
-    return false
-  })
-  def('every', (pred, lst) => {
-    if (!Array.isArray(lst)) return true
-    for (const x of lst) if (apply(pred, [x], fuel) === false) return false
-    return true
-  })
-  def('count', (pred, lst) => {
-    if (!Array.isArray(lst)) return 0
-    let n = 0
-    for (const x of lst) if (apply(pred, [x], fuel) !== false) n++
-    return n
-  })
-  def('take', (lst, n) => Array.isArray(lst) ? lst.slice(0, Math.max(0, n|0)) : [])
-  def('drop', (lst, n) => Array.isArray(lst) ? lst.slice(Math.max(0, n|0)) : [])
+  // SRFI-1 helpers (any, every, count, take, drop) removed per decision-018.
+  // Users compose these from R7RS-small primitives via named-let. See
+  // docs/ENGINEERING-DECISIONS.slat decision-018 for the pattern.
   def('zip', (a, b) => {
     if (!Array.isArray(a) || !Array.isArray(b)) return []
     const n = Math.min(a.length, b.length)
@@ -214,8 +190,8 @@ export function makeBaseEnv(fuel) {
   })
   def('append', (...ls) => [].concat(...ls))
   def('reverse', (a) => a.slice().reverse())
-  def('first', (a) => a[0])
-  def('last', (a) => a[a.length - 1])
+  // SRFI-1 first/last removed per decision-018. Use (car ...) / (list-ref lst (- (length lst) 1)).
+  // `nth` kept as convenience alias to list-ref semantics (already common in reference).
   def('nth', (a, i) => a[i])
 
   // ── more math ───────────────────────────────────────────────────────
@@ -433,14 +409,8 @@ export function makeBaseEnv(fuel) {
 
   // ── list-building + list-navigation ─────────────────────────────────
   //
-  // (iota n)         → 0 .. n-1
-  // (iota n start)   → start .. start+n-1
-  // (iota n start step) → start, start+step, ...
-  def('iota', (n, start = 0, step = 1) => {
-    const r = []
-    for (let i = 0; i < (n | 0); i++) r.push(start + i * step)
-    return r
-  })
+  // SRFI-1 iota removed per decision-018. Users compose via named-let:
+  //   (let loop ((i 0) (acc '())) (if (= i n) (reverse acc) (loop (+ i 1) (cons i acc))))
   def('list-tail', (lst, k) => Array.isArray(lst) ? lst.slice(k | 0) : [])
   def('list-copy', (lst) => Array.isArray(lst) ? lst.slice() : [])
   def('last-pair', (lst) => Array.isArray(lst) && lst.length ? [lst[lst.length - 1]] : [])
@@ -558,12 +528,7 @@ export function makeBaseEnv(fuel) {
     for (let i = 0; i < lst.length; i += n) out.push(lst.slice(i, i + n))
     return out
   })
-  def('partition', (pred, lst) => {
-    const yes = [], no = []
-    for (const x of lst) (apply(pred, [x], fuel) !== false ? yes : no).push(x)
-    return [yes, no]
-  })
-  def('remove',    (pred, lst) => lst.filter((x) => apply(pred, [x], fuel) === false))
+  // SRFI-1 partition and remove removed per decision-018.
   def('distinct',  (lst) => {
     const out = [], seen = new Set()
     for (const x of lst) {
@@ -597,8 +562,7 @@ export function makeBaseEnv(fuel) {
     return out
   })
   def('difference',   (a, b) => a.filter((x) => !b.some((y) => deepEqual(x, y))))
-  def('find',         (pred, lst) => { for (const x of lst) if (apply(pred, [x], fuel) !== false) return x; return false })
-  def('find-index',   (pred, lst) => { for (let i = 0; i < lst.length; i++) if (apply(pred, [lst[i]], fuel) !== false) return i; return -1 })
+  // SRFI-1 find and find-index removed per decision-018.
   def('index-of',     (x, lst) => lst.findIndex((y) => deepEqual(x, y)))
   def('sort-by',      (fn, lst) => lst.slice().sort((a, b) => {
     const ka = apply(fn, [a], fuel), kb = apply(fn, [b], fuel)
@@ -623,11 +587,7 @@ export function makeBaseEnv(fuel) {
     while (i < lst.length && apply(pred, [lst[i]], fuel) !== false) i++
     return lst.slice(i)
   })
-  def('span',         (pred, lst) => {
-    let i = 0
-    while (i < lst.length && apply(pred, [lst[i]], fuel) !== false) i++
-    return [lst.slice(0, i), lst.slice(i)]
-  })
+  // SRFI-1 span removed per decision-018.
   def('group-by',     (fn, lst) => {
     const out = new Map()
     for (const x of lst) {

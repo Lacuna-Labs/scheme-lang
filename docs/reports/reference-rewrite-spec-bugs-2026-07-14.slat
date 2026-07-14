@@ -1,0 +1,113 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SAKURA SCHEME — REFERENCE-REWRITE SPEC-BUGS
+;;
+;; Findings from the Reference-Rewrite lane (2026-07-14) where a
+;; Convention-Sweep finding could NOT be simply rewritten because
+;; the spec/implementation had an underlying bug or gap. These
+;; require an author decision — Alfred should review each and
+;; either fix the spec, reverse a decision, or drop the verb.
+;;
+;; Format: one (spec-bug ...) record per finding. Fields:
+;;   :verb                 the affected verb
+;;   :severity             low | medium | high
+;;   :convention-finding   the pattern-kind from the sweep
+;;   :issue                one-sentence description
+;;   :author-needed        what Alfred needs to decide
+;;   :context              longer explanation
+;; ═══════════════════════════════════════════════════════════════
+
+(spec-bug
+  :verb "eval"
+  :severity "high"
+  :convention-finding "forbidden-primitive"
+  :issue "The (eval ...) verb is documented at docs/SAKURA-SCHEME-REFERENCE.slat:7025, but decision-005 forbids eval in the interpreter."
+  :author-needed "Either (a) remove the eval verb entry from the reference, (b) reverse decision-005 to permit eval under specific conditions, or (c) mark the eval entry with :impl-status \"deferred\" and add a caveat that it is not currently available."
+  :context "The reference documents eval with three tier-progression examples (novice, intermediate, expert). All three examples call eval directly, which decision-005 forbids because it breaks the atomicity of the dispatcher's gate-walk. The reference-rewrite lane did NOT modify this entry per instructions: 'Do NOT delete the verb yourself; log the conflict as a finding.'")
+
+(spec-bug
+  :verb "on-frame"
+  :severity "low"
+  :convention-finding "forbidden-primitive"
+  :issue "Convention Sweep flagged (set-car! ...) in on-frame's expert example :note field."
+  :author-needed "No action needed — this is a false positive."
+  :context "The :note field contains the STRING 'set-car!' as part of an educational reference to decision-006. The actual :code field uses (set! state ...) which is R7RS-small compliant. The sweep's pattern-detector matched the note string rather than the code. Leaving as-is.")
+
+(spec-bug
+  :verb "cadence/may-propose?"
+  :severity "low"
+  :convention-finding "non-r7rs-primitive (last)"
+  :issue "Sweep flagged (last (card-get ...)) as a call to SRFI-1 last."
+  :author-needed "No action — false positive."
+  :context "The token `last` here is a variable name bound by (let ((last (card-get ...))) ...) — a let-binding, not a call to the SRFI-1 last procedure. Same false-positive shape appears in 18 other flagged entries (card/activity-progress, podcast-subscriptions, podcast-unsubscribe, random-int, curve/second-form, math/compare, matrix/*, matrix/+, matrix/->string, phys/same-dimension?, stat/count, vec/+, vec/=, vec/angle-between, vec/dim, world/link-rest!). All 19 non-r7rs-primitive findings are binding-pair variable names in let/let*/named-let, not calls to SRFI-1 primitives. Verified via AST-based classifier (tmp/ref-rewrite/scan-nonr7rs.mjs).")
+
+(spec-bug
+  :verb "audio-perceptual-bands"
+  :severity "low"
+  :convention-finding "non-r7rs-primitive (first/last)"
+  :issue "Sweep flagged (first band) and (last band) as calls to SRFI-1 first/last."
+  :author-needed "No action — both matches are inside ;; comments (\"bass (first band)\" and \"treble (last band)\")."
+  :context "The comments are pedagogical prose, not code. The sweep's pattern-detector did not distinguish comments.")
+
+(spec-bug
+  :verb "calc/critical-points-1d"
+  :severity "low"
+  :convention-finding "match-form"
+  :issue "Sweep flagged (match (filter ...)) as a Racket-style match form."
+  :author-needed "No action — false positive."
+  :context "The token `match` here is a variable name bound by (let ((match (filter ...))) ...) — a let-binding, not a call to the Racket match form.")
+
+(spec-bug
+  :verb "nt/prime-factorization"
+  :severity "low"
+  :convention-finding "match-form"
+  :issue "Sweep flagged (match (assoc ...)) as a match form."
+  :author-needed "No action — false positive AND uses SRFI-1 fold-left and filter-map."
+  :context "The token `match` is a variable name bound by (let ((match (assoc ...))) ...). However, the example DOES use fold-left and filter-map which are non-R7RS-small. These should be rewritten but were not flagged by the sweep. Recommend: rewrite the intermediate and expert examples to use R7RS-small fold via named-let.")
+
+(spec-bug
+  :verb "card-canvas-rect"
+  :severity "medium"
+  :convention-finding "get-verb"
+  :issue "The verb's :signature says the return is a `{x y width height}` map, but the runtime implementation returns a descriptor list."
+  :author-needed "Decide whether card-canvas-rect should return a hash-table (matching the signature) or an alist / positional list (matching the runtime)."
+  :context "Reference examples use (get r 'x) which the rewrite converted to (hash-ref r 'x). This assumes the return is a hash-table. If the runtime actually returns an alist, the rewrite should have used (cdr (assq 'x r)) instead. Currently the wire status shows the impl at src/reference-impls.js:2226-2232 uses a descriptor-tuple placeholder — this is not a real hash-table. Same issue affects card-rect, card-screen-rect, card-get, read-inbox, read-gmail-folder, motion/arc, motion/cadence, motion/drop, radio/next info-map, radio/play info-map.")
+
+(spec-bug
+  :verb "artifact/list"
+  :severity "medium"
+  :convention-finding "keyword-arg-syntax"
+  :issue "The signature previously used [:kw val] variadic syntax; rewritten to a single options alist trailing arg."
+  :author-needed "Verify the runtime implementation accepts an alist argument (not a plist or hash-table)."
+  :context "Rewrote (artifact/list :kind 'sketch :limit 10) → (artifact/list '((kind . sketch) (limit . 10))). The runtime's actual handling of options must match this alist shape.")
+
+(spec-bug
+  :verb "artifact/save"
+  :severity "medium"
+  :convention-finding "keyword-arg-syntax"
+  :issue "Same as artifact/list: signature was variadic kw-args, rewritten to trailing options alist with quasiquote for value interpolation."
+  :author-needed "Verify runtime accepts alist options."
+  :context "Rewrote to use quasiquote+unquote for dynamic value interpolation: (artifact/save `((kind . design) (payload . ,result) ...)).")
+
+(spec-bug
+  :verb "scene/imagine"
+  :severity "medium"
+  :convention-finding "keyword-arg-syntax"
+  :issue "Previously (scene/imagine [:kw val ...] action-result ...) variadic. Rewritten to options-alist + action-results."
+  :author-needed "Verify runtime signature."
+  :context "Rewrote to (scene/imagine '((backdrop . \"night\") (gravity . 9.8))).")
+
+(spec-bug
+  :verb "surface-paint-text"
+  :severity "medium"
+  :convention-finding "keyword-arg-syntax"
+  :issue "10-argument signature reduced to 7 positional + options alist."
+  :author-needed "Verify runtime accepts the new shape."
+  :context "The old signature listed all 10 args including grid, supersample, minAlpha as optional trailing kw-args. Rewrote to (surface-paint-text surface text x y font size colour options) with options as alist.")
+
+(spec-bug
+  :verb "world/spawn examples"
+  :severity "medium"
+  :convention-finding "keyword-arg-syntax + clojure-map-literal"
+  :issue "24 verb examples used (world/spawn X Y :kind 'K) or (world/spawn X Y {:kind K :id N}), but world/spawn's signature is (world/spawn kind x y [w] [h])."
+  :author-needed "No action needed — rewrite handled it."
+  :context "All examples were rewritten to (world/spawn 'K X Y). The Clojure-map form with :id N was dropped because world/spawn returns id — the caller cannot assign one. This changes some examples' semantics (e.g., ai/pursue novice example now defines local `enemy`/`player` variables from world/spawn returns).")
