@@ -128,6 +128,13 @@ export function makeSakuraEnv(fuel, {
   // framebuffer AND return an inspectable plot record.
   installWiredVerbsHanaMath(env, fuel)
 
+  // L4.8 WIRED-MARCUS-MATH-C — Marcus's lane. Fixes const/ln{2,10} and
+  // const/sqrt{2,3} (were thunks, must be numbers). Replaces descriptor
+  // stubs for rule-conway, num/nintegrate-{2d,3d}, rasterize-text, rows,
+  // and zoom-legible? with real impls. See docs/reports/lanes/
+  // marcus-math-c-audit-2026-07-14.slat.
+  installWiredVerbsMarcusMathC(env, fuel)
+
   // L5 REFERENCE — every documented verb from SAKURA-SCHEME-REFERENCE.slat.
   // Curated impls replace stubs; anything without an impl gets a
   // clean-error stub with the reference contract embedded in the

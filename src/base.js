@@ -15,6 +15,8 @@ import {
   bricklayCacheSet,
 } from './adapters.js'
 import { registerMedia } from './media.js'
+import { installEng } from './eng.js'
+import { installAlg } from './alg.js'
 
 export function makeBaseEnv(fuel) {
   const e = new Env()
@@ -1191,6 +1193,21 @@ export function makeBaseEnv(fuel) {
   // Loaded here so every scheme-lang consumer picks them up. Verbs are
   // additive; they don't conflict with the pure-math base above.
   registerMedia(e, fuel)
+
+  // ── L1.5 ENG — engineering-math verbs (hiroshi-system lane, 2026-07-14).
+  // Six pure-math verbs: eng/beam-reactions, eng/tf, eng/tf-dc-gain,
+  // eng/tf-stable?, eng/bode, eng/statics-solve. No state, no I/O.
+  // Installed here so BOTH makeBaseEnv and makeSakuraEnv see them — the
+  // Jesse binary + Lacuna standalone get the real impls too.
+  installEng(e)
+
+  // ── L1.5 ALG — abstract algebra + group theory + music-theory algebra
+  // (jess-alg lane, 2026-07-14). Pure math on arrays and lists; no host
+  // state. Installed here so BOTH makeBaseEnv and makeSakuraEnv see the
+  // real impls — the pre-existing split in wired-verbs.js only reached
+  // makeSakuraEnv, so the Jesse binary and Lacuna standalone were seeing
+  // descriptor lies for alg/nr-P, alg/prime-form, alg/normal-form, etc.
+  installAlg(e)
 
   return e
 }
