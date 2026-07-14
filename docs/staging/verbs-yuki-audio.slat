@@ -639,3 +639,137 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "FFT band snapshot. Live: list of numbers. REPL: descriptor."))
+
+(verb
+  :name "audio/tempo"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/tempo) -> number | descriptor"
+  :summary "Read the analyser's current estimate of the audio's tempo in beats per minute."
+  :impl-status "wired-descriptor"
+  :explanation "audio/tempo asks the live analyser for its current best guess of the tempo of whatever is playing. Under a live host it returns a number in BPM (typically 60-180 for music). In the headless REPL there is no live analyser, so it returns the descriptor ('audio/tempo). Callers should type-check the return with `number?` before using it, or fall through to a default. audio/listen must have returned 'ok under a live host for this to be meaningful."
+  :examples (
+    (:tier "novice"
+     :code "(audio/tempo)"
+     :note "Query the tempo. In REPL: returns (\"audio/tempo\"), a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((t (audio/tempo))) (if (pair? t) (quote descriptor) (if (number? t) t (quote unknown))))"
+     :note "Distinguish descriptor / number / other. Returns 'descriptor in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/tempo)) (list 1 2))"
+     :note "Two polls of the tempo. Read-only and idempotent.")
+    (:tier "expert"
+     :code "(define (tempo-bin) (let ((t (audio/tempo))) (cond ((pair? t) (quote unknown)) ((< t 90) (quote slow)) ((< t 130) (quote medium)) (else (quote fast))))) (tempo-bin)"
+     :note "Bin the tempo into slow/medium/fast. Returns 'unknown in REPL because the descriptor is a pair.")
+    (:tier "master"
+     :code "(let* ((probes (list 1 2 3 4)) (readings (map (lambda (_) (audio/tempo)) probes))) (list (quote readings) (length readings)))"
+     :note "Sample the tempo four times — the shape of a rolling-tempo estimator that averages several probes.")
+  )
+  :caveats
+    ("Requires audio/listen 'ok under a live host."
+     "Estimate — not exact. May jitter or lag by a bar."
+     "Genre-dependent: complex rhythms may yield unstable estimates.")
+  :drawbacks
+    ("No confidence value returned; a wild guess and a solid one look the same."
+     "Cannot request per-track tempo — global aggregate.")
+  :usecases
+    ("Sync visuals to the beat via bpm-aware pacing."
+     "Bin tempo for a genre classifier."
+     "Choose an appropriate fill or transition for the current beat.")
+  :related ("audio/listen" "audio/onset?" "audio/bar-clock" "audio/key")
+  :learn
+    (:concept "Live tempo estimation and how to consume it safely."
+     :prerequisites ("audio/listen" "(core)/cond")
+     :progression "Read audio/tempo. Then bin it. Then use audio/bar-clock to advance visuals per bar.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/tempo) descriptor. Host binds to a real tempo detector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/tempo); apprentice='descriptor; intermediate=2 copies; expert='unknown; master=(readings 4)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/bar-clock")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Treating the descriptor as a number. Believing the estimate is exact — it can wobble by 3-5 BPM."
+     :when-not-to-use "You want an exact bar clock — use audio/bar-clock instead.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Tempo estimate in BPM. Descriptor return in REPL."))
+
+(verb
+  :name "audio/key"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/key) -> [string string number] | #f | descriptor"
+  :summary "Read the analyser's current best guess of the musical key (root, mode, confidence)."
+  :impl-status "wired-descriptor"
+  :explanation "audio/key returns a three-element tuple: (root mode confidence) where root is a pitch string like \"C\" or \"F#\", mode is \"major\" or \"minor\", and confidence is a number in [0, 1]. Under a live host with warm analyser this reflects the detected key. If no key is currently detectable the host returns #f. In headless REPL there is no live analyser, so the verb returns the descriptor ('audio/key). Callers should check with `pair?` first, then either use the descriptor as a marker or extract car/cadr/caddr from the tuple."
+  :examples (
+    (:tier "novice"
+     :code "(audio/key)"
+     :note "Query the current key. In REPL: returns (\"audio/key\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((k (audio/key))) (if (pair? k) (car k) k))"
+     :note "Extract the head. In REPL the head is the verb-name string.")
+    (:tier "intermediate"
+     :code "(if (pair? (audio/key)) (quote no-key-in-repl) (audio/key))"
+     :note "Guard on descriptor shape; fall through to a symbolic marker.")
+    (:tier "expert"
+     :code "(define (mode-color) (let ((k (audio/key))) (cond ((pair? k) (quote gray)) ((null? k) (quote none)) ((and (pair? k) (>= (length k) 2) (equal? (cadr k) \"major\")) (quote warm)) (else (quote cool))))) (mode-color)"
+     :note "Palette by mode: 'gray if no live key, 'warm for major, 'cool for minor. Returns 'gray in REPL.")
+    (:tier "master"
+     :code "(let loop ((n 0) (last (quote none))) (if (>= n 2) (list (quote after) n (quote polls) (quote last) last) (loop (+ n 1) (audio/key))))"
+     :note "Poll audio/key twice, save the last observation. Under a live host this stabilises the reading; in REPL you accumulate the descriptor.")
+  )
+  :caveats
+    ("Returned as a tuple under live host; descriptor in REPL. Check with pair? first."
+     "Confidence is (0, 1]; low values mean the key detector is guessing."
+     "Enharmonic equivalents may collapse (\"Cs\" vs \"Db\") depending on the analyser.")
+  :drawbacks
+    ("Global aggregate; no per-track key."
+     "Slow to update; a mid-song modulation may lag by several bars.")
+  :usecases
+    ("Colour a palette by detected mode."
+     "Show the current key in a music-theory HUD."
+     "Guide a real-time accompaniment that must stay in key.")
+  :related ("audio/tempo" "audio/spectrum" "audio/listen")
+  :learn
+    (:concept "Live key detection and safe consumption of a tuple/descriptor union return."
+     :prerequisites ("audio/listen" "(core)/pair?" "(core)/cond")
+     :progression "Ask audio/key. Then extract root and mode. Then bind to a palette. Then read confidence to fade the effect.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/key) descriptor. Host binds to a key detector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/key); apprentice=\"audio/key\"; intermediate='no-key-in-repl; expert='gray; master=(after 2 polls last ('audio/key))."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Reading (car k) expecting the root string when the return is a descriptor. Assuming enharmonic normalisation."
+     :when-not-to-use "You need pitch-level accuracy — this is a coarse root+mode estimate.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Detected key: (root mode confidence). Descriptor in REPL."))
