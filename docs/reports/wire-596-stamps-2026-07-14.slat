@@ -1,0 +1,5 @@
+;; Architect stamps for the 596-verb wiring lane.
+;; Each stamp = one verb verified via bin/sakura-scheme eval.
+;; Architect PushNotifications at each 100-stamp boundary.
+
+(stamps :target 596 :notified-at (100 200 300 400 500 596) :current 0)
