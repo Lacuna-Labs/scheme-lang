@@ -1,0 +1,477 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; substrate-gaps — 2026-07-14
+;; Lane: descriptor-shape sweep (SRE honesty pass)
+;; Author: Descriptor-Shape Sweep lane (Lacuna Eng)
+;; Date: 2026-07-14
+;;
+;; Alfred's mandate: for each missing substrate, name it, describe what
+;; it does, count the verbs it would unblock, sketch complexity, and
+;; list dependencies. Alfred will use this table to decide which
+;; substrates to build FIRST.
+;;
+;; Sort order: verbs unblocked, DESCENDING. Top substrate is the biggest
+;; single lever — building it turns the most lies into truths.
+;;
+;; Total unique substrates identified: 51
+;; Total descriptor-shape verbs across all substrates: 779
+;; ─────────────────────────────────────────────────────────────────────
+
+(substrate-gap
+  :substrate "world-runtime"
+  :description "World/* — physics, spawn, camera, gravity, wind, links, tape (record/replay). world/attract!, world/impulse!, world/spawn, world/tape-*"
+  :unblocks-verbs 46
+  :unblocked-verb-names ("entity/collisions" "entity/distance" "entity/kind" "entity/pos" "entity/state" "entity/vel" "entity/x" "entity/y" "world/after" "world/attract!" "world/camera" "world/camera-bounds!" "world/camera-follow!" "world/camera-shake!" "world/camera-snap!" "world/collisions" "world/count" "world/each" "world/find" "world/floor!" "world/frame" "world/gravity!" "world/hash" "world/impulse!" "world/link!" "world/link-rest!" "world/nearest" "world/render" "world/repel!" "world/reset!" "world/restore!" "world/snapshot" "world/solve!" "world/step" "world/sway-all!" "world/tape-audio" "world/tape-clear!" "world/tape-frames" "world/tape-hash" "world/tape-lcamera" "world/tape-record!" "world/tape-recording?" "world/tape-replay" "world/tape-save" "world/tape-stop!" "world/wind!")
+  :complexity "large — 1000+ lines"
+  :dependencies ("game-state" "physics")
+  :lane-assign "kira-world")
+
+(substrate-gap
+  :substrate "ops-runtime"
+  :description "Ops/* runtime dispatchers — deploy, publish, subscribe, schedule, checkpoint, rollback. Actual business-ops requires backend."
+  :unblocks-verbs 45
+  :unblocked-verb-names ("ops/apply" "ops/audit" "ops/backup" "ops/build" "ops/burnup" "ops/checkpoint" "ops/cleanup" "ops/close" "ops/complete" "ops/config" "ops/deploy" "ops/emit" "ops/exec" "ops/fetch" "ops/finalize" "ops/fire" "ops/flush" "ops/init" "ops/lock" "ops/log" "ops/notify" "ops/observe" "ops/open" "ops/publish" "ops/queue" "ops/read" "ops/reload" "ops/reset" "ops/restart" "ops/rollback" "ops/save" "ops/schedule" "ops/send" "ops/snapshot" "ops/spawn" "ops/start" "ops/stop" "ops/subscribe" "ops/tick" "ops/track" "ops/trigger" "ops/unlock" "ops/verify" "ops/wait" "ops/write")
+  :complexity "large — 1000+ lines"
+  :dependencies ("network" "db")
+  :lane-assign "zain-ops")
+
+(substrate-gap
+  :substrate "calc-numerical"
+  :description "Numerical calc extensions currently descriptor-shaped but implementable via finite-difference + Simpson. calc/critical-points, calc/global-extrema, calc/inflection, calc/integrate2, calc/integrate3, calc/interval-of-convergence, calc/local-extrema, calc/maclaurin, calc/monotonic?, calc/concave-up?, calc/normal-line, calc/partial-derivative, calc/riemann-sum, calc/midpoint-rule, calc/series-sum, ca"
+  :unblocks-verbs 43
+  :unblocked-verb-names ("calc/critical-points" "calc/global-extrema" "calc/inflection" "calc/integrate2" "calc/integrate3" "calc/interval-of-convergence" "calc/local-extrema" "calc/maclaurin" "calc/midpoint-rule" "calc/normal-line" "calc/partial-derivative" "calc/series-sum" "curve/accel" "curve/arc-length" "curve/binormal" "curve/brachistochrone" "curve/christoffel" "curve/curvature" "curve/curvature-2d" "curve/cycloid" "curve/descent-time" "curve/euler-lagrange-residual" "curve/fall-line" "curve/fall-path" "curve/first-form" "curve/frenet-frame" "curve/gaussian-curvature" "curve/geodesic-distance" "curve/gradient" "curve/mean-curvature" "curve/normal" "curve/osculating-circle" "curve/principal-curvatures" "curve/second-form" "curve/slope-angle" "curve/speed" "curve/spline-length" "curve/spline-resample" "curve/surface-graph" "curve/surface-normal" "curve/torsion" "curve/unit-tangent" "curve/velocity")
+  :complexity "medium — 400-700 lines (many already real in hana)"
+  :dependencies ()
+  :lane-assign "hana-calc-more")
+
+(substrate-gap
+  :substrate "entity-effect-runtime"
+  :description "Motion-effect verbs on entities — spring!/ease!/squash!/glide!/hop!/spin!/sway!/scatter!/curve!/march!/settle!/slide!/glide-to!. Belong to choreography-engine but scoped to entities."
+  :unblocks-verbs 43
+  :unblocked-verb-names ("entity/accel!" "entity/bounce!" "entity/curve!" "entity/damage!" "entity/despawn!" "entity/drag!" "entity/drift!" "entity/ease!" "entity/embodiment!" "entity/friction!" "entity/get-set!" "entity/glide!" "entity/glide-to!" "entity/goto!" "entity/gravity-scale!" "entity/hop!" "entity/hp!" "entity/lag!" "entity/layer!" "entity/march!" "entity/mask!" "entity/mass!" "entity/max-speed!" "entity/move!" "entity/parent!" "entity/pose!" "entity/scatter!" "entity/sensor!" "entity/set!" "entity/set-pos!" "entity/settle!" "entity/shape!" "entity/shape-flower!" "entity/slide!" "entity/solid!" "entity/spin!" "entity/spring!" "entity/sprite!" "entity/squash!" "entity/sway!" "entity/team!" "entity/toss!" "entity/untag!")
+  :complexity "included in choreography-engine"
+  :dependencies ("choreography-engine" "game-state")
+  :lane-assign "ren-motion")
+
+(substrate-gap
+  :substrate "topo-algebra"
+  :description "Topology algebra — betti, boundary, chain, complex, homology, homotopy, klein-bottle, mobius, simplicial, sphere, torus, vertices, betti-curve, betti-k, boundary-matrix, homology-gf2, persistence, persistence-entropy, rips-filtration, vietoris-rips, writhe, crossing-number, euler-genus, knot, metric-space."
+  :unblocks-verbs 41
+  :unblocked-verb-names ("topo/adjacent?" "topo/betti" "topo/betti-curve" "topo/betti-k" "topo/bottleneck" "topo/boundary" "topo/boundary-matrix" "topo/chain" "topo/closed?" "topo/crossing-number" "topo/dimension" "topo/edges" "topo/euler-characteristic" "topo/faces" "topo/genus" "topo/homology" "topo/homology-gf2" "topo/homotopy" "topo/interior" "topo/is-manifold?" "topo/klein-bottle" "topo/knot" "topo/knot-genus" "topo/link-number" "topo/metric-space" "topo/mobius" "topo/nodes" "topo/open?" "topo/orbit" "topo/persistence" "topo/persistence-entropy" "topo/rips-filtration" "topo/simplex" "topo/simplicial" "topo/simply-connected?" "topo/sphere" "topo/torus" "topo/total-persistence" "topo/vertices" "topo/vietoris-rips" "topo/writhe")
+  :complexity "large — 1000-1500 lines"
+  :dependencies ()
+  :lane-assign "rin-topo")
+
+(substrate-gap
+  :substrate "sound-composition"
+  :description "Sound composition primitives — note/read, note/write, note/list, note/strike, note/release, note/place-at, play/note, play/chord, play/articulation!, play/dynamics!, synth/pedal!, synth/bow!, synth/breath!, synth/damp!, synth/ensemble!"
+  :unblocks-verbs 38
+  :unblocked-verb-names ("add-formant" "noise" "note-place" "note-place-at" "note-release" "note-strike" "note/list" "note/place-at" "note/read" "note/release" "note/strike" "note/write" "play/articulation!" "play/chord" "play/dynamics!" "play/note" "speech/listen" "speech/say" "synth/bow!" "synth/breath!" "synth/damp!" "synth/ensemble!" "synth/env" "synth/filter" "synth/gain" "synth/lfo" "synth/note" "synth/pan" "synth/pedal!" "synth/pitch" "synth/reverb" "synth/wave" "transport/loop" "transport/pause" "transport/play" "transport/route" "transport/stop" "transport/tempo")
+  :complexity "medium — 400-600 lines"
+  :dependencies ("audio-hardware" "note-store")
+  :lane-assign "yuki-note")
+
+(substrate-gap
+  :substrate "card-runtime"
+  :description "Card lifecycle: open, close, focus, save, restore. State layer separate from framebuffer. Bricklay layout engine + focus manager + render loop."
+  :unblocks-verbs 37
+  :unblocked-verb-names ("card-anchor-settle" "card-ask" "card-canvas-rect" "card-close" "card-do" "card-each" "card-ease-aside" "card-effect" "card-find-by-kind" "card-focus!" "card-get" "card-id-of" "card-kind" "card-kinds" "card-land" "card-lean-aside" "card-list" "card-open" "card-open-then" "card-pluck" "card-reach" "card-rect" "card-rows" "card-screen-rect" "card-set!" "card-settle-breath" "card-toss" "card-unfocus!" "card-where" "card/close" "card/find-by-kind" "card/focus!" "cards-list" "coin-emit" "define-card" "flip-card" "fold-card")
+  :complexity "medium — 400-800 lines"
+  :dependencies ("env" "cortex" "framebuffer")
+  :lane-assign "toshi-card")
+
+(substrate-gap
+  :substrate "framebuffer-state-layer"
+  :description "Persistent draw-state layers on top of the framebuffer. paint-* + dot-count/set-dot-*, surface-*, clear-surface-layer, canvas-* mutators + queries. Layered painting semantics."
+  :unblocks-verbs 35
+  :unblocked-verb-names ("age-layer" "animation-budget" "animation-reflow-policy" "animation-set-reflow-policy" "animation/budget" "animation/reflow-policy" "animation/set-reflow-policy" "canvas-cell-age" "canvas-cell-set!" "canvas-clear-region" "canvas-cols" "canvas-pause" "canvas-power-tier" "canvas-region-live-count" "canvas-resume" "canvas-rows" "canvas-rule" "canvas-rule-set!" "canvas-spawn-pattern" "clear-surface-layer" "dot-count" "paint-arrow" "paint-cell" "paint-coin" "paint-conway" "paint-glow" "paint-grid" "paint-grid-3state" "paint-grid-4state" "paint-grid-with-age" "paint-heart" "paint-text" "set-dot-alpha" "set-dot-color" "set-dot-radius")
+  :complexity "medium — 400-600 lines"
+  :dependencies ("framebuffer")
+  :lane-assign "hana-paint")
+
+(substrate-gap
+  :substrate "grid-CA-host"
+  :description "Grid-based state distinct from Conway — 3-state, 4-state, aged cells. grid-init + grid-step-* variants + grid-neighbors + grid-cell-set!/state/age."
+  :unblocks-verbs 34
+  :unblocked-verb-names ("grid-cell-age" "grid-cell-set!" "grid-cell-state" "grid-cols" "grid-init" "grid-live-count" "grid-neighbors" "grid-origin" "grid-rows" "grid-step" "grid-step-3state" "grid-step-4state" "grid-step-aged" "grid-step-count" "grid/adjacent" "grid/at" "grid/card-center" "grid/cell-list" "grid/clear" "grid/dim" "grid/dot" "grid/each" "grid/flower-add!" "grid/flower-clear!" "grid/flower-go-to!" "grid/flower-list" "grid/flower-move-to!" "grid/flower-pos" "grid/flower-remove!" "grid/flower-spawn!" "grid/flower-state!" "grid/glow" "grid/pos" "grid/set!")
+  :complexity "small-medium — 300-500 lines"
+  :dependencies ("framebuffer")
+  :lane-assign "ada-grid")
+
+(substrate-gap
+  :substrate "radio-runtime"
+  :description "Radio-station DB + tuning + AM/FM/PM modulation math + scan + carrier + demodulate. Some pure math, some host."
+  :unblocks-verbs 32
+  :unblocked-verb-names ("radio-current-station-country" "radio-current-station-name" "radio/am" "radio/carrier" "radio/demodulate" "radio/eq" "radio/fm" "radio/mesh" "radio/mix" "radio/modulate" "radio/mute" "radio/next" "radio/noise" "radio/now-playing" "radio/pause" "radio/play" "radio/pm" "radio/prev" "radio/scan" "radio/signal" "radio/snr" "radio/stations" "radio/sync-to-beat" "radio/toggle" "radio/tune" "radio/tune-ghz" "radio/tune-hz" "radio/tune-khz" "radio/tune-mhz" "radio/unmute" "radio/visualize" "radio/volume")
+  :complexity "small — 200-400 lines"
+  :dependencies ("audio-hardware")
+  :lane-assign "yuki-radio")
+
+(substrate-gap
+  :substrate "conway-world"
+  :description "Cellular automata world for grid verbs. Tribe scoring, rainbow round tick, RAF loop, conway-init spawn primitives (glider, gosper, lwss, r-pent)."
+  :unblocks-verbs 31
+  :unblocked-verb-names ("conway-cell-age-band" "conway-cell-glow" "conway-cell-lineage" "conway-cell-mixed-parents" "conway-cols" "conway-end-round" "conway-feed-corner" "conway-fire-rainbow" "conway-init" "conway-live-count" "conway-round-scores" "conway-round-tick" "conway-round-ticks-total" "conway-rows" "conway-set-rule" "conway-soup-flush" "conway-spawn-beehive" "conway-spawn-blinker" "conway-spawn-block" "conway-spawn-cell" "conway-spawn-corner" "conway-spawn-glider" "conway-spawn-gosper" "conway-spawn-lwss" "conway-spawn-r-pent" "conway-spawn-startup-gun" "conway-step" "conway-tick-count" "conway-tick-rainbow" "conway-tribe-counts" "conway-underdog")
+  :complexity "medium — 500-900 lines"
+  :dependencies ("grid-CA-host" "framebuffer")
+  :lane-assign "ada-conway")
+
+(substrate-gap
+  :substrate "nav-map-runtime"
+  :description "nav-map, imagine, invariants, key?, walk-cycle, walk-together, where-to-click, submit, tempo, viewport, viewport-width, touch, transfer, summon, sway!, svg-set, to-draw, zoom-legible?. Loose bag of no-namespace verbs."
+  :unblocks-verbs 29
+  :unblocked-verb-names ("eye-contact" "hand-off" "imagine" "layout-bricklay!" "list-item-pluck" "list-item-toss" "move-card" "nav-map" "on-canvas-trace" "orient-card" "rotate-card" "scale-card" "stop-when" "sub-position-per-beat" "submit" "summon" "svg-set" "sway!" "tempo" "to-draw" "touch" "transfer" "viewport" "viewport-width" "walk-cycle" "walk-together" "where-to-click" "with-seed" "with-spacing")
+  :complexity "small — 200-400 lines"
+  :dependencies ()
+  :lane-assign "sora-misc")
+
+(substrate-gap
+  :substrate "ai-behavior-runtime"
+  :description "AI steering + boids + behavior trees. ai/align, ai/arrive, ai/flock, ai/nav-mesh, ai/policy-act, ai/steer!, ai/utility, ai/wander. Blackboard is real; steering needs entity + physics state."
+  :unblocks-verbs 28
+  :unblocked-verb-names ("ai/align" "ai/arrive" "ai/bt-action" "ai/bt-condition" "ai/bt-force" "ai/bt-invert" "ai/bt-parallel" "ai/bt-selector" "ai/bt-sequence" "ai/bt-tick" "ai/cohere" "ai/evade" "ai/flee" "ai/flock" "ai/flow-at" "ai/max-force!" "ai/max-speed!" "ai/nav-mesh" "ai/path" "ai/policy-act" "ai/pursue" "ai/seek" "ai/separate" "ai/state!" "ai/steer!" "ai/utility" "ai/wander" "ai/waypoints")
+  :complexity "medium-large — 600-1000 lines"
+  :dependencies ("game-state" "entity-vel")
+  :lane-assign "kenji-ai")
+
+(substrate-gap
+  :substrate "choreography-engine"
+  :description "Motion composition (ease curves, ms timing, pose interpolation). motion/* + entity/*!-effect verbs (spring/glide/hop/spin/sway/settle) + part/* pose verbs."
+  :unblocks-verbs 25
+  :unblocked-verb-names ("animation/timing" "animation/tween" "arc-between" "motion-anchor-to-input" "motion-follow-input" "motion-halt" "motion-move-to" "motion/anchor-to-input" "motion/arc" "motion/cadence" "motion/drop" "motion/ease" "motion/follow-input" "motion/halt" "motion/lerp" "motion/move-to" "motion/pause" "motion/pocket" "motion/resume" "motion/spline" "motion/spring" "motion/step" "motion/tween" "motion/with-feel" "motion/with-pace")
+  :complexity "large — 800-1500 lines"
+  :dependencies ("framebuffer" "animation-scheduler")
+  :lane-assign "ren-motion")
+
+(substrate-gap
+  :substrate "camera-state"
+  :description "Camera/viewport state — center, zoom, pan, follow, tilt, shake. Separate from card-runtime (world-camera vs card-camera)."
+  :unblocks-verbs 24
+  :unblocked-verb-names ("camera-bring-to-view" "camera-center-on" "camera-export" "camera-fit-all" "camera-frame" "camera-home" "camera-pan" "camera-pan-to" "camera-record" "camera-scale" "camera-set!" "camera-state" "camera-tilt" "camera-trace" "camera-x" "camera-y" "camera-zoom-to" "camera-zoom-to-card" "cine/cut" "cine/dolly" "cine/pan" "cine/steady" "cine/tilt" "cine/zoom")
+  :complexity "small — 200-400 lines"
+  :dependencies ("framebuffer" "game-state")
+  :lane-assign "emiko-camera")
+
+(substrate-gap
+  :substrate "commercial-adapter"
+  :description "Live commercial-platform adapters — Etsy/eBay/Shopify/Meta/Google APIs. read-desktop-text, read-gmail-folder, read-inbox, read-inventory, receive-listing, register-tick."
+  :unblocks-verbs 22
+  :unblocked-verb-names ("add-shop" "create-listing-from" "fleet-do" "fleet-each" "read-desktop-text" "read-gmail-folder" "read-inbox" "read-inventory" "read-open-returns" "receive-listing" "register-tick" "release-listing" "set-active-shop" "set-free-shipping-threshold" "set-inventory" "set-processing-time" "set-shipping-profile" "set-vacation-mode" "stock/on-hand" "store-listing-republish" "store-listing-set-price" "unpublish-listing")
+  :complexity "large — 800-1500 lines"
+  :dependencies ("auth-store" "network")
+  :lane-assign "nao-commerce")
+
+(substrate-gap
+  :substrate "part-pose-runtime"
+  :description "Part/* puppetry pose verbs — bow, breathe, expression, grasp, lean, look-toward, lower, nod, point, raise, reach, shake, shrug, sway, tilt, turn, twist, wave. Compose with choreography-engine + character sprite anatomy."
+  :unblocks-verbs 18
+  :unblocked-verb-names ("part/bow" "part/breathe" "part/expression" "part/grasp" "part/lean" "part/look-toward" "part/lower" "part/nod" "part/point" "part/raise" "part/reach" "part/shake" "part/shrug" "part/sway" "part/tilt" "part/turn" "part/twist" "part/wave")
+  :complexity "medium — 400-600 lines"
+  :dependencies ("choreography-engine" "character-sprites")
+  :lane-assign "toshi-part")
+
+(substrate-gap
+  :substrate "particle-system"
+  :description "Part/* particle system — spawn, step, emit, render, gravity!, wind!, lifetime!, size!, color!, velocity!, count, clear, kill, at, near, emit-radial, spawn-radial."
+  :unblocks-verbs 17
+  :unblocked-verb-names ("part/at" "part/clear" "part/color!" "part/count" "part/emit" "part/emit-radial" "part/gravity!" "part/kill" "part/lifetime!" "part/near" "part/render" "part/size!" "part/spawn" "part/spawn-radial" "part/step" "part/velocity!" "part/wind!")
+  :complexity "medium — 500-800 lines"
+  :dependencies ("framebuffer" "game-loop")
+  :lane-assign "toshi-particle")
+
+(substrate-gap
+  :substrate "surface-runtime"
+  :description "Surface/* — curtain, dim, dusk, paint-dots, paint-text, paper, spotlight, describe, digest, paint, clear, save, load, exists?. Layered paint surface with save/restore."
+  :unblocks-verbs 17
+  :unblocked-verb-names ("surface-curtain" "surface-dim" "surface-dusk" "surface-paint-dots" "surface-paint-text" "surface-paper" "surface-spotlight" "surface/clear" "surface/curtain" "surface/describe" "surface/digest" "surface/dim" "surface/load" "surface/pad" "surface/paint" "surface/save" "surface/spotlight")
+  :complexity "medium — 300-500 lines"
+  :dependencies ("framebuffer")
+  :lane-assign "hana-surface")
+
+(substrate-gap
+  :substrate "game-runtime-extras"
+  :description "game/* runtime — state, tick, win!, lose!, pause!, resume!, score+, score-set!, level!, reset!, timer, level, save, load, leaderboard, countdown, temperature, ttt-best-move, grundy, running?, step, stop, frame, surreal-add/sub/mul/neg/eq?/le?/is-number?/birthday/simplest. Some real (nim, mex, wythoff-p?), most descriptor."
+  :unblocks-verbs 15
+  :unblocked-verb-names ("game/countdown" "game/leaderboard" "game/level" "game/level!" "game/load" "game/lose!" "game/pause!" "game/reset!" "game/resume!" "game/save" "game/score+" "game/score-set!" "game/tick" "game/timer" "game/win!")
+  :complexity "medium — 500-800 lines"
+  :dependencies ("game-state")
+  :lane-assign "kira-game-extras")
+
+(substrate-gap
+  :substrate "core-dispatch"
+  :description "Core dispatch verbs — act, next, done, escalate, after, after-frame, big-bang, envelope-queue, card-emit, on-key, on-tick, begin-frame, cancel-tick, at-beat, across-beats. State-machine primitives."
+  :unblocks-verbs 13
+  :unblocked-verb-names ("across-beats" "act" "after" "after-frame" "at-beat" "begin-frame" "cancel-tick" "done" "end-frame" "envelope-queue" "escalate" "next" "on-tick")
+  :complexity "medium — 400-600 lines"
+  :dependencies ("env" "card-emit-runtime")
+  :lane-assign "ada-core-dispatch")
+
+(substrate-gap
+  :substrate "time-scheduler"
+  :description "Time-scheduler substrate — beat/at, time/at-beat, time/beat-of, time/current-beat, time/every-ms, time/measure-of, time/subbeat, at-beat, across-beats, after, after-frame, cancel-tick, on-tick. Some real (transport/tempo), some scheduling (beat-of)."
+  :unblocks-verbs 13
+  :unblocked-verb-names ("beat/at" "tick/at" "tick/cancel" "tick/every" "tick/once" "tick/pause" "tick/resume" "tick/status" "time/at-beat" "time/beat-of" "time/current-beat" "time/measure-of" "time/subbeat")
+  :complexity "medium — 400-600 lines"
+  :dependencies ("framebuffer-frame-loop")
+  :lane-assign "yuki-time")
+
+(substrate-gap
+  :substrate "audio-hardware"
+  :description "Live audio playback — synth/, tone, noise, transport/play, speech/say/listen, radio/* (radio host + station DB + tuning)."
+  :unblocks-verbs 12
+  :unblocked-verb-names ("audio-halt" "audio-play" "audio/bar-clock" "audio/halt" "audio/key" "audio/listen" "audio/lufs" "audio/onset-strength" "audio/onset?" "audio/playing?" "audio/spectrum" "audio/tempo")
+  :complexity "medium — 400-800 lines (WebAudio adapter)"
+  :dependencies ("browser-audio")
+  :lane-assign "yuki-audio")
+
+(substrate-gap
+  :substrate "system-runtime-extras"
+  :description "system/* — cards, health, registry, scheduler, surface, tick, frame, frame-count, uptime, log, warn, error, env, version. Hiroshi wired most; residual descriptor-shaped ones need scheduler/surface state."
+  :unblocks-verbs 10
+  :unblocked-verb-names ("audit-verify" "system/env" "system/error" "system/frame" "system/frame-count" "system/log" "system/tick" "system/uptime" "system/version" "system/warn")
+  :complexity "small — 200-400 lines"
+  :dependencies ("scheduler")
+  :lane-assign "hiroshi-system-extras")
+
+(substrate-gap
+  :substrate "ai-inference-runtime"
+  :description "AI cloud/model inference: classify, embed, generate, rank, rerank, summarize, translate, vector-search. Requires external API. ai/decide + ai/policy + ai/flow-field + ai/follow-flow + ai/follow-path + ai/grid + ai/wall! all need world/policy state."
+  :unblocks-verbs 8
+  :unblocked-verb-names ("ai/clear!" "ai/decide" "ai/flow-field" "ai/follow-flow" "ai/follow-path" "ai/grid" "ai/policy" "ai/wall!")
+  :complexity "medium — 300-500 lines (adapter layer)"
+  :dependencies ("network" "auth-store")
+  :lane-assign "kenji-ai")
+
+(substrate-gap
+  :substrate "scene-runtime"
+  :description "Scene/* — clear, grid, imagine, load, spawn-many, current, set!, push, pop, transition. Scene is a level orchestration layer over game.entities."
+  :unblocks-verbs 8
+  :unblocked-verb-names ("scene/close" "scene/current" "scene/list" "scene/open" "scene/pop!" "scene/push!" "scene/set!" "scene/transition")
+  :complexity "small — 200-400 lines"
+  :dependencies ("game-state" "entity")
+  :lane-assign "emiko-scene")
+
+(substrate-gap
+  :substrate "form-registry"
+  :description "First-class objects for widget/form/app registrations. define-form + define-app + define-button + form-of + field + form-list."
+  :unblocks-verbs 7
+  :unblocked-verb-names ("define-form" "field" "form" "form-group" "form-list" "form-of" "table")
+  :complexity "small — 200-400 lines"
+  :dependencies ("env")
+  :lane-assign "ada-form")
+
+(substrate-gap
+  :substrate "plot-runtime"
+  :description "Plot/* — line, scatter, bar, histogram, pie, area, heatmap, box, quiver, contour, surface, parametric, function, polar. Needs a framebuffer or SVG surface. Some already real in hana lane, most still descriptor."
+  :unblocks-verbs 7
+  :unblocked-verb-names ("plot/area" "plot/box" "plot/heatmap" "plot/pie" "plot/polar" "plot/quiver" "plot/surface")
+  :complexity "medium — 400-800 lines"
+  :dependencies ("framebuffer")
+  :lane-assign "hana-plot")
+
+(substrate-gap
+  :substrate "shoppe-runtime"
+  :description "Shoppe/* — balance, buy-merch, buy-pack, close, open, savings, transactions. Small in-memory shop wallet + inventory + txn log."
+  :unblocks-verbs 7
+  :unblocked-verb-names ("shoppe/add!" "shoppe/count" "shoppe/find" "shoppe/inventory" "shoppe/list" "shoppe/remove!" "shoppe/tag")
+  :complexity "small — 200-300 lines"
+  :dependencies ()
+  :lane-assign "nao-shoppe")
+
+(substrate-gap
+  :substrate "input-runtime"
+  :description "input/* — buttons, down?, may-i?, pressed?, set!, gamepad-any?, keydown?, keys-down, mouse-pos, mouse-down?, key?, mouse, gamepad, gesture, tap?. Hiroshi already wired some (down?/pressed?/set! via installSystem). Remaining need live-event queue."
+  :unblocks-verbs 6
+  :unblocked-verb-names ("analog-pad" "input/gamepad" "input/gesture" "input/keys-down" "input/mouse" "input/mouse-pos")
+  :complexity "small — 200-400 lines"
+  :dependencies ("browser-events")
+  :lane-assign "hiroshi-input-extras")
+
+(substrate-gap
+  :substrate "app-registry"
+  :description "App/* and button/* — app-of, app-list, app-clear!, button-list, button-of, define-app, define-button. First-class app+button objects."
+  :unblocks-verbs 6
+  :unblocked-verb-names ("app-clear!" "app-of" "button" "button-of" "define-app" "define-button")
+  :complexity "small — 200-400 lines"
+  :dependencies ("env")
+  :lane-assign "ada-app")
+
+(substrate-gap
+  :substrate "artifact-store"
+  :description "Artifact/* — cite, delete, get, list, load, save. Content-addressed asset store."
+  :unblocks-verbs 6
+  :unblocked-verb-names ("artifact/cite" "artifact/delete" "artifact/get" "artifact/list" "artifact/load" "artifact/save")
+  :complexity "small — 200-350 lines"
+  :dependencies ("cortex" "storage")
+  :lane-assign "sora-artifact")
+
+(substrate-gap
+  :substrate "juggle-scheduler"
+  :description "juggle/next/prev/reset/at/count/current — siteswap animation scheduler with a state cursor."
+  :unblocks-verbs 6
+  :unblocked-verb-names ("juggle/at" "juggle/count" "juggle/current" "juggle/next" "juggle/prev" "juggle/reset")
+  :complexity "small — 200-300 lines"
+  :dependencies ()
+  :lane-assign "emiko-juggle")
+
+(substrate-gap
+  :substrate "re-spec"
+  :description "Signature or contract unclear — needs Alfred disambiguation."
+  :unblocks-verbs 5
+  :unblocked-verb-names ("circle" "disc" "line" "rect" "rect-fill")
+  :complexity "n/a"
+  :dependencies ()
+  :lane-assign "alfred-review")
+
+(substrate-gap
+  :substrate "group-runtime"
+  :description "Group/count, group/each, group/find, group/add, group/remove, group/list. Named collections of entity ids."
+  :unblocks-verbs 5
+  :unblocked-verb-names ("group/add" "group/each" "group/find" "group/list" "group/remove")
+  :complexity "small — 150-250 lines"
+  :dependencies ("game-state")
+  :lane-assign "kira-group")
+
+(substrate-gap
+  :substrate "ai-planning"
+  :description "afford/deep-think, think/deep, ask/reasoner, cadence/plan — meta-verbs that dispatch to a reasoning service."
+  :unblocks-verbs 4
+  :unblocked-verb-names ("afford/deep-think" "ask/reasoner" "cadence/plan" "think/deep")
+  :complexity "medium — 300-500 lines (adapter)"
+  :dependencies ("network" "auth-store")
+  :lane-assign "kenji-planning")
+
+(substrate-gap
+  :substrate "route-domain-runtime"
+  :description "route/plan, route/off-domain, domain/of, domain/list, transport/route, transport/tempo. Route-network + domain-classifier."
+  :unblocks-verbs 4
+  :unblocked-verb-names ("domain/list" "domain/of" "route/off-domain" "route/plan")
+  :complexity "small — 200-400 lines"
+  :dependencies ()
+  :lane-assign "sora-route")
+
+(substrate-gap
+  :substrate "emoji-runtime"
+  :description "emoji-* — emoji-by-name (real via CLDR), emoji-paint-pixel, emoji-prop, emoji-turn. Emoji-atlas + paint-into-framebuffer."
+  :unblocks-verbs 4
+  :unblocked-verb-names ("emoji-by-name" "emoji-paint-pixel" "emoji-prop" "emoji-turn")
+  :complexity "small — 150-300 lines"
+  :dependencies ("framebuffer" "font-atlas")
+  :lane-assign "ada-emoji")
+
+(substrate-gap
+  :substrate "flower-runtime"
+  :description "flower/paint, flower/spawn, flower/count, flower-spawn, flower-count — dedicated flower-primitive surface (Alfred: her world is flowers dancing)."
+  :unblocks-verbs 4
+  :unblocked-verb-names ("flower-count" "flower-spawn" "flower/count" "flower/spawn")
+  :complexity "small — 200-400 lines"
+  :dependencies ("framebuffer" "grid")
+  :lane-assign "sora-flower")
+
+(substrate-gap
+  :substrate "object-runtime"
+  :description "object/fetch, object/spawn, object/create, object/destroy — generic object registry with kind + spatial index."
+  :unblocks-verbs 4
+  :unblocked-verb-names ("object/create" "object/destroy" "object/fetch" "object/spawn")
+  :complexity "small — 200-350 lines"
+  :dependencies ("game-state")
+  :lane-assign "kira-object")
+
+(substrate-gap
+  :substrate "base-setup"
+  :description "base/setup, base/make-character — bootstrap primitives for a session."
+  :unblocks-verbs 3
+  :unblocked-verb-names ("base/make-character" "base/setup" "make-character")
+  :complexity "small — 100-200 lines"
+  :dependencies ("game-state")
+  :lane-assign "ada-base")
+
+(substrate-gap
+  :substrate "sprite-runtime"
+  :description "Sprite/*: address, landmarks, rasterize, get, set!, draw. Sprite-anatomy → framebuffer pixels."
+  :unblocks-verbs 3
+  :unblocked-verb-names ("sprite/draw" "sprite/get" "sprite/set!")
+  :complexity "small — 200-400 lines"
+  :dependencies ("framebuffer")
+  :lane-assign "sora-sprite")
+
+(substrate-gap
+  :substrate "collision-runtime"
+  :description "collision/define-layers!, collision/detect — collision layer registry + detection."
+  :unblocks-verbs 2
+  :unblocked-verb-names ("collision/define-layers!" "collision/detect")
+  :complexity "small — 200-300 lines"
+  :dependencies ("game-state")
+  :lane-assign "kira-collision")
+
+(substrate-gap
+  :substrate "pattern-runtime"
+  :description "pattern/clave, pattern/apply — musical clave patterns + generic pattern-application."
+  :unblocks-verbs 2
+  :unblocked-verb-names ("pattern/apply" "pattern/clave")
+  :complexity "small — 150-250 lines"
+  :dependencies ()
+  :lane-assign "yuki-pattern")
+
+(substrate-gap
+  :substrate "prefab-registry"
+  :description "Prefab/* — define, spawn, get, set!. Named entity templates + spawn factory."
+  :unblocks-verbs 2
+  :unblocked-verb-names ("prefab/get" "prefab/set!")
+  :complexity "small — 150-300 lines"
+  :dependencies ("game-state")
+  :lane-assign "kira-prefab")
+
+(substrate-gap
+  :substrate "text-runtime"
+  :description "text/draw, text/format — text rasterization + formatting. Compose with framebuffer + font atlas."
+  :unblocks-verbs 2
+  :unblocked-verb-names ("text/draw" "text/format")
+  :complexity "small — 150-300 lines"
+  :dependencies ("framebuffer" "font-atlas")
+  :lane-assign "hana-text")
+
+(substrate-gap
+  :substrate "weather-runtime"
+  :description "weather/current, weather/conjure — weather-state model + rendering."
+  :unblocks-verbs 2
+  :unblocked-verb-names ("weather/conjure" "weather/current")
+  :complexity "small — 150-300 lines"
+  :dependencies ("framebuffer")
+  :lane-assign "sora-weather")
+
+(substrate-gap
+  :substrate "card-emit-runtime"
+  :description "Event bus for card-emit + on-key + on-tick + envelope-queue + begin-frame + end-frame + big-bang."
+  :unblocks-verbs 1
+  :unblocked-verb-names ("card-emit")
+  :complexity "medium — 400-600 lines"
+  :dependencies ("card-runtime")
+  :lane-assign "ada-emit")
+
+(substrate-gap
+  :substrate "chem-runtime"
+  :description "chem/balance — equation-balancing algorithm."
+  :unblocks-verbs 1
+  :unblocked-verb-names ("chem/balance")
+  :complexity "small — 200-300 lines"
+  :dependencies ()
+  :lane-assign "jess-chem")
+
+(substrate-gap
+  :substrate "floor-runtime"
+  :description "floor/problem?, floor/level — floor state (kid-workshop metaphor). Real state or predicates."
+  :unblocks-verbs 1
+  :unblocked-verb-names ("floor/level")
+  :complexity "tiny — 100 lines"
+  :dependencies ()
+  :lane-assign "ada-floor")
+
+(substrate-gap
+  :substrate "wait-scheduler"
+  :description "wait secs — real sleep primitive (event-loop pause) or descriptor. In REPL this could be a real setTimeout wait."
+  :unblocks-verbs 1
+  :unblocked-verb-names ("wait")
+  :complexity "tiny — 50 lines"
+  :dependencies ()
+  :lane-assign "ada-wait")
+
