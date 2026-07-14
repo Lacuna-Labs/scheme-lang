@@ -1,5 +1,14 @@
-;; Architect stamps for the 596-verb wiring lane.
+;; Architect stamps for the 1160-verb wiring lane.
 ;; Each stamp = one verb verified via bin/sakura-scheme eval.
-;; Architect PushNotifications at each 100-stamp boundary.
+;; Architect PushNotifications at each 100-stamp boundary + at 596 + 1160.
+;;
+;; Alfred: "We can't lie to people. They trust us." Every stamp corresponds
+;; to a REAL REPL run that succeeded for every one of the 5 example tiers.
+;; If a lane submits :entry-provenance "author-blocked" we do NOT stamp;
+;; we flag in the final report.
+;;
+;; Target expanded from 596 (original stub gap) to 1160 (all verbs, per
+;; Alfred: every module adopts the new schema, not just the previously
+;; unimplemented ones).
 
-(stamps :target 596 :notified-at (100 200 300 400 500 596) :current 0)
+(stamps :target 1160 :notified-at (100 200 300 400 500 596 600 700 800 900 1000 1100 1160) :current 0)
