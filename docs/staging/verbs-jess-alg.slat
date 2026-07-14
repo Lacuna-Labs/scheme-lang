@@ -3507,3 +3507,118 @@
   :+math (:total #t)
   :+cs (:complexity "time O(n^2), space O(1)" :effects "none" :pure #t)
   :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/perm-cycles"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-cycles p) -> list-of-cycles"
+  :summary "Alias for alg/perm->cycles: decompose a permutation into cycles."
+  :impl-status "wired"
+  :explanation "Same as alg/perm->cycles. This spelling matches older textbooks that use 'perm-cycles' rather than the arrow syntax. All three (perm-cycles, perm->cycles, permutation-cycles) are the same operation."
+  :examples (
+    (:tier "novice" :code "(alg/perm-cycles '(1 0 3 2))" :note "((0 1) (2 3)).")
+    (:tier "apprentice" :code "(equal? (alg/perm-cycles '(1 2 0)) (alg/perm->cycles '(1 2 0)))" :note "#t.")
+    (:tier "intermediate" :code "(alg/perm-cycles (alg/identity 4))" :note "().")
+    (:tier "expert" :code "(map length (alg/perm-cycles '(1 2 0 4 3)))" :note "(3 2).")
+    (:tier "master" :code "(equal? (alg/perm-cycles '(2 0 1)) (alg/permutation-cycles '(2 0 1)))" :note "Three spellings, one operation.")
+  )
+  :caveats ("Alias.") :drawbacks ("Redundant naming.")
+  :usecases ("Match legacy code conventions.")
+  :related ("alg/perm->cycles" "alg/permutation-cycles" "alg/perm-order")
+  :learn (:concept "Cycle decomposition." :prerequisites ("alg/perm-apply") :progression "perm-cycles -> perm-order.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Delegates to permCycles helper." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t) :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t) :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/permutation-cycles"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/permutation-cycles p) -> list-of-cycles"
+  :summary "Alias for alg/perm->cycles: decompose a permutation into cycles."
+  :impl-status "wired"
+  :explanation "Same as alg/perm->cycles. Longer spelling; some references prefer 'permutation-*' over 'perm-*'. All three names produce the same result."
+  :examples (
+    (:tier "novice" :code "(alg/permutation-cycles '(1 0 3 2))" :note "((0 1) (2 3)).")
+    (:tier "apprentice" :code "(alg/permutation-cycles '(2 0 1))" :note "((0 2 1)).")
+    (:tier "intermediate" :code "(equal? (alg/permutation-cycles '(1 2 0)) (alg/perm->cycles '(1 2 0)))" :note "#t.")
+    (:tier "expert" :code "(alg/permutation-cycles (alg/identity 4))" :note "().")
+    (:tier "master" :code "(map length (alg/permutation-cycles '(3 2 1 0)))" :note "(2 2) — two disjoint transpositions.")
+  )
+  :caveats ("Alias.") :drawbacks ("Redundant naming.")
+  :usecases ("Match older conventions.")
+  :related ("alg/perm->cycles" "alg/perm-cycles")
+  :learn (:concept "Cycle decomposition (alt spelling)." :prerequisites ("alg/perm-apply") :progression "permutation-cycles -> perm-order.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Delegates to permCycles." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t) :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t) :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/perm-order"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-order p) -> integer"
+  :summary "Alias for alg/element-order: return the order of a permutation."
+  :impl-status "wired"
+  :explanation "Same as alg/element-order applied to a permutation: LCM of cycle lengths, including implicit 1-cycles. The identity has order 1."
+  :examples (
+    (:tier "novice" :code "(alg/perm-order '(1 2 0))" :note "3.")
+    (:tier "apprentice" :code "(alg/perm-order (alg/identity 5))" :note "1.")
+    (:tier "intermediate" :code "(alg/perm-order '(1 0 3 2))" :note "2 = LCM(2,2).")
+    (:tier "expert" :code "(alg/perm-order '(1 2 0 4 3))" :note "6 = LCM(3,2).")
+    (:tier "master" :code "(map alg/perm-order (alg/symmetric 3))" :note "(1 2 3 2 3 2) — orders of S_3 elements.")
+  )
+  :caveats ("Alias.") :drawbacks ("Redundant.")
+  :usecases ("Match textbook conventions.")
+  :related ("alg/element-order" "alg/perm->cycles")
+  :learn (:concept "Order of a permutation." :prerequisites ("alg/perm->cycles") :progression "perm-order -> alg/exponent.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Delegates to permCycles + LCM." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t) :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t) :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/perm-parity"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-parity p) -> integer"
+  :summary "Alias for alg/perm-sign: return +1 for even, -1 for odd."
+  :impl-status "wired"
+  :explanation "Parity of a permutation: same as sign. +1 if the permutation is a product of an even number of transpositions, -1 otherwise. Homomorphism from S_n to {+1, -1}."
+  :examples (
+    (:tier "novice" :code "(alg/perm-parity '(1 0 2))" :note "-1 (odd).")
+    (:tier "apprentice" :code "(alg/perm-parity (alg/identity 5))" :note "1.")
+    (:tier "intermediate" :code "(alg/perm-parity '(1 2 0))" :note "1 (3-cycle is even).")
+    (:tier "expert" :code "(equal? (alg/perm-parity '(2 1 0)) (alg/perm-sign '(2 1 0)))" :note "Alias check.")
+    (:tier "master" :code "(map alg/perm-parity (alg/alternating 4))" :note "All +1.")
+  )
+  :caveats ("Alias.") :drawbacks ("Redundant.")
+  :usecases ("Match sign-based textbook notation.")
+  :related ("alg/perm-sign" "alg/alternating")
+  :learn (:concept "Parity as sign." :prerequisites ("alg/perm-sign") :progression "perm-parity -> alternating.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Delegates to permSign." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t) :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t) :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/permutation-compose"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/permutation-compose p q) -> perm"
+  :summary "Alias for alg/perm-compose: compose two permutations."
+  :impl-status "wired"
+  :explanation "Same as alg/perm-compose. Longer spelling; textbooks vary. All refer to (p ∘ q)(i) = p(q(i))."
+  :examples (
+    (:tier "novice" :code "(alg/permutation-compose '(1 0 2) '(2 1 0))" :note "Compose two permutations.")
+    (:tier "apprentice" :code "(equal? (alg/permutation-compose '(1 2 0) '(2 0 1)) (alg/perm-compose '(1 2 0) '(2 0 1)))" :note "Alias check.")
+    (:tier "intermediate" :code "(alg/permutation-compose (alg/identity 3) '(2 0 1))" :note "(2 0 1).")
+    (:tier "expert" :code "(alg/permutation-compose '(1 2 0) (alg/perm-inverse '(1 2 0)))" :note "Identity.")
+    (:tier "master" :code "(equal? (alg/permutation-compose '(1 0) '(1 0)) (alg/perm-identity 2))" :note "Self-inverse.")
+  )
+  :caveats ("Alias.") :drawbacks ("Redundant.")
+  :usecases ("Match textbook conventions.")
+  :related ("alg/perm-compose")
+  :learn (:concept "Function composition." :prerequisites ("alg/perm-compose") :progression "same.")
+  :+eng (:impl-file "src/alg.js" :impl-notes "Delegates to permCompose." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:algebra "associative" :total #t) :+cs (:complexity "time O(n), space O(n)" :effects "none" :pure #t) :+ai (:deterministic #t :cacheable #t))
