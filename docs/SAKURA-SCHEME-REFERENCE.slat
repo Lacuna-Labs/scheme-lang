@@ -18660,13 +18660,18 @@
   :name "stat/probability"
   :library "stat"
   :kind "meta"
-  :signature "(stat/probability favorable total) -> number ∈ [0,1]"
-  :summary "Compute simple probability as favorable outcomes ÷ total outcomes."
-  :explanation "Probability is the ratio of favorable outcomes to total possible outcomes. This verb implements the classical definition: P(event) = favorable / total. The result is a number in [0, 1]. Use this to compute and report empirical probabilities from count data, or to set priors in decision-making. If total ≤ 0, the operation is undefined (no outcomes), so the verb escalates 'no-outcomes. Non-numeric inputs return 'nan."
+  :signature "(stat/probability favorable total) -> number in [0, 1]"
+  :summary "Compute simple probability as favorable outcomes divided by total outcomes."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Direct division: favorable/total. If total <= 0, returns 0 (NOT 'no-outcomes as older docs claimed — the impl is permissive). Caller must guard if a signaled no-outcomes matters."
+  :explanation "Probability as the classical ratio: P(event) = favorable / total. Result in [0, 1] when inputs are well-formed. Use for empirical probabilities from count data or priors in decision-making."
   :examples (
-    (:tier "novice" :code "(stat/probability 3 10)" :note "Three favorable outcomes out of ten total: probability is 0.3.")
-    (:tier "intermediate" :code "(let ((heads 47) (tails 53) (total (+ heads tails)))\n  (list 'p-heads (stat/probability heads total) 'p-tails (stat/probability tails total)))" :note "Compute head and tail probabilities from coin-flip counts; expected ~0.5 each, observed ≈ 0.47 and 0.53.")
-    (:tier "expert" :code "(define (update-belief prior favorable total)\n  (if (= total 0) prior\n    (let ((likelihood (stat/probability favorable total))\n          (weight (stat/probability favorable (+ favorable (- total favorable)))))\n      (* prior likelihood))))\n(update-belief 0.5 15 30)" :note "Sketch of Bayesian update; uses probability to weight prior belief by likelihood of observed data.")
+    (:tier "novice" :code "(stat/probability 3 10)" :note "3 favorable out of 10 total. Returns 0.3.")
+    (:tier "apprentice" :code "(stat/probability 0 10)" :note "Impossible event. Returns 0. Chain with (< p threshold) to filter unlikely branches.")
+    (:tier "intermediate" :code "(let ((heads 47) (tails 53))\n  (list ':p-heads (stat/probability heads (+ heads tails))\n        ':p-tails (stat/probability tails (+ heads tails))))" :note "Coin-flip empirical probabilities. Returns (:p-heads 0.47 :p-tails 0.53).")
+    (:tier "expert" :code "(define (defect-rate-report defects tested)\n  (let ((rate (stat/probability defects tested)))\n    (cond ((= tested 0) 'no-data)\n          ((> rate 0.05) (list ':failing rate))\n          (else          (list ':passing rate)))))\n(list (defect-rate-report 0 0)\n      (defect-rate-report 3 100)\n      (defect-rate-report 8 100))" :note "Quality-control decision from a probability. Returns (no-data (:passing 0.03) (:failing 0.08)).")
+    (:tier "master" :code "(define (bayes-update prior likelihood-fav likelihood-tot base-fav base-tot)\n  ;; Naive Bayes numerator: prior * P(data|H) / P(data).\n  ;; likelihood-* = counts under the hypothesis; base-* = counts overall.\n  (let ((likelihood (stat/probability likelihood-fav likelihood-tot))\n        (base      (stat/probability base-fav base-tot)))\n    (if (= base 0) prior\n        (/ (* prior likelihood) base))))\n(bayes-update 0.3 15 30 25 100)" :note "Skeleton of a Bayesian update: prior * likelihood / evidence. Returns 0.6 — likelihood 0.5, evidence 0.25, prior 0.3, so posterior = 0.3 * 0.5 / 0.25 = 0.6. Caller must renormalize across hypotheses if summing must give 1.")
   )
   :caveats ("total must be > 0; total ≤ 0 escalates 'no-outcomes." "favorable and total must be numbers; non-numeric input → 'nan." "favorable should be ≤ total; the verb does not enforce this (you get > 1 if violated)." "This is the classical (frequency) definition; does not compute conditional or joint probabilities.")
   :drawbacks ("Does not handle multivariate or conditional probabilities; use algebra/rules if you need P(A|B)." "No confidence interval or significance test; for statistical inference, see stat/z-score." "Assumes counts are exact; no accounting for measurement error or uncertainty in the counts themselves.")
