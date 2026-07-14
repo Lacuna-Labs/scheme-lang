@@ -3185,12 +3185,17 @@
   :library "chem"
   :kind "meta"
   :signature "(chem/atomic-weight symbol) -> number"
-  :summary "Return the standard atomic weight (in u, unified atomic mass units) for a chemical element by symbol, per IUPAC-2021."
-  :explanation "Every element has a standard atomic weight: the weighted average of naturally occurring isotope masses. This verb is a lookup table keyed by element symbol (e.g., 'H', 'C', 'O', 'Fe'). It returns the current IUPAC standard value (updated periodically as precision improves). This is the foundation for computing molar masses and stoichiometry. The return value is deterministic and bitwise-identical across runs (no rounding drift)."
+  :summary "Return the standard atomic weight (in u) for a supported chemical element by symbol."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Small hard-coded lookup table. Supported elements: H (1.008), C (12.011), N (14.007), O (15.999), S (32.06), P (30.974), Na (22.99), Cl (35.45), Fe (55.845), Au (196.97). Unknown symbols return 0 — NOT an error, and NOT the full IUPAC dataset the earlier docs suggested. This is intentional for a REPL demo; expand the table in wired-verbs.js if you need more."
+  :explanation "Standard atomic weight lookup. Currently a 10-element table covering the most common laboratory elements. Weights match IUPAC-2021 rounded to reasonable precision."
   :examples (
-    (:tier "novice" :code "(chem/atomic-weight 'H)\n;; → 1.008\n(chem/atomic-weight 'C)\n;; → 12.011\n(chem/atomic-weight 'O)\n;; → 15.999" :note "Look up the weights of the three most common elements; these are memorized by chemists.")
-    (:tier "intermediate" :code "(define (element-list->mass elements)\n  ;; Sum atomic weights of a list of element symbols\n  (fold-left (lambda (acc sym) (+ acc (chem/atomic-weight sym)))\n    0 elements))\n(element-list->mass (list 'C 'H 'H 'H 'H))\n;; → 16.043 (approximately: CH₄ is methane, MW ≈ 16.04)" :note "Build a quick mass estimator for small molecules by summing individual weights.")
-    (:tier "expert" :code "(define (molar-mass-from-elements element-counts)\n  ;; element-counts is ((symbol . count) ... )\n  (fold-left (lambda (acc pair)\n    (+ acc (* (chem/atomic-weight (car pair)) (cdr pair))))\n    0 element-counts))\n(molar-mass-from-elements (list (cons 'H 12) (cons 'C 6) (cons 'O 6)))\n;; → 180.156 (C₆H₁₂O₆ = glucose, MW ≈ 180.16)\n(chem/molar-mass \"C6H12O6\")  ;; compare against the string parser" :note "Manual composition from counts; pairs with calc formula parser.")
+    (:tier "novice" :code "(chem/atomic-weight 'H)" :note "Hydrogen. Returns 1.008.")
+    (:tier "apprentice" :code "(list (chem/atomic-weight 'C) (chem/atomic-weight 'O) (chem/atomic-weight 'N))" :note "The organic-chemistry trio. Returns (12.011 15.999 14.007).")
+    (:tier "intermediate" :code "(chem/atomic-weight 'Ar)" :note "Argon isn't in the small table. Returns 0 — the honest 'don't know' signal for out-of-table elements. Guard: (if (= 0 (chem/atomic-weight sym)) 'unknown-element ...).")
+    (:tier "expert" :code "(define (element-list->mass elements)\n  (let loop ((rest elements) (acc 0))\n    (if (null? rest) acc\n        (loop (cdr rest) (+ acc (chem/atomic-weight (car rest)))))))\n(element-list->mass '(C H H H H))" :note "Sum weights across a flat element list. Methane CH4: 12.011 + 4*1.008 = 16.043.")
+    (:tier "master" :code "(define (molar-mass-from-counts counts)\n  ;; counts is a list of (symbol count) pairs, matching chem/formula-counts.\n  (let loop ((rest counts) (acc 0))\n    (if (null? rest) acc\n        (let* ((p (car rest))\n               (sym (string->symbol (car p)))\n               (n (cadr p)))\n          (loop (cdr rest) (+ acc (* (chem/atomic-weight sym) n)))))))\n(molar-mass-from-counts (chem/formula-counts \"H2O\"))" :note "Compose chem/formula-counts with chem/atomic-weight to compute molar mass from a formula string. Water: 2*1.008 + 15.999 = 18.015.")
   )
   :caveats ("Symbol is case-sensitive in typical Scheme; 'H and 'h may differ (check dialect)." "IUPAC weights are averages of natural isotopes; pure isotopes have slightly different masses (use isotope lookup if needed)." "Two-letter symbols must be quoted (e.g., 'Fe, 'Cu); unquoted Fe is a variable.")
   :drawbacks ("Static lookup; no variance for isotopic composition or enrichment." "No error handling for unknown symbols (returns *[verify]* behavior)." "Requires exact symbol; no substring search or fuzzy matching.")
@@ -3220,13 +3225,18 @@
   :name "chem/formula-counts"
   :library "chem"
   :kind "meta"
-  :signature "(chem/formula-counts formula-string) -> ((symbol . number) ...)"
-  :summary "Parse a chemical formula string (e.g., 'C6H12O6') and return an a-list mapping element symbols to atom counts."
-  :explanation "Chemical formulas are shorthand: H₂O means 2 hydrogens and 1 oxygen. This verb parses the string, handling nested parentheses and subscripts, and returns a key-value list (a-list) of the form ((H . 2) (O . 1)). The list is the intermediate representation used by chem/molar-mass (which sums by weight), chem/balance (which builds matrices), and manual stoichiometry. Understanding the a-list is key to composing chemistry verbs."
+  :signature "(chem/formula-counts formula-string) -> ((string count) ...)"
+  :summary "Parse a chemical formula string and return a list of (element-string count) pairs."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Regex-based parser matching /([A-Z][a-z]?)(\\d*)/. Returns list of 2-lists like ((\"H\" 2)(\"O\" 1)) — NOT the (H . 2) pair-based a-list older docs promised. Element keys are STRINGS not symbols. PARENTHESES ARE NOT HANDLED: 'Ca(OH)2' returns ((\"Ca\" 1)(\"O\" 1)(\"H\" 1)) — the trailing 2 is dropped. Sufficient for simple flat formulas; more complex use requires a real parser."
+  :explanation "Regex-parse a chemical formula into a list of (element count) pairs. Simple formulas only — no parentheses distribution. Use for CH4, H2O, C6H12O6-style flat formulas. Element keys are strings; convert with string->symbol if you need Scheme symbols."
   :examples (
-    (:tier "novice" :code "(chem/formula-counts \"H2O\")\n;; → ((H . 2) (O . 1))\n(chem/formula-counts \"CO2\")\n;; → ((C . 1) (O . 2))" :note "Simple formulas; element symbols followed by counts (default 1 if omitted).")
-    (:tier "intermediate" :code "(chem/formula-counts \"Ca(OH)2\")\n;; → ((Ca . 1) (O . 2) (H . 2))\n(chem/formula-counts \"Mg3(PO4)2\")\n;; → ((Mg . 3) (P . 2) (O . 8))  note: 2×4 oxygens in two phosphate groups" :note "Parentheses and multipliers; parser distributes the coefficient correctly.")
-    (:tier "expert" :code "(define (atom-ratio formula1 formula2)\n  ;; Given two formulas, compute the element-wise ratio\n  (let ((counts1 (chem/formula-counts formula1))\n        (counts2 (chem/formula-counts formula2)))\n    (map (lambda (pair)\n      (let ((elem (car pair))\n            (c1 (cdr pair))\n            (c2 (assoc-ref counts2 elem 0)))  ;; default 0 if absent\n        (list elem (/ c1 c2))))\n      counts1)))\n(atom-ratio \"H2O\" \"H2O2\")\n;; → ((H . 1) (O . 0.5))  — water has half as much O per H as peroxide" :note "Compare isotopic ratios or impurity compositions by element.")
+    (:tier "novice" :code "(chem/formula-counts \"H2O\")" :note "Water. Returns ((\"H\" 2)(\"O\" 1)).")
+    (:tier "apprentice" :code "(chem/formula-counts \"CO2\")" :note "Carbon dioxide. Returns ((\"C\" 1)(\"O\" 2)) — the 1 is explicit even though not written in the formula.")
+    (:tier "intermediate" :code "(chem/formula-counts \"C6H12O6\")" :note "Glucose. Returns ((\"C\" 6)(\"H\" 12)(\"O\" 6)) — a 24-atom sugar molecule.")
+    (:tier "expert" :code "(define (atom-total counts)\n  (let loop ((rest counts) (acc 0))\n    (if (null? rest) acc\n        (loop (cdr rest) (+ acc (cadr (car rest)))))))\n(list (atom-total (chem/formula-counts \"H2O\"))\n      (atom-total (chem/formula-counts \"C6H12O6\")))" :note "Sum atom counts across a parsed formula. Returns (3 24) — water is 3 atoms, glucose is 24.")
+    (:tier "master" :code "(define (formulas-share-elements? a b)\n  ;; Return #t iff formulas a and b share at least one element.\n  (let ((ea (map car (chem/formula-counts a)))\n        (eb (map car (chem/formula-counts b))))\n    (let loop ((rest ea))\n      (cond ((null? rest) #f)\n            ((member (car rest) eb) #t)\n            (else (loop (cdr rest)))))))\n(list (formulas-share-elements? \"H2O\" \"CO2\")\n      (formulas-share-elements? \"CH4\" \"HCl\"))" :note "Predicate for overlapping element sets. First pair shares O (#t); second pair shares H (#t). Common utility for reaction pre-screening.")
   )
   :caveats ("Parentheses must be balanced; malformed strings (e.g., 'Ca(OH)2)' with extra ')') produce an error or *[verify]*." "Element symbols are case-sensitive ('H vs 'h'); only standard periodic-table symbols are recognized." "Subscripts in the string are decimal integers only (e.g., 'H2', not 'H²'); no support for complex notation.")
   :drawbacks ("No physical validation (e.g., warns if you list an unknown element, but doesn't stop you)." "Large counts or deeply nested parentheses may be slow (N-squared in depth)." "Returns a-list only; if you need a map or hashtable, convert it yourself.")
