@@ -3926,19 +3926,26 @@
   :name "cortex/read"
   :library "cortex"
   :kind "read"
-  :signature "(cortex/read key) → value | ()"
-  :summary "Read a value from Cortex by key. Returns () if the key is absent."
-  :explanation "Cortex/read is the first-class Scheme wrapper for a Cortex lookup. It looks up the given key in the active Cortex memory store (per-user, per-cart-context) and returns the stored value. When the key is absent, it returns the empty list () — matching the Scheme convention that absent lookups are the empty list rather than throwing. The key can be a string or a symbol; both are coerced to strings before lookup. This is one of three first-class Cortex wrappers (read, write, topk); the act-dispatched variants (cortex/recall, cortex/remember, cortex/forget) route through the driver for provenance capture, but cortex/read short-circuits directly to the store for interactive use in the REPL and IDE."
+  :signature "(cortex/read key) → value | nil"
+  :summary "Read a value from Cortex by key. Returns the nil sentinel if the key is absent."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Wraps getCortex().recall(String(key)). The default in-memory Cortex is a JS Map; production hosts swap in a persistent backend via setAiProvider. Absent keys return the runtime's nil sentinel — test with (nil? v), not (null? v)."
+  :explanation "Cortex/read is the first-class Scheme wrapper for a Cortex lookup. It looks up the given key in the active Cortex memory store (per-user, per-cart-context) and returns the stored value. When the key is absent, it returns the runtime's nil sentinel — a distinct absence value that prints like `nil` and matches under (nil? v). The key can be a string or a symbol; both are coerced to strings before lookup. This is one of three first-class Cortex wrappers (read, write, topk); the act-dispatched variants (cortex/recall, cortex/remember, cortex/forget) route through the driver for provenance capture, but cortex/read short-circuits directly to the store for interactive use in the REPL and IDE."
   :examples (
-    (:tier "novice" :code "(cortex/read \"favorite-color\")" :note "Read the value stored under 'favorite-color'. Returns () if never set.")
-    (:tier "intermediate" :code "(define c (cortex/read \"customer/last-order\"))\n(if (null? c) 'no-orders-yet c)" :note "Guard against a missing key by testing for the empty list.")
-    (:tier "expert" :code "(define (pref key default)\n  (let ((v (cortex/read (string-append \"pref/\" key))))\n    (if (null? v) default v)))\n(pref \"theme\" \"sakura-dark\")" :note "Build a small preference-lookup helper with defaults. Cortex reads are cheap enough to call per-render.")
+    (:tier "novice" :code "(cortex/read \"favorite-color\")" :note "Read the value stored under 'favorite-color'. Returns nil if never set.")
+    (:tier "apprentice" :code "(cortex/write \"pet\" \"koi\")\n(cortex/read \"pet\")" :note "Round-trip: write then read. First call returns #t, second returns the stored value \"koi\".")
+    (:tier "intermediate" :code "(define c (cortex/read \"customer/last-order\"))\n(if (nil? c) 'no-orders-yet c)" :note "Guard against a missing key by testing with nil?.")
+    (:tier "expert" :code "(define (pref key default)\n  (let ((v (cortex/read (string-append \"pref/\" key))))\n    (if (nil? v) default v)))\n(pref \"theme\" \"sakura-dark\")" :note "Small preference-lookup helper with defaults. Cortex reads are cheap enough to call per-render.")
+    (:tier "master" :code "(define (decide-greeting)\n  (let ((name (cortex/read \"user/name\")))\n    (cond ((nil? name) \"hello, friend\")\n          ((string? name) (string-append \"hello, \" name))\n          (else \"hello\"))))\n(decide-greeting)" :note "A decision routine reads user state from Cortex and branches on both presence AND shape. Sakura uses this pattern to personalize without asking the user twice — no name yet → hello friend; name known → hello Alice.")
   )
-  :caveats ("Returns () for missing keys, NOT #f. Test with (null? v) not (not v)." "Keys are coerced to strings; symbols and strings with the same characters hit the same slot." "Reads are not audited — for provenance capture, prefer (act 'cortex/recall …)." "The Cortex instance is a per-process default; carts run in isolated stores if the host sets one up.")
+  :caveats ("Missing keys return the nil sentinel, NOT the empty list and NOT #f. Test with (nil? v) — (null? nil) is #f and (if nil …) takes the truthy branch." "Keys are coerced to strings; symbols and strings with the same characters hit the same slot." "Reads are not audited — for provenance capture, prefer (act 'cortex/recall …)." "The Cortex instance is a per-process default; carts run in isolated stores if the host sets one up.")
   :drawbacks ("No versioning — a later cortex/write with the same key overwrites silently." "No expiration or decay in the direct wrapper; use cortex/forget (act-dispatched) for cleanup." "Not suitable for large binary blobs — Cortex is optimized for small facts, not media.")
   :usecases ("Interactive lookup in the REPL or IDE while exploring what's been stored." "Quick default-with-fallback patterns in operator scripts." "Test scaffolding that seeds a Cortex fixture then reads it back." "Feature toggles or user prefs stored per session.")
   :related ("cortex/write" "cortex/topk" "cortex/recall" "cortex/remember" "cortex/forget" "act")
-  :learn (:concept "Cortex is Sakura's persistent memory graph. Read is the get half of a key-value store, with () sentinel for absent keys." :prerequisites ("null?" "string?" "let") :progression "After cortex/read, learn cortex/write to store values; then cortex/topk to search by pattern; then the act-dispatched forms for provenance."))
+  :learn (:concept "Cortex is Sakura's persistent memory graph. Read is the get half of a key-value store, with a nil sentinel for absent keys." :prerequisites ("nil?" "string?" "let") :progression "After cortex/read, learn cortex/write to store values; then cortex/topk to search by pattern; then the act-dispatched forms for provenance.")
+  :ai (:raises () :pipes-into ("nil?" "cond" "let" "cortex/write") :consumes-from ("string" "symbol" "string-append") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Testing with (null? v) or (not v) instead of (nil? v). The Cortex miss-sentinel is nil, which is neither null nor #f — (if (cortex/read \"nope\") 'yes 'no) returns 'yes." :when-not-to-use "Reading provenance-critical facts — use (act 'cortex/recall …) instead so the driver captures who read what when." :returns-confidence #f)
+  :commerce (:cost "free" :fuel-cost "1" :needs-consent #f :idempotent #t :cortex-touch "read"))
 
 (verb
   :name "cortex/write"
