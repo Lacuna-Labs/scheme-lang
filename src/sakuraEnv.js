@@ -19,6 +19,7 @@ import { makeBaseEnv } from './base.js'
 import { installAi } from './ai.js'
 import { installGame, makeGameState } from './game.js'
 import { installGameTheory } from './game-theory.js'
+import { installGameInstances } from './game-instances.js'
 import { installJuggle } from './juggle.js'
 import { installScene } from './scene.js'
 import { installCine } from './cine.js'
@@ -81,6 +82,12 @@ export function makeSakuraEnv(fuel, {
   // fake descriptor-stubs there for game/surreal-* / game/ttt-* / etc.
   // are skipped and our authored impls win.
   installGameTheory(env)
+
+  // L3.65 GAME INSTANCES — kira-game lane. Multi-instance loop registry.
+  // Owns the (big-bang initial-state) → id mapping so game/frame,
+  // game/state, game/running?, game/step, game/stop all work per-id.
+  // No rendering, no physics; those live in installGame and elsewhere.
+  installGameInstances(env)
 
   // L3.7 OPS — operations-research primitives (Zain, 2026-07-14). Wires
   // all 35 ops/* verbs (eoq, mm1, mmc, dijkstra, simplex, mip-solve,
