@@ -91,7 +91,7 @@ export function tagPos(form, pos) {
   return form
 }
 
-const NUM_RE = /^[+-]?(\d+\.?\d*|\.\d+)$/
+const NUM_RE = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/
 const DELIM = new Set([' ', '\t', '\n', '\r', '(', ')', ';', "'", '"'])
 
 // R7RS §6.2.6 exact/inexact numeric prefixes and radix prefixes: #e / #i

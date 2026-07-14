@@ -69,13 +69,31 @@ export function makeBaseEnv(fuel) {
   def('length', (a) => a.length)
   def('range', (a, b) => { const r = []; for (let i = a; i < b; i++) r.push(i); return r })
 
-  def('for-each', (fn, lst) => { for (const x of lst) apply(fn, [x], fuel); return undefined })
-  def('map', (fn, lst) => lst.map((x) => apply(fn, [x], fuel)))
+  // R7RS §6.10: variadic. Stops at shortest list.
+  def('for-each', (fn, ...lists) => {
+    if (lists.length === 0) return undefined
+    const n = Math.min(...lists.map((l) => l.length))
+    for (let i = 0; i < n; i++) apply(fn, lists.map((l) => l[i]), fuel)
+    return undefined
+  })
+  def('map', (fn, ...lists) => {
+    if (lists.length === 0) return []
+    const n = Math.min(...lists.map((l) => l.length))
+    const out = []
+    for (let i = 0; i < n; i++) out.push(apply(fn, lists.map((l) => l[i]), fuel))
+    return out
+  })
   // SRFI-1 helpers (filter, fold, fold-right, reduce) removed per decision-018.
   // Users compose these from R7RS-small primitives via named-let.
-  // (apply fn args) — invoke `fn` with the list `args` as the argument
-  // list. Same fuel budget as a direct call.
-  def('apply', (fn, args) => apply(fn, Array.isArray(args) ? args : [args], fuel))
+  // R7RS §6.10: (apply fn arg1 arg2 ... arglist). All args except the last
+  // are prepended; the last must be a list and gets spread.
+  def('apply', (fn, ...rest) => {
+    if (rest.length === 0) return apply(fn, [], fuel)
+    const last = rest[rest.length - 1]
+    const init = rest.slice(0, -1)
+    const args = Array.isArray(last) ? [...init, ...last] : [...init, last]
+    return apply(fn, args, fuel)
+  })
 
   // (=? a b) — smart equality. The PICO-8-style "do what I mean" verb:
   //   * numbers compare by value (===)
