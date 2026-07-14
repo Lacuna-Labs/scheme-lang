@@ -3247,3 +3247,133 @@
   :+math (:total #t)
   :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
   :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/is-field?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/is-field? G) -> boolean"
+  :summary "Return #t if G is a field (currently always #f — placeholder)."
+  :impl-status "wired"
+  :explanation "A field is a commutative ring where every nonzero element has a multiplicative inverse. The current impl returns #f unconditionally — full field-detection would require tracking both additive and multiplicative structure, which our group representations don't. For Z_n, n prime IS a field; use gcd + primality externally."
+  :examples (
+    (:tier "novice" :code "(alg/is-field? (alg/cyclic 5))" :note "Returns #f — impl doesn't detect fields.")
+    (:tier "apprentice" :code "(alg/is-field? (alg/zn 7))" :note "Also #f.")
+    (:tier "intermediate" :code "(alg/is-field? '())" :note "Trivial: #f.")
+    (:tier "expert" :code "(alg/is-field? (alg/dihedral 3))" :note "D_3 is a group not a field: #f.")
+    (:tier "master" :code "(every (lambda (g) (not (alg/is-field? g))) (list (alg/cyclic 3) (alg/cyclic 5) (alg/dihedral 4)))" :note "All return #f under current placeholder impl.")
+  )
+  :caveats ("Placeholder impl returns #f unconditionally." "Real field detection requires ring structure not modeled here.")
+  :drawbacks ("Currently useless for actual field detection." "Documented as such per no-lie doctrine.")
+  :usecases ("Placeholder in code that later gains a real impl." "Consistent API surface.")
+  :related ("alg/zn" "alg/zn-inverse")
+  :learn (:concept "Fields — rings where multiplication is a group operation on nonzeros." :prerequisites ("alg/zn") :progression "is-field? -> Z_p as a field -> Galois fields.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Returns #f at line 1194." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/direct-product"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/direct-product G H) -> integer"
+  :summary "Return the order of the direct product G x H (which equals |G| * |H|)."
+  :impl-status "wired"
+  :explanation "The direct product of two groups has as its elements the Cartesian product G x H with componentwise operation. |G x H| = |G| * |H|. The current impl returns only the order (as an integer), not the full Cayley table — that would require O((|G||H|)^2) space. For the full product, materialize elements as pairs and compose componentwise using alg/op on each factor."
+  :examples (
+    (:tier "novice" :code "(alg/direct-product (alg/cyclic 2) (alg/cyclic 3))" :note "|C_2 x C_3| = 6.")
+    (:tier "apprentice" :code "(alg/direct-product (alg/cyclic 4) (alg/cyclic 4))" :note "16.")
+    (:tier "intermediate" :code "(alg/direct-product (alg/dihedral 3) (alg/cyclic 2))" :note "6 * 2 = 12.")
+    (:tier "expert" :code "(alg/direct-product '() (alg/cyclic 5))" :note "0 * 5 = 0.")
+    (:tier "master" :code "(alg/direct-product 5 4)" :note "Accepts integers directly: 5 * 4 = 20.")
+  )
+  :caveats ("Returns order (integer), not the full group table." "Args can be full groups or their orders.")
+  :drawbacks ("Doesn't build the actual product group — just reports size.")
+  :usecases ("Estimate size of a construction." "Structure theorem application.")
+  :related ("alg/order" "alg/cyclic")
+  :learn (:concept "Direct products of groups." :prerequisites ("alg/cyclic") :progression "direct-product -> Sylow subgroups -> classification of finite abelian groups.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Returns |G| * |H|." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/center"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/center group) -> list"
+  :summary "Return the center Z(G) = { g in G : g x = x g for all x in G }."
+  :impl-status "wired"
+  :explanation "The center of G is the set of elements that commute with every element. It's a normal subgroup, always non-empty (contains the identity). In an abelian group the center equals the whole group. In S_n for n >= 3, the center is trivial. Current impl is a placeholder that returns just the identity element; for true Z(G) computation, iterate over G and check commutativity with every other element."
+  :examples (
+    (:tier "novice" :code "(alg/center (alg/cyclic 5))" :note "Placeholder returns (0) — the identity.")
+    (:tier "apprentice" :code "(alg/center (alg/dihedral 4))" :note "Also (0) — identity only.")
+    (:tier "intermediate" :code "(length (alg/center (alg/cyclic 5)))" :note "Placeholder always yields length 1.")
+    (:tier "expert" :code "(alg/center '())" :note "Empty group: (0).")
+    (:tier "master" :code "(equal? (alg/center (alg/cyclic 7)) '(0))" :note "Placeholder: #t.")
+  )
+  :caveats ("Placeholder impl returns just [0]." "True Z(G) requires full commutation check.")
+  :drawbacks ("Doesn't return the actual center for non-trivial groups.")
+  :usecases ("Placeholder in code that later gets upgraded." "API consistency.")
+  :related ("alg/centralizer" "alg/is-abelian?")
+  :learn (:concept "Center of a group — the maximal abelian subgroup that commutes with everything." :prerequisites ("alg/centralizer") :progression "center -> is-abelian? checks -> class equation.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Placeholder at line 1201." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/image"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/image G H phi) -> list"
+  :summary "Return the image { phi(g) : g in G } of a map phi from G to H."
+  :impl-status "wired"
+  :explanation "The image of a homomorphism phi: G -> H is the set of all phi(g) for g in G. It's always a subgroup of H (when phi is a homomorphism). This verb extracts elements from G (first row of a Cayley table, or the element list), applies phi to each, and deduplicates. Runtime iterates through phi via the interpreter's apply()."
+  :examples (
+    (:tier "novice" :code "(alg/image (alg/cyclic 6) (alg/cyclic 6) (lambda (x) x))" :note "Identity map has image = codomain.")
+    (:tier "apprentice" :code "(alg/image (alg/cyclic 6) (alg/cyclic 3) (lambda (x) (modulo x 3)))" :note "Reduction mod 3: image = (0 1 2).")
+    (:tier "intermediate" :code "(length (alg/image (alg/cyclic 6) (alg/cyclic 6) (lambda (x) 0)))" :note "Trivial map: image is (0), length 1.")
+    (:tier "expert" :code "(alg/image (alg/cyclic 12) (alg/cyclic 12) (lambda (x) (modulo (* 2 x) 12)))" :note "Doubling: image is (0 2 4 6 8 10).")
+    (:tier "master" :code "(define (image-size G H phi) (length (alg/image G H phi))) (image-size (alg/cyclic 8) (alg/cyclic 4) (lambda (x) (modulo x 4)))" :note "Image size after reduction.")
+  )
+  :caveats ("Uses the interpreter's apply() for phi." "Deduplicates by JSON key.")
+  :drawbacks ("O(|G|) apply calls." "Loses ordering information from G.")
+  :usecases ("First isomorphism theorem." "Test surjectivity of a homomorphism.")
+  :related ("alg/kernel" "alg/is-homomorphism?" "alg/homomorphism")
+  :learn (:concept "Image of a homomorphism." :prerequisites ("alg/homomorphism") :progression "image -> first-iso-theorem -> exact sequences.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Iterate first row of Cayley table; apply phi; dedupe." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(|G|), space O(|image|)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
+
+
+(verb
+  :name "alg/cosets"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/cosets G H) -> list-of-lists"
+  :summary "Return the left cosets of H in G — placeholder."
+  :impl-status "wired"
+  :explanation "The left cosets of H in G partition G into disjoint sets of size |H|. The current impl in reference-impls.js is a placeholder returning the empty list. For real coset computation, use alg/left-cosets which iterates over G elements and forms g*H via alg/op. This entry documents the placeholder honestly."
+  :examples (
+    (:tier "novice" :code "(alg/cosets (alg/cyclic 6) '(0 3))" :note "Placeholder returns ().")
+    (:tier "apprentice" :code "(equal? (alg/cosets (alg/cyclic 12) '(0 4 8)) '())" :note "Empty from placeholder.")
+    (:tier "intermediate" :code "(length (alg/cosets (alg/cyclic 6) '(0)))" :note "0.")
+    (:tier "expert" :code "(alg/cosets '() '())" :note "().")
+    (:tier "master" :code "(alg/left-cosets (alg/cyclic 6) '(0 3))" :note "Use alg/left-cosets for the real computation.")
+  )
+  :caveats ("Placeholder — always returns ()." "Use alg/left-cosets for real coset enumeration.")
+  :drawbacks ("Not useful in isolation.")
+  :usecases ("API placeholder — call alg/left-cosets instead.")
+  :related ("alg/left-cosets" "alg/right-cosets" "alg/quotient")
+  :learn (:concept "Cosets as partition of G." :prerequisites ("alg/subgroup?") :progression "cosets -> left-cosets / right-cosets -> quotient.")
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Placeholder returns ()." :permission "read" :latency-class "sync-fast" :since "1.0")
+  :+math (:total #t)
+  :+cs (:complexity "time O(1), space O(1)" :effects "none" :pure #t)
+  :+ai (:deterministic #t :cacheable #t))
