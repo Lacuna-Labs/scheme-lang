@@ -11,6 +11,12 @@ export const THEMES = Object.freeze({
   'sakura-light': {
     name: 'sakura-light',
     display: 'Sakura Light — warm cream, pink accents',
+    // Per-theme prompt glyph — the REPL prompt gets a different tail
+    // for each theme. Kept tiny + typographic; one glyph max, never
+    // gaudy. sakura-light gets the flower, sakura-dark gets a night
+    // blossom, high-contrast gets a utilitarian chevron, paper gets a
+    // typographer's guillemet.
+    promptGlyph: '✿ ',
     // Terminal colors (256-color palette indexes)
     bg:        231, // near-white background
     text:      235, // dark ink
@@ -50,6 +56,7 @@ export const THEMES = Object.freeze({
   'sakura-dark': {
     name: 'sakura-dark',
     display: 'Sakura Dark — deep purple bg, cream text, magenta accents',
+    promptGlyph: '❦ ',
     bg:        16,  // near-black
     text:      230, // cream
     dim:       244,
@@ -87,6 +94,7 @@ export const THEMES = Object.freeze({
   'high-contrast': {
     name: 'high-contrast',
     display: 'High Contrast — black bg, white text, yellow accents',
+    promptGlyph: '› ',
     bg:        16,
     text:      231,
     dim:       247,
@@ -124,6 +132,7 @@ export const THEMES = Object.freeze({
   paper: {
     name: 'paper',
     display: 'Paper — off-white bg, black serif shape, print aesthetic',
+    promptGlyph: '» ',
     bg:        255,
     text:      232,
     dim:       241,
@@ -180,4 +189,18 @@ export function currentThemeName() {
 
 export function themeList() {
   return Object.keys(THEMES)
+}
+
+/**
+ * The prompt glyph for the current (or named) theme. This is the tiny
+ * tail on the REPL prompt — one grapheme + one space. If a theme is
+ * missing a glyph we fall back to the default theme's glyph, and if
+ * even that is missing, a plain '> '.
+ */
+export function promptGlyph(name = currentTheme) {
+  const t = THEMES[name] || THEMES[DEFAULT_THEME]
+  if (t && t.promptGlyph) return t.promptGlyph
+  const d = THEMES[DEFAULT_THEME]
+  if (d && d.promptGlyph) return d.promptGlyph
+  return '> '
 }

@@ -124,6 +124,20 @@ function execExtended(cmd, state) {
       return { kind: 'status', msg: 'usage: M-x mode vim|emacs' }
     case 'run': case 'eval-buffer': return 'run'
     case 'ask': case 'ask-sakura': return { kind: 'ask' }
+    // Round 2
+    case 'command-palette': case 'palette':
+      return { kind: 'palette' }
+    case 'find-file-fuzzy': case 'fuzzy': case 'find':
+      return { kind: 'fuzzy-file-finder' }
+    case 'grep': case 'search': case 'search-all':
+      return { kind: 'global-search' }
+    case 'zen': case 'zen-mode': case 'fullscreen':
+      return { kind: 'toggle-zen' }
+    case 'line-numbers': case 'toggle-line-numbers':
+      return { kind: 'toggle-line-numbers' }
+    case 'snippet': case 'insert-snippet':
+      if (rest[0]) return { kind: 'insert-snippet', trigger: rest[0] }
+      return { kind: 'status', msg: 'usage: M-x snippet <trigger>' }
     default:
       return { kind: 'status', msg: `unknown command: ${head}` }
   }

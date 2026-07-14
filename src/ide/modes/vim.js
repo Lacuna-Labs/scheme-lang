@@ -162,7 +162,6 @@ export function makeVimMode() {
     execCommand(cmd, state) {
       const trimmed = cmd.trim()
       if (!trimmed) return 'redraw'
-      // :w, :w path, :q, :q!, :wq, :theme <name>, :mode <name>, :e <path>, :run
       const [head, ...rest] = trimmed.split(/\s+/)
       switch (head) {
         case 'w':
@@ -187,6 +186,27 @@ export function makeVimMode() {
           return 'run'
         case 'ask':
           return { kind: 'ask' }
+        // Round 2 commands
+        case 'palette':
+          return { kind: 'palette' }
+        case 'find':
+        case 'files':
+          return { kind: 'fuzzy-file-finder' }
+        case 'grep':
+        case 'search':
+          return { kind: 'global-search' }
+        case 'zen':
+          return { kind: 'toggle-zen' }
+        case 'nl':
+        case 'lines':
+        case 'linenumbers':
+          return { kind: 'toggle-line-numbers' }
+        case 'snip':
+        case 'snippet':
+          if (rest[0]) return { kind: 'insert-snippet', trigger: rest[0] }
+          return { kind: 'status', msg: 'usage: :snip <trigger>' }
+        case 'help':
+          return { kind: 'status', msg: 'commands: w q e theme mode run ask palette find grep zen nl snip' }
         default:
           return { kind: 'status', msg: `unknown command: ${head}` }
       }
