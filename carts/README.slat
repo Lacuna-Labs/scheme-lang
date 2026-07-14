@@ -119,4 +119,16 @@
     (:path "carts/data/json-explore.scm"
      :summary "json-parse and dig around inside — hash-ref, map.")
     (:path "carts/data/histogram.scm"
-     :summary "1000 samples from N(0,1) bucketed and drawn as bars.")))
+     :summary "1000 samples from N(0,1) bucketed and drawn as bars.")
+
+    ;; ── physics ──
+    (:path "carts/physics/bouncing-balls-many.scm"
+     :summary "12 balls bouncing in a walled box, engine-driven.")
+    (:path "carts/physics/gravity-well.scm"
+     :summary "20 particles orbiting a central mass, F ∝ 1/r².")
+    (:path "carts/physics/spring.scm"
+     :summary "Hooke's law: damped oscillation plotted over time.")
+    (:path "carts/physics/pendulum.scm"
+     :summary "simple pendulum, α = -g/L·sin(θ), swinging bob.")
+    (:path "carts/physics/particles-explosion.scm"
+     :summary "120 sparks with life, gravity, and cooling color.")))
