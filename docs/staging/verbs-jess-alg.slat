@@ -294,3 +294,266 @@
   :+ai
     (:deterministic #t
      :cacheable #t))
+
+
+(verb
+  :name "alg/perm"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm image-vec) -> perm | (quote nan)"
+  :summary "Construct a permutation from a 0-based image vector; returns 'nan if the input is not a valid permutation."
+  :impl-status "wired"
+  :explanation "Validation wrapper for permutation construction. Given a list of integers, alg/perm checks that it forms a valid permutation of [0, n) — length n, each value in [0, n), no duplicates — and returns the list as a permutation. If validation fails, returns the sentinel symbol 'nan. Use this at the boundary between user input and the permutation-manipulation verbs, so downstream code can trust it received a valid permutation."
+  :examples (
+    (:tier "novice" :code "(alg/perm '(2 0 1))"
+     :note "Valid permutation of 3 points; returns the list itself.")
+    (:tier "apprentice" :code "(alg/perm '(2 0 4))"
+     :note "4 is out of range for a 3-element permutation; returns 'nan.")
+    (:tier "intermediate" :code "(alg/perm '(1 1 0))"
+     :note "Duplicate values violate bijectivity; returns 'nan.")
+    (:tier "expert" :code "(define (safe-invert imgs) (let ((p (alg/perm imgs))) (if (equal? p 'nan) 'nan (alg/perm-inverse p)))) (safe-invert '(2 0 1))"
+     :note "Guard perm-inverse against invalid input by checking alg/perm first.")
+    (:tier "master" :code "(let ((candidates (list '(0 1 2) '(2 1 0) '(0 0 1) '(3 1 2)))) (map (lambda (c) (list c (alg/perm c))) candidates))"
+     :note "Filter a batch of image-vectors through validation. The first two are valid, the last two return 'nan.")
+  )
+  :caveats
+    ("Returns the symbol 'nan on invalid input — not #f, not an error. Check with (equal? result 'nan)."
+     "Values must be integers in [0, length)."
+     "The empty list is a valid permutation of degree 0.")
+  :drawbacks
+    ("O(n) validation cost every time; if you already know the input is valid, skip alg/perm and use the list directly."
+     "The 'nan sentinel can be confused with numeric NaN; be careful in mixed contexts.")
+  :usecases
+    ("Sanitize user input before passing to perm-compose or perm-inverse."
+     "Detect malformed permutations in a stream of candidates."
+     "Build a parser that returns 'nan for unparseable permutation notation.")
+  :related ("alg/perm-inverse" "alg/perm-compose" "alg/perm-identity")
+  :learn
+    (:concept "Validation-at-the-boundary — cheap check that lets downstream code trust its inputs."
+     :prerequisites ("alg/perm-identity")
+     :progression "alg/perm -> perm-compose safely -> full alg/symmetric enumeration.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Length + range + duplicate check in a single O(n) pass. Returns the sentinel Sym 'nan on failure."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t
+     :raises ("(quote nan) sentinel on invalid input")))
+
+
+(verb
+  :name "alg/perm-support"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-support p) -> list"
+  :summary "Returns the list of points that the permutation moves (non-fixed points)."
+  :impl-status "wired"
+  :explanation "The support of a permutation is the set of points it actually moves — those i for which p(i) != i. Fixed points are excluded. This is a compact way to describe a permutation: a transposition of two elements in S_100 has support size 2, not 100. The support is invariant under conjugation up to relabeling and is central to counting arguments in permutation group theory."
+  :examples (
+    (:tier "novice" :code "(alg/perm-support '(0 2 1 3))"
+     :note "Only 1 and 2 are moved (swapped). Returns (1 2).")
+    (:tier "apprentice" :code "(alg/perm-support (alg/perm-identity 5))"
+     :note "The identity moves nothing. Returns the empty list.")
+    (:tier "intermediate" :code "(length (alg/perm-support '(1 0 2 3 4)))"
+     :note "A single transposition has support size 2 regardless of the ambient degree.")
+    (:tier "expert" :code "(define (disjoint-support? p q) (null? (filter (lambda (x) (member x (alg/perm-support q))) (alg/perm-support p)))) (disjoint-support? '(1 0 2 3) '(0 1 3 2))"
+     :note "Check whether two permutations have disjoint supports — a condition for their commutativity.")
+    (:tier "master" :code "(define (small-support-perms lst) (filter (lambda (p) (<= (length (alg/perm-support p)) 2)) lst)) (small-support-perms (list '(1 0 2) '(2 1 0) '(0 1 2)))"
+     :note "Filter permutations by support size. Support <= 2 means identity or a single transposition.")
+  )
+  :caveats
+    ("Returns points in ascending order — the natural order they appear in the input."
+     "The result is always a list; the identity's support is the empty list.")
+  :drawbacks
+    ("Single-pass scan; no shortcut for known-sparse permutations."
+     "Loses the ordering information (which point maps to which) — for that, use alg/perm->cycles.")
+  :usecases
+    ("Report the 'moved elements' of a shuffle."
+     "Check disjointness of two permutations (a hypothesis for commutativity)."
+     "Bound the size of permutations for small-support arguments.")
+  :related ("alg/perm-fixed-points" "alg/perm->cycles" "alg/perm-apply")
+  :learn
+    (:concept "The support of a permutation is a small combinatorial invariant."
+     :prerequisites ("alg/perm-apply")
+     :progression "perm-support -> perm-fixed-points -> alg/perm->cycles.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Linear scan; append i to output when p[i] != i."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm-fixed?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-fixed? p i) -> boolean"
+  :summary "Return #t if the permutation p fixes point i (i.e., p(i) = i)."
+  :impl-status "wired"
+  :explanation "A point i is fixed by a permutation p if applying p leaves it unchanged. This predicate answers 'is i in the fixed set?' with #t or #f. Useful when iterating over points and branching on whether the permutation touches them. Fixed-point counts are a basic invariant used in Burnside's lemma and orbit counting."
+  :examples (
+    (:tier "novice" :code "(alg/perm-fixed? '(0 2 1 3) 0)"
+     :note "p(0) = 0, so 0 is fixed. Returns #t.")
+    (:tier "apprentice" :code "(alg/perm-fixed? '(0 2 1 3) 1)"
+     :note "p(1) = 2, so 1 is not fixed. Returns #f.")
+    (:tier "intermediate" :code "(map (lambda (i) (alg/perm-fixed? '(0 2 1 3) i)) (list 0 1 2 3))"
+     :note "Test every point. Returns (#t #f #f #t) — the fixed-point indicator function.")
+    (:tier "expert" :code "(define (count-fixed p) (length (filter (lambda (i) (alg/perm-fixed? p i)) (map (lambda (k) k) (alg/perm-identity (length p)))))) (count-fixed '(0 2 1 3 4))"
+     :note "Count fixed points — a derangement has zero fixed points; this permutation has 3 (0, 3, 4).")
+    (:tier "master" :code "(define (identity? p) (define n (length p)) (define (all-fixed? i) (or (>= i n) (and (alg/perm-fixed? p i) (all-fixed? (+ i 1))))) (all-fixed? 0)) (identity? (alg/perm-identity 5))"
+     :note "Recursive identity check via perm-fixed?. Every point must be fixed for a permutation to be the identity.")
+  )
+  :caveats
+    ("If i is outside [0, |p|) the answer is #t (out-of-range points are fixed by convention)."
+     "The predicate does no permutation-validity check.")
+  :drawbacks
+    ("Single-point query; for a full picture use alg/perm-fixed-points."
+     "No caching — a hot loop calling perm-fixed? in sequence should use perm-fixed-points once instead.")
+  :usecases
+    ("Decide whether a permutation touches a specific data-structure slot."
+     "Implement Burnside's lemma: |orbits| = (1/|G|) * sum |Fix(g)|."
+     "Debug: check which points a transformation leaves alone.")
+  :related ("alg/perm-fixed-points" "alg/perm-support" "alg/perm-apply")
+  :learn
+    (:concept "Fixed points partition the domain into moved vs. unmoved."
+     :prerequisites ("alg/perm-apply")
+     :progression "perm-fixed? -> perm-fixed-points -> Burnside's lemma applications.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Direct comparison p[i] == i."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm-fixed-points"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-fixed-points p) -> list"
+  :summary "Return the list of points fixed by the permutation p."
+  :impl-status "wired"
+  :explanation "Dual of alg/perm-support: returns the points i for which p(i) = i. Useful when computing Burnside-style counts, or when you want to preserve only the fixed data-structure slots through a shuffle. Combined with perm-support, these two together partition the domain [0, |p|) into moved and unmoved points."
+  :examples (
+    (:tier "novice" :code "(alg/perm-fixed-points '(0 2 1 3))"
+     :note "0 and 3 are fixed; returns (0 3).")
+    (:tier "apprentice" :code "(alg/perm-fixed-points (alg/perm-identity 5))"
+     :note "The identity fixes everything; returns (0 1 2 3 4).")
+    (:tier "intermediate" :code "(length (alg/perm-fixed-points '(1 0 3 2)))"
+     :note "A product of two disjoint transpositions has zero fixed points.")
+    (:tier "expert" :code "(define (derangement? p) (null? (alg/perm-fixed-points p))) (map derangement? (list '(1 0) '(1 2 0) '(2 3 0 1)))"
+     :note "A derangement is a permutation with no fixed points. Test which of these are derangements.")
+    (:tier "master" :code "(define perms (list '(0 1 2) '(1 0 2) '(2 0 1) '(0 2 1) '(1 2 0) '(2 1 0))) (define (num-fixed p) (length (alg/perm-fixed-points p))) (define total-fixed (apply + (map num-fixed perms))) (list 'S_3 'total-fixed-points total-fixed 'orbits (/ total-fixed 6))"
+     :note "Burnside's lemma applied to S_3 acting on {0,1,2}: sum of fixed-point counts divided by |G| equals the number of orbits (1, since the action is transitive).")
+  )
+  :caveats
+    ("Returns points in ascending order."
+     "Complements alg/perm-support: their union is (0..n-1), intersection is empty.")
+  :drawbacks
+    ("Allocates a new list; for a boolean summary use (null? (perm-fixed-points p))."
+     "O(n) even when you only need a count.")
+  :usecases
+    ("Compute fixed-point counts for Burnside's lemma."
+     "Identify data slots preserved by a shuffle."
+     "Detect derangements (empty fixed-point list).")
+  :related ("alg/perm-support" "alg/perm-fixed?" "alg/perm->cycles")
+  :learn
+    (:concept "Fixed points and support partition the domain."
+     :prerequisites ("alg/perm-apply")
+     :progression "perm-fixed-points -> Burnside's lemma -> orbit-counting theorems.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Linear scan collecting indices where p[i] == i."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm->cycles"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm->cycles p) -> list-of-cycles"
+  :summary "Convert a permutation to its disjoint-cycle decomposition, omitting fixed points."
+  :impl-status "wired"
+  :explanation "Every permutation can be uniquely factored into a product of disjoint cycles. This verb returns that decomposition as a list of lists. A cycle (a b c) means a->b, b->c, c->a. Fixed points (1-cycles) are omitted by convention — they carry no information. The cycle decomposition reveals structural properties: the order of a permutation is the LCM of the cycle lengths; the sign is +1 if the total number of transpositions in the cycles is even."
+  :examples (
+    (:tier "novice" :code "(alg/perm->cycles '(1 0 3 2))"
+     :note "Two disjoint transpositions: 0<->1 and 2<->3. Returns ((0 1) (2 3)).")
+    (:tier "apprentice" :code "(alg/perm->cycles '(1 2 0))"
+     :note "A 3-cycle: 0->1->2->0. Returns ((0 1 2)).")
+    (:tier "intermediate" :code "(alg/perm->cycles (alg/perm-identity 5))"
+     :note "The identity has only fixed points; the cycle decomposition is empty.")
+    (:tier "expert" :code "(define (cycle-lengths p) (map length (alg/perm->cycles p))) (cycle-lengths '(1 2 0 4 3))"
+     :note "Extract just the cycle lengths — here (3 2), which tells you the permutation has order lcm(3,2) = 6.")
+    (:tier "master" :code "(define (has-long-cycle? p threshold) (any (lambda (c) (>= (length c) threshold)) (alg/perm->cycles p))) (has-long-cycle? '(1 2 3 4 0 6 5) 4)"
+     :note "Detect whether a permutation contains a long cycle — useful for identifying near-cyclic shuffles.")
+  )
+  :caveats
+    ("Fixed points (1-cycles) are OMITTED. If you want them, use alg/perm-support to identify moved points."
+     "Cycles are returned starting from the smallest element in each cycle."
+     "Disjoint means: no element appears in more than one cycle.")
+  :drawbacks
+    ("Returns an empty list for the identity — callers must handle that case."
+     "Doesn't tell you the ambient degree; combine with (length p) if needed.")
+  :usecases
+    ("Compute the order of a permutation via LCM of cycle lengths."
+     "Compute the sign of a permutation from cycle structure."
+     "Compress the representation of a sparse permutation for storage or display.")
+  :related ("alg/cycles->perm" "alg/perm-order" "alg/perm-sign" "alg/perm-support")
+  :learn
+    (:concept "Cycle decomposition — the canonical factorization of a permutation."
+     :prerequisites ("alg/perm-apply")
+     :progression "perm->cycles -> perm-order (LCM) -> perm-sign (parity) -> classifying elements of S_n.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Depth-first cycle walk. Track visited set; skip length-1 cycles."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
