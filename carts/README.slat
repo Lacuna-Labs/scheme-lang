@@ -7,6 +7,10 @@
 ;; Run any cart:
 ;;   ./bin/sakura-scheme run carts/<category>/<name>.scm
 ;;
+;; Run every cart:
+;;   scripts/run-all-carts.sh
+;;   scripts/run-all-carts.sh --quiet   ; PASS/FAIL summary only
+;;
 ;; Doctrine: every cart in this suite has been verified to run
 ;; without error before being committed. If something breaks after
 ;; a runtime change, that's a regression.
@@ -82,6 +86,8 @@
      :summary "40 drops falling into a growing puddle.")
     (:path "carts/animation/waves.scm"
      :summary "layered sines as a sea, with sun and birds.")
+    (:path "carts/animation/plasma.scm"
+     :summary "demoscene plasma — four superimposed sinusoids.")
 
     ;; ── math ──
     (:path "carts/math/plot-sine-wave.scm"
@@ -120,6 +126,8 @@
      :summary "json-parse and dig around inside — hash-ref, map.")
     (:path "carts/data/histogram.scm"
      :summary "1000 samples from N(0,1) bucketed and drawn as bars.")
+    (:path "carts/data/fizzbuzz.scm"
+     :summary "fizzbuzz 1..30 — cond + modulo as pattern-matching.")
 
     ;; ── physics ──
     (:path "carts/physics/bouncing-balls-many.scm"
@@ -140,6 +148,8 @@
      :summary "Aesop's fable told, then simulated as a race.")
     (:path "carts/story/haiku-generator.scm"
      :summary "5-7-5 lines picked from pools — form as a whole.")
+    (:path "carts/story/six-word-stories.scm"
+     :summary "eight six-word stories from subject/verb/twist pools.")
 
     ;; ── games ──
     (:path "carts/games/tic-tac-toe.scm"
