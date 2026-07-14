@@ -1,0 +1,82 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-rin-topo-comb.slat — Rin's authored verb entries
+;;
+;; Lane: topo+comb (40 verbs total)
+;; Author: Rin (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;   Slices: :general, +math, +cs, +eng, +commerce, +hacker, +ai, +meta
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval before landing.
+;; Alfred's floor doctrine: We can't lie to people. They trust us.
+;; ═══════════════════════════════════════════════════════════════
+
+(verb
+  :name "comb/bell"
+  :library "comb"
+  :signature "(comb/bell n) -> integer"
+  :summary "Bell number B(n): count the ways to partition an n-element set into non-empty subsets."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/bell 3)"
+     :note "Returns 5: the five partitions of {1,2,3} are {{1,2,3}}, {{1,2},{3}}, {{1,3},{2}}, {{2,3},{1}}, {{1},{2},{3}}.")
+    (:tier "apprentice"
+     :code "(map comb/bell (list 0 1 2 3 4 5 6))"
+     :note "Returns (1 1 2 5 15 52 203) — the first seven Bell numbers. Note B(0) = 1: the empty set has exactly one partition, the empty one.")
+    (:tier "intermediate"
+     :code "(let ((n 5)) (list (comb/bell n) (comb/stirling2 n 1) (comb/stirling2 n 2) (comb/stirling2 n 3) (comb/stirling2 n 4) (comb/stirling2 n 5)))"
+     :note "Returns (52 1 15 25 10 1). Bell is the row-sum of Stirling numbers of the second kind: B(n) = sum over k of S(n,k). 1+15+25+10+1 = 52. This is the bridge between bell and stirling2.")
+    (:tier "expert"
+     :code "(define (bell-verify n)\n  (define (sum-stirling k)\n    (if (> k n) 0 (+ (comb/stirling2 n k) (sum-stirling (+ k 1)))))\n  (equal? (comb/bell n) (sum-stirling 0)))\n(map bell-verify (list 1 2 3 4 5 6 7))"
+     :note "Cross-check: for each n from 1 to 7, sum Stirling(n,k) over all k and compare to Bell(n). Returns (#t #t #t #t #t #t #t). This is a real proof-witness — the identity holds under both impls.")
+    (:tier "master"
+     :code "(define (count-schedules students groups) (comb/bell students))\n(list ':three-students (count-schedules 3 'any)\n      ':five-students (count-schedules 5 'any)\n      ':seven-students (count-schedules 7 'any))"
+     :note "Domain model: a teacher wants to know how many distinct ways to group her students for a project, where the grouping labels don't matter (just who ends up with whom). That is exactly the Bell number. Returns (:three-students 5 :five-students 52 :seven-students 877)."))
+
+  :related ("comb/stirling2" "comb/partition-count" "comb/catalan" "comb/multinomial")
+  :caveats ("Bell numbers grow super-exponentially: B(10) = 115975, B(20) ≈ 5.2e13, B(30) ≈ 8.5e23." "For n ≥ 20 the return may exceed JavaScript's safe integer range (2^53 − 1); results become approximate." "n must be a non-negative integer; negative or fractional n falls through to 0 without warning.")
+  :drawbacks ("No memoization across calls; repeated (comb/bell n) for the same n recomputes." "Not useful for enumerating the partitions themselves — this counts only." "For very large n, prefer computing incrementally via the Stirling-column recurrence rather than the direct formula.")
+  :usecases ("Counting distinct ways to cluster a set into unlabeled groups (customer segments, project teams, physical piles)." "Verifying identities involving Stirling numbers of the second kind." "Benchmarking sequences that appear in combinatorics puzzles and dynamic-programming problems." "Teaching set partitions before introducing equivalence relations.")
+  :learn (:concept "Bell numbers count set partitions into unlabeled non-empty groups. They are the row-sums of the Stirling triangle of the second kind." :prerequisites ("comb/choose" "comb/stirling2" "map") :progression "Study comb/stirling2 first to see partitions counted by group count; then comb/bell as their sum; then comb/partition-count for integer partitions (a different beast); then comb/catalan for another rapid-growth sequence with a distinct combinatorial meaning.")
+
+  :+math
+    (:algebra "Row-sum identity: B(n) = sum(k=0..n) S(n,k) where S is Stirling number of the second kind. Recurrence: B(n+1) = sum(k=0..n) C(n,k) B(k). Generating function (EGF): sum B(n)/n! x^n = exp(exp(x) - 1)."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "non-negative integer"
+     :proofs "Row-sum identity from double-counting partitions by number of parts. Dobinski's formula B(n) = (1/e) sum(k=0..inf) k^n / k! provides an exact real-analytic characterization.")
+
+  :+cs
+    (:complexity "Time O(n^2), space O(n^2) via the dynamic-programming table over Stirling numbers of the second kind. A slightly smarter Bell-triangle recurrence achieves O(n^2) time and O(n) space per row."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Computes Stirling(n,k) for k = 1..n via the standard recurrence S(n,k) = k·S(n-1,k) + S(n-1,k-1), then sums the row. Numeric type: JavaScript number. Safe up to about n = 20 before floating-point drift enters the low bits."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Rin 2026-07-14: (comb/bell 0) = 1; (comb/bell 3) = 5; (comb/bell 6) = 203; row-sum identity holds for n = 1..7 against comb/stirling2."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/stirling2" "comb/partition-count")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting B(0) = 1 by convention (there is exactly one partition of the empty set — the empty one). Confusing set-partition counting with integer-partition counting (use comb/partition-count for the latter). Assuming k! grows faster than B(n) — B(n) grows faster than any exponential."
+     :when-not-to-use "You need the partitions themselves, not the count. You are counting labeled partitions (use comb/multinomial). You need very large n (n > 25) — floating point loses precision.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Bell numbers count unlabeled set partitions. Row-sum of Stirling(n,·). Grows super-exponentially."))
