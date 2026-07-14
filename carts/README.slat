@@ -1,0 +1,68 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SAKURA SCHEME — CARTS
+;;
+;; A suite of runnable example programs. Each cart is a small, real
+;; Sakura Scheme program that exercises the language end-to-end.
+;;
+;; Run any cart:
+;;   ./bin/sakura-scheme run carts/<category>/<name>.scm
+;;
+;; Doctrine: every cart in this suite has been verified to run
+;; without error before being committed. If something breaks after
+;; a runtime change, that's a regression.
+;;
+;; Alfred: "We're gonna do a cart suite. We have to."
+;; ═══════════════════════════════════════════════════════════════
+
+(carts
+  :root "carts/"
+  :convention "run with ./bin/sakura-scheme run <path>"
+  :sizing "each cart is ~30-100 lines, runs in under 10 seconds"
+
+  :categories (
+    (:name "tutorial"
+     :path "carts/tutorial/"
+     :purpose "walkthrough style — small teaching carts, read in order")
+
+    (:name "games"
+     :path "carts/games/"
+     :purpose "playable or autoplay games — mechanics and loops")
+
+    (:name "animation"
+     :path "carts/animation/"
+     :purpose "visual demos — shapes moving, patterns evolving")
+
+    (:name "music"
+     :path "carts/music/"
+     :purpose "melody, harmony, and generative sound")
+
+    (:name "data"
+     :path "carts/data/"
+     :purpose "small pipelines — parse, transform, summarize")
+
+    (:name "physics"
+     :path "carts/physics/"
+     :purpose "particles, springs, cloth — force and consequence")
+
+    (:name "story"
+     :path "carts/story/"
+     :purpose "narrative one-shots — text with a rhythm to it")
+
+    (:name "math"
+     :path "carts/math/"
+     :purpose "visual mathematics — curves, plots, fractals"))
+
+  :carts (
+    ;; ── tutorial ──
+    (:path "carts/tutorial/01-hello.scm"
+     :summary "prints a greeting. the smallest cart.")
+    (:path "carts/tutorial/02-lists.scm"
+     :summary "cons, car, cdr, map, and named-let sum.")
+    (:path "carts/tutorial/03-let-and-lambda.scm"
+     :summary "local names, anonymous functions, and closures.")
+    (:path "carts/tutorial/04-tail-recursion.scm"
+     :summary "loops without loops — sum, fact, fib, countdown.")
+    (:path "carts/tutorial/05-drawing.scm"
+     :summary "framebuffer basics — pset, disc, line, rect, palette.")
+    (:path "carts/tutorial/06-a-tiny-game.scm"
+     :summary "one entity, gravity, a floor, sixty frames.")))
