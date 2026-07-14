@@ -355,6 +355,34 @@
   :author "Alfred"
   :cross-refs ("R7RS §6.7 (strings)" "docs/ENGINEERING.md line 180"))
 
+(decision
+  :id "017"
+  :what "Split ambiguous entity/get into three shape-specific accessors: entity/state, entity/ref, entity/set!"
+  :why "Two different verbs shared the name entity/get. The reference documented (entity/get id key) as a scratch-map read (companion to entity/get-set!). The JS runtime implemented (entity/get id) as a physics-state read (returns id, x, y, vx, vy, w, h). Same name, different arg count, different intent — a spec collision surfaced by the wire-596 lane. Per decision-002, we do not use `get` for polymorphic accessors; shape-specific names are the Scheme convention (hash-ref, vector-ref, car). We split into three specific verbs so the name tells you the shape."
+  :date "2026-07-14"
+  :status "active"
+  :alternatives-rejected
+    (("Overload entity/get by arity (1 arg = physics; 2 args = scratch)"
+       "Arity-overloading hides intent behind param count. Not R7RS. A reader inspecting the call site cannot tell which behavior applies without checking arity.")
+     ("Keep entity/get as scratch-map read, remove the physics-state variant"
+       "Loses the physics-state accessor entirely. Runtime needs both.")
+     ("Rename to entity/get-state and entity/get-prop"
+       "Still uses `get`. Decision-002 rejects that pattern."))
+  :convention
+    ("(entity/state id) — returns (id x y vx vy w h) or ()."
+     "(entity/ref id key) — reads a per-entity scratch value; returns the symbol 'nan when the key does not exist. Mirrors hash-ref shape."
+     "(entity/set! id key val) — writes a per-entity scratch value; returns val. Mirrors hash-set! shape. Replaces entity/get-set!.")
+  :examples
+    ((:pre-code "(entity/get e)                  ; old JS shape — physics")
+     (:post-code "(entity/state e)               ; new — physics fields")
+     (:pre-scratch "(entity/get e 'hp)             ; old reference shape — scratch")
+     (:post-scratch "(entity/ref e 'hp)             ; new — scratch prop")
+     (:pre-setter "(entity/get-set! e 'hp 10)     ; old dual-verb")
+     (:post-setter "(entity/set! e 'hp 10)         ; new — hash-set! shape"))
+  :affects "src/game.js (impls), docs/SAKURA-SCHEME-REFERENCE.slat (entries — sweep in progress). ~70 entity/get references + ~22 entity/get-set! references in the reference need renaming — Convention Sweep will pick these up."
+  :author "Alfred"
+  :cross-refs ("decision-002 (no polymorphic get)" "R7RS §6.4 (pairs and lists — the shape-specific accessor pattern)" "SRFI-69 (hash tables — hash-ref/hash-set! shape)"))
+
 ;; End of seeded decisions. Append new entries below with monotonic :id.
 ;; When reversing an old decision, add a NEW entry that names :supersedes,
 ;; and edit the old entry to add :status "superseded" + :superseded-by.

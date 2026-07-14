@@ -21,7 +21,7 @@
 // language — where balls bounce, characters walk, and rectangles bump
 // into each other.
 
-import { Sym } from './reader.js'
+import { Sym, sym } from './reader.js'
 import { getMediaState } from './media.js'
 
 // Turn a Sym into a plain string; passthrough otherwise. Handy for
@@ -162,13 +162,39 @@ export function installGame(env, game) {
     return !!(e && e.static)
   }, 'read')
 
-  // (entity/get id) — read the entity's current state. Returns a plain
-  // list for Scheme: (id x y vx vy w h). Nil when the id is unknown.
-  def('entity/get', (id) => {
+  // (entity/state id) — read the entity's current physics state. Returns
+  // a plain list for Scheme: (id x y vx vy w h). Nil when the id is
+  // unknown. Renamed from entity/get per decision-017 (name collided
+  // with the scratch-map accessor documented in the reference).
+  def('entity/state', (id) => {
     const e = game.entities.get(String(nm(id)))
     if (!e) return undefined
     return [e.id, e.x, e.y, e.vx, e.vy, e.w, e.h]
   }, 'read')
+
+  // (entity/ref id key) — read a per-entity scratch value by key.
+  // Returns the special symbol 'nan when the key does not exist.
+  // Companion accessor to entity/set!; mirrors hash-ref shape.
+  // Decision-017: replaces the ambiguous entity/get name.
+  const NAN_SYM = sym('nan')
+  def('entity/ref', (id, key) => {
+    const e = game.entities.get(String(nm(id)))
+    if (!e || !e.scratch) return NAN_SYM
+    const k = String(nm(key))
+    return e.scratch.has(k) ? e.scratch.get(k) : NAN_SYM
+  }, 'read')
+
+  // (entity/set! id key val) — write a per-entity scratch value.
+  // Returns val. Mirrors hash-set! shape.
+  // Decision-017: replaces entity/get-set! (dual-verb name).
+  def('entity/set!', (id, key, val) => {
+    const e = game.entities.get(String(nm(id)))
+    if (!e) return val
+    if (!e.scratch) e.scratch = new Map()
+    const k = typeof key === 'object' && key && key.__sym ? key.__sym : String(nm(key))
+    e.scratch.set(k, val)
+    return val
+  })
 
   // (entity/move id dx dy) — nudge the entity's position directly. Bypasses
   // physics; useful for direct control (a keyboard-driven hero).
