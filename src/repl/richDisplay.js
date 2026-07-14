@@ -12,7 +12,27 @@
 import { role, PALETTE, fg } from './palette.js'
 import { renderGraphic } from './braille.js'
 import { renderInline, detectCapabilities, pickProtocol } from './imageRouter.js'
-import { Sym } from '../reader.js'
+import { Sym, Ch } from '../reader.js'
+
+// R7RS §6.6 named characters — reverse map for read-back-safe printing.
+const CHAR_UNNAME = {
+  '\x07': 'alarm',
+  '\b':   'backspace',
+  '\x7f': 'delete',
+  '\x1b': 'escape',
+  '\n':   'newline',
+  '\0':   'null',
+  '\r':   'return',
+  ' ':    'space',
+  '\t':   'tab',
+}
+function formatChar(c) {
+  const v = c.value
+  if (Object.prototype.hasOwnProperty.call(CHAR_UNNAME, v)) return '#\\' + CHAR_UNNAME[v]
+  const cp = v.codePointAt(0)
+  if (cp < 0x20 || cp === 0x7f) return '#\\x' + cp.toString(16)
+  return '#\\' + v
+}
 
 /**
  * schemeFormat(v) → string
@@ -26,6 +46,18 @@ export function schemeFormat(v) {
   if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(v)
   if (typeof v === 'string') return JSON.stringify(v)
   if (v instanceof Sym) return v.name
+  if (v instanceof Ch) return formatChar(v)
+  if (v instanceof Uint8Array) return '#u8(' + Array.from(v).join(' ') + ')'
+  if (v instanceof Map) {
+    // R7RS-adjacent: render hash tables as (hash-table (k . v) ...).
+    const pairs = []
+    for (const [k, val] of v.entries()) {
+      let key = k
+      try { key = JSON.parse(k) } catch { /* keep raw */ }
+      pairs.push('(' + schemeFormat(key) + ' . ' + schemeFormat(val) + ')')
+    }
+    return '#<hash-table ' + pairs.join(' ') + '>'
+  }
   if (Array.isArray(v)) return '(' + v.map(schemeFormat).join(' ') + ')'
   if (typeof v === 'function') return '#<procedure>'
   if (typeof v === 'object') {
@@ -169,6 +201,8 @@ export function display(v) {
   if (typeof v === 'string') return role.string(JSON.stringify(v))
   if (typeof v === 'boolean') return role.keyword(v ? '#t' : '#f')
   if (v instanceof Sym) return role.text(v.name)
+  if (v instanceof Ch) return role.keyword(formatChar(v))
+  if (v instanceof Uint8Array) return role.dim('#u8(') + Array.from(v).map(b => role.number(String(b))).join(' ') + role.dim(')')
 
   if (Array.isArray(v)) {
     if (v.length === 0) return role.dim('()')

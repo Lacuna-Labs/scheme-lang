@@ -1094,3 +1094,428 @@
   :+ai
     (:deterministic #t
      :cacheable #t))
+
+
+;; ─── music-theory algebra (12-TET pitch-class sets) — 8 verbs ─────
+
+(verb
+  :name "alg/pcset"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/pcset notes) -> pcset"
+  :summary "Normalize a list of notes (pitch classes) to a canonical pitch-class set, sorted and reduced modulo 12."
+  :impl-status "wired"
+  :explanation "Pitch-class sets are the atoms of atonal music theory. A pitch class is an integer in [0, 12) representing a note modulo octave: 0 = C, 4 = E, 7 = G. This verb takes any list of MIDI pitches (60 = middle C, 64 = E, ...) and canonicalizes them: reduce modulo 12, remove duplicates, sort ascending. The result is a pitch-class SET, not a chord — voicing and octave are stripped."
+  :examples (
+    (:tier "novice" :code "(alg/pcset '(60 64 67))"
+     :note "C major triad in MIDI: (60 = C, 64 = E, 67 = G). Reduce mod 12 -> (0 4 7).")
+    (:tier "apprentice" :code "(alg/pcset '(60 64 67 64 60))"
+     :note "Duplicates are removed. Result still (0 4 7).")
+    (:tier "intermediate" :code "(alg/pcset '(-1 13 25))"
+     :note "Negative and large values are correctly reduced. -1 mod 12 = 11; 13 mod 12 = 1; 25 mod 12 = 1. Result: (1 11).")
+    (:tier "expert" :code "(alg/pcset '())"
+     :note "The empty set is a valid pcset — corresponds to silence.")
+    (:tier "master" :code "(define (chord-notes-to-pcset midi-notes) (alg/pcset midi-notes)) (chord-notes-to-pcset (list 48 52 55 60 64 67))"
+     :note "A voicing spanning two octaves collapses to a single pcset: (0 4 7). Octave and doubling are stripped.")
+  )
+  :caveats
+    ("Values are reduced mod 12 — octave info is lost."
+     "Duplicates removed."
+     "Result is sorted ascending.")
+  :drawbacks
+    ("No way to recover the original voicing from the pcset."
+     "Doesn't distinguish enharmonic spellings — Db (1) and C# (1) collapse to the same class.")
+  :usecases
+    ("Canonicalize a chord for lookup in a pcset table."
+     "Prepare input for alg/normal-form or alg/prime-form."
+     "Extract intervallic content ignoring voicing.")
+  :related ("alg/normal-form" "alg/prime-form" "alg/transpose" "alg/interval-vector")
+  :learn
+    (:concept "Pitch-class equivalence: notes an octave apart are the same class."
+     :prerequisites ("(core)/sort" "(core)/modulo")
+     :progression "pcset -> normal-form -> prime-form -> pitch-class-set theory.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Set deduplication with mod-12 reduction then sort ascending."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n log n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/transpose"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/transpose pc-set n) -> pc-set"
+  :summary "Transposes a pitch-class set by n semitones (modulo 12)."
+  :impl-status "wired"
+  :explanation "Transposition is the T_n operation in pitch-class set theory: shift every note by n semitones and reduce mod 12. Musically, this moves a chord or melody up (or down, if n is negative) in pitch. Transposition preserves intervallic structure; two pcsets are 'transpositionally equivalent' if one is a transposition of the other. The order of notes may not be preserved in the sense of ascending values — you may need to re-sort after transposition."
+  :examples (
+    (:tier "novice" :code "(alg/transpose '(0 4 7) 2)"
+     :note "C major triad shifted up 2 semitones -> D major: (2 6 9).")
+    (:tier "apprentice" :code "(alg/transpose '(0 4 7) 12)"
+     :note "Transposing by an octave (12 semitones) returns the original pcset.")
+    (:tier "intermediate" :code "(alg/transpose '(0 3 7) -2)"
+     :note "Negative transposition: C minor triad shifted down 2 semitones -> Bb minor: (-2 1 5) mod 12 = (10 1 5).")
+    (:tier "expert" :code "(equal? (alg/pcset (alg/transpose '(0 4 7) 5)) '(0 5 9))"
+     :note "Transposing then canonicalizing: (0 5 9) is the F major triad sorted ascending mod 12.")
+    (:tier "master" :code "(define (t-classes pcset) (map (lambda (n) (alg/pcset (alg/transpose pcset n))) (list 0 1 2 3 4 5 6 7 8 9 10 11))) (t-classes '(0 4 7))"
+     :note "Generate all 12 transpositions of C major. Together they form the transpositional equivalence class.")
+  )
+  :caveats
+    ("Applies to any list of integers; if you want a canonical output, wrap with alg/pcset."
+     "n is taken mod 12 conceptually; large or negative n work correctly."
+     "Preserves the input's ordering; use pcset for canonical output.")
+  :drawbacks
+    ("Doesn't automatically canonicalize — call pcset if you want a sorted, deduplicated result."
+     "Only works in 12-TET.")
+  :usecases
+    ("Move a chord or melody up or down."
+     "Enumerate all 12 transpositions of a set."
+     "Test transpositional equivalence between two pcsets.")
+  :related ("alg/pcset" "alg/normal-form" "alg/prime-form")
+  :learn
+    (:concept "T_n operation on pitch-class sets — the additive group action of Z_12."
+     :prerequisites ("alg/pcset" "(core)/modulo")
+     :progression "transpose -> normal-form -> prime-form -> full pcset classification.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Elementwise (p + n) mod 12."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/normal-form"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/normal-form pcs) -> list"
+  :summary "Compute the Rahn normal form of a pitch-class set: the most compact rotation."
+  :impl-status "wired"
+  :explanation "The Rahn normal form is the canonical rotation of a pitch-class set that minimizes the outer interval (last minus first, mod 12), then breaks ties by successively smaller outer intervals. It's a rotation of the input, NOT a transposition — the actual pitch classes are preserved, only their starting point in the cyclic order changes. Two pcsets have the same normal form if they are cyclic rotations of each other. Combined with transposition-to-zero, normal form gives the prime form."
+  :examples (
+    (:tier "novice" :code "(alg/normal-form '(4 0 7))"
+     :note "Rearrange to find the most compact rotation: (0 4 7) — outer interval 7, minimal.")
+    (:tier "apprentice" :code "(alg/normal-form '(2 7 11))"
+     :note "Try each rotation: (2 7 11)=9, (7 11 2)=7, (11 2 7)=8. Choose the smallest outer: (7 11 2).")
+    (:tier "intermediate" :code "(alg/normal-form '(0 1 6 7))"
+     :note "A symmetric set has multiple candidate rotations; the tie-break rule picks a canonical one.")
+    (:tier "expert" :code "(equal? (alg/normal-form '(0 4 7)) (alg/normal-form '(4 7 0)))"
+     :note "Any rotation of a set yields the same normal form. Should be #t.")
+    (:tier "master" :code "(define (has-normal-form? pcset target) (equal? (alg/normal-form pcset) target)) (has-normal-form? '(9 1 4) '(9 1 4))"
+     :note "Check whether a pcset canonicalizes to a specific normal form. Here (9 1 4) is already its own normal form (outer interval 4+12-9=7 is minimal).")
+  )
+  :caveats
+    ("Uses Rahn tie-breaking (compare largest-to-smallest intervals lexicographically); this differs slightly from Forte's original convention."
+     "Result is a list (a rotation of the input), NOT translated to start at 0."
+     "For prime form, use alg/prime-form instead.")
+  :drawbacks
+    ("Ambiguous corner cases when multiple rotations tie exactly — the tie-break rule is a convention, not a theorem."
+     "O(n^2) — checks every rotation.")
+  :usecases
+    ("Compare two pcsets for rotational equivalence."
+     "Feed into alg/prime-form for full canonicalization."
+     "Analyze a chord's compact voicing.")
+  :related ("alg/prime-form" "alg/pcset" "alg/transpose")
+  :learn
+    (:concept "Normal form — the rotational canonical representative of a pitch-class set."
+     :prerequisites ("alg/pcset")
+     :progression "pcset -> normal-form -> prime-form.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Generate all rotations; select by outer-interval then lexicographic tie-break."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n^2), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/prime-form"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/prime-form pcset) -> pcset"
+  :summary "Computes the Forte prime form of a pitch-class set (the canonical form under transposition and inversion)."
+  :impl-status "wired"
+  :explanation "Prime form is THE canonical representation of a pitch-class set under the equivalence relation generated by transposition AND inversion. Two pcsets have the same prime form if and only if one is a transposition-or-inversion of the other. Algorithm: compute the normal form of the set, translate to start at 0; compute the normal form of the inversion (12 - p), translate to start at 0; return the lexicographically smaller. Prime form is the label used in Forte's set-class catalogue (0-1-3-11B, etc.)."
+  :examples (
+    (:tier "novice" :code "(alg/prime-form '(0 4 7))"
+     :note "C major triad. Prime form is (0 3 7) — the inversion (minor triad) is 'smaller' lexicographically than the original.")
+    (:tier "apprentice" :code "(alg/prime-form '(0 3 7))"
+     :note "C minor triad. Same prime form as C major: (0 3 7). Major and minor triads are inversionally related.")
+    (:tier "intermediate" :code "(alg/prime-form '(0 1 4 6))"
+     :note "A specific tetrachord; its prime form reveals its Forte set-class name.")
+    (:tier "expert" :code "(equal? (alg/prime-form '(0 4 7)) (alg/prime-form (alg/transpose '(0 4 7) 5)))"
+     :note "Prime form is invariant under transposition: shifting doesn't change the class.")
+    (:tier "master" :code "(define (same-class? p q) (equal? (alg/prime-form p) (alg/prime-form q))) (same-class? '(0 4 7) '(3 7 10))"
+     :note "Two pcsets are in the same set-class iff their prime forms agree.")
+  )
+  :caveats
+    ("Uses Forte-style comparison; some texts prefer Rahn's slightly different tie-break."
+     "Result starts at 0; the first element is always 0."
+     "Both the set and its inversion are considered; the smaller wins.")
+  :drawbacks
+    ("O(n^2) — computes both normal forms."
+     "Loses transposition and inversion information; only the set-class survives.")
+  :usecases
+    ("Classify a chord by set-class name."
+     "Test whether two chords are related by transposition or inversion."
+     "Prepare data for pitch-class-set analysis in post-tonal music.")
+  :related ("alg/normal-form" "alg/pcset" "alg/transpose")
+  :learn
+    (:concept "Prime form: the canonical representative under the group generated by T_n and I."
+     :prerequisites ("alg/normal-form")
+     :progression "prime-form -> Forte's tables -> set-class labels and interval-class analysis.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Two normal-form computations (set + inversion), translate each to start at 0, lexicographic compare."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n^2), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/triad"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/triad root kind) -> pc-set"
+  :summary "Builds a triad (three-note chord) with a given root and quality."
+  :impl-status "wired"
+  :explanation "Constructs a three-note chord as a pitch-class set. The root is an integer in [0, 12); the kind is one of the symbols 'major, 'minor, 'diminished, 'augmented. The intervals are: major = (0 4 7), minor = (0 3 7), diminished = (0 3 6), augmented = (0 4 8). The root is added to each interval and reduced mod 12. Result is the three pitch classes of the triad in a fixed order (root, third, fifth)."
+  :examples (
+    (:tier "novice" :code "(alg/triad 0 'major)"
+     :note "C major triad: (0 4 7).")
+    (:tier "apprentice" :code "(alg/triad 5 'minor)"
+     :note "F minor triad: (5 8 0). Note the wrap: 5 + 7 = 12 mod 12 = 0.")
+    (:tier "intermediate" :code "(alg/triad 6 'diminished)"
+     :note "F# diminished triad: (6 9 0).")
+    (:tier "expert" :code "(alg/triad 4 'augmented)"
+     :note "E augmented triad: (4 8 0).")
+    (:tier "master" :code "(define (all-major-triads) (map (lambda (r) (alg/triad r 'major)) (list 0 1 2 3 4 5 6 7 8 9 10 11))) (length (all-major-triads))"
+     :note "Enumerate all 12 major triads. The result is a list of 12 3-element pcsets.")
+  )
+  :caveats
+    ("Kind must be one of the four symbols; unknown kinds default to major."
+     "The result is a plain list, not a canonicalized pcset. Wrap with alg/pcset if you want sorted output."
+     "Root is reduced mod 12.")
+  :drawbacks
+    ("Supports only four triad qualities. Seventh chords, ninth chords, etc. need a separate constructor."
+     "Doesn't record the quality — from the pcset alone you can't recover it (major and its inversion share prime form).")
+  :usecases
+    ("Build harmonic material for a music-theory tutorial."
+     "Enumerate chord progressions symbolically."
+     "Feed into neo-Riemannian transforms (nr-P, nr-L, nr-R).")
+  :related ("alg/nr-P" "alg/nr-L" "alg/nr-R" "alg/pcset")
+  :learn
+    (:concept "Triads as pitch-class sets — the atoms of chromatic harmony."
+     :prerequisites ("alg/pcset" "(core)/modulo")
+     :progression "triad -> neo-Riemannian transforms -> chord-graph analysis.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Fixed interval templates per kind; add root; mod 12."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/nr-P"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/nr-P chord) -> chord"
+  :summary "Apply the Neo-Riemannian Parallel transform to a triad, toggling major↔minor while keeping the root fixed."
+  :impl-status "wired"
+  :explanation "P (Parallel) is one of the three neo-Riemannian transforms (P, L, R) that generate a rich graph of triadic relationships. P swaps a major triad with its parallel minor (C major -> C minor) by moving the third down a semitone; or a minor triad with its parallel major by moving the third up a semitone. The root and fifth are preserved. P is an involution: applying it twice returns the original triad."
+  :examples (
+    (:tier "novice" :code "(alg/nr-P '(0 4 7))"
+     :note "C major -> C minor: (0 3 7). The third (4) drops to (3).")
+    (:tier "apprentice" :code "(alg/nr-P '(0 3 7))"
+     :note "C minor -> C major: (0 4 7). Involution: apply P again and you're back.")
+    (:tier "intermediate" :code "(equal? (alg/nr-P (alg/nr-P '(0 4 7))) '(0 4 7))"
+     :note "P^2 = identity — P is its own inverse. Should return #t.")
+    (:tier "expert" :code "(alg/nr-P (alg/triad 7 'major))"
+     :note "G major (7 11 2) -> G minor (7 10 2), returned sorted as (2 7 10).")
+    (:tier "master" :code "(define (parallel-chain start n) (if (= n 0) (list start) (cons start (parallel-chain (alg/nr-P start) (- n 1))))) (parallel-chain '(0 4 7) 4)"
+     :note "Chain P repeatedly. Since P is an involution, the chain alternates between (0 4 7) and (0 3 7).")
+  )
+  :caveats
+    ("Input must be a 3-note pitch-class set (major, minor, diminished, or augmented triad)."
+     "Non-major/minor triads are passed through unchanged."
+     "Result is sorted ascending mod 12.")
+  :drawbacks
+    ("Works only on triads (major/minor). Seventh chords, extended chords, and non-standard triads are unchanged."
+     "No representation of chord function or voicing.")
+  :usecases
+    ("Explore the neo-Riemannian PLR-group of triads."
+     "Generate a modulation from C major to C minor."
+     "Analyze late-Romantic and Wagnerian harmonic progressions.")
+  :related ("alg/nr-L" "alg/nr-R" "alg/triad")
+  :learn
+    (:concept "The P transform generates one of the three axes of the tonnetz."
+     :prerequisites ("alg/triad" "alg/pcset")
+     :progression "nr-P -> nr-L -> nr-R -> the full PLR-group acting on the 24 major/minor triads.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Detect major/minor by interval pattern (0,4,7) vs (0,3,7); swap the third; sort."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "involution"
+     :total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/nr-L"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/nr-L chord) -> chord"
+  :summary "Apply the Neo-Riemannian Leading-tone transform to a triad, swapping the note that moves by semitone."
+  :impl-status "wired"
+  :explanation "L (Leading-tone) is the second of the three neo-Riemannian transforms. Applied to a major triad, L lowers the root by a semitone, yielding a minor triad on the third (C major -> E minor). Applied to a minor triad, L raises the fifth by a semitone, yielding a major triad on the flat-sixth. L is an involution: apply it twice and you're back."
+  :examples (
+    (:tier "novice" :code "(alg/nr-L '(0 4 7))"
+     :note "C major -> E minor: (4 7 11). Lower the root 0 by a semitone to 11.")
+    (:tier "apprentice" :code "(alg/nr-L '(4 7 11))"
+     :note "E minor -> C major: (0 4 7). Raise the fifth 11 by a semitone to 0. Involution verified.")
+    (:tier "intermediate" :code "(equal? (alg/nr-L (alg/nr-L '(0 4 7))) '(0 4 7))"
+     :note "L^2 = identity — L is its own inverse. Should return #t.")
+    (:tier "expert" :code "(alg/nr-L (alg/triad 5 'major))"
+     :note "F major (5 9 0) -> A minor (9 0 4), returned sorted as (0 4 9).")
+    (:tier "master" :code "(define (PL-alternating start n) (if (= n 0) (list start) (let ((next (if (even? n) (alg/nr-P start) (alg/nr-L start)))) (cons start (PL-alternating next (- n 1)))))) (PL-alternating '(0 4 7) 4)"
+     :note "Alternate P and L transforms to explore chord-graph paths.")
+  )
+  :caveats
+    ("Requires a major or minor triad as input; other shapes pass through."
+     "Result is sorted ascending mod 12.")
+  :drawbacks
+    ("Same as nr-P: triads only.")
+  :usecases
+    ("Analyze chromatic mediant relationships (C major to E minor)."
+     "Generate PLR-group paths for compositional exploration."
+     "Test neo-Riemannian graph algorithms.")
+  :related ("alg/nr-P" "alg/nr-R" "alg/triad")
+  :learn
+    (:concept "The L transform generates the second axis of the tonnetz."
+     :prerequisites ("alg/nr-P")
+     :progression "nr-L -> nr-R -> composed PLR-transforms.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Detect quality; move root (major) or fifth (minor) by semitone; sort."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "involution"
+     :total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/nr-R"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/nr-R chord) -> chord"
+  :summary "Apply the Neo-Riemannian Relative transform to a triad, swapping major ↔ minor with the related root."
+  :impl-status "wired"
+  :explanation "R (Relative) is the third neo-Riemannian transform. Applied to a major triad, R raises the fifth by a whole tone (2 semitones), yielding the relative minor (C major -> A minor). Applied to a minor triad, R lowers the root by a whole tone, yielding the relative major (A minor -> C major). Like P and L, R is an involution. Together P, L, R generate the Neo-Riemannian PLR-group acting on the 24 major-and-minor triads."
+  :examples (
+    (:tier "novice" :code "(alg/nr-R '(0 4 7))"
+     :note "C major -> A minor: (0 4 9). Raise fifth 7 by whole tone to 9.")
+    (:tier "apprentice" :code "(alg/nr-R '(0 4 9))"
+     :note "A minor -> C major: (0 4 7). Lower root by whole tone. Involution.")
+    (:tier "intermediate" :code "(equal? (alg/nr-R (alg/nr-R '(0 4 7))) '(0 4 7))"
+     :note "R^2 = identity. Should return #t.")
+    (:tier "expert" :code "(alg/nr-R (alg/triad 2 'minor))"
+     :note "D minor (2 5 9) -> F major (5 9 0), sorted as (0 5 9).")
+    (:tier "master" :code "(define (chord-graph start) (list start (alg/nr-P start) (alg/nr-L start) (alg/nr-R start))) (chord-graph '(0 4 7))"
+     :note "Show all four triads reachable from C major via a single PLR transform.")
+  )
+  :caveats
+    ("Requires a major or minor triad; other shapes pass through unchanged."
+     "Result sorted ascending mod 12.")
+  :drawbacks
+    ("Same as P and L: triads only.")
+  :usecases
+    ("Model relative-key modulations."
+     "Generate PLR-group orbits."
+     "Analyze cadences involving relative-key motion.")
+  :related ("alg/nr-P" "alg/nr-L" "alg/triad")
+  :learn
+    (:concept "The R transform generates the third axis of the tonnetz."
+     :prerequisites ("alg/nr-P" "alg/nr-L")
+     :progression "nr-R -> full PLR-group -> tonnetz graph.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Detect major/minor; adjust root or fifth by whole tone; sort."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "involution"
+     :total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))

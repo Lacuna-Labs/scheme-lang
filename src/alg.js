@@ -510,59 +510,78 @@ export function installAlg(env) {
   })
 
   // Neo-Riemannian transforms: P, L, R.
-  // These operate on triads. We identify major vs minor by intervallic
-  // shape. Convention: return the transformed triad in ascending pc order.
+  // These operate on triads. Detection scans all three rotations so we
+  // find the root even when the pcset is sorted ascending and the root
+  // is not at position 0 (e.g. A minor = {9, 0, 4}, sorted = (0 4 9),
+  // root is 9). Returns the transformed triad as a sorted pcset.
+  //
+  // Convention (Cohn 1997 / Straus 2016):
+  //   P (Parallel):    major <-> minor, root fixed. Third moves +/-1.
+  //   L (Leading-tone): major -> minor of the 3rd; minor -> major of the 6th.
+  //                     Root moves -1 (major), or fifth moves +1 (minor).
+  //   R (Relative):    major <-> relative minor. Fifth moves +2 (major)
+  //                     or root moves -2 (minor).
+  function detectTriad(chord) {
+    // Try each of the three notes as the potential root; check for
+    // major (0,4,7) or minor (0,3,7) shape rooted there.
+    const pcs = chord.map(p => modPos(num(p) | 0, 12))
+    if (pcs.length !== 3) return null
+    for (let i = 0; i < 3; i++) {
+      const root = pcs[i]
+      const others = [pcs[(i + 1) % 3], pcs[(i + 2) % 3]]
+      const third = others.find(p => modPos(p - root, 12) === 3 || modPos(p - root, 12) === 4)
+      const fifth = others.find(p => modPos(p - root, 12) === 7)
+      if (third !== undefined && fifth !== undefined) {
+        const thirdInterval = modPos(third - root, 12)
+        return { root, third, fifth, quality: thirdInterval === 4 ? 'major' : 'minor' }
+      }
+    }
+    return null
+  }
+
   def('alg/nr-P', (chord) => {
     if (!Array.isArray(chord) || chord.length !== 3) return chord
-    // Parallel: keep root + fifth, flip third by semitone.
-    // Major (0,4,7) <-> Minor (0,3,7): 4 <-> 3, same root.
-    const sorted = chord.map(p => modPos(num(p) | 0, 12)).sort((a, b) => a - b)
-    const intervals = [sorted[1] - sorted[0], sorted[2] - sorted[0]]
-    if (intervals[0] === 4 && intervals[1] === 7) {
-      // Major -> minor: flatten third
-      return [sorted[0], modPos(sorted[1] - 1, 12), sorted[2]].sort((a, b) => a - b)
-    } else if (intervals[0] === 3 && intervals[1] === 7) {
-      // Minor -> major: raise third
-      return [sorted[0], modPos(sorted[1] + 1, 12), sorted[2]].sort((a, b) => a - b)
-    }
-    return sorted
+    const t = detectTriad(chord)
+    if (!t) return chord.map(p => modPos(num(p) | 0, 12)).sort((a, b) => a - b)
+    // Parallel: flip the third by 1 semitone; root and fifth fixed.
+    const newThird = t.quality === 'major'
+      ? modPos(t.third - 1, 12)
+      : modPos(t.third + 1, 12)
+    return [t.root, newThird, t.fifth].sort((a, b) => a - b)
   })
 
   def('alg/nr-L', (chord) => {
     if (!Array.isArray(chord) || chord.length !== 3) return chord
-    // Leading-tone: keep third + fifth (of major) or root + third (of minor),
-    // move the outer note by semitone.
-    // Major (r, r+4, r+7) -> (r-1, r+4, r+7) which reads as a minor triad.
-    // Minor (r, r+3, r+7) -> (r, r+3, r+8) which reads as a major triad.
-    const sorted = chord.map(p => modPos(num(p) | 0, 12)).sort((a, b) => a - b)
-    const intervals = [sorted[1] - sorted[0], sorted[2] - sorted[0]]
-    if (intervals[0] === 4 && intervals[1] === 7) {
-      // Major -> L: lower root by 1 semitone
-      return [modPos(sorted[0] - 1, 12), sorted[1], sorted[2]].sort((a, b) => a - b)
-    } else if (intervals[0] === 3 && intervals[1] === 7) {
-      // Minor -> L: raise fifth by 1 semitone
-      return [sorted[0], sorted[1], modPos(sorted[2] + 1, 12)].sort((a, b) => a - b)
+    const t = detectTriad(chord)
+    if (!t) return chord.map(p => modPos(num(p) | 0, 12)).sort((a, b) => a - b)
+    if (t.quality === 'major') {
+      // Major -> L: lower root by 1 semitone. The result is a minor triad
+      // rooted at t.third (root becomes the new fifth's-relative-third).
+      const newRoot = modPos(t.root - 1, 12)
+      return [newRoot, t.third, t.fifth].sort((a, b) => a - b)
+    } else {
+      // Minor -> L: raise fifth by 1 semitone. Result is a major triad
+      // rooted at t.third.
+      const newFifth = modPos(t.fifth + 1, 12)
+      return [t.root, t.third, newFifth].sort((a, b) => a - b)
     }
-    return sorted
   })
 
   def('alg/nr-R', (chord) => {
     if (!Array.isArray(chord) || chord.length !== 3) return chord
-    // Relative: major <-> minor with related root.
-    // Major (r, r+4, r+7) -> R -> minor triad rooted at r+9 (e.g. C -> Am)
-    //   = (r, r+4, r+9) rearranged  — i.e. raise fifth by 2 semitones
-    // Minor (r, r+3, r+7) -> R -> major rooted at r-3 = (r-3, r, r+7)
-    //   — i.e. lower root by 2 semitones
-    const sorted = chord.map(p => modPos(num(p) | 0, 12)).sort((a, b) => a - b)
-    const intervals = [sorted[1] - sorted[0], sorted[2] - sorted[0]]
-    if (intervals[0] === 4 && intervals[1] === 7) {
-      // Major -> R: raise fifth by 2 semitones
-      return [sorted[0], sorted[1], modPos(sorted[2] + 2, 12)].sort((a, b) => a - b)
-    } else if (intervals[0] === 3 && intervals[1] === 7) {
-      // Minor -> R: lower root by 2 semitones
-      return [modPos(sorted[0] - 2, 12), sorted[1], sorted[2]].sort((a, b) => a - b)
+    const t = detectTriad(chord)
+    if (!t) return chord.map(p => modPos(num(p) | 0, 12)).sort((a, b) => a - b)
+    if (t.quality === 'major') {
+      // Major -> R: raise fifth by 2 semitones. Result is minor triad
+      // rooted at t.root + 9 (e.g., C major -> A minor).
+      const newFifth = modPos(t.fifth + 2, 12)
+      return [t.root, t.third, newFifth].sort((a, b) => a - b)
+    } else {
+      // Minor -> R: lower root by 2 semitones. Result is major triad
+      // rooted at t.root - 3 (e.g., A minor -> C major).
+      const newRoot = modPos(t.root - 2, 12)
+      return [newRoot, t.third, t.fifth].sort((a, b) => a - b)
     }
-    return sorted
   })
 
   // ── group constructors + structural queries ───────────────────────

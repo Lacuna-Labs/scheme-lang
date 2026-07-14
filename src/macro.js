@@ -333,6 +333,26 @@ export function expandTop(forms, { fuel, macros } = {}) {
 // Sentinel: a form that fully consumed (a define-syntax) emits nothing.
 const SKIP = Symbol('macro-skip')
 
+// R7RS §7.3 supported features. Advertised by `features` and matched
+// by cond-expand.
+const SUPPORTED_FEATURES = new Set([
+  'sakura-scheme', 'r7rs', 'exact-closed', 'ratios', 'ieee-float',
+  'full-unicode', 'else',
+])
+
+// Evaluate a cond-expand feature-requirement literal.
+function evalFeatureReq(req) {
+  if (req instanceof Sym) return SUPPORTED_FEATURES.has(req.name)
+  if (Array.isArray(req) && req[0] instanceof Sym) {
+    const op = req[0].name
+    if (op === 'and')  return req.slice(1).every(evalFeatureReq)
+    if (op === 'or')   return req.slice(1).some(evalFeatureReq)
+    if (op === 'not')  return !evalFeatureReq(req[1])
+    if (op === 'library') return false   // no library system yet
+  }
+  return false
+}
+
 function expandForm(form, table, fuel, depth = 0) {
   if (--fuel.n < 0) throw new Error('macro fuel exhausted')
   if (depth > MAX_EXPAND_DEPTH) throw new Error('macro expansion too deep — recursive macro?')
@@ -341,6 +361,23 @@ function expandForm(form, table, fuel, depth = 0) {
   const head = form[0]
 
   if (head instanceof Sym) {
+    // R7RS §7.3 cond-expand — compile-time feature switch. Emit the
+    // body of the first matching clause; if none matches and no `else`,
+    // emit nothing (represented as an empty `begin`).
+    if (head.name === 'cond-expand') {
+      for (let i = 1; i < form.length; i++) {
+        const clause = form[i]
+        const req = clause[0]
+        const isElse = req instanceof Sym && req.name === 'else'
+        if (isElse || evalFeatureReq(req)) {
+          const bodyForms = clause.slice(1).map((bf) => expandForm(bf, table, fuel, depth + 1)).filter((x) => x !== SKIP)
+          if (bodyForms.length === 0) return [sym('begin')]
+          if (bodyForms.length === 1) return bodyForms[0]
+          return [sym('begin'), ...bodyForms]
+        }
+      }
+      return [sym('begin')]   // no clause matched → empty
+    }
     // define-syntax — register and emit nothing.
     if (head.name === 'define-syntax') {
       const name = form[1]

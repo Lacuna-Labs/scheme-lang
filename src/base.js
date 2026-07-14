@@ -18,6 +18,7 @@ import { registerMedia } from './media.js'
 import { installEng } from './eng.js'
 import { installAlg } from './alg.js'
 import { installTime } from './time-verbs.js'
+import { installR7rsSmall } from './r7rs-small.js'
 
 export function makeBaseEnv(fuel) {
   const e = new Env()
@@ -1215,6 +1216,21 @@ export function makeBaseEnv(fuel) {
   // time/until, time/when, time/every-ms, time/then). time/across is
   // AUTHOR-BLOCKED — reference is *[verify]*; refuse to hallucinate.
   installTime(e)
+
+  // ── R7RS-small compliance layer (r7rs-compliance-sweep, 2026-07-14).
+  // Installs every R7RS-small procedure NOT already present above:
+  //   §6.2 (floor/ truncate/ exact-integer-sqrt ...),
+  //   §6.4 (memq memv assq assv list-set! remaining c[ad]{4}r),
+  //   §6.6 (char? char-comparators char-alphabetic? ...),
+  //   §6.7 (string-map string-for-each string-ci=? ...),
+  //   §6.8 (vector-set! vector-fill! vector-copy vector-append ...),
+  //   §6.9 (bytevector? make-bytevector utf8->string ...),
+  //   §6.10 (values call-with-values dynamic-wind call/cc-escape ...),
+  //   §6.11 (raise raise-continuable with-exception-handler error-object-*),
+  //   §6.13 (string/bytevector ports current-*-port read-char ...),
+  //   §6.14 (command-line current-second features ...).
+  // See docs/reports/r7rs-compliance-audit-2026-07-14.slat.
+  installR7rsSmall(e, fuel)
 
   return e
 }

@@ -35,8 +35,12 @@
 //   • operands to function calls (their order/side-effects matter)
 //   • initialiser expressions of `let` / `let*` / `letrec`
 
-import { Sym } from './reader.js'
+import { Sym, sym } from './reader.js'
 import { registerVerbMeta, defaultMetaFor } from './registry.js'
+// R7RS-small tagged value classes. Kept in a separate module (r7rs-types.js)
+// so the interpreter can dispatch on them (`instanceof Values`, etc.) with
+// no circular import to r7rs-small.js (which itself needs `apply` from here).
+import { Values, SchemePromise, Parameter, RecordType, RecordInstance, RaisedValue } from './r7rs-types.js'
 
 // v2.20.0-A5 — track which verb names have already emitted a
 // missing-perm warning, so a hot-mounted installer (test setup re-runs
@@ -274,8 +278,13 @@ export function evaluate(form, env, fuel) {
 // per verb call, which is the dominant call shape in a card runtime.
 const SPECIAL_FORMS = new Set([
   'quote', 'if', 'define', 'set!', 'lambda', 'begin',
-  'let', 'let*', 'letrec', 'quasiquote', 'when', 'and',
+  'let', 'let*', 'letrec', 'letrec*', 'let-values', 'let*-values',
+  'quasiquote', 'when', 'and',
   'or', 'unless', 'cond', 'case',
+  'do', 'delay', 'delay-force', 'lazy',
+  'parameterize', 'guard',
+  'define-record-type', 'define-values',
+  'case-lambda',
 ])
 
 function evalStep(form, env, fuel) {
@@ -359,15 +368,77 @@ function evalStep(form, env, fuel) {
         if (form.length === 2) return undefined
         return new Tail(form[form.length - 1], e2)
       }
-      case 'letrec': {
+      case 'letrec':
+      case 'letrec*': {
         // Each binding sees every binding (forward-references allowed) —
         // the standard Lisp pattern for mutually recursive lambdas.
         // Bindings start as `undefined`, then each value is computed in
         // an env where every name already resolves; closures capture the
         // forward references at call time.
+        //
+        // R7RS §4.2.2 distinguishes letrec (bindings may be evaluated
+        // in any order) from letrec* (evaluated in sequence). Our impl
+        // is sequential either way, which conservatively satisfies both
+        // (letrec* is stricter, letrec permits our sequencing).
         const e2 = new Env(env)
         for (const [name] of form[1]) e2.define(name.name, undefined)
         for (const [name, expr] of form[1]) e2.set(name.name, evaluate(expr, e2, fuel))
+        for (let i = 2; i < form.length - 1; i++) evaluate(form[i], e2, fuel)
+        if (form.length === 2) return undefined
+        return new Tail(form[form.length - 1], e2)
+      }
+      case 'let-values': {
+        // R7RS §4.2.2 — (let-values (((var...) init)...) body...)
+        // Each init produces multiple values; the vars are bound to them.
+        // Bindings do NOT see each other (parallel), matching `let`.
+        const bindings = form[1]
+        const boundNames = []
+        const boundVals = []
+        for (const b of bindings) {
+          const vars = b[0]
+          const init = b[1]
+          const val = evaluate(init, env, fuel)
+          const vals = val instanceof Values ? val.vals : [val]
+          if (Array.isArray(vars)) {
+            // Support dotted-tail rest: (a b . rest)
+            const { params, restParam } = parseParams(vars)
+            for (let i = 0; i < params.length; i++) {
+              boundNames.push(params[i])
+              boundVals.push(vals[i])
+            }
+            if (restParam) {
+              boundNames.push(restParam)
+              boundVals.push(vals.slice(params.length))
+            }
+          } else if (vars instanceof Sym) {
+            // (name init) — bind `name` to a list of all values
+            boundNames.push(vars.name)
+            boundVals.push(vals)
+          }
+        }
+        const e2 = new Env(env)
+        for (let i = 0; i < boundNames.length; i++) e2.define(boundNames[i], boundVals[i])
+        for (let i = 2; i < form.length - 1; i++) evaluate(form[i], e2, fuel)
+        if (form.length === 2) return undefined
+        return new Tail(form[form.length - 1], e2)
+      }
+      case 'let*-values': {
+        // Sequential — each binding sees the prior.
+        const bindings = form[1]
+        const e2 = new Env(env)
+        for (const b of bindings) {
+          const vars = b[0]
+          const init = b[1]
+          const val = evaluate(init, e2, fuel)
+          const vals = val instanceof Values ? val.vals : [val]
+          if (Array.isArray(vars)) {
+            const { params, restParam } = parseParams(vars)
+            for (let i = 0; i < params.length; i++) e2.define(params[i], vals[i])
+            if (restParam) e2.define(restParam, vals.slice(params.length))
+          } else if (vars instanceof Sym) {
+            e2.define(vars.name, vals)
+          }
+        }
         for (let i = 2; i < form.length - 1; i++) evaluate(form[i], e2, fuel)
         if (form.length === 2) return undefined
         return new Tail(form[form.length - 1], e2)
@@ -414,6 +485,12 @@ function evalStep(form, env, fuel) {
           const t = isElse ? true : evaluate(test, env, fuel)
           if (t !== false) {
             if (clause.length === 1) return t            // (cond (x)) → x's value
+            // R7RS §4.2.1 — (cond (test => proc)) invokes proc on the
+            // test value. `=>` must be a Sym literal in the clause.
+            if (clause.length === 3 && clause[1] instanceof Sym && clause[1].name === '=>') {
+              const proc = evaluate(clause[2], env, fuel)
+              return new TailCall(proc, [t])
+            }
             for (let j = 1; j < clause.length - 1; j++) evaluate(clause[j], env, fuel)
             return new Tail(clause[clause.length - 1], env)
           }
@@ -422,19 +499,241 @@ function evalStep(form, env, fuel) {
       }
       case 'case': {
         const key = evaluate(form[1], env, fuel)
+        // R7RS §4.2.1 case: matches via `eqv?`. We support numbers, chars,
+        // strings, booleans, and symbols.
+        const eqv = (a, b) => {
+          if (a === b) return true
+          if (a instanceof Sym && b instanceof Sym) return a.name === b.name
+          if (a && b && a.value !== undefined && a.constructor === b.constructor && a.value === b.value) return true
+          return false
+        }
         for (let i = 2; i < form.length; i++) {
           const clause = form[i]
           const data = clause[0]
           const hit = (data instanceof Sym && data.name === 'else') ||
-            (Array.isArray(data) && data.some((d) =>
-              d === key || (d instanceof Sym && key instanceof Sym && d.name === key.name)))
+            (Array.isArray(data) && data.some((d) => eqv(d, key)))
           if (hit) {
             if (clause.length === 1) return undefined
+            // R7RS §4.2.1 — (case key ((datum ...) => proc)) invokes proc on key.
+            if (clause.length === 3 && clause[1] instanceof Sym && clause[1].name === '=>') {
+              const proc = evaluate(clause[2], env, fuel)
+              return new TailCall(proc, [key])
+            }
             for (let j = 1; j < clause.length - 1; j++) evaluate(clause[j], env, fuel)
             return new Tail(clause[clause.length - 1], env)
           }
         }
         return undefined
+      }
+      case 'do': {
+        // R7RS §4.2.4 — (do ((var init step)...) (test expr...) body...)
+        // Iterate: on each pass, evaluate test; if true, evaluate exprs
+        // and return the last one; else evaluate body then step each var.
+        //
+        // Semantics: bindings evaluated in fresh env; each iteration
+        // rebinds var to step in a fresh env (so mutations don't leak).
+        const bindings = form[1]
+        const testClause = form[2]
+        const body = form.slice(3)
+        const varNames = bindings.map((b) => b[0].name)
+        const initExprs = bindings.map((b) => b[1])
+        // step is optional — if omitted, the var keeps its value.
+        const stepExprs = bindings.map((b) => b.length >= 3 ? b[2] : b[0])
+        let e2 = new Env(env)
+        for (let i = 0; i < varNames.length; i++) {
+          e2.define(varNames[i], evaluate(initExprs[i], env, fuel))
+        }
+        while (true) {
+          if (--fuel.n < 0) throw new Error('fuel exhausted')
+          const t = evaluate(testClause[0], e2, fuel)
+          if (t !== false) {
+            let result = undefined
+            for (let i = 1; i < testClause.length; i++) {
+              result = evaluate(testClause[i], e2, fuel)
+            }
+            return result
+          }
+          for (const bf of body) evaluate(bf, e2, fuel)
+          // Step: evaluate all step-expressions in the current env, then
+          // rebind vars simultaneously (R7RS: parallel binding).
+          const newVals = stepExprs.map((expr) => evaluate(expr, e2, fuel))
+          const e3 = new Env(env)
+          for (let i = 0; i < varNames.length; i++) e3.define(varNames[i], newVals[i])
+          e2 = e3
+        }
+      }
+      case 'delay': {
+        // R7RS §4.2.5 — (delay expr) → a promise that, when forced,
+        // evaluates expr in the current env.
+        const thunk = new Closure([], [form[1]], env)
+        return new SchemePromise(thunk)
+      }
+      case 'delay-force':
+      case 'lazy': {
+        // R7RS §4.2.5 — (delay-force expr) is like delay, but when
+        // forced the promise's thunk should return a promise, and
+        // force chains through. Our SchemePromise class + `force`
+        // procedure handle the chaining loop.
+        const thunk = new Closure([], [form[1]], env)
+        return new SchemePromise(thunk)
+      }
+      case 'parameterize': {
+        // R7RS §4.2.6 — (parameterize ((param value)...) body...)
+        // Push each value onto the parameter's stack, run body, pop.
+        const bindings = form[1]
+        const bodyForms = form.slice(2)
+        const pushed = []
+        try {
+          for (const [pExpr, vExpr] of bindings) {
+            const pFn = evaluate(pExpr, env, fuel)
+            const val = evaluate(vExpr, env, fuel)
+            // Parameter callables carry their Parameter on _parameter.
+            const param = pFn && pFn._parameter
+            if (!(param instanceof Parameter)) {
+              throw new Error('parameterize: not a parameter object')
+            }
+            param.push(val)
+            pushed.push(param)
+          }
+          let result = undefined
+          for (const bf of bodyForms) result = evaluate(bf, env, fuel)
+          return result
+        } finally {
+          for (const p of pushed) p.pop()
+        }
+      }
+      case 'guard': {
+        // R7RS §6.11 — (guard (var clause...) body...). Run body; if it
+        // raises, bind the raised value to `var` and run the clauses
+        // (which have cond-shape).
+        const [varSym, ...clauses] = form[1]
+        const varName = varSym.name
+        const bodyForms = form.slice(2)
+        try {
+          let result = undefined
+          for (const bf of bodyForms) result = evaluate(bf, env, fuel)
+          return result
+        } catch (e) {
+          // Unwrap RaisedValue if present.
+          const raisedValue = e instanceof RaisedValue ? e.value : e
+          const e2 = new Env(env)
+          e2.define(varName, raisedValue)
+          // Run cond-shape clauses.
+          for (const clause of clauses) {
+            const test = clause[0]
+            const isElse = test instanceof Sym && test.name === 'else'
+            const t = isElse ? true : evaluate(test, e2, fuel)
+            if (t !== false) {
+              if (clause.length === 1) return t
+              if (clause.length === 3 && clause[1] instanceof Sym && clause[1].name === '=>') {
+                const proc = evaluate(clause[2], e2, fuel)
+                return apply(proc, [t], fuel)
+              }
+              let result = undefined
+              for (let i = 1; i < clause.length; i++) result = evaluate(clause[i], e2, fuel)
+              return result
+            }
+          }
+          // No clause matched — re-raise.
+          throw e
+        }
+      }
+      case 'define-record-type': {
+        // R7RS §5.5 — (define-record-type name
+        //                (constructor field...) predicate
+        //                (field accessor [mutator])...)
+        //
+        // We build a RecordType, install the constructor + predicate +
+        // per-field accessor (and mutator if requested).
+        const typeName = form[1] instanceof Sym ? form[1].name : String(form[1])
+        const ctorSpec = form[2]                    // (ctor field...)
+        const predSym  = form[3]                    // predicate Sym
+        const fieldSpecs = form.slice(4)            // ((field accessor [mutator])...)
+        const ctorName = ctorSpec[0].name
+        const ctorFields = ctorSpec.slice(1).map((s) => s.name)
+        const allFields = fieldSpecs.map((s) => s[0].name)
+        const type = new RecordType(typeName, allFields)
+        // Constructor: takes values for its declared subset of fields.
+        env.define(ctorName, (...args) => {
+          const vals = new Array(allFields.length).fill(undefined)
+          for (let i = 0; i < ctorFields.length; i++) {
+            const idx = allFields.indexOf(ctorFields[i])
+            if (idx >= 0) vals[idx] = args[i]
+          }
+          return new RecordInstance(type, vals)
+        }, { perm: 'read' })
+        // Predicate.
+        env.define(predSym.name, (v) => v instanceof RecordInstance && v._recordType === type,
+          { perm: 'read' })
+        // Accessors + optional mutators.
+        for (const spec of fieldSpecs) {
+          const fName = spec[0].name
+          const accessor = spec[1]
+          const mutator = spec[2]  // optional
+          const idx = allFields.indexOf(fName)
+          env.define(accessor.name, (v) => {
+            if (!(v instanceof RecordInstance) || v._recordType !== type) {
+              throw new Error(accessor.name + ': not a ' + typeName)
+            }
+            return v._recordValues[idx]
+          }, { perm: 'read' })
+          if (mutator instanceof Sym) {
+            env.define(mutator.name, (v, val) => {
+              if (!(v instanceof RecordInstance) || v._recordType !== type) {
+                throw new Error(mutator.name + ': not a ' + typeName)
+              }
+              v._recordValues[idx] = val
+              return undefined
+            }, { perm: 'read' })
+          }
+        }
+        return undefined
+      }
+      case 'define-values': {
+        // R7RS §5.3.3 — (define-values (var...) expr). Bind each var
+        // to the corresponding value from expr's multiple-value return.
+        const vars = form[1]
+        const val = evaluate(form[2], env, fuel)
+        const vals = val instanceof Values ? val.vals : [val]
+        if (Array.isArray(vars)) {
+          const { params, restParam } = parseParams(vars)
+          for (let i = 0; i < params.length; i++) env.define(params[i], vals[i])
+          if (restParam) env.define(restParam, vals.slice(params.length))
+        } else if (vars instanceof Sym) {
+          // (define-values name expr) — bind name to a list of all values.
+          env.define(vars.name, vals)
+        }
+        return undefined
+      }
+      case 'case-lambda': {
+        // R7RS §4.2.9 — (case-lambda (formals body...)...) — dispatch on
+        // arity at call time. Returns a JS function that inspects the
+        // number of args and picks the matching clause.
+        const clauses = form.slice(1).map((cl) => {
+          const params = cl[0]
+          if (params instanceof Sym) {
+            return { params: [], restParam: params.name, body: cl.slice(1) }
+          }
+          const { params: ps, restParam } = parseParams(params)
+          return { params: ps, restParam, body: cl.slice(1) }
+        })
+        return (...args) => {
+          // Pick the first clause whose arity matches.
+          for (const cl of clauses) {
+            if (cl.restParam) {
+              if (args.length >= cl.params.length) {
+                const closure = new Closure(cl.params, cl.body, env, cl.restParam)
+                return apply(closure, args, fuel)
+              }
+            } else {
+              if (args.length === cl.params.length) {
+                const closure = new Closure(cl.params, cl.body, env)
+                return apply(closure, args, fuel)
+              }
+            }
+          }
+          throw new Error('case-lambda: no clause matched arity ' + args.length)
+        }
       }
       default:
         break
