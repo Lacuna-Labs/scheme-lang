@@ -1,0 +1,520 @@
+;; ═══════════════════════════════════════════════════════════════════════
+;; sora-everything — Phase A audit
+;; Lane: the "everything else" long-tail wiring lane
+;; Date: 2026-07-14
+;; Author: Sora (Lacuna Eng Lead — everything-else wiring lane)
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Scope (~57 verbs across 19 namespaces):
+;;   geom/* (~11) stat/* (~8) vec/* (~7) matrix/* (~5)
+;;   surface/* (~4) animation/* (~3) chem/* (~3) group/* (~3)
+;;   artifact/* (~2) object/* (~2) text/* (~1) weather/* (~1)
+;;   pattern/* (~1) route/* (~1) transport/* (~1) beat/* (~1)
+;;   collision/* (~1) domain/* (~1) floor/* (~1)
+;;
+;; Doctrine (Alfred): "We can't lie to people. They trust us."
+;; No auto-stubs. No hallucinated behavior. Every verb hand-authored.
+;; 5-tier examples, REPL-verified each. Schema at
+;; docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat is locked (v1.0).
+;; ═══════════════════════════════════════════════════════════════════════
+
+(audit
+  :lane "sora-everything"
+  :namespaces ("geom/*" "stat/*" "vec/*" "matrix/*" "surface/*" "animation/*"
+               "chem/*" "group/*" "artifact/*" "object/*" "text/*" "weather/*"
+               "pattern/*" "route/*" "transport/*" "beat/*" "collision/*"
+               "domain/*" "floor/*")
+  :in-scope-total 57
+  :method "makeSakuraEnv full stack; probe each name; classify STUB vs IMPL vs LYING-DESCRIPTOR"
+  :ref-file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :schema "docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :stubs-live-in "src/wired-verbs.js"
+  :repo "Lacuna-Labs/scheme-lang"
+  :branch "verbs/wire-596-2026-07-14"
+  :note "Every name in scope is bound (no unbound symbols). But binding is
+         not the same as truth-telling. Two failure modes present:
+           (1) 'REAL IMPL, PARTIAL REFERENCE' — the JS does honest work
+               but the SLAT entry has only 3 example tiers and no
+               :impl-status. Fix: schema-lift the SLAT entry.
+           (2) 'LYING DESCRIPTOR STUB' — the JS returns a shaped
+               list like ('surface/curtain') and pretends the call
+               succeeded. Sakura calling this would believe she just
+               drew a curtain / spawned an object / balanced a
+               chemical equation. She did not. Fix: replace with
+               either a real impl (where standalone JS supports it)
+               or a graceful error that HONESTLY says the subsystem
+               isn't wired in this build.")
+
+;; ─── Bucket 1: REAL IMPLS, need schema-lift only (33 verbs) ─────────────
+;;
+;; These do honest work in wired-verbs.js. REPL-verified today with
+;; concrete inputs. The impl is fine; only the SLAT entry needs to be
+;; lifted to schema v1.0 (add :impl-status "wired", :impl-file
+;; "src/wired-verbs.js", extend from 3 tiers to 5 tiers, add discipline
+;; slices for math-y ones).
+
+(bucket :name "real-impl-needs-schema-lift" :count 33
+  :phase-b-action "extend SLAT entry to 5 tiers + :impl-status wired + slices; no JS changes needed"
+  :verbs (
+    ;; geom — real 2D geometry
+    "geom/rotate"                 ;; (x, y, angle) -> [x', y']
+    "geom/rotate-about"           ;; (x, y, cx, cy, angle) -> [x', y']
+    "geom/translate"              ;; (x, y, dx, dy) -> [x+dx, y+dy]
+    "geom/segment"                ;; (x1, y1, x2, y2) -> ('segment x1 y1 x2 y2)
+    "geom/triangle"               ;; (a, b, c) -> ('triangle a b c)
+    "geom/triangle-area-heron"    ;; Heron's formula, verified: (3,4,5)=6
+    "geom/right-triangle-angle"   ;; atan2(opp, adj)
+    "geom/solve-right"            ;; (a, b) -> [a, b, hypot, angle]
+    "geom/transform-polygon"      ;; identity pass-through for now
+    "geom/slope"                  ;; (y2-y1)/(x2-x1), NaN for vertical
+    ;; vec — vector arithmetic, list-based
+    "vec/+"                       ;; verified: (vec/+ '(1 2 3) '(4 5 6)) = (5 7 9)
+    "vec/-"
+    "vec/="
+    "vec/dim"
+    "vec/ref"
+    "vec/->string"
+    "vec/angle-between"
+    ;; matrix — 2D matrix arithmetic, list-of-lists
+    "matrix/+"
+    "matrix/-"
+    "matrix/*"                    ;; verified: 2x2 * 2x2 = correct 2x2 product
+    "matrix/="
+    "matrix/->string"
+    ;; stat — small stats with real formulas
+    "stat/count"
+    "stat/variance-sample"
+    "stat/sd"                     ;; verified: sd of (2 4 4 4 5 5 7 9) = 2 (population)
+    "stat/sd-sample"
+    "stat/quartile"
+    "stat/probability"
+    "stat/histogram-counts"
+    "stat/histogram"
+    ;; chem — real periodic table + parser
+    "chem/atomic-weight"          ;; verified: (chem/atomic-weight 'H) = 1.008
+    "chem/formula-counts"         ;; verified: "H2O" -> (("H" 2) ("O" 1))
+    ;; beat — returns shaped record (not descriptor lie), consumable
+    "beat/on"                     ;; returns {kind: beat-on, ok, beatIndex, totalBeats}
+    ))
+
+;; ─── Bucket 2: LYING DESCRIPTOR STUBS (20 verbs) ────────────────────────
+;;
+;; These currently return a shaped list like ('animation/budget') and
+;; pretend the call succeeded. Zero work happens. Alfred rejected this
+;; anti-pattern. Same shape as the ai/* lies Kenji is fixing.
+;;
+;; Evidence (recorded 2026-07-14 via ./bin/sakura-scheme eval):
+;;   (chem/balance "H2 + O2 -> H2O") -> ("chem/balance" "H2 + O2 -> H2O")
+;;   (surface/curtain)               -> ("surface/curtain")
+;;   (surface/describe)              -> ("surface/describe")
+;;   (animation/budget)              -> ("animation/budget")
+;;   (object/spawn 'coin 10 20)      -> ("object/spawn" coin 10 20)
+;;   (text/draw "hi" 5 5)            -> ("text/draw" "hi" 5 5)
+;;
+;; Each of these calls LOOKS like it worked. Nothing actually happened.
+;; A caller reading a book example runs one of these, gets back a list,
+;; and (a) if it's called for its side effect [text/draw, surface/paint]
+;; the world doesn't change but no error signals that; (b) if called for
+;; its return [chem/balance, domain/of] the caller gets a nonsense
+;; list-of-tag-and-args and may operate on it as though it were data.
+;;
+;; Fix pattern — per verb:
+;;   (a) Where standalone JS CAN honestly compute the answer, wire a
+;;       real impl. (chem/balance = matrix null-space; domain/of =
+;;       category lookup on kind; text/draw = write into the current
+;;       framebuffer if one exists; etc.)
+;;   (b) Where the verb REQUIRES a live subsystem (audio hardware,
+;;       host frame loop, live surface pipeline), raise a graceful
+;;       :external-service error whose message tells the caller
+;;       exactly what's missing. The error IS the answer. Sakura
+;;       handling this error correctly is a first-class use case.
+;;   (c) NEVER return a fake tagged descriptor and pretend success.
+
+(audit-entry
+  :name "geom/similar?"
+  :library "geom"
+  :status "always-false-lie"
+  :current-impl "src/wired-verbs.js:894 → () => false"
+  :current-behavior "returns #f regardless of input; two congruent triangles report #f"
+  :fix "implement real similarity check: normalize both polygons by
+        edge-length ratio and interior angles; #t iff same up to
+        rotation/reflection/uniform-scale. For non-polygon inputs raise
+        a shape error."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "surface/curtain"
+  :library "surface"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1099 (surfaceExtras loop → descriptor)"
+  :current-behavior "returns ('surface/curtain'); no curtain drawn"
+  :reference-status "3-tier examples present, no :impl-status"
+  :fix "if a framebuffer is bound, draw an actual darkening overlay (rgba over full extent); else raise :no-surface-active. Ship as a real fb op; surface/* is REPL-runnable only inside a media host."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "surface/describe"
+  :library "surface"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1099"
+  :current-behavior "returns ('surface/describe'); no description produced"
+  :fix "return a shaped record with :width :height :bg-color read from the current framebuffer if one exists; graceful error otherwise. Real data, no lie."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "surface/digest"
+  :library "surface"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1099"
+  :current-behavior "returns ('surface/digest'); no digest computed"
+  :fix "if fb bound, compute a stable hash of the pixel buffer (fnv1a over rgba bytes) and return it as a hex string. Real digest, verifiable, deterministic. Graceful error if no fb."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "surface/spotlight"
+  :library "surface"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1099"
+  :current-behavior "returns ('surface/spotlight'); no spotlight drawn"
+  :fix "if fb bound, draw a radial-gradient mask centered at (x, y) with radius r; else :no-surface-active. Same pattern as curtain."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "animation/budget"
+  :library "animation"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1106"
+  :current-behavior "returns ('animation/budget'); no budget queried"
+  :fix "return a shaped record :frames-per-second :max-tweens :active-tweens from the animation.js state. In standalone REPL these read from a static defaults dict (fps=60, max=64, active=0) — that's the honest answer for a REPL without an active frame loop."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "animation/reflow-policy"
+  :library "animation"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1107"
+  :current-behavior "returns ('animation/reflow-policy'); no policy read"
+  :fix "return current policy symbol from module state; default 'lazy in standalone."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "animation/set-reflow-policy"
+  :library "animation"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1108"
+  :current-behavior "returns ('animation/set-reflow-policy' <policy>); policy NOT actually set"
+  :fix "store policy in module-level var; validate against {lazy, eager, off}; return the previous value so callers can restore."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "chem/balance"
+  :library "chem"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1127"
+  :current-behavior "returns ('chem/balance' <formula>); no balancing runs"
+  :fix "real impl: parse LHS + RHS via chem/formula-counts; build stoichiometry matrix; find integer null-space via row-reduce + LCM. Return balanced coefficient list. Well-known algorithm, no external deps. Raises :unbalanced-equation if no integer solution."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "group/each"
+  :library "group"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1111"
+  :current-behavior "returns ('group/each'); no iteration happens"
+  :fix "look up group by name in game state's group registry; iterate calling proc on each member. If no group state (standalone REPL), raise :no-group-state cleanly."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "group/find"
+  :library "group"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1112"
+  :current-behavior "returns ('group/find'); no search happens"
+  :fix "linear search of group members; return first member where pred returns truthy, else ()."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "group/count"
+  :library "group"
+  :status "always-zero-partial"
+  :current-impl "src/wired-verbs.js:1110 → () => 0"
+  :current-behavior "always returns 0; no group state consulted"
+  :fix "consult game state group registry; return real member count. Raise :no-group-state if standalone."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "artifact/cite"
+  :library "artifact"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1129"
+  :current-behavior "returns ('artifact/cite' <id>); no citation recorded"
+  :fix "look up artifact by id in artifact store; return a formatted citation string (title + author + date). Real data. Raise :unknown-artifact on miss."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "artifact/delete"
+  :library "artifact"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1130"
+  :current-behavior "returns ('artifact/delete' <id>); the artifact still exists"
+  :fix "actually delete from artifact store; return #t on success, #f if id unknown. This is a state-change verb; :needs-consent #t in schema."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "object/fetch"
+  :library "object"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1133"
+  :current-behavior "returns ('object/fetch' <id>); no lookup runs"
+  :fix "look up entity by id in game state (state.entities.get). Return the entity record or #f. If no game state, raise :no-game-state."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "object/spawn"
+  :library "object"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1134"
+  :current-behavior "returns ('object/spawn' <kind> <x> <y>); no object created"
+  :fix "alias of entity/create with a positional-kind signature: builds a fresh id, registers with position, returns the new id. If no game state, raise :no-game-state cleanly."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "text/draw"
+  :library "text"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1147"
+  :current-behavior "returns ('text/draw' <s> <x> <y>); nothing drawn to framebuffer"
+  :fix "if fb bound, call the framebuffer's own text-draw op (media.js exposes it); else raise :no-framebuffer. Since text rendering IS supported by the media layer, this is the pure-lie case — the impl exists elsewhere; the wiring just needs to reach it."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "weather/conjure"
+  :library "weather"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1149"
+  :current-behavior "returns ('weather/conjure' <kind>); no weather system state changed"
+  :fix "set the world's weather kind to the requested value (one of {sunny, rain, snow, fog, storm}); return the previous kind for restore. If no world state present in this build, keep it as a module-level var so the setter is truthful within the REPL."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "pattern/clave"
+  :library "pattern"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1145"
+  :current-behavior "returns ('pattern/clave' <kind>); no clave pattern returned"
+  :fix "real impl: return the actual clave pattern as a beat list. Known
+        patterns: 'son (3-2 or 2-3 son clave), 'rumba (3-2 rumba clave),
+        'bossa. Well-defined 16-note patterns; hard-coded tables."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "route/off-domain"
+  :library "route"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1146"
+  :current-behavior "returns ('route/off-domain'); no route action"
+  :fix "return the list of registered off-domain routes from domain state; empty list is honest when none registered. Consumer-friendly, deterministic."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "transport/tempo"
+  :library "transport"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1148"
+  :current-behavior "returns ('transport/tempo' <bpm>); tempo NOT actually set"
+  :fix "set/get transport tempo in module-level state (default 120). One-arg form sets and returns previous; no-arg form gets."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "collision/define-layers!"
+  :library "collision"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1143"
+  :current-behavior "returns ('collision/define-layers!' <layers>); no layers registered"
+  :fix "actually record the layer list in game state (game.js collision layer table). Idempotent. Returns #t on success. Bang means state-change; :needs-consent #f but :effects 'state."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "domain/of"
+  :library "domain"
+  :status "lying-descriptor"
+  :current-impl "src/wired-verbs.js:1140"
+  :current-behavior "returns ('domain/of' <thing>); no lookup performed"
+  :fix "consult a small domain classifier: given a thing (symbol or entity), return the domain symbol (music, game, chem, geom, etc.) based on registered prefixes. Deterministic small-table lookup."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+(audit-entry
+  :name "floor/problem?"
+  :library "floor"
+  :status "always-false-lie"
+  :current-impl "src/wired-verbs.js:1141 → () => false"
+  :current-behavior "always returns #f; problems on the floor are invisible"
+  :fix "consult the floor-state module for pending problems (empty list = no problem); return #t iff nonempty. If no floor state, honestly return #f (no floor, no problem)."
+  :entry-provenance "authored"
+  :author-blocked #f)
+
+;; ─── Bucket 3: ALREADY DONE (out of scope, listed for provenance) ──────
+;;
+;; NB: these are also in the missingImpls list from Phase A's basic
+;; probe, but only because the probe uses makeBaseEnv (which excludes
+;; wired-verbs.js). With the full makeSakuraEnv stack they are real
+;; impls. Listed here so downstream lanes know I already own them.
+
+(audit-entry :name "geom/rotate"              :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/rotate-about"        :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/translate"           :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/segment"             :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/triangle"            :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/triangle-area-heron" :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/right-triangle-angle":status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/solve-right"         :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "geom/transform-polygon"   :status "real-impl-need-schema-lift" :owner "sora-everything"
+             :note "current impl is identity pass-through; needs proper transform-matrix application in Phase B")
+(audit-entry :name "geom/slope"               :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "vec/+"                    :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "vec/-"                    :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "vec/="                    :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "vec/dim"                  :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "vec/ref"                  :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "vec/->string"             :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "vec/angle-between"        :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "matrix/+"                 :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "matrix/-"                 :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "matrix/*"                 :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "matrix/="                 :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "matrix/->string"          :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/count"               :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/variance-sample"     :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/sd"                  :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/sd-sample"           :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/quartile"            :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/probability"         :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/histogram-counts"    :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "stat/histogram"           :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "chem/atomic-weight"       :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "chem/formula-counts"      :status "real-impl-need-schema-lift" :owner "sora-everything")
+(audit-entry :name "beat/on"                  :status "real-impl-need-schema-lift" :owner "sora-everything")
+
+;; ─── PHASE B PLAN ──────────────────────────────────────────────────────
+
+(plan
+  :phase "B"
+  :ordering-strategy
+    "Group by namespace to keep context tight. Within each namespace,
+     lift real impls first (fast wins, learn the schema-lift shape),
+     then fix lying descriptors. Commit per verb. Push per verb."
+  :order
+    (;; Wave 1 — Real-impl schema-lifts (no JS changes, just SLAT).
+     ;; Fastest and lowest risk. Establishes the 5-tier + slice
+     ;; template Sora will apply to the whole scope.
+     "geom/rotate" "geom/rotate-about" "geom/translate" "geom/segment"
+     "geom/triangle" "geom/triangle-area-heron" "geom/right-triangle-angle"
+     "geom/solve-right" "geom/transform-polygon" "geom/slope"
+     "vec/+" "vec/-" "vec/=" "vec/dim" "vec/ref" "vec/->string" "vec/angle-between"
+     "matrix/+" "matrix/-" "matrix/*" "matrix/=" "matrix/->string"
+     "stat/count" "stat/variance-sample" "stat/sd" "stat/sd-sample"
+     "stat/quartile" "stat/probability" "stat/histogram-counts" "stat/histogram"
+     "chem/atomic-weight" "chem/formula-counts"
+     "beat/on"
+     ;; Wave 2 — Real-impl-with-partial-behavior. geom/transform-polygon
+     ;; is currently identity; fix the JS + lift SLAT together.
+     "geom/similar?"
+     "geom/transform-polygon"
+     "group/count"
+     "floor/problem?"
+     ;; Wave 3 — Lying descriptors that CAN honestly compute standalone.
+     "chem/balance"
+     "pattern/clave"
+     "domain/of"
+     "route/off-domain"
+     "animation/reflow-policy"
+     "animation/set-reflow-policy"
+     "animation/budget"
+     "transport/tempo"
+     ;; Wave 4 — Lying descriptors that require live subsystems.
+     ;; These get real state-consulting impls PLUS graceful errors
+     ;; when the subsystem isn't present.
+     "surface/curtain"
+     "surface/describe"
+     "surface/digest"
+     "surface/spotlight"
+     "text/draw"
+     "object/fetch"
+     "object/spawn"
+     "artifact/cite"
+     "artifact/delete"
+     "group/each"
+     "group/find"
+     "weather/conjure"
+     "collision/define-layers!")
+  :impl-locations
+    ((geom     "src/wired-verbs.js (existing) — may extract to src/geom.js if it grows")
+     (vec      "src/wired-verbs.js")
+     (matrix   "src/wired-verbs.js")
+     (stat     "src/wired-verbs.js")
+     (chem     "src/wired-verbs.js — balance may warrant new src/chem.js")
+     (surface  "src/wired-verbs.js — real ops route through media.js framebuffer")
+     (animation "src/wired-verbs.js — module-level state for reflow policy")
+     (group    "src/wired-verbs.js — group state via game.js")
+     (artifact "src/wired-verbs.js — artifact store module-level")
+     (object   "src/wired-verbs.js — routes to game.js entity registry")
+     (text     "src/wired-verbs.js — routes to media.js text ops")
+     (weather  "src/wired-verbs.js — module-level weather state")
+     (pattern  "src/wired-verbs.js — hard-coded clave tables")
+     (route    "src/wired-verbs.js — module-level route list")
+     (transport "src/wired-verbs.js — module-level tempo state")
+     (beat     "src/wired-verbs.js")
+     (collision "src/wired-verbs.js — routes to game.js layer table")
+     (domain   "src/wired-verbs.js — small classifier table")
+     (floor    "src/wired-verbs.js — module-level floor state"))
+  :error-shape
+    "Graceful errors use a common shape:
+       (error 'external-subsystem \"<what's missing>\" <verb> <args>)
+     This is CALLABLE and HONEST. The error IS the answer. Sakura
+     handling this error correctly is a first-class use case. See
+     kenji-ai for the same doctrine applied to ai/*."
+  :verification
+    "Every example tier via ./bin/sakura-scheme eval. If it doesn't
+     run cleanly, DO NOT ship. Master tier may compose with other
+     verbs; those compositions verified too."
+  :commit-shape "sora-everything: wire <name>"
+  :push "per-verb, no --force, no --no-verify"
+  :stamp "on each successful verb: architect reads the stamps file and
+          bumps the counter. Sora does not touch the stamps file
+          directly."
+  :no-lie-rules
+    ("No auto-stubs — every entry hand-authored."
+     "No hallucinated behavior — every claim is REPL-verified before commit."
+     "No swallowed errors — every :raises documented on the SLAT entry."
+     "No pretend-success — if the subsystem isn't wired, raise a clear error."
+     "5 example tiers each — novice, apprentice, intermediate, expert, master."
+     "master tier composes with other verbs from the same or neighboring library."
+     "long-tail is where quality slips — Sora holds the standard."))
+
+;; End of Phase A audit. Waiting on schema (present) — actually the
+;; schema IS present at docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat. Sora
+;; will begin Phase B after committing this audit and pushing the
+;; branch.
