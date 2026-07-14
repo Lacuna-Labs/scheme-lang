@@ -476,3 +476,69 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Multiset coefficient (with-replacement combinations). Stars-and-bars: multichoose(n,k) = C(n+k-1, k)."))
+
+(verb
+  :name "comb/multinomial"
+  :library "comb"
+  :signature "(comb/multinomial k1 k2 ... km) -> integer"
+  :summary "Multinomial coefficient n! / (k1! k2! ... km!) where n = k1 + ... + km. Counts arrangements of n items into m labeled groups of sizes k1..km."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/multinomial 2 3 1)"
+     :note "Returns 60: 6! / (2! · 3! · 1!) = 720 / 12 = 60. This counts arrangements of 6 items into three labeled groups of sizes 2, 3, and 1.")
+    (:tier "apprentice"
+     :code "(comb/multinomial 3 2)"
+     :note "Returns 10: 5! / (3! · 2!) = 10 = C(5, 2). With exactly two groups the multinomial reduces to the binomial coefficient.")
+    (:tier "intermediate"
+     :code "(comb/multinomial 5 2 3)"
+     :note "Returns 2520: 10! / (5! · 2! · 3!) = 3628800 / (120 · 2 · 6) = 2520. Three groups of sizes 5, 2, 3.")
+    (:tier "expert"
+     :code "(comb/multinomial 10 3 4 3)"
+     :note "Returns 775975200: 20! / (10! · 3! · 4! · 3!) — arrangements of 20 items into four labeled bins of sizes 10, 3, 4, 3.")
+    (:tier "master"
+     :code "(define (word-permutations letter-counts)\n  (apply comb/multinomial letter-counts))\n(list ':aabbc (word-permutations (list 2 2 1))\n      ':aaabbc (word-permutations (list 3 2 1))\n      ':mississippi (word-permutations (list 1 4 4 2)))"
+     :note "Domain: how many distinct anagrams of a word given its letter-frequency profile? Total letters = sum of counts, groups = per-letter counts. Returns (:aabbc 30 :aaabbc 60 :mississippi 34650)."))
+
+  :related ("comb/choose" "comb/factorial" "comb/permute" "comb/multichoose")
+  :caveats ("**Impl/reference drift**: the impl in src/reference-impls.js takes rest args (comb/multinomial k1 k2 ...) but the historical reference documented a single-list form (comb/multinomial ks). Passing a Scheme list — (comb/multinomial '(2 3 1)) — returns 1 (silently wrong), not 60. Rin flags this as impl-blocked pending Alfred/Architect decision: either update the impl to accept both forms, or lock the rest-args signature in the reference." "Grows fast — same JS-number precision limits as comb/factorial." "For only 2 groups, prefer comb/choose (same result, faster).")
+  :drawbacks ("Rest-args form is idiomatic but awkward to build programmatically — one must (apply comb/multinomial …) with a list of counts." "No memoization." "Group sizes must be non-negative integers; negative or fractional values fall through to garbage.")
+  :usecases ("Word-anagram counting given letter-frequency profiles (Mississippi = 34650 anagrams)." "Multinomial distribution probability weights." "Counting distinct ordered partitions into labeled bins." "Team-formation problems: split n distinct players into labeled teams of specified sizes.")
+  :learn (:concept "Multinomial generalizes binomial to more than two groups. It counts ORDERED partitions into labeled subsets of specified sizes." :prerequisites ("comb/factorial" "comb/choose") :progression "Compare with comb/stirling2 (partitions into UNLABELED groups) and comb/bell (total partitions any size). Then look at the multinomial probability distribution.")
+
+  :+math
+    (:algebra "Closed form: multinomial(k1, ..., km) = (sum ki)! / product(ki!). Recurrence via chained binomials: sum(k) = n; multinomial = C(n, k1) · C(n-k1, k2) · ... Multinomial theorem: (x1+...+xm)^n = sum over compositions ki of multinomial · product(xi^ki)."
+     :total #t
+     :domain "one or more non-negative integer arguments (rest-args)"
+     :codomain "positive integer"
+     :proofs "Combinatorial: n! orderings of n items, divided by k_i! orderings within each labeled group. Also equals the iterated product of binomials.")
+
+  :+cs
+    (:complexity "Time O(n) where n = sum(ki) via the factorial computation. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Rest-args form: sums the args to get n, computes n! via a local factorial helper, then divides by each k_i!. Rounds to nearest integer to correct FP drift. **Does NOT accept a single-list argument** — passing a list silently returns 1 due to numeric coercion of the list to 0."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/multinomial 2 3 1)=60, (comb/multinomial 5 2 3)=2520, (comb/multinomial 10 3 4 3)=775975200; list-arg silently returns 1 (documented bug)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/factorial" "apply")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing a Scheme list instead of rest args — silently returns 1. Use (apply comb/multinomial group-sizes) to bridge. Confusing labeled multinomial with unlabeled Stirling numbers of the second kind."
+     :when-not-to-use "Groups are unlabeled — use comb/stirling2. You have a list of group sizes — you must (apply comb/multinomial …) or the reference-documented list form silently returns 1.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "spec-ambiguous"
+     :required-fields-present #t
+     :entry-summary "Multinomial coefficient. Rest-args form works; list-arg form silently returns 1 (impl/spec drift — flagged for Alfred)."))
