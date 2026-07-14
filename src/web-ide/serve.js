@@ -18,6 +18,9 @@ import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve } from 'node:path'
 import { THEMES, DEFAULT_THEME } from '../ide/themes.js'
+import { collectFiles } from '../ide/fuzzy-find.js'
+import { search as gsearch } from '../ide/global-search.js'
+import { SNIPPETS } from '../ide/snippets.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..', '..')
@@ -66,6 +69,30 @@ function handle(req, res) {
       return sendText(res, 'text/plain; charset=utf-8', readFileSync(f, 'utf-8'))
     }
     res.writeHead(404); res.end('reference.slat not found'); return
+  }
+  if (url === '/snippets.json') {
+    return sendText(res, 'application/json; charset=utf-8', JSON.stringify(SNIPPETS))
+  }
+  // Project file listing — used by the Ctrl-P fuzzy finder.
+  if (url === '/api/files') {
+    const files = collectFiles(ROOT)
+    return sendText(res, 'application/json; charset=utf-8', JSON.stringify(files))
+  }
+  // Read a project file — used when the fuzzy finder picks one.
+  if (url.startsWith('/api/file')) {
+    const q = new URL(req.url, 'http://localhost').searchParams.get('path') || ''
+    const safe = resolve(ROOT, q)
+    if (!safe.startsWith(ROOT + '/') && safe !== ROOT) {
+      res.writeHead(403); res.end('forbidden'); return
+    }
+    if (!existsSync(safe)) { res.writeHead(404); res.end('not found'); return }
+    return sendText(res, 'text/plain; charset=utf-8', readFileSync(safe, 'utf-8'))
+  }
+  // Global search endpoint — Ctrl-Shift-F in the web IDE.
+  if (url.startsWith('/api/grep')) {
+    const q = new URL(req.url, 'http://localhost').searchParams.get('q') || ''
+    const r = gsearch(ROOT, q)
+    return sendText(res, 'application/json; charset=utf-8', JSON.stringify(r))
   }
   // Serve /src/* for the worker to import modules
   if (url.startsWith('/src/')) {
@@ -121,26 +148,73 @@ function renderIndex() {
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; padding: 0; overflow: hidden;
       font-family: var(--font); background: var(--bg); color: var(--text); }
+    /* The TV-set chrome — slim header up top with brand + green LED
+       "Run" button, three-pane middle, status bar at the bottom.
+       Bezels are 1px accent borders, restrained. Dorky, not saccharine.
+       The ✿ sits in the header (one per screen). LED lights during
+       eval. Scanline overlay is the finishing touch. */
+    #chrome { display: grid; grid-template-rows: 34px 1fr 28px; height: 100vh; }
+    #topbar { display: flex; align-items: center; gap: 12px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      padding: 0 12px; font-size: 12px; color: var(--dim); user-select: none; }
+    #topbar .brand { color: var(--accent); font-weight: 600; letter-spacing: 0.2px; }
+    #topbar .brand .flower { color: var(--accent2); margin-right: 6px; }
+    #topbar .spacer { flex: 1; }
+    #run-led { display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; color: var(--text); font-family: var(--font);
+      font-size: 12px; border: 1px solid var(--border); border-radius: 12px;
+      padding: 3px 10px 3px 8px; cursor: pointer; }
+    #run-led:hover { border-color: var(--accent); }
+    #run-led .dot { width: 8px; height: 8px; border-radius: 50%;
+      background: var(--dim); box-shadow: none;
+      transition: box-shadow 100ms ease-out, background 100ms ease-out; }
+    #run-led.on .dot { background: var(--ok);
+      box-shadow: 0 0 6px var(--ok), 0 0 12px color-mix(in srgb, var(--ok) 60%, transparent); }
+    #save-btn { background: transparent; color: var(--text);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 8px; font-family: var(--font); font-size: 12px; cursor: pointer; }
+    #save-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #save-btn::before { content: '\1F4BE'; margin-right: 4px; opacity: 0.7; }
     #app { display: grid; grid-template-columns: 220px 1fr 380px;
-      grid-template-rows: 1fr 28px; height: 100vh; }
-    .pane { border-right: 1px solid var(--border); overflow: hidden; }
+      grid-row: 2; height: 100%; overflow: hidden; }
+    .pane { border-right: 1px solid var(--border); overflow: hidden; position: relative; }
     .pane:last-of-type { border-right: none; }
+    /* Pane header — bezel line. When a pane is focused, the underline
+       thickens to var(--accent). Feels like a tuned channel. */
     .pane-header { padding: 8px 12px; font-size: 12px; color: var(--dim);
-      border-bottom: 1px solid var(--border); background: var(--bg); }
+      border-bottom: 1px solid var(--border); background: var(--bg);
+      display: flex; align-items: center; gap: 8px; user-select: none;
+      transition: border-color 120ms ease-out; }
+    .pane.focused > .pane-header { border-bottom-color: var(--accent); }
     .pane-header .title { color: var(--accent); font-weight: 600; }
-    #tree { grid-column: 1; grid-row: 1; }
-    #editor-pane { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; }
-    #editor { flex: 1; }
-    #repl-pane { grid-column: 3; grid-row: 1; display: flex; flex-direction: column; }
+    /* Channel-flip flash — briefly invert the header on focus. */
+    .pane.tv-flash > .pane-header { background: var(--accent);
+      color: var(--bg); border-bottom-color: var(--accent); }
+    .pane.tv-flash > .pane-header .title { color: var(--bg); }
+    #tree { grid-column: 1; }
+    #editor-pane { grid-column: 2; display: flex; flex-direction: column; }
+    #editor { flex: 1; position: relative; }
+    /* TV scanline overlay — barely-visible horizontal lines on the
+       editor. Fixed intensity, no animation, no shimmer. Toggle off
+       via the .no-scan class on #chrome (knob toggles). */
+    #editor::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(0deg,
+        rgba(255,255,255,0.014) 0 1px,
+        transparent 1px 3px);
+      z-index: 5; opacity: 0.6; }
+    #chrome.no-scan #editor::after { display: none; }
+    #repl-pane { grid-column: 3; display: flex; flex-direction: column; }
     #repl { flex: 1; padding: 8px 12px; font-size: 13px; overflow-y: auto;
       white-space: pre-wrap; word-break: break-word; }
     #repl-input { padding: 8px 12px; background: var(--bg); color: var(--text);
       font-family: var(--font); font-size: 13px; border: none;
       border-top: 1px solid var(--border); outline: none; }
     #repl-input:focus { border-top-color: var(--accent); }
-    #status { grid-column: 1 / -1; grid-row: 2;
+    #status { grid-row: 3;
       background: var(--accent2); color: var(--bg); padding: 4px 12px;
-      font-size: 12px; display: flex; justify-content: space-between; }
+      font-size: 12px; display: flex; justify-content: space-between;
+      user-select: none; }
+    #status .flower { margin-right: 6px; }
     #tree ul { list-style: none; padding: 0; margin: 0; font-size: 12px; }
     #tree li { padding: 4px 12px; cursor: pointer; }
     #tree li:hover { background: var(--selection); }
@@ -151,8 +225,17 @@ function renderIndex() {
     .repl-error { color: var(--err); }
     .repl-info { color: var(--comment); }
     .repl-value { color: var(--text); }
-    #preview { padding: 8px; border-top: 1px solid var(--border); }
-    #preview canvas { max-width: 100%; image-rendering: pixelated; border: 1px solid var(--border); }
+    /* Preview canvas sits inside a small "TV" — rounded frame with a
+       hairline border + tiny brand tag. */
+    #preview { padding: 10px 12px; border-top: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg) 90%, black 10%); }
+    #preview .frame { border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px; background: #000; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+    #preview canvas { display: block; max-width: 100%; image-rendering: pixelated;
+      border-radius: 3px; }
+    #preview .label { color: var(--dim); font-size: 10px; margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      text-transform: uppercase; letter-spacing: 0.08em; }
     .modal { position: fixed; top: 30%; left: 50%; transform: translate(-50%, -30%);
       width: 560px; max-width: 90vw; background: var(--bg);
       border: 1px solid var(--accent); border-radius: 6px; padding: 16px;
@@ -163,43 +246,81 @@ function renderIndex() {
       outline: none; font-size: 14px; }
     .modal input:focus { border-color: var(--accent); }
     .modal .hint { color: var(--dim); font-size: 12px; margin-top: 8px; }
-    #theme-picker { position: absolute; top: 8px; right: 12px; z-index: 60; }
     #theme-picker select { background: transparent; color: var(--text);
-      border: 1px solid var(--border); padding: 4px 8px; font-family: var(--font);
-      font-size: 12px; }
+      border: 1px solid var(--border); padding: 3px 8px; font-family: var(--font);
+      font-size: 12px; border-radius: 4px; }
+    #theme-picker select:focus { border-color: var(--accent); outline: none; }
+    /* Knob gear — clickable, toggles scanline for now. */
+    #knob { background: transparent; border: 1px solid var(--border);
+      border-radius: 50%; width: 22px; height: 22px; cursor: pointer;
+      color: var(--dim); font-size: 12px; line-height: 1; display: flex;
+      align-items: center; justify-content: center; }
+    #knob:hover { border-color: var(--accent); color: var(--accent); }
+    /* Inline REPL result — ghost text after the last form's closing paren
+       when Ctrl-Enter succeeded. Small, dim, italic; unobtrusive. */
+    .inline-result { color: var(--dim); font-style: italic;
+      padding-left: 8px; opacity: 0.85; }
+    /* Fuzzy / palette / grep result list — a common shape. */
+    .pick-list { max-height: 60vh; overflow-y: auto; margin-top: 12px;
+      border-top: 1px solid var(--border); padding-top: 8px; }
+    .pick-item { padding: 6px 8px; cursor: pointer; font-size: 13px;
+      color: var(--text); border-radius: 4px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; }
+    .pick-item .hint { color: var(--dim); font-size: 11px; margin-left: 12px; }
+    .pick-item.sel, .pick-item:hover { background: var(--selection); }
+    .pick-modal { width: 640px; max-width: 92vw; }
   </style>
   <link rel="stylesheet" data-name="vs/editor/editor.main"
         href="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.css">
 </head>
 <body>
-  <div id="theme-picker">
-    <select id="theme-select" title="theme">
-      ${themeOptions}
-    </select>
-  </div>
-  <div id="app">
-    <div id="tree" class="pane">
-      <div class="pane-header"><span class="title">files</span></div>
-      <ul id="tree-list"></ul>
+  <!--
+    The TV-set aesthetic: a slim header with brand + LED "Run" +
+    "Save" + a knob + theme picker. Three panes below. Status bar
+    under. One ✿ per screen — one in the header brand, one in the
+    status bar. Dorky, deliberate, not saccharine.
+  -->
+  <div id="chrome">
+    <div id="topbar">
+      <span class="brand"><span class="flower">✿</span> sakura-scheme</span>
+      <button id="run-led" title="Run buffer (Ctrl-Enter)">
+        <span class="dot"></span><span>run</span>
+      </button>
+      <button id="save-btn" title="Save (Ctrl-S)">save</button>
+      <span class="spacer"></span>
+      <span id="knob" title="settings — toggle scanlines">⚙</span>
+      <span id="theme-picker">
+        <select id="theme-select" title="theme">
+          ${themeOptions}
+        </select>
+      </span>
     </div>
-    <div id="editor-pane" class="pane">
-      <div class="pane-header">
-        <span class="title" id="file-name">[untitled]</span>
-        <span id="modified-marker" style="color: var(--accent);"></span>
+    <div id="app">
+      <div id="tree" class="pane">
+        <div class="pane-header"><span class="title">files</span></div>
+        <ul id="tree-list"></ul>
       </div>
-      <div id="editor"></div>
-      <div id="preview" style="display:none">
-        <div style="color: var(--dim); font-size: 11px; margin-bottom: 4px;">preview</div>
-        <canvas id="preview-canvas" width="256" height="256"></canvas>
+      <div id="editor-pane" class="pane focused">
+        <div class="pane-header">
+          <span class="title" id="file-name">[untitled]</span>
+          <span id="modified-marker" style="color: var(--accent);"></span>
+        </div>
+        <div id="editor"></div>
+        <div id="preview" style="display:none">
+          <div class="frame">
+            <div class="label"><span>preview</span><span>tv-01</span></div>
+            <canvas id="preview-canvas" width="256" height="256"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-    <div id="repl-pane" class="pane">
-      <div class="pane-header"><span class="title">repl</span></div>
-      <div id="repl"></div>
-      <input id="repl-input" type="text" placeholder="expr, Enter to run" spellcheck="false">
+      <div id="repl-pane" class="pane">
+        <div class="pane-header"><span class="title">repl</span></div>
+        <div id="repl"></div>
+        <input id="repl-input" type="text" placeholder="expr, Enter to run" spellcheck="false">
+      </div>
     </div>
     <div id="status">
-      <span id="status-left">web · ${default_} · verbs: — · loading…</span>
+      <span id="status-left"><span class="flower">✿</span> web · ${default_} · verbs: — · loading…</span>
       <span id="status-right">Tab: focus · Ctrl-Enter: run · Ctrl-K: ask · Ctrl-S: save</span>
     </div>
   </div>
@@ -224,6 +345,22 @@ const APP_JS = `// app.js — Sakura Scheme Web IDE frontend.
 const THEMES = window.__THEMES__;
 const DEFAULT_THEME = window.__DEFAULT_THEME__;
 
+// Theme persistence — remember last picked theme in localStorage, but
+// let a ?theme= query param override for one-off links. Small nicety;
+// no cookies, no server round-trip.
+function pickInitialTheme() {
+  try {
+    const u = new URL(window.location.href);
+    const qp = u.searchParams.get('theme');
+    if (qp && THEMES[qp]) return qp;
+  } catch {}
+  try {
+    const saved = localStorage.getItem('sakura-theme');
+    if (saved && THEMES[saved]) return saved;
+  } catch {}
+  return DEFAULT_THEME;
+}
+
 function applyTheme(name) {
   const t = THEMES[name] || THEMES[DEFAULT_THEME];
   if (!t) return;
@@ -234,9 +371,42 @@ function applyTheme(name) {
   if (window.monaco && window.__EDITOR__) {
     monaco.editor.setTheme((name === 'sakura-dark' || name === 'high-contrast') ? 'sakura-dark' : 'sakura-light');
   }
+  try { localStorage.setItem('sakura-theme', name); } catch {}
 }
-applyTheme(DEFAULT_THEME);
-document.getElementById('theme-select').addEventListener('change', e => applyTheme(e.target.value));
+const INITIAL_THEME = pickInitialTheme();
+applyTheme(INITIAL_THEME);
+{
+  const sel = document.getElementById('theme-select');
+  sel.value = INITIAL_THEME;
+  sel.addEventListener('change', e => applyTheme(e.target.value));
+}
+
+// TV-set knob — toggle scanline overlay on/off. Persisted so a
+// hacker who hates crt-effects can turn it off and it stays off.
+{
+  const knob = document.getElementById('knob');
+  const chrome = document.getElementById('chrome');
+  const noScan = (() => { try { return localStorage.getItem('sakura-no-scan') === '1'; } catch { return false; } })();
+  if (noScan) chrome.classList.add('no-scan');
+  knob.addEventListener('click', () => {
+    chrome.classList.toggle('no-scan');
+    try { localStorage.setItem('sakura-no-scan', chrome.classList.contains('no-scan') ? '1' : '0'); } catch {}
+  });
+}
+
+// Pane focus tracking + TV-click flash. Clicking a pane (or focusing
+// its input) marks it .focused and briefly .tv-flash for the channel-
+// change feel. All three panes participate.
+function setFocusedPane(paneEl) {
+  const panes = document.querySelectorAll('.pane');
+  panes.forEach(p => p.classList.remove('focused'));
+  paneEl.classList.add('focused');
+  paneEl.classList.add('tv-flash');
+  setTimeout(() => paneEl.classList.remove('tv-flash'), 140);
+}
+document.querySelectorAll('.pane').forEach(p => {
+  p.addEventListener('mousedown', () => setFocusedPane(p));
+});
 
 const worker = new Worker('/worker.js', { type: 'module' });
 const pending = new Map();
@@ -251,7 +421,11 @@ function askWorker(kind, payload) {
 worker.onmessage = (e) => {
   const { id, ok, value, error, event } = e.data;
   if (event === 'ready') {
-    document.getElementById('status-left').textContent = 'web · ' + DEFAULT_THEME + ' · verbs: ' + e.data.verbCount + ' · ready';
+    // Keep the ✿ in the status line — it was already there from the
+    // server-rendered HTML; we replace the text content so the flower
+    // needs to be re-injected.
+    const el = document.getElementById('status-left');
+    el.innerHTML = '<span class="flower">✿</span> web · ' + INITIAL_THEME + ' · verbs: ' + e.data.verbCount + ' · ready';
     return;
   }
   const p = pending.get(id);
@@ -360,15 +534,18 @@ require(['vs/editor/editor.main'], function () {
         };
       },
     });
-    document.getElementById('status-left').textContent = 'web · ' + DEFAULT_THEME + ' · verbs: ' + verbs.length + ' · ready';
+    document.getElementById('status-left').innerHTML =
+      '<span class="flower">✿</span> web · ' + INITIAL_THEME + ' · verbs: ' + verbs.length + ' · ready';
   });
 
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => runBuffer());
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => saveFile());
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => openAsk());
 
+  const runLed = document.getElementById('run-led');
   async function runBuffer() {
     const src = editor.getValue();
+    runLed.classList.add('on');
     try {
       const result = await askWorker('eval', { source: src });
       pushRepl('; run buffer', 'info');
@@ -376,8 +553,13 @@ require(['vs/editor/editor.main'], function () {
     } catch (e) {
       pushRepl('; run buffer', 'info');
       pushRepl('!! ' + e.message, 'error');
+    } finally {
+      // Small hold on the LED so a fast eval still visibly blinks.
+      setTimeout(() => runLed.classList.remove('on'), 120);
     }
   }
+  runLed.addEventListener('click', () => runBuffer());
+  document.getElementById('save-btn').addEventListener('click', () => saveFile());
 
   let fileHandle = null;
   async function saveFile() {

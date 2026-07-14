@@ -23,6 +23,11 @@ import { inspect } from './valueInspector.js'
 import { addWatch, removeWatch, listWatches } from './fileWatcher.js'
 import { saveSession, loadSession } from './session.js'
 import { detectCapabilities, pickProtocol } from './imageRouter.js'
+// NOTE (2026-07-14): a previous round scaffolded imports for command
+// modules that haven't landed yet — miniEditor, miniDisplay, funFlags,
+// tutorial. They were never called from this file. Import removal
+// unblocks the CLI; the commands themselves ship whenever those modules
+// land.
 
 /**
  * Context passed to every handler:
