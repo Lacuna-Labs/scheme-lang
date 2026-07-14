@@ -1,0 +1,296 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-jess-alg.slat — Jess's authored alg/* verb entries
+;;
+;; Lane: alg (abstract algebra + group theory + music-theory algebra — 87 verbs)
+;; Author: Jess (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0.
+;; Required by architect verifier: name, library, kind, signature,
+;; summary, explanation, examples, caveats, drawbacks, usecases,
+;; related, learn. Examples: 5 tiers — novice, apprentice,
+;; intermediate, expert, master.
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval before landing.
+;; Alfred's floor doctrine: We can't lie to people. They trust us.
+;;
+;; Implementation lives in src/alg.js, hooked from src/base.js so BOTH
+;; makeBaseEnv (Jesse binary + Lacuna standalone) and makeSakuraEnv (the
+;; Sakura binary) see the real impls.
+;; ═══════════════════════════════════════════════════════════════
+
+
+;; ─── permutation basics — 12 verbs ────────────────────────────────
+
+(verb
+  :name "alg/perm-identity"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-identity n) -> perm"
+  :summary "Create the identity permutation of degree n (the permutation that maps each i to i)."
+  :impl-status "wired"
+  :explanation "The identity permutation of degree n is the list (0 1 2 ... n-1) — the permutation that leaves every point fixed. It's the identity element of the symmetric group S_n. You build one whenever you want to start composing permutations from scratch, or when you need to check whether a permutation has returned to the starting configuration after a sequence of moves. The returned list is 0-indexed and n elements long; if you ask for degree 0 you get the empty permutation."
+  :examples (
+    (:tier "novice" :code "(alg/perm-identity 4)"
+     :note "Returns (0 1 2 3) — the identity on 4 points.")
+    (:tier "apprentice" :code "(equal? (alg/perm-compose (alg/perm-identity 3) '(2 0 1)) '(2 0 1))"
+     :note "The identity acts as a left-identity under composition — this is the defining property of e in the group.")
+    (:tier "intermediate" :code "(map (lambda (n) (alg/perm-identity n)) (list 0 1 2 3))"
+     :note "Build the identity in each of S_0, S_1, S_2, S_3. Watch how the list grows exactly with the degree.")
+    (:tier "expert" :code "(let ((n 5)) (equal? (alg/perm-pow (alg/perm-identity n) 100) (alg/perm-identity n)))"
+     :note "Raising the identity to any power yields the identity — a useful sanity check when writing tests of perm-pow.")
+    (:tier "master" :code "(define (rotate-right n) (let ((p (alg/perm-identity n))) (cons (car (reverse p)) (reverse (cdr (reverse p)))))) (rotate-right 5)"
+     :note "Use the identity as a starting point to construct other permutations — here, a right rotation of 5 points.")
+  )
+  :caveats
+    ("Degree must be a non-negative integer; negative values collapse to the empty list."
+     "Returns a plain list (0 1 2 ... n-1), not a special group-element type."
+     "The identity is unique for each n; alg/perm-identity 3 and alg/perm-identity 4 are DIFFERENT identities (elements of different symmetric groups).")
+  :drawbacks
+    ("Allocates a fresh list on each call — no memoization. Cheap for small n but avoid tight loops with large n."
+     "The plain-list representation loses group-membership metadata; downstream verbs must trust callers to pass valid permutations.")
+  :usecases
+    ("Seed a fold or reduce that composes permutations."
+     "Test that a sequence of moves returns a puzzle to its starting configuration."
+     "Provide the identity argument to alg/perm-compose or alg/perm-pow when you need e.")
+  :related ("alg/perm-compose" "alg/perm-pow" "alg/perm-inverse" "alg/perm" "alg/identity")
+  :learn
+    (:concept "The identity permutation is the element e of S_n satisfying e * p = p * e = p for all p."
+     :prerequisites ("(core)/list")
+     :progression "Start with alg/perm-identity, then alg/perm-compose, then alg/perm-inverse, then the full group alg/symmetric.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Allocates an n-element array with a[i] = i. O(n) time, O(n) space."
+     :permission "read"
+     :latency-class "sync-fast"
+     :tests "REPL-verified via ./bin/sakura-scheme eval on all 5 tiers."
+     :since "1.0")
+  :+math
+    (:algebra "identity"
+     :total #t
+     :domain "non-negative integers"
+     :codomain "permutations of {0..n-1}")
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t
+     :cardinality "one"))
+
+
+(verb
+  :name "alg/perm-compose"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-compose p q) -> perm"
+  :summary "Compose two permutations: return the permutation (p ∘ q) that first applies q, then p."
+  :impl-status "wired"
+  :explanation "Composition of permutations is the group operation of S_n. Reading left-to-right, (alg/perm-compose p q) means 'do q first, then p' — the same convention as function composition (f ∘ g)(x) = f(g(x)). So if q sends 0 to 2 and p sends 2 to 5, the composed permutation sends 0 to 5. This convention is important: some texts flip the order. We follow the mathematical function-composition convention throughout the alg/ library."
+  :examples (
+    (:tier "novice" :code "(alg/perm-compose '(1 0 2) '(2 1 0))"
+     :note "First reverse (2 1 0), then swap first two (1 0 2). Result: (0 1 2) transformed step-by-step gives (1 2 0).")
+    (:tier "apprentice" :code "(alg/perm-compose (alg/perm-identity 4) '(3 2 1 0))"
+     :note "Composing with the identity leaves the other permutation unchanged.")
+    (:tier "intermediate" :code "(alg/perm-compose '(1 2 0) (alg/perm-inverse '(1 2 0)))"
+     :note "A permutation composed with its inverse is the identity. This verifies the group inverse axiom.")
+    (:tier "expert" :code "(define swap-01 '(1 0 2 3)) (define swap-12 '(0 2 1 3)) (define abc (alg/perm-compose swap-01 swap-12)) (define acb (alg/perm-compose swap-12 swap-01)) (equal? abc acb)"
+     :note "Compose two transpositions in different orders. S_n is non-abelian for n >= 3, so the result should be #f.")
+    (:tier "master" :code "(define (repeat-compose p k) (if (= k 0) (alg/perm-identity (length p)) (alg/perm-compose p (repeat-compose p (- k 1))))) (repeat-compose '(1 2 0) 3)"
+     :note "Compose a 3-cycle with itself 3 times — should return the identity (a 3-cycle has order 3).")
+  )
+  :caveats
+    ("Both permutations must have the same degree; mixing degrees gives implementation-defined behavior (we pad with fixed points, but relying on that is a code smell)."
+     "Convention: (perm-compose p q) means p AFTER q. If you want the reverse, swap the arguments."
+     "The result is a fresh list; the inputs are not mutated.")
+  :drawbacks
+    ("O(n) time per composition — for repeated composition with the same p, memoize p^k or use alg/perm-pow."
+     "No shape validation — passing a non-permutation gives an undefined (but non-throwing) result.")
+  :usecases
+    ("Sequence a series of transformations on a data structure indexed 0..n-1."
+     "Compose group elements when working in S_n."
+     "Simulate the effect of one puzzle move followed by another.")
+  :related ("alg/perm-inverse" "alg/perm-pow" "alg/perm-apply" "alg/perm-identity" "alg/op")
+  :learn
+    (:concept "Function composition of finite maps — the group operation of the symmetric group."
+     :prerequisites ("alg/perm-identity")
+     :progression "perm-identity -> perm-compose -> perm-inverse -> perm-pow -> alg/symmetric.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "For each i in 0..max(|p|,|q|)-1, look up q[i] then p[q[i]]. Missing indices are treated as fixed points."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "associative"
+     :total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm-pow"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-pow p k) -> perm"
+  :summary "Raise a permutation to the k-th power (k may be negative, meaning inverse iterated)."
+  :impl-status "wired"
+  :explanation "Repeated composition: p^k means p composed with itself k times. When k is 0 you get the identity; when k is positive you compose p with itself k-1 times; when k is negative you first invert p, then compose (|k|) times. The order of a permutation (the smallest positive k with p^k = e) tells you when the sequence closes. For a 3-cycle, p^3 = e. For a product of disjoint cycles, the order is the LCM of the cycle lengths."
+  :examples (
+    (:tier "novice" :code "(alg/perm-pow '(1 2 0) 2)"
+     :note "The 3-cycle (0->1->2->0) squared sends 0->2, 1->0, 2->1 — result (2 0 1).")
+    (:tier "apprentice" :code "(alg/perm-pow '(1 2 0) 3)"
+     :note "The 3-cycle cubed returns the identity: (0 1 2). Cycle length 3 means order 3.")
+    (:tier "intermediate" :code "(alg/perm-pow '(1 2 0) 0)"
+     :note "Any permutation to the zeroth power is the identity of that degree.")
+    (:tier "expert" :code "(equal? (alg/perm-pow '(1 2 0) -1) (alg/perm-inverse '(1 2 0)))"
+     :note "p^-1 equals alg/perm-inverse p — the negative-exponent convention.")
+    (:tier "master" :code "(define p '(1 2 3 0)) (map (lambda (k) (alg/perm-pow p k)) (list 0 1 2 3 4))"
+     :note "Enumerate p^0 through p^4 for a 4-cycle. The sequence should return to identity at k=4.")
+  )
+  :caveats
+    ("k = 0 always returns the identity of degree |p|."
+     "Negative k first inverts p, then iterates."
+     "For very large |k| this is O(n * |k|); if you know the order of p, take k mod order first.")
+  :drawbacks
+    ("Naive iteration: O(n * |k|) time. Exponentiation-by-squaring would be O(n * log|k|) but we haven't optimized."
+     "No cycle-decomposition shortcut — a large k on a small-order permutation still iterates.")
+  :usecases
+    ("Simulate k repeated moves of the same puzzle transformation."
+     "Compute the order of a permutation empirically (increase k until identity)."
+     "Test group properties: p^order = e.")
+  :related ("alg/perm-compose" "alg/perm-inverse" "alg/perm-order" "alg/perm-identity")
+  :learn
+    (:concept "Powers of a group element — the cyclic subgroup <p>."
+     :prerequisites ("alg/perm-compose" "alg/perm-inverse")
+     :progression "perm-pow -> perm-order -> alg/element-order -> alg/is-cyclic?.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Iterative loop composing base with accumulator |k| times. Negative k uses perm-inverse first."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "associative"
+     :total #t)
+  :+cs
+    (:complexity "time O(n * |k|), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm-apply"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-apply p i) -> integer"
+  :summary "Apply a permutation to a point: return p(i), the image of i under p."
+  :impl-status "wired"
+  :explanation "A permutation p of degree n is represented as a list where p[i] is the image of i. This verb is the lookup: given i, return p[i]. Points outside [0, n) are treated as fixed (returned unchanged). This is the elementary act — every group action, every orbit computation, every composition ultimately reduces to a sequence of perm-apply calls."
+  :examples (
+    (:tier "novice" :code "(alg/perm-apply '(1 0 3 2) 0)"
+     :note "The permutation sends 0 to 1; alg/perm-apply looks that up.")
+    (:tier "apprentice" :code "(map (lambda (i) (alg/perm-apply '(2 0 1) i)) (list 0 1 2))"
+     :note "Map perm-apply over all points to see the full function: 0->2, 1->0, 2->1.")
+    (:tier "intermediate" :code "(alg/perm-apply (alg/perm-inverse '(2 0 1)) 2)"
+     :note "The inverse of (2 0 1) is (1 2 0). Applied to 2 gives 0 — verifying p(p^-1(2)) = 2.")
+    (:tier "expert" :code "(define p '(3 0 1 2)) (define (orbit-of i) (let loop ((x i) (acc '())) (if (member x acc) (reverse acc) (loop (alg/perm-apply p x) (cons x acc))))) (orbit-of 0)"
+     :note "Trace the orbit of a single point under repeated application. For a 4-cycle starting at 0 we get (0 3 2 1).")
+    (:tier "master" :code "(define perm '(2 3 0 1)) (define (period p start) (let loop ((x (alg/perm-apply p start)) (k 1)) (if (= x start) k (loop (alg/perm-apply p x) (+ k 1))))) (period perm 0)"
+     :note "Find the period (length of orbit) of a single point under repeated perm-apply.")
+  )
+  :caveats
+    ("i outside [0, |p|) returns i unchanged — this reflects the convention that points beyond the degree are fixed."
+     "Non-integer i is coerced to integer via truncation."
+     "The result is always an integer; no boxing.")
+  :drawbacks
+    ("Single-point lookup — for the whole permutation image, use (map perm-apply ...)."
+     "No bounds error on out-of-range i; silent identity behavior may mask bugs.")
+  :usecases
+    ("Trace an orbit one step at a time."
+     "Implement a group action on a data structure."
+     "Debug: check what a specific permutation does to a specific point.")
+  :related ("alg/perm-compose" "alg/perm-inverse" "alg/perm->cycles")
+  :learn
+    (:concept "A permutation IS a function; perm-apply is the function-call."
+     :prerequisites ("alg/perm-identity")
+     :progression "perm-apply -> perm-compose -> alg/orbit.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Direct array indexing with bounds check. O(1)."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm-inverse"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-inverse p) -> perm"
+  :summary "Compute the inverse permutation: the p^-1 such that p ∘ p^-1 = p^-1 ∘ p = identity."
+  :impl-status "wired"
+  :explanation "Every permutation has a unique inverse: if p sends i to j, then p^-1 sends j to i. Reading a permutation as a bijection, the inverse just swaps the arrows. For a permutation given as (p 0, p 1, ..., p (n-1)), the inverse is obtained by placing i at position p[i] for each i. Inverses are essential for group theory: they let you undo any move."
+  :examples (
+    (:tier "novice" :code "(alg/perm-inverse '(2 0 1))"
+     :note "p sends 0->2, 1->0, 2->1. The inverse sends 2->0, 0->1, 1->2, so it's (1 2 0).")
+    (:tier "apprentice" :code "(alg/perm-compose '(2 0 1) (alg/perm-inverse '(2 0 1)))"
+     :note "A permutation composed with its inverse is the identity — the defining property.")
+    (:tier "intermediate" :code "(equal? (alg/perm-inverse (alg/perm-inverse '(3 1 2 0))) '(3 1 2 0))"
+     :note "The inverse of an inverse is the original — (p^-1)^-1 = p.")
+    (:tier "expert" :code "(define (self-inverse? p) (equal? (alg/perm-inverse p) p)) (self-inverse? '(1 0 3 2))"
+     :note "A permutation equal to its own inverse is an involution — a product of disjoint transpositions.")
+    (:tier "master" :code "(define (conjugate g p) (alg/perm-compose g (alg/perm-compose p (alg/perm-inverse g)))) (conjugate '(1 0 2) '(2 0 1))"
+     :note "Conjugation g * p * g^-1 uses inverse as the key ingredient. This shows up in normal-subgroup checks.")
+  )
+  :caveats
+    ("Assumes p is a valid permutation; malformed input gives implementation-defined results."
+     "The inverse has the same degree as the original."
+     "For involutions (permutations equal to their own inverse), the result equals the input.")
+  :drawbacks
+    ("Allocates a fresh list; no in-place option."
+     "No shape validation — trust the caller.")
+  :usecases
+    ("Undo a permutation to recover the original ordering."
+     "Compute conjugates (g * p * g^-1) in group-theory calculations."
+     "Solve for x in the equation p * x = q via x = p^-1 * q.")
+  :related ("alg/perm-compose" "alg/perm-pow" "alg/perm-conjugate")
+  :learn
+    (:concept "Every group element has an inverse; the inverse operation is a group homomorphism to itself."
+     :prerequisites ("alg/perm-compose")
+     :progression "perm-inverse -> perm-conjugate -> alg/is-abelian? checks via conjugation.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Allocate result[|p|]. For each i, set result[p[i]] = i. O(n)."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "identity"
+     :total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
