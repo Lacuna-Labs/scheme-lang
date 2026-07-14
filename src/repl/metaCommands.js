@@ -81,6 +81,8 @@ function cmdHelp(ctx, args) {
     [',clear',               'clear the screen'],
     [',keys',                'show key bindings'],
     [',reset',               'reset environment'],
+    [',games',               'list shipped games'],
+    [',play <name>',         'run a shipped game inline (e.g. ,play breakout)'],
     [',exit / ,quit',        'leave the REPL'],
   ]
   for (const [cmd, doc] of rows) {

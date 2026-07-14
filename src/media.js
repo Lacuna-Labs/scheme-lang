@@ -237,18 +237,55 @@ export function registerMedia(env, fuel) {
     return undefined
   })
 
-  // ── SOUND ────────────────────────────────────────────────────────
+  // Convert a note name like "A4", "C#5", "Bb3" to a MIDI number.
+  // Returns NaN for unrecognizable input; callers should feature-test.
+  function nameToMidi(name) {
+    if (!name || typeof name !== 'string') return NaN
+    const m = name.match(/^([A-Ga-g])([#b])?(-?\d+)$/)
+    if (!m) return NaN
+    const letter = m[1].toUpperCase()
+    const accidental = m[2] || ''
+    const octave = parseInt(m[3], 10)
+    const semis = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[letter]
+    if (semis === undefined) return NaN
+    const delta = accidental === '#' ? 1 : accidental === 'b' ? -1 : 0
+    return (octave + 1) * 12 + semis + delta
+  }
 
-  // (tone freq dur) — a raw sine wave at freq Hz for dur seconds.
+  // ── SOUND ────────────────────────────────────────────────────────
+  //
+  // Verbs delegate to two backends:
+  //   1. The in-process SoundEngine — records the note-on for the media
+  //      state (for web IDE + tests that observe scheduled sounds).
+  //   2. The system audio driver — actually makes noise via afplay/aplay/
+  //      powershell. Fire-and-forget so the REPL stays responsive.
+
+  // (tone freq dur) — a sine wave at freq Hz for dur seconds. Plays.
   def('tone', (freq, dur) => {
-    return getMediaState().audio.tone(+freq, dur === undefined ? 0.25 : +dur)
+    const f = +freq
+    const d = dur === undefined ? 0.25 : +dur
+    // Fire the real audio driver in the background.
+    import('./audio-driver.js').then(m => m.playTone(f, d)).catch(() => {})
+    return getMediaState().audio.tone(f, d)
   })
 
-  // (note pitch [dur] [velocity]) — pitch is a symbol like 'A4 or 'C#4.
+  // (note pitch [dur] [velocity]) — pitch is a symbol like 'A4 or 'C#4
+  // or an integer MIDI number. Plays through the system audio driver.
   def('note', (pitch, dur, vel) => {
     const st = getMediaState()
     const p = nameOf(pitch) ?? String(pitch)
-    return st.audio.note(p, dur === undefined ? 0.25 : dur, vel === undefined ? 0.8 : +vel)
+    const d = dur === undefined ? 0.25 : +dur
+    const v = vel === undefined ? 0.8 : +vel
+    const midi = typeof pitch === 'number' ? pitch : nameToMidi(p)
+    // Fire the driver — a MIDI number is enough. Fire-and-forget.
+    if (Number.isFinite(midi)) {
+      import('./audio-driver.js').then(m => m.playNote(midi, d, v)).catch(() => {})
+    }
+    // Delegate to in-process engine for the media-state record. Numeric
+    // pitches don't parse there today; skip the engine call in that case
+    // rather than throw. The driver already played.
+    if (typeof pitch === 'number') return undefined
+    return st.audio.note(p, d, v)
   })
 
   // (sfx kind freq dur . opts) — a synthesized sound effect.
