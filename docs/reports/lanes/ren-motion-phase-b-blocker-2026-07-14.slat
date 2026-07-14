@@ -1,0 +1,92 @@
+; Ren Lane — Phase B Blocker Report
+; ---------------------------------
+; Author: Ren (Lacuna Eng Lead, motion+tick wiring lane)
+; Date:   2026-07-14 (post-audit)
+; Branch: verbs/wire-596-2026-07-14
+;
+; Alfred: "We can't lie to people. They trust us."
+;
+; This report escalates two blockers that prevent honest Phase B
+; wiring of grid/*, motion/*, cadence/plan verbs.
+
+(status
+  :phase-a "COMPLETE — 33-verb audit committed 5a5b47a and pushed."
+  :phase-b "BLOCKED — see blockers below."
+  :verbs-scoped 33
+  :verbs-wired-verified 9   ; all tick/* pure-math verbs work
+  :verbs-remaining 24        ; 23 stubs + 1 degenerate real (cadence/may-propose?)
+)
+
+; ─── Blocker 1: unstable working tree ──────────────────────────
+
+(blocker
+  :id 1
+  :severity "high"
+  :summary "The shared worktree is being modified concurrently by 15+ other lanes; CLI stability oscillates minute-by-minute."
+  :evidence (
+    "src/sakuraEnv.js imports src/game-theory.js which is untracked / not-yet-committed."
+    "src/reference-register.js imports { loadSchema, validateEntry } from src/reference-loader.js which does not export them on HEAD."
+    "src/commercial.js calls installCardVerbs/installShoppeVerbs which are undefined in the shipped commercial.js."
+    "src/sakuraEnv.js imports installWiredVerbsIP from src/wired-verbs-priya-i-p.js which is untracked."
+    "Stashes from other lane agents (marcus-hold, marcus-hold2, marcus-hold3, hiroshi-wip, sora-everything) accumulate in git stash list."
+    "./bin/sakura-scheme eval succeeds on some minutes, fails with ERR_MODULE_NOT_FOUND on others as concurrent files appear/disappear."
+  )
+  :impact "The no-lie rule requires REPL-verified examples via ./bin/sakura-scheme eval for every tier. When the CLI oscillates between working and broken based on which sibling lanes' files exist that instant, I cannot guarantee a verified commit."
+  :ask "Coordinator: stabilize the worktree — either land the concurrent lanes' half-committed changes to green or roll them back — before per-verb Phase B commits from this lane. Alternatively, provide isolated worktrees per lane."
+)
+
+; ─── Blocker 2: keyword argument syntax not implemented in interp ──
+
+(blocker
+  :id 2
+  :severity "medium"
+  :summary "The reference documents motion/move-to, motion/pocket, motion/with-feel, motion/with-pace, etc. with :kw syntax that the interp cannot evaluate."
+  :evidence (
+    "docs/SAKURA-SCHEME-REFERENCE.slat:14834 documents (motion/move-to target x y :ms duration :curve easing-name)"
+    "docs/SAKURA-SCHEME-REFERENCE.slat:14852 documents (motion/pocket :tolerance-ms tolerance :count n)"
+    "docs/SAKURA-SCHEME-REFERENCE.slat:14870 documents (motion/with-feel tensor-id :articulation style)"
+    "docs/SAKURA-SCHEME-REFERENCE.slat:14888 documents (motion/with-pace tensor-id :intensity level)"
+    "./bin/sakura-scheme eval '(define (foo . args) args) (foo :a 1 :b 2)' → 'unbound symbol: :a'"
+    "The interp treats :symbol as a variable lookup, not a self-evaluating keyword."
+    "Quoted keywords work: ':a evaluates to symbol :a. But then examples must write (motion/pocket ':tolerance-ms 16 ':count 3) which the reference does not use."
+  )
+  :impact "Cannot write Phase B examples that match the documented signature without either (a) adding keyword self-eval to interp.js (touches other lanes) or (b) rewriting the reference signatures away from :kw form."
+  :ask "Alfred / language design: decide between (a) add keyword self-eval to src/interp.js — :symbol evaluates to itself when its first char is ':'. Standard R7RS-ish extension. Or (b) rewrite the reference signatures to use positional-args-only. My preference is (a); it makes the reference internally consistent."
+  :non-blocking-if "Ren accepts approach (a) or (b) and either is landed."
+)
+
+; ─── Blocker 3: description-vs-implementation semantic mismatch for grid flowers ─
+
+(blocker
+  :id 3
+  :severity "low"
+  :summary "The reference describes grid/flower-* verbs as reading/writing a _flowers Map that exists somewhere. That store doesn't exist in the codebase yet."
+  :evidence (
+    "grep -rn '_flowers' src/  → no hits."
+    "Reference for grid/flower-spawn! says 'adds a new flower entry to the internal _flowers registry'."
+    "Reference for grid/flower-list says 'queries the internal _flowers registry'."
+    "No src/grid.js exists."
+  )
+  :impact "Wiring grid/* requires creating src/grid.js with a module-scoped _flowers Map, a pending-dots buffer, a pending-glows buffer, and a card-layout lookup. This is straightforward but not zero-work. It's the correct move; just needs to be in a fresh clean commit."
+  :ask "None — I'll create src/grid.js in Phase B wave 2 once blockers 1+2 are cleared."
+  :non-blocking-if "Blockers 1+2 clear."
+)
+
+; ─── What CAN be shipped now, honestly ────────────────────────
+
+(shippable-now
+  :note "If Alfred wants ANY progress in Phase B while blockers resolve, the following work is safely mine to do without touching the broken CLI paths:"
+  :items (
+    "Author schema-compliant :impl-status + :impl-file + :impl-notes + :ai + :commerce slices for the 10 already-wired verbs (all 9 tick/* + cadence/may-propose?). No JS changes. Reference edit only."
+    "Author :impl-status \"deferred\" slices on the 23 stubs with honest :impl-notes explaining what they'll do in Phase B and what they depend on (tensor store, card registry, motion binding registry)."
+    "These changes are additive to REFERENCE.slat at specific line ranges (2201, 13197-13410, 14722-14900, 19292-19440). Concurrent kenji-ai edits touch different lines (3928-4000 range). Low collision risk."
+  )
+  :risk "REFERENCE.slat merge conflicts if another lane pushes to the same file first. Mitigated by making narrow line-range edits and rebasing before push."
+)
+
+; ─── Recommendation ────────────────────────────────────────────
+
+(recommendation
+  :short "Wait for blocker 1 (worktree stability) before landing JS impls. Land schema-status slices for the 10 real verbs as low-risk incremental progress."
+  :long "The concurrent multi-lane push is not architecturally safe as-configured. Each lane should be in its own worktree, or the coordinator should serialize per-lane merges through a broker. Without that isolation, no lane can honestly claim REPL-verified per-verb commits — the CLI's health depends on the union of every lane's uncommitted state at that instant."
+)
