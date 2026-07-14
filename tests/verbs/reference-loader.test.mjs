@@ -2,7 +2,7 @@
 //
 // Verifies:
 //   - loader parses SAKURA-SCHEME-REFERENCE.slat cleanly
-//   - the reference reports 1,157 verbs + 70 core forms
+//   - the reference reports 1,167 verbs + 70 core forms (F1 audit 2026-07-14)
 //   - a spot-check verb entry has the expected shape
 //   - clearing the cache re-parses
 
@@ -12,7 +12,7 @@ import { loadReference, getVerbEntry, referenceMeta, clearReferenceCache } from 
 
 test('loader — parses and counts', () => {
   const ref = loadReference()
-  assert.equal(ref.verbs.size, 1160, 'expected 1,160 verbs (1,157 base + 3 cortex first-class wrappers added Round 2)')
+  assert.equal(ref.verbs.size, 1167, 'expected 1,167 verbs (F1 audit 2026-07-14 — prior 1,160 was stale)')
   assert.equal(ref.coreForms.size, 70, 'expected 70 core forms')
 })
 
@@ -32,11 +32,11 @@ test('loader — reference meta', () => {
   const m = referenceMeta()
   assert.equal(m.name, 'sakura-scheme')
   assert.equal(m.version, '1.0')
-  assert.equal(m.verbCount, 1160)
+  assert.equal(m.verbCount, 1167)
 })
 
 test('loader — clear + reload works', () => {
   clearReferenceCache()
   const ref = loadReference()
-  assert.equal(ref.verbs.size, 1160)
+  assert.equal(ref.verbs.size, 1167)
 })

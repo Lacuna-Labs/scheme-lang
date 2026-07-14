@@ -1,18 +1,19 @@
 ; Sakura Scheme Reference — CONSOLIDATED
 ; Generated 2026-07-13 from verb-help-assembled.json + SAKURA-SCHEME-1.0.REF.md
-; 1,160 verbs + 128 core language forms
+; 1,167 verbs + 70 core language forms
 ; This IS the language. Everything derives from it.
 ;
-; Round 2 (2026-07-14): +3 cortex first-class wrappers (read/write/topk)
-; teach both readers (kid + Sakura training data) about the direct
-; Scheme-facing surface of Cortex.
+; Round 2 (2026-07-14): +3 cortex first-class wrappers (read/write/topk).
+; Reconciled 2026-07-14 evening: counts corrected to 1,167 + 70 after
+; F1 audit (docs/reports/reference-count-reconciliation-2026-07-14.slat).
+; Prior header said 1,160 + 128 and metadata said 1,160 + 120 — both stale.
 
 (reference
   :name "sakura-scheme"
   :version "1.0"
   :consolidated-at "2026-07-14"
-  :verb-count 1160
-  :core-form-count 120
+  :verb-count 1167
+  :core-form-count 70
 )
 
 ; ── VERBS ──
