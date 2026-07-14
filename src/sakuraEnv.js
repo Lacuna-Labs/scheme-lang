@@ -35,6 +35,7 @@ import { installWiredVerbsHanaMath } from './wired-verbs-hana-math.js'
 import { installWiredVerbsMarcusMathC } from './wired-verbs-marcus-math-c.js'
 import { installWiredVerbsAdaAH } from './wired-verbs-ada-a-h.js'
 import { installSystem } from './system.js'
+import { installTopo } from './topo.js'
 
 /**
  * makeSakuraEnv — the full L0 → L4 stack. Returns a ready-to-eval Env.
@@ -130,6 +131,13 @@ export function makeSakuraEnv(fuel, {
   // stubs there. No hardware attached: state slots default to honest
   // empty and reads reflect that truthfully.
   installSystem(env)
+
+  // L4.45 TOPO — real topology impls (rin-topo-comb lane, 2026-07-14).
+  // Wires cheap+small tier: topo/f-vector, topo/euler-char,
+  // topo/euler-genus, topo/graph, topo/complex, topo/components,
+  // topo/connected?, topo/ball, topo/close. Runs BEFORE installWiredVerbs
+  // so our real impls win over the descriptor stubs there.
+  installTopo(env, fuel)
 
   // L4.5 WIRED — additional impls that close the reference→env gap.
   // Runs BEFORE the reference registrar so its stub pass sees these

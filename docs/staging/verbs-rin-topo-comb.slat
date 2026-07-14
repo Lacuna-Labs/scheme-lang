@@ -872,3 +872,222 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Stirling number of the second kind. Recurrence S(n,k)=k·S(n-1,k)+S(n-1,k-1). Boundary bug: S(0,0) returns 0 (should be 1) — documented."))
+
+;; ══════════════════════════════════════════════════════════════════
+;; topo/* — TOPOLOGY
+;; ══════════════════════════════════════════════════════════════════
+;;
+;; Canonical representations (locked by Rin, 2026-07-14; Alfred's
+;; open-question #2 defaulted to option (a)):
+;;
+;;   Simplicial complex = list of MAXIMAL simplices.
+;;     Triangle:            ((a b c))
+;;     Tetrahedron:         ((a b c d))
+;;     Hollow tetrahedron:  ((a b c) (a b d) (a c d) (b c d))  ; 2-sphere
+;;
+;;   Graph = list of undirected edges.
+;;     3-cycle:  ((a b) (b c) (c a))
+;;
+;;   Vertex labels are normalized to STRINGS internally and returned
+;;   as strings. To keep symbol identity, callers can wrap results
+;;   with `string->symbol` or compare using string=?.
+;;
+;; ══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "topo/f-vector"
+  :library "topo"
+  :signature "(topo/f-vector complex-or-faces) -> list-of-integer"
+  :summary "Return the f-vector (f_0 f_1 f_2 …) counting simplices at each dimension. f_k = number of k-dimensional faces."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/f-vector '((a b c)))"
+     :note "Returns (3 3 1): a triangle has 3 vertices (f_0=3), 3 edges (f_1=3), and 1 face (f_2=1).")
+    (:tier "apprentice"
+     :code "(topo/f-vector '((a b c d)))"
+     :note "Returns (4 6 4 1): a solid tetrahedron has 4 vertices, 6 edges, 4 triangular faces, and 1 solid cell (f_3=1).")
+    (:tier "intermediate"
+     :code "(topo/f-vector '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns (4 6 4): a HOLLOW tetrahedron (just its boundary, four triangles glued into a topological 2-sphere) has 4 vertices, 6 edges, 4 faces — but no 3-cell.")
+    (:tier "expert"
+     :code "(topo/f-vector '((a b) (b c) (c d)))"
+     :note "Returns (4 3): a path graph — 4 vertices, 3 edges, no 2-cells. Works for 1-dim complexes (graphs) too; missing higher-dim entries mean f_k = 0 for that k.")
+    (:tier "master"
+     :code "(let ((tet (topo/f-vector '((a b c d)))))\n  (list ':f0 (list-ref tet 0)\n        ':f1 (list-ref tet 1)\n        ':f2 (list-ref tet 2)\n        ':f3 (list-ref tet 3)))"
+     :note "Named-access to individual entries via list-ref. Returns (:f0 4 :f1 6 :f2 4 :f3 1). Foundation for Euler characteristic: chi = f_0 - f_1 + f_2 - f_3 + ... which for a tetrahedron gives 4 - 6 + 4 - 1 = 1."))
+
+  :related ("topo/euler-char" "topo/euler-genus" "topo/complex")
+  :caveats ("Input is a list of MAXIMAL simplices; the face lattice is generated internally (all subsets of each maximal face)." "Vertex labels are normalized to strings; sym-input works but sym-output is not preserved." "Result length equals max-dim + 1; a graph produces a length-2 list.")
+  :drawbacks ("Face-lattice enumeration is O(2^d) per maximal simplex of dimension d — safe for d ≤ 15 or so, blows up for very high-dim." "Does not detect ill-formed inputs (repeated vertices in a simplex, empty faces) — assume clean data.")
+  :usecases ("Compute Euler characteristic from the vector." "Verify simplicial-complex construction: does the vertex/edge/face count match your intent?" "Study f-vector inequalities in polytope theory.")
+  :learn (:concept "The f-vector is the raw combinatorial fingerprint of a simplicial complex. Everything else (Euler char, Betti numbers) is a derivative." :prerequisites ("comb/choose") :progression "Follow with topo/euler-char (sum with alternating signs) and topo/complex (constructor).")
+
+  :+math
+    (:algebra "f_k = number of k-simplices (i.e., (k+1)-vertex faces) in the complex. Related to Betti numbers via Euler-Poincare: sum (-1)^k f_k = sum (-1)^k b_k."
+     :total #t
+     :domain "list of maximal simplices, or a ('complex ...) tagged value"
+     :codomain "list of non-negative integers, length = max-dim + 1"
+     :proofs "Faces are subsets; the face lattice of a set of maximal simplices is the union of the power sets. Counting by size gives the f-vector.")
+
+  :+cs
+    (:complexity "Time O(sum_i 2^(d_i)) where d_i is the size of the i-th maximal simplex. Space same. For a d-dim complex with n maximal faces of size ~d, this is O(n * 2^d)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Generates the face lattice by enumerating non-empty subsets of each maximal simplex via bitmask (masks 1..2^n-1). Dedupes shared faces by canonical (sorted) key. Counts by dimension."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle=(3 3 1), tet=(4 6 4 1), hollow-tet=(4 6 4), path-graph=(4 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/euler-char" "list-ref" "apply")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing a list of ALL faces (subsets) rather than just the MAXIMAL ones — result will over-count. Pass only the top-dim faces you want in the complex."
+     :when-not-to-use "You want the Betti numbers directly — use topo/betti. You want to iterate over faces themselves, not just count them — use topo/close on the maximal set.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "f-vector: count of k-simplices for each k. Foundation for Euler characteristic and Betti numbers."))
+
+(verb
+  :name "topo/euler-char"
+  :library "topo"
+  :signature "(topo/euler-char complex-or-faces) -> integer"
+  :summary "Euler characteristic chi = sum_k (-1)^k f_k: the alternating-signed sum of the f-vector."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/euler-char '((a b c)))"
+     :note "Returns 1: triangle has f-vector (3 3 1), chi = 3 - 3 + 1 = 1. A filled triangle is contractible (homotopic to a point) so chi = 1.")
+    (:tier "apprentice"
+     :code "(topo/euler-char '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns 2: HOLLOW tetrahedron (four triangles forming a 2-sphere). Sphere has chi = 2; any triangulation gives the same answer. This is Euler's polyhedron formula V - E + F = 2.")
+    (:tier "intermediate"
+     :code "(topo/euler-char '((a b c d)))"
+     :note "Returns 1: SOLID tetrahedron. f-vector (4 6 4 1), chi = 4 - 6 + 4 - 1 = 1. A solid 3-ball is contractible.")
+    (:tier "expert"
+     :code "(topo/euler-char '((a b c) (a c d)))"
+     :note "Returns 1: two triangles sharing an edge (a disk-like 2-complex). f-vector (4 5 2), chi = 4 - 5 + 2 = 1. Any disk-like shape is contractible; chi = 1.")
+    (:tier "master"
+     :code "(define (classify-closed-surface faces)\n  (let ((chi (topo/euler-char faces)))\n    (cond ((= chi 2) 'sphere)\n          ((= chi 0) 'torus-or-klein-bottle)\n          ((< chi 0) (list 'genus (/ (- 2 chi) 2)))\n          (else 'not-closed-surface))))\n(list ':sphere (classify-closed-surface '((a b c) (a b d) (a c d) (b c d)))\n      ':disk   (classify-closed-surface '((a b c) (a c d))))"
+     :note "Domain: given a triangulated surface, guess its topological type from chi. Returns (:sphere sphere :disk not-closed-surface). The disk has chi = 1, doesn't match any closed-surface template — the classifier honestly reports 'not-closed-surface. This is Euler-based classification."))
+
+  :related ("topo/f-vector" "topo/euler-genus" "topo/betti" "topo/complex")
+  :caveats ("Only meaningful for simplicial complexes. Doesn't distinguish between manifolds and non-manifolds — chi is a topological invariant, not a geometric one." "Empty complex has chi = 0.")
+  :drawbacks ("Cannot infer more than chi; use topo/betti or topo/homology-gf2 for finer information." "Requires a well-formed complex — repeated maximal faces are silently deduped by the face-lattice generator.")
+  :usecases ("Euler's polyhedron formula V - E + F = 2 for convex polyhedra." "Quick topology-type checks for surfaces (sphere = 2, torus = 0, orientable genus g surface = 2 - 2g)." "Verifying triangulations preserve topology after mesh operations.")
+  :learn (:concept "Euler characteristic is the simplest topological invariant — the alternating sum of face counts. Robust under homotopy: any two homotopic complexes have the same chi." :prerequisites ("topo/f-vector") :progression "Once chi is second nature, learn topo/euler-genus for the genus formula g = (2 - chi)/2, then topo/betti for the full Betti-number vector.")
+
+  :+math
+    (:algebra "chi = sum_k (-1)^k f_k. Alternating-sum identity: chi = sum_k (-1)^k b_k where b_k are Betti numbers (Euler-Poincare). Homotopy invariant."
+     :total #t
+     :domain "list of maximal simplices, or a ('complex ...) tagged value"
+     :codomain "integer (may be negative for high-genus surfaces)"
+     :proofs "By induction on the face-lattice construction; each face contributes +1 or -1 depending on parity of its dimension.")
+
+  :+cs
+    (:complexity "Same as topo/f-vector — O(sum 2^d_i)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Computes f-vector via face-lattice enumeration, then folds with alternating signs. One-pass over the resulting f-vector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle=1, hollow-tet=2 (sphere), solid-tet=1, two-triangles-shared-edge=1."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/euler-genus" "topo/betti")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming chi tells you 'the shape' — it only tells you a topological invariant; the sphere and the projective plane both have chi = 2 and 1 respectively, but chi = 0 covers BOTH the torus AND the Klein bottle."
+     :when-not-to-use "You need the Betti numbers or the homology groups — use topo/betti. You need geometric info (curvature, distance) — this is topology, not geometry.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Euler characteristic — alternating-sum of f-vector. Robust topological invariant."))
+
+(verb
+  :name "topo/euler-genus"
+  :library "topo"
+  :signature "(topo/euler-genus complex-or-faces) -> number"
+  :summary "Genus g of a closed ORIENTABLE surface, via g = (2 - chi) / 2. Returns non-integer if the complex is not a closed orientable surface."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/euler-genus '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns 0: the boundary of a tetrahedron is a topological 2-sphere. Genus 0 = sphere.")
+    (:tier "apprentice"
+     :code "(topo/euler-genus '((a b c)))"
+     :note "Returns 1/2: a triangle is not a closed surface. The non-integer result honestly signals 'not a closed orientable surface — this formula does not apply here'.")
+    (:tier "intermediate"
+     :code "(topo/euler-genus '((a b c) (a c d)))"
+     :note "Returns 1/2: two triangles sharing an edge form a disk-like patch, not a closed surface. Same honest signal: non-integer genus means the formula doesn't apply.")
+    (:tier "expert"
+     :code "(define (surface-info faces)\n  (let ((chi (topo/euler-char faces)))\n    (list ':euler-char chi\n          ':orientable-genus (topo/euler-genus faces))))\n(list ':sphere (surface-info '((a b c) (a b d) (a c d) (b c d)))\n      ':disk   (surface-info '((a b c) (a c d))))"
+     :note "Report both chi and the derived genus for two complexes. Returns (:sphere (:euler-char 2 :orientable-genus 0) :disk (:euler-char 1 :orientable-genus 1/2)). The disk's fractional genus honestly signals 'not applicable'.")
+    (:tier "master"
+     :code "(define (guess-closed-orientable-surface faces)\n  (let ((g (topo/euler-genus faces)))\n    (cond ((not (integer? g)) 'not-closed-surface)\n          ((= g 0) 'sphere)\n          ((= g 1) 'torus)\n          ((> g 1) (list 'orientable-genus g)))))\n(list ':sphere (guess-closed-orientable-surface '((a b c) (a b d) (a c d) (b c d)))\n      ':disk   (guess-closed-orientable-surface '((a b c) (a c d))))"
+     :note "Domain: classify a triangulated surface by its orientable genus. Returns (:sphere sphere :disk not-closed-surface). Uses integer? to guard against the fractional 'not-applicable' signal. Kids learn: numbers CAN carry a 'not applicable' meaning honestly."))
+
+  :related ("topo/euler-char" "topo/f-vector" "topo/orientable?")
+  :caveats ("The formula g = (2 - chi) / 2 applies ONLY to CLOSED ORIENTABLE surfaces. For non-closed or non-orientable surfaces the result is meaningless — often non-integer, which the impl returns as a real number (fractional genus)." "Does NOT check orientability; caller should combine with topo/orientable? for a full classifier." "For non-orientable surfaces (Klein bottle, projective plane), use the non-orientable genus formula k = 2 - chi instead.")
+  :drawbacks ("Silent when misapplied — returns a possibly-fractional number instead of raising. Callers must integer-check the result." "Does not distinguish sphere (g=0) from other chi=2 spaces like the projective plane (chi=1 but non-orientable, RP^2).")
+  :usecases ("Topology-type prediction for triangulated closed orientable surfaces." "Handle-counting in surface classification." "Sanity-check surface reconstructions from mesh operations.")
+  :learn (:concept "Euler-genus formula. For a closed orientable surface, chi = 2 - 2g uniquely determines g. Non-integer result = formula does not apply." :prerequisites ("topo/euler-char") :progression "Follow with topo/orientable? for the orientability check, then combine both for a complete closed-surface classifier.")
+
+  :+math
+    (:algebra "For closed orientable surface: chi = 2 - 2g, so g = (2 - chi) / 2. For non-orientable (crosscap): chi = 2 - k, so k = 2 - chi (non-orientable genus)."
+     :total #t
+     :domain "list of maximal simplices, or a ('complex ...) tagged value"
+     :codomain "rational number (integer for actual closed orientable surfaces)"
+     :proofs "From the classification of closed surfaces: every closed orientable 2-manifold is a sphere with g handles, and each handle drops chi by 2.")
+
+  :+cs
+    (:complexity "Same as topo/euler-char — one f-vector computation plus a subtraction and a divide."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Delegates to eulerChar then applies (2 - chi) / 2. Deliberately returns a JS number (may be non-integer)."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 2-sphere (hollow tet)=0, triangle=1/2, two-triangles=1/2. Fractional results honestly signal non-closed-surface."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/orientable?" "integer?")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the returned genus is meaningful for any complex — it's only meaningful for closed orientable surfaces. Always integer-check the result before using it as a handle count."
+     :when-not-to-use "The complex isn't a closed surface (integer-check will save you). Non-orientable case (projective plane, Klein bottle) — this formula doesn't apply.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Orientable-surface genus via g = (2 - chi) / 2. Returns fractional if not a closed orientable surface — honest 'not applicable' signal."))
