@@ -572,3 +572,70 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Set global gain. Small side effect: records intent in cortex. [ok info] return."))
+
+(verb
+  :name "audio/spectrum"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/spectrum) -> [number ...] | descriptor"
+  :summary "Read the current FFT band values from the live analyser; a snapshot list of amplitudes per band."
+  :impl-status "wired-descriptor"
+  :explanation "audio/spectrum returns the current FFT (fast Fourier transform) band values from the live audio analyser — a flat list of numbers, one per frequency band, each in some analyser-normalised range. Under a live host it's the material for visualisers, EQ meters, and music-reactive animations. In the standalone REPL there is no live analyser, so the verb returns the descriptor ('audio/spectrum). Callers should check with `pair?` and treat the descriptor as an empty spectrum. audio/listen must have returned 'ok under a live host before spectrum values are meaningful."
+  :examples (
+    (:tier "novice"
+     :code "(audio/spectrum)"
+     :note "Snapshot the current FFT. In REPL: returns (\"audio/spectrum\"), a descriptor; under a live host: a list of numbers.")
+    (:tier "apprentice"
+     :code "(let ((s (audio/spectrum))) (if (pair? s) (quote descriptor) (length s)))"
+     :note "Guard on shape: descriptor vs live list. Returns 'descriptor in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/spectrum)) (list 1 2))"
+     :note "Poll twice. Safe to call every frame — the verb is read-only. Returns two descriptor copies in REPL.")
+    (:tier "expert"
+     :code "(define (draw-bars s) (if (pair? s) (list (quote no-spectrum-in-repl)) (map (lambda (b) (* b 10)) s))) (draw-bars (audio/spectrum))"
+     :note "A safe consumer: if the spectrum is a descriptor, fall through with a marker; otherwise scale each band. Returns (no-spectrum-in-repl) here.")
+    (:tier "master"
+     :code "(let loop ((n 0) (acc (list))) (if (>= n 3) (list (quote polled) (length acc) (quote times)) (loop (+ n 1) (cons (audio/spectrum) acc))))"
+     :note "Poll three times and accumulate the snapshots — the shape of a rolling-history buffer for a visualiser. Returns (polled 3 times).")
+  )
+  :caveats
+    ("Requires audio/listen == 'ok under a live host; without it, the spectrum is either descriptor or all-zero."
+     "Band count is analyser-configured; do not hardcode a length."
+     "Values are normalised by the analyser; ranges vary across hosts.")
+  :drawbacks
+    ("Read-only snapshot; you cannot request specific bands or windows."
+     "No smoothing built in; consecutive snapshots may jitter — apply your own low-pass.")
+  :usecases
+    ("Drive a bar-graph visualiser."
+     "Compute band energy for a music-reactive effect."
+     "Detect specific frequency-range activity (e.g. bass hits).")
+  :related ("audio/listen" "audio/onset?" "audio/onset-strength" "audio/tempo" "audio/key")
+  :learn
+    (:concept "Frame-rate reading of live FFT data; how to consume a variable-shape return safely."
+     :prerequisites ("audio/listen" "(core)/pair?")
+     :progression "Read audio/spectrum once. Then poll. Then smooth. Then build a visualiser.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/spectrum) descriptor in REPL. Host overrides with a real Web Audio AnalyserNode.getByteFrequencyData reader."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/spectrum); apprentice='descriptor; intermediate=(2 copies); expert=(no-spectrum-in-repl); master=(polled 3 times)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/onset?" "audio/lufs")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Hardcoding a band count. Skipping audio/listen and expecting real values."
+     :when-not-to-use "You need a single loudness number — use audio/lufs. You need an event trigger — use audio/onset?.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "FFT band snapshot. Live: list of numbers. REPL: descriptor."))
