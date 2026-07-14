@@ -2244,4 +2244,98 @@ export function installReferenceImpls(env, fuel) {
   def('apply-markdown',  (s) => String(s))
   def('arc-between',     (a, b) => descriptor('arc-between', a, b))
   def('analog-pad',      (id) => descriptor('analog-pad', id))
+
+  // ── Book-of-Motion entity/* aliases ────────────────────────────────
+  // Books teach entity/velocity! (in Motion NN- series) but the
+  // canonical wired verb is entity/set-velocity! (in game.js). Wire
+  // aliases so both spellings work; the games engine handles the
+  // real state. If the games engine isn't installed, they degrade to
+  // descriptors so the books still teach their vocabulary.
+  const _wrap = (aliasName, targetName, fallbackArity = 3) => {
+    def(aliasName, (...args) => {
+      let target = null
+      try { target = env.get(targetName) } catch { /* ignore */ }
+      if (target && typeof target === 'function') return target(...args)
+      return descriptor(aliasName, ...args)
+    })
+  }
+  _wrap('entity/velocity!', 'entity/set-velocity!')
+  _wrap('entity/set-vel!',  'entity/set-velocity!')
+  // Motion effect verbs — descriptors until the animation engine wires them
+  ;['entity/embodiment!', 'entity/lag!', 'entity/drift!',
+    'entity/spring!', 'entity/ease!', 'entity/squash!',
+    'entity/glide!', 'entity/hop!', 'entity/spin!', 'entity/sway!',
+    'entity/scatter!', 'entity/curve!', 'entity/march!', 'entity/toss!',
+    'entity/settle!', 'entity/slide!', 'entity/glide-to!',
+  ].forEach(name => def(name, (...a) => descriptor(name, ...a)))
+
+  // ── Book-of-Marionette + Book-of-Motion: canonical world/spawn ──
+  // The reference declares (world/spawn kind x y [w] [h]) -> id.
+  // If the game engine has entity/make, delegate to it.
+  def('world/spawn', (kind, x, y, w, h) => {
+    let make = null
+    try { make = env.get('entity/make') } catch { /* ignore */ }
+    if (make && typeof make === 'function') {
+      // Generate an id from a monotonic counter — books use ids as
+      // identifiers, not as position lookups.
+      if (!globalThis.__sakura_world_spawn_id__) {
+        globalThis.__sakura_world_spawn_id__ = 0
+      }
+      const id = `world-${++globalThis.__sakura_world_spawn_id__}`
+      make(id, Number(x) || 0, Number(y) || 0,
+           Number(w) || 16, Number(h) || 16)
+      return id
+    }
+    return descriptor('world/spawn', kind, x, y, w, h)
+  })
+
+  // ── Book-of-Sound audio surface (declared, delegated to media.js) ──
+  const _envHas = (name) => {
+    try { return typeof env.get(name) === 'function' } catch { return false }
+  }
+  ;['tone', 'noise', 'add-formant',
+    'transport/play', 'transport/loop', 'transport/pause', 'transport/stop',
+    'speech/say', 'speech/listen', 'surface/pad',
+    'note/strike', 'play/note', 'play/chord', 'play/articulation!',
+    'play/dynamics!', 'synth/pedal!', 'synth/bow!', 'synth/breath!',
+    'synth/damp!', 'synth/ensemble!',
+  ].forEach(name => {
+    // Only define if not already wired by media.js/sound.js
+    if (!_envHas(name)) {
+      def(name, (...a) => descriptor(name, ...a))
+    }
+  })
+
+  // ── Book-of-Money helpers ─────────────────────────────────────────
+  // money/friendly formats a typed-currency (list 'USD cents) as a
+  // human-readable string. Books use this pervasively; wire real impl.
+  def('money/friendly', (m) => {
+    // m is a typed currency list: either (money amt cur) old-style or
+    // (cur cents) new-style. Handle both.
+    if (!Array.isArray(m)) return String(m)
+    if (m.length === 2) {
+      const [cur, cents] = m
+      const curName = cur?.name ?? cur
+      const dollars = (Number(cents) / 100).toFixed(2)
+      const symbol = { USD: '$', EUR: '€', GBP: '£', JPY: '¥' }[curName] || ''
+      return symbol ? `${symbol}${dollars} ${curName}` : `${dollars} ${curName}`
+    }
+    if (m.length === 3 && (m[0]?.name === 'money' || m[0] === 'money')) {
+      const [_, amt, cur] = m
+      const curName = cur?.name ?? cur
+      return `${amt} ${curName}`
+    }
+    return String(m)
+  })
+
+  // stock/on-hand — books use as first-class; delegate to cortex or descriptor
+  def('stock/on-hand', (sku) => {
+    let recall = null
+    try { recall = env.get('cortex/recall') } catch { /* ignore */ }
+    if (recall && typeof recall === 'function') {
+      const r = recall(`stock/on-hand/${sku?.name ?? sku}`)
+      if (typeof r === 'number') return r
+    }
+    return descriptor('stock/on-hand', sku)
+  })
 }
