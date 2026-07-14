@@ -56,8 +56,8 @@
      :code "(list (juggle/valid? '(5 3 1)) (juggle/valid? '(2 2)) (juggle/valid? '(4 4 1)))"
      :note "Returns (#t #t #t). Three valid patterns of three different periods. (5 3 1) is a classic 3-ball, (2 2) is a 2-ball, (4 4 1) is a 3-ball with distinct throw heights.")
     (:tier "expert"
-     :code "(list (juggle/valid? '(2 1)) (juggle/valid? '(3 1)) (juggle/valid? '()))"
-     :note "Returns (#f #f #f). (2 1): landings both 1 — collision. (3 1): landings both 0 — collision. Empty list: invalid by convention.")
+     :code "(list (juggle/valid? '(2 1)) (juggle/valid? '(2 2 2 1)) (juggle/valid? '()))"
+     :note "Returns (#f #f #f). (2 1): landings both 1 — collision. (2 2 2 1): landings (0+2)%4=2, (1+2)%4=3, (2+2)%4=0, (3+1)%4=0 — beats 2 and 3 collide at slot 0. Empty list: invalid by convention.")
     (:tier "master"
      :code "(define (safe-count-balls p) (if (juggle/valid? p) (juggle/balls p) 'invalid))\n(list (safe-count-balls '(5 3 1)) (safe-count-balls '(2 1)) (safe-count-balls '(4 4 1)))"
      :note "Returns (3 invalid 3). Real siteswap-safe pipeline: validate first, then derive. This is the guard-and-consume idiom used everywhere in the juggling library.")
@@ -647,7 +647,7 @@
      :note "Returns \"establishing\". Establishing pulls back to see the whole grove — no subject needed.")
     (:tier "apprentice"
      :code "(let ((s (cine/shot 'establishing))) (list (obj-get s 'name) (obj-get s 'subject)))"
-     :note "Returns (\"establishing\" #<null>). Subject is null on subjectless shots.")
+     :note "Returns (\"establishing\" #f). Subject is null on subjectless shots (obj-get returns #f for a null-valued field).")
     (:tier "intermediate"
      :code "(begin (entity/make 'p1 100 200) (obj-get (cine/shot 'medium 'p1) 'center))"
      :note "Returns (108 208). Medium shot centers on p1; the shot-data record carries the aabb center of the subject.")
