@@ -1,0 +1,115 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; zain-ops audit — Phase A
+;; Lane: ops/* (operations research primitives)
+;; Author: Zain (Lacuna Eng Lead — ops lane)
+;; Date: 2026-07-14
+;;
+;; Alfred's floor doctrine — every stamp MUST correspond to a REAL REPL
+;; run that succeeded. No auto-stubs. No hallucinated behavior. If a verb
+;; cannot be honestly wired + verified, its entry ships with
+;;   :entry-provenance "author-blocked"
+;; and a plain-English reason. We do not lie.
+;;
+;; Composition with kid-from-North-Georgia doctrine:
+;;   ops/ is the "how the world actually schedules itself" library. A
+;;   kid opening ops/dijkstra should get a real shortest-path algorithm
+;;   he can pull apart, not a descriptor stub that lies about being
+;;   implemented. Same for the operator running (ops/eoq) to size an
+;;   order for their consignment shop — the number returned had better
+;;   BE the economic order quantity, or the kid learns the tool lies.
+;; ─────────────────────────────────────────────────────────────────────
+
+(audit
+  :lane "ops"
+  :author "zain"
+  :dated "2026-07-14"
+  :verbs-total 35
+  :verbs-stubbed 35
+  :verbs-wired 0
+  :note "All 35 ops/ verbs are stubs. The 'other' ops/* set (ops/apply, ops/audit, etc.) lives under a different namespace and is NOT part of this lane — those are runtime-dispatch descriptors in reference-impls.js and belong to a different lane."
+
+  :categories (
+    ;; ── CHEAP: closed-form formulas, direct arithmetic ────────────
+    (:tier "cheap"
+     :count 18
+     :verbs (
+       "ops/eoq"                    ; √(2DK/h) — one-liner
+       "ops/inventory-cost"         ; K·D/Q + h·Q/2
+       "ops/littles-law"            ; λ·W
+       "ops/reorder-point"          ; μ·L + safety
+       "ops/safety-stock"           ; z·σ·√L
+       "ops/mm1"                    ; ρ, L, Lq, W, Wq — closed form
+       "ops/mmc"                    ; Erlang-C plus derived means
+       "ops/mmc-servers-for"        ; scan c = 1..N; call mmc
+       "ops/erlang-b"               ; recursive iteration on c
+       "ops/erlang-c"               ; from Erlang-B
+       "ops/newsvendor-fractile"    ; (p−c)/(p−s)
+       "ops/newsvendor"             ; fractile + normal-inverse
+       "ops/assign-cost"            ; Σ cost[i, assign[i]]
+       "ops/lp"                     ; artifact constructor (no solve)
+       "ops/lp-value"               ; c·x
+       "ops/spt"                    ; sort by processing time
+       "ops/edd"                    ; sort by due date
+       "ops/sequence-metrics"       ; makespan, flow, lateness on a schedule
+     )
+     :note "One-file JS: closed-form or trivial sort/reduce. Verify in REPL immediately.")
+
+    ;; ── MEDIUM: well-known algorithms, moderate complexity ────────
+    (:tier "medium"
+     :count 14
+     :verbs (
+       "ops/dijkstra"               ; O((n+m) log n) with binary heap or O(n²) simple
+       "ops/bellman-ford"           ; n·m relaxation
+       "ops/max-flow"               ; Edmonds–Karp on residual graph
+       "ops/markov"                 ; validate + normalize transition matrix
+       "ops/markov-step"            ; πₖ = π · Pᵏ
+       "ops/stationary"             ; power iteration on P
+       "ops/absorbing-probs"        ; (I−Q)⁻¹ · R
+       "ops/absorbing-steps"        ; N·1 (row sums of fundamental matrix)
+       "ops/johnson"                ; Johnson's rule two-machine flow shop
+       "ops/knapsack"               ; DP O(n·W)
+       "ops/pagerank"               ; power iteration with damping
+       "ops/assign"                 ; Hungarian algorithm O(n³)
+       "ops/simplex"                ; simplex on standard form
+       "ops/lp-solve"               ; wraps ops/lp + ops/simplex
+     )
+     :note "Real algorithms — must run correctly on the reference examples. Matrix inversion (absorbing-probs) uses linalg/inverse from base env; verify linalg exists.")
+
+    ;; ── EXPENSIVE: heavy solvers, escalation-permitted ────────────
+    (:tier "expensive"
+     :count 3
+     :verbs (
+       "ops/interior-point"         ; per reference: may escalate 'use-backend
+       "ops/mip-solve"              ; branch-and-cut on integer variables
+       "ops/branch-bound"           ; generic branch-and-bound
+     )
+     :note "Reference explicitly allows :escalates on these. We implement a REAL solver for small instances (verifiable in REPL) and honestly escalate 'use-backend for problems above a size threshold. NOT a lie — the entry documents the threshold. Examples in the reference are small enough that the in-language solver returns real values.")
+
+    ;; ── DEFERRED: none this lane ──────────────────────────────────
+    (:tier "deferred"
+     :count 0
+     :verbs ()
+     :note "Every ops/ verb has a well-defined mathematical spec. None are author-blocked. If wiring surfaces a spec ambiguity in the reference we will flag :entry-provenance \"spec-ambiguous\" per that verb; not expected on these 35."))
+
+  :risks (
+    "matrix/make + matrix/ref: examples in the reference use these. Verify they exist in base env before referencing them in 5-tier examples. If they are themselves stubs, fall back to (list (list ...)) row-of-rows and note in :caveats."
+    "linalg/inverse: needed for absorbing-probs. If not in base env we implement a small Gauss–Jordan in ops.js for the internal path — no user-facing verb added."
+    "The reference already ships 3-tier examples for many ops verbs. Our 5-tier upgrade will PRESERVE the existing novice/intermediate/expert examples where they are correct and REPL-verified, and ADD apprentice + master. If an existing example calls a stub we cannot yet verify, we replace it with a runnable variant and note in :caveats."
+    "kind is 'meta' on most ops verbs. In the new schema this may need to change to 'pure' (deterministic math) vs 'gated' (may escalate to backend). Await schema."
+    "erlang-b/erlang-c: two conventions exist for :intensity (offered load a = λ/μ vs erlangs = λ·h). Reference is ambiguous — we will use a = λ/μ (dimensionless) and document choice in :caveats. If Alfred prefers the other convention we flip; not a lie either way."
+  )
+
+  :plan (
+    "1. Wait for docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat on branch (Ada landing)."
+    "2. Create src/ops.js. All 35 verbs live here; base.js registers them via a single import + install call in sakuraEnv.js (peer-pattern to ai.js / commercial.js)."
+    "3. Wire CHEAP tier first (18 verbs). REPL-verify each of the 5 example tiers per verb."
+    "4. Wire MEDIUM tier (14). Real algorithms, matrix helpers if needed."
+    "5. Wire EXPENSIVE tier (3). Small-instance real solver + honest 'use-backend escalation with documented threshold."
+    "6. Author 5-tier examples in docs/staging/verbs-zain-ops.slat per schema. Ship."
+    "7. Commit per verb. Push per verb. Update stamps file if that is the convention set by Architect."
+  )
+
+  :permission-notes (
+    "ops/ verbs are computationally pure — no I/O, no network, no cortex mutation. :permission 'read is correct for all 35. :cortex-touch 'none."
+    "The EXPENSIVE tier verbs are :fuel-hungry — long solve times permitted. If the schema has a :fuel-class field we tag them 'high, others 'low."
+  ))
