@@ -18493,13 +18493,18 @@
   :name "stat/count"
   :library "stat"
   :kind "meta"
-  :signature "(stat/count data) -> integer-or-nan"
-  :summary "Return the number of data points in the list; empty list → 0; non-numeric elements → 'nan."
-  :explanation "Count is the simplest descriptive statistic: how many observations do you have? An empty list has count 0. If the list contains non-numeric elements (strings, symbols, etc.), the verb returns the sentinel 'nan to signal that the data cannot be counted as a numeric sample. The mental model: count is the sample size n, which appears in nearly every other statistical computation (mean, variance, etc.)."
+  :signature "(stat/count data) -> integer"
+  :summary "Return the number of data points in the list."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Direct .length lookup on the underlying list. Non-list inputs return 0 (not 'nan as older docs promised — the impl is more permissive). Empty list gives 0."
+  :explanation "Count is the simplest descriptive statistic: how many observations do you have? Empty list -> 0. Count is the sample size n, which appears in nearly every other statistical computation."
   :examples (
-    (:tier "novice" :code "(stat/count (list 10 20 30))\n;; => 3\n;; three data points" :note "Simplest case: three numbers.")
-    (:tier "intermediate" :code "(let ((data (list 1.5 2.0 3.5 4.0)))\n  (let ((n (stat/count data))\n        (avg (stat/mean data)))\n    (display (list \"n =\" n \"mean =\" avg))))\n;; => (\"n = 4 mean = 2.75\")\n;; Use count to understand the sample size before computing the mean." :note "Chain count with other stats to understand the data shape.")
-    (:tier "expert" :code "(define (validate-and-summarize raw-data)\n  (let ((n (stat/count raw-data)))\n    (cond ((equal? n 'nan) \n           (display \"data contains non-numeric values\"))\n          ((= n 0)\n           (display \"no data\"))\n          (else\n           (let ((mean (stat/mean raw-data))\n                 (sd (stat/sd raw-data)))\n             (display (list \"n =\" n \"mean =\" mean \"sd =\" sd)))))))\n(validate-and-summarize (list 10 20 30 40))\n;; => (\"n = 4 mean = 25 sd = 10\")" :note "Guard against bad input: check count before calling expensive statistical functions.")
+    (:tier "novice" :code "(stat/count (list 10 20 30))" :note "Three data points. Returns 3.")
+    (:tier "apprentice" :code "(stat/count '())" :note "Empty list. Returns 0. Useful as a guard before calling verbs that would divide by n.")
+    (:tier "intermediate" :code "(let ((data (list 1.5 2.0 3.5 4.0)))\n  (list ':n (stat/count data) ':mean (stat/mean data)))" :note "Chain count with mean for a mini-summary. Returns (:n 4 :mean 2.75).")
+    (:tier "expert" :code "(define (summarize data)\n  (let ((n (stat/count data)))\n    (cond ((= n 0) 'no-data)\n          (else (list ':n n ':mean (stat/mean data) ':sd (stat/sd data))))))\n(list (summarize '()) (summarize '(10 20 30 40)))" :note "Guard against empty data before calling verbs that would return 0 or NaN. Returns (no-data (:n 4 :mean 25 :sd ...)).")
+    (:tier "master" :code "(define (batch-summary datasets)\n  ;; Given a list of data lists, return one summary record per dataset.\n  (let loop ((rest datasets) (acc '()))\n    (if (null? rest)\n        (reverse acc)\n        (let* ((d (car rest)) (n (stat/count d)))\n          (loop (cdr rest)\n                (cons (if (= n 0) 'skip\n                          (list ':n n ':mean (stat/mean d)))\n                      acc))))))\n(batch-summary (list '(1 2 3) '() '(10 20 30 40 50)))" :note "Apply the summarize pattern across a batch of datasets. Returns ((:n 3 :mean 2) skip (:n 5 :mean 30)) — empty datasets flagged as 'skip.")
   )
   :caveats ("Empty list returns 0 (the correct count); it does not return 'nan." "Non-numeric elements (strings, symbols, booleans) trigger return of 'nan." "Does not skip NaN or Inf values within numbers; those are considered valid numbers." "Does not validate that the list is actually a list; wrong type may error.")
   :drawbacks ("Returns 'nan rather than raising an exception; caller must check explicitly." "No option to count only elements matching a predicate (e.g., positive numbers only)." "Does not separate count by category or group; use for whole-sample counts only.")
