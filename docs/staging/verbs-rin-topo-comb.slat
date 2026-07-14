@@ -1091,3 +1091,399 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Orientable-surface genus via g = (2 - chi) / 2. Returns fractional if not a closed orientable surface — honest 'not applicable' signal."))
+
+(verb
+  :name "topo/complex"
+  :library "topo"
+  :signature "(topo/complex maximal-faces) -> (complex faces face-count)"
+  :summary "Construct a simplicial-complex value from a list of maximal simplices. Downstream verbs (f-vector, euler-char, etc.) accept the tagged value directly."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/complex '((a b c)))"
+     :note "Returns (complex ((a b c)) 7): a triangle-complex. The 7 is the total face count (1 triangle + 3 edges + 3 vertices).")
+    (:tier "apprentice"
+     :code "(topo/complex '((a b c d)))"
+     :note "Returns (complex ((a b c d)) 15): a solid-tetrahedron. Face count = 4 vertices + 6 edges + 4 triangles + 1 tet = 15.")
+    (:tier "intermediate"
+     :code "(topo/complex '())"
+     :note "Returns (complex () 0): the empty complex. Safe zero-case.")
+    (:tier "expert"
+     :code "(let ((c (topo/complex '((a b c) (a b d)))))\n  (topo/euler-char c))"
+     :note "Constructor + downstream verb. Returns 1: two triangles sharing edge (a b). f-vector (4 5 2), chi = 4 - 5 + 2 = 1. Passing the (complex ...) value works interchangeably with a raw face list.")
+    (:tier "master"
+     :code "(define (surface-report faces)\n  (let ((c (topo/complex faces)))\n    (list ':complex c\n          ':f-vector (topo/f-vector c)\n          ':euler-char (topo/euler-char c)\n          ':genus (topo/euler-genus c))))\n(surface-report '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Build a complex once, feed it to multiple downstream verbs. Returns a report for the hollow tetrahedron: (:complex (complex ...) :f-vector (4 6 4) :euler-char 2 :genus 0). Sphere confirmed."))
+
+  :related ("topo/f-vector" "topo/euler-char" "topo/euler-genus")
+  :caveats ("Vertex labels normalized to strings; symbol identity is lost through the constructor." "Face list is stored canonicalized (sorted per simplex, deduped)." "Face count in the third slot is the TOTAL face count, not just the maximal count.")
+  :drawbacks ("Constructor allocates the face lattice eagerly — for very large complexes this is O(sum 2^d_i). For d ≤ 15, fine.")
+  :usecases ("Bundle a complex once and pass to multiple downstream verbs." "REPL exploration: (topo/complex '((a b c d))) shows you what f-vector expects." "Persistence in Cortex: a complex value is a plain Scheme list, safe to store.")
+  :learn (:concept "Constructor for the canonical representation. Tagged list means downstream verbs can pattern-match on the 'complex head." :prerequisites ("list") :progression "Follow with topo/f-vector, topo/euler-char, topo/close.")
+
+  :+math
+    (:algebra "Abstract simplicial complex: family K of finite non-empty sets closed under non-empty subsets. Here K is the closure of the maximal-face list."
+     :total #t
+     :domain "list of lists (simplices) of any elements"
+     :codomain "tagged list ('complex canonicalized-faces total-face-count)"
+     :proofs "Standard closure axiom: face of a face is a face.")
+
+  :+cs
+    (:complexity "Time O(sum 2^d_i) to generate the face lattice for face counting."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Canonicalizes each simplex (sort vertices, coerce to strings), builds the face lattice via bitmask enumeration, records the total face count."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle-complex has face count 7; solid-tet 15; empty complex 0; euler-char downstream matches."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/f-vector" "topo/euler-char" "topo/euler-genus" "topo/close")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing a list of ALL faces (all subsets) — the constructor treats them all as maximal and duplicates the face lattice. Pass only the top-dim faces."
+     :when-not-to-use "You need only f-vector or chi — those verbs accept raw face lists directly, no wrapping needed.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Simplicial-complex constructor. Bundles maximal faces + total face count as a tagged value."))
+
+(verb
+  :name "topo/graph"
+  :library "topo"
+  :signature "(topo/graph edges) -> (graph vertices edges)"
+  :summary "Construct an undirected graph value from an edge list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/graph '((a b) (b c) (c a)))"
+     :note "Returns (graph (a b c) ((a b) (a c) (b c))): a 3-cycle. Vertices sorted, edges canonicalized (each edge sorted).")
+    (:tier "apprentice"
+     :code "(topo/graph '())"
+     :note "Returns (graph () ()): the empty graph. No vertices, no edges — safe zero case.")
+    (:tier "intermediate"
+     :code "(topo/graph '((a b)))"
+     :note "Returns (graph (a b) ((a b))): a single edge between two vertices. Trivial connected component.")
+    (:tier "expert"
+     :code "(let ((g (topo/graph '((a b) (b c) (c a) (a d)))))\n  (list ':is-connected (topo/connected? g)\n        ':components (topo/components g)))"
+     :note "Build once, query twice. Returns (:is-connected #t :components ((a b c d))). Triangle plus a whisker — still one connected component.")
+    (:tier "master"
+     :code "(define (social-network edges)\n  (let ((g (topo/graph edges)))\n    (list ':num-components (length (topo/components g))\n          ':is-connected (topo/connected? g)\n          ':neighborhood-of-alice (topo/ball g 'alice 2))))\n(social-network '((alice bob) (bob carol) (carol dave) (eve fern)))"
+     :note "Domain: analyze a small social network. Returns (:num-components 2 :is-connected #f :neighborhood-of-alice (alice bob carol)). Two clusters (alice-cluster and eve-cluster); Alice's radius-2 friends are herself, Bob, Carol."))
+
+  :related ("topo/components" "topo/connected?" "topo/ball")
+  :caveats ("Undirected — (a b) and (b a) are the same edge; duplicates deduped." "Self-loops preserved but only counted once." "Vertex labels normalized to strings.")
+  :drawbacks ("No support for edge weights or directed edges. If you need those, use a bespoke adjacency-map." "No support for hyperedges — use topo/complex for that.")
+  :usecases ("Model relationships (social networks, dependencies, communication topologies)." "Feed downstream connectivity and reachability queries." "Bundle a graph once, pass to multiple analyses without re-parsing the edge list.")
+  :learn (:concept "Graph as a tagged value. Adjacency structure is built once; consumers use it directly." :prerequisites ("list") :progression "Follow with topo/components, topo/connected?, topo/ball, then broader graph analyses.")
+
+  :+math
+    (:algebra "Undirected simple graph: V a vertex set, E a set of 2-element subsets of V. Multiplicity 1 by construction. Loops allowed."
+     :total #t
+     :domain "list of 2-element lists (edges)"
+     :codomain "tagged list ('graph sorted-vertices sorted-canonical-edges)"
+     :proofs "Set-of-edges construction is well-known.")
+
+  :+cs
+    (:complexity "Time O(|E|), space O(|V| + |E|)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Builds an adjacency Map<vertex, Set<vertex>>, then emits a canonical (graph V E) list with V sorted and each edge sorted."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-cycle, empty graph, single edge, and connected? / components round-trip cleanly."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/components" "topo/connected?" "topo/ball")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing edges as (a b c) — 3-element lists are silently truncated to (a b). Use only 2-element edges."
+     :when-not-to-use "You need directed edges or weights — this verb doesn't support them.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Undirected graph constructor. Tagged value; edges deduplicated + sorted."))
+
+(verb
+  :name "topo/components"
+  :library "topo"
+  :signature "(topo/components graph-or-edges) -> list-of-list"
+  :summary "Return the connected components of a graph as a list of vertex-lists."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/components '((a b) (b c) (d e)))"
+     :note "Returns ((a b c) (d e)): two components. {a, b, c} form a triangle-ish cluster, {d, e} form a separate edge.")
+    (:tier "apprentice"
+     :code "(topo/components '())"
+     :note "Returns (): the empty graph has zero components.")
+    (:tier "intermediate"
+     :code "(topo/components '((a a)))"
+     :note "Returns ((a)): a self-loop on vertex a. One vertex, one component.")
+    (:tier "expert"
+     :code "(topo/components '((a b) (b c) (c a) (d e) (e f) (f d) (g h)))"
+     :note "Returns ((a b c) (d e f) (g h)): three components — two triangles and one edge. Vertices within each component are sorted.")
+    (:tier "master"
+     :code "(define (cluster-report edges)\n  (let* ((comps (topo/components edges))\n         (sizes (map length comps)))\n    (list ':components comps\n          ':num-clusters (length comps)\n          ':largest-cluster-size (if (null? sizes) 0 (apply max sizes))\n          ':smallest-cluster-size (if (null? sizes) 0 (apply min sizes)))))\n(cluster-report '((a b) (b c) (c a) (d e) (e f) (f d) (g h)))"
+     :note "Domain: report on a graph's cluster structure. Returns full component breakdown plus size stats. Useful for social-network analysis, dependency graph inspection."))
+
+  :related ("topo/connected?" "topo/graph" "topo/ball")
+  :caveats ("Accepts either a (graph ...) tagged value or a raw edge list." "Component vertex lists are sorted; component order follows first-encountered vertex during BFS.")
+  :drawbacks ("Not incremental — recomputes from scratch each call.")
+  :usecases ("Analyze cluster structure in social/dependency/communication graphs." "Detect disconnected pieces in a mesh or object graph." "Filter operations by component (e.g., 'find the largest connected piece').")
+  :learn (:concept "Connected components via BFS from each unvisited vertex. Foundational graph analysis." :prerequisites ("topo/graph") :progression "Study topo/connected? (is there just one?) then move to more sophisticated: bridges, articulation points, biconnected components.")
+
+  :+math
+    (:algebra "Equivalence classes of vertices under the reachability relation. Partition of V into disjoint non-empty subsets."
+     :total #t
+     :domain "graph or raw edge list"
+     :codomain "list of sorted vertex-lists; outer list length = number of components"
+     :proofs "Reachability is an equivalence relation (reflexive, symmetric via undirected, transitive); components are its equivalence classes.")
+
+  :+cs
+    (:complexity "Time O(|V| + |E|), space O(|V|). Standard BFS."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "BFS from each unvisited vertex. Adjacency built from the edge list (or graph tag). Component vertex lists sorted for stability."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 2-component split, empty graph, self-loop, 3-component mix."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "apply" "topo/connected?")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming isolated vertices appear as components — they don't UNLESS an edge (v v) is present; components are derived from the vertex set induced by edges."
+     :when-not-to-use "You need only 'is it connected?' — use topo/connected? (same cost but clearer intent).")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Connected components via BFS. Returns list-of-sorted-vertex-lists."))
+
+(verb
+  :name "topo/connected?"
+  :library "topo"
+  :signature "(topo/connected? graph-or-edges) -> boolean"
+  :summary "Return #t iff the graph has one connected component (or is empty)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/connected? '((a b) (b c) (c a)))"
+     :note "Returns #t: a triangle is one connected component.")
+    (:tier "apprentice"
+     :code "(topo/connected? '((a b) (c d)))"
+     :note "Returns #f: two separate edges = two components.")
+    (:tier "intermediate"
+     :code "(topo/connected? '())"
+     :note "Returns #t by convention: the empty graph is vacuously connected. Same convention as (equal? '() '()) = #t.")
+    (:tier "expert"
+     :code "(let ((g (topo/graph '((a b) (b c) (c d) (d e)))))\n  (topo/connected? g))"
+     :note "Returns #t: a path is connected. Works on both raw edge list and (graph ...) tagged value.")
+    (:tier "master"
+     :code "(define (add-edge-and-check g new-edge)\n  (let ((new-edges (cons new-edge g)))\n    (list ':before (topo/connected? g)\n          ':after (topo/connected? new-edges))))\n(add-edge-and-check '((a b) (c d)) '(b c))"
+     :note "Domain: incremental connectivity check as edges are added. Returns (:before #f :after #t). Bridging edge (b c) reduces two components to one. Great for graph-growth simulations."))
+
+  :related ("topo/components" "topo/graph")
+  :caveats ("Empty graph returns #t (vacuously connected)." "Isolated vertices are only recognized if they appear in an edge (including self-loops).")
+  :drawbacks ("No incremental / online version; recomputes from scratch.")
+  :usecases ("Sanity-check that a network is fully reachable." "Precondition for spanning-tree algorithms." "Decide whether to break a graph into pieces before analysis.")
+  :learn (:concept "Simple predicate: |components| = 1 (or 0). One of the most-asked graph questions." :prerequisites ("topo/components") :progression "Once (topo/connected?) is second nature, ask deeper questions: 2-connected? k-connected? bridge-free?")
+
+  :+math
+    (:algebra "Predicate: |components| <= 1."
+     :total #t
+     :domain "graph or raw edge list"
+     :codomain "boolean"
+     :proofs "Trivial from the definition of components.")
+
+  :+cs
+    (:complexity "Time O(|V| + |E|), space O(|V|). Delegates to topo/components."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Calls components() and checks its length <= 1."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-cycle #t, two-edge disjoint #f, empty #t, path #t."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("if" "when" "and" "or")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming false = 'has 2+ components AND has at least one edge'. Actually returns false ONLY when there are 2+ components; empty and singleton graphs are true."
+     :when-not-to-use "You need to see the components themselves — use topo/components.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Is the graph connected? Empty graph is vacuously connected."))
+
+(verb
+  :name "topo/ball"
+  :library "topo"
+  :signature "(topo/ball graph-or-edges center radius) -> list-of-vertex"
+  :summary "Discrete ball: all vertices within graph-distance <= radius of center."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/ball '((a b) (b c) (c d) (d e)) 'a 2)"
+     :note "Returns (a b c): vertices within distance 2 of a on a path a-b-c-d-e. a (dist 0), b (dist 1), c (dist 2).")
+    (:tier "apprentice"
+     :code "(topo/ball '((a b) (b c) (c d) (d e)) 'a 0)"
+     :note "Returns (a): the ball of radius 0 is just the center.")
+    (:tier "intermediate"
+     :code "(topo/ball '((a b) (b c) (c d) (d e)) 'c 1)"
+     :note "Returns (b c d): from c, neighbors are b and d, plus c itself. Radius-1 ball.")
+    (:tier "expert"
+     :code "(let ((g (topo/graph '((a b) (b c) (c a) (a d) (d e)))))\n  (list ':r0 (topo/ball g 'a 0)\n        ':r1 (topo/ball g 'a 1)\n        ':r2 (topo/ball g 'a 2)))"
+     :note "Growth of the ball from a: r=0 is (a), r=1 is (a b c d) — a plus its immediate neighbors, r=2 adds e via d. Works on (graph ...) values.")
+    (:tier "master"
+     :code "(define (friends-of-friends network person radius)\n  (topo/ball network person radius))\n(list ':close-friends (friends-of-friends '((alice bob) (bob carol) (carol dave) (dave eve)) 'alice 1)\n      ':extended-network (friends-of-friends '((alice bob) (bob carol) (carol dave) (dave eve)) 'alice 3))"
+     :note "Domain: social-network neighborhood exploration. Returns (:close-friends (alice bob) :extended-network (alice bob carol dave)). Radius-1 = direct friends, radius-3 = friends-of-friends-of-friends."))
+
+  :related ("topo/graph" "topo/components")
+  :caveats ("Center must exist in the graph; if it does not, returns ()." "Radius 0 always returns just the center (if present).")
+  :drawbacks ("Not weighted — every edge has cost 1. For weighted balls, use ops/dijkstra." "Materializes the whole ball; no lazy iteration.")
+  :usecases ("Neighborhood analysis on social/citation/dependency graphs." "Local-region extraction for graph rendering or partial layout." "Rate-limit expansions in graph search (only look r hops away).")
+  :learn (:concept "Discrete open ball = graph-distance neighborhood. BFS to depth r." :prerequisites ("topo/graph") :progression "Extend to weighted balls with Dijkstra; extend to shortest-path queries.")
+
+  :+math
+    (:algebra "B(c, r) = { v : d(c, v) <= r } where d is graph distance. Metric-space ball, discrete version."
+     :total #t
+     :domain "graph value, vertex label (Sym or string), non-negative integer radius"
+     :codomain "sorted list of vertex labels"
+     :proofs "BFS terminates because graph is finite; correctness by induction on distance.")
+
+  :+cs
+    (:complexity "Time O(|V| + |E|) worst case. Space O(|V|) for the distance map."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "BFS from center, stopping expansion at depth r. Uses a distance Map; returns sorted keys."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: r=0 returns just center, r=1 includes neighbors, r=2 propagates one more step; missing center returns ()."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "member")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing radius as a negative — impl treats it as 0. Passing a center that isn't in the graph — returns ()."
+     :when-not-to-use "Weighted edges — use ops/dijkstra. Very large graph + high radius — the ball may equal all-vertices; consider topo/components instead.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Discrete ball via BFS. All vertices within graph-distance r of center."))
+
+(verb
+  :name "topo/close"
+  :library "topo"
+  :signature "(topo/close simplices) -> list-of-simplex"
+  :summary "Closure of a simplex set: enumerate ALL faces (subsets) of every simplex in the input."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/close '((a b c)))"
+     :note "Returns all 7 non-empty subsets of {a b c}: ((a) (b) (a b) (c) (a c) (b c) (a b c)). Every face of the triangle.")
+    (:tier "apprentice"
+     :code "(topo/close '((a b)))"
+     :note "Returns ((a) (b) (a b)): three faces of a single edge.")
+    (:tier "intermediate"
+     :code "(topo/close '((a b c) (a b d)))"
+     :note "Returns all faces of two triangles sharing edge (a b) — deduped where they share faces. 11 total: 4 vertices, 5 edges, 2 triangles.")
+    (:tier "expert"
+     :code "(length (topo/close '((a b c d))))"
+     :note "Returns 15: a solid tetrahedron has 15 non-empty faces (4 vertices + 6 edges + 4 triangles + 1 tet). Same as (topo/complex '((a b c d))) reports.")
+    (:tier "master"
+     :code "(define (dimension-histogram simplices)\n  (let ((faces (topo/close simplices)))\n    (let loop ((remaining faces) (acc '()))\n      (if (null? remaining)\n          (reverse acc)\n          (let* ((f (car remaining)) (d (- (length f) 1)))\n            (loop (cdr remaining)\n                  (cons (list d f) acc)))))))\n(dimension-histogram '((a b c)))"
+     :note "Enumerate faces annotated with their dimensions. Returns ((0 (a)) (0 (b)) (1 (a b)) (0 (c)) (1 (a c)) (1 (b c)) (2 (a b c))). 0-dim vertices, 1-dim edges, 2-dim triangles. Foundation for f-vector."))
+
+  :related ("topo/f-vector" "topo/complex")
+  :caveats ("Result faces are sorted (each internally, and overall by encounter order)." "Deduplicated across shared faces — the same edge appears once even if it's in multiple triangles.")
+  :drawbacks ("Exponential in the max face dimension; for large-dim maximal simplices, avoid.")
+  :usecases ("Enumerate the full face lattice of a complex." "Feed into face-dimensional analysis or per-face operations." "Verify that shared faces are correctly deduped when merging two subcomplexes.")
+  :learn (:concept "Closure operator on simplex sets — one of the two axioms of a simplicial complex (closed under subsets). Face enumeration bridges combinatorics and geometry." :prerequisites ("topo/f-vector") :progression "Follow with topo/euler-char (weighted-sum over closure) and topo/betti (chain complex over the closure).")
+
+  :+math
+    (:algebra "close(S) = union over sigma in S of P(sigma) \\ {emptyset}. Idempotent closure: close(close(S)) = close(S)."
+     :total #t
+     :domain "list of simplices (lists of vertex labels)"
+     :codomain "list of simplices (all non-empty faces of the input)"
+     :proofs "Straightforward from the power-set definition; dedup preserves the axiom that each face appears once.")
+
+  :+cs
+    (:complexity "Time O(sum 2^d_i), space same."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Reuses generateFaceLattice — a bitmask enumeration of subsets of each input simplex, keyed by canonical sort to dedupe shared faces."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle=7 faces, edge=3, two triangles sharing edge=11, solid tet=15."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "for-each" "topo/f-vector")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the empty simplex () appears — it does not (closure excludes the empty face). Assuming faces come in dim order — they don't; use dimension-histogram or similar sort if needed."
+     :when-not-to-use "You need only the count of faces — use (length (topo/close …)) or topo/f-vector.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Simplicial closure: enumerate all faces of a set of simplices."))
