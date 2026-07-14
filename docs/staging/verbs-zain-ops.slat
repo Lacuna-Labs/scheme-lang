@@ -856,3 +856,194 @@
   :entry-provenance "authored")
 
 
+;; ─── Graphs ────────────────────────────────────────────────────────
+
+(verb
+  :name "ops/dijkstra"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/dijkstra graph source) -> path-table"
+  :summary "Dijkstra shortest paths from source: single-source shortest paths on a nonneg-weighted graph."
+  :impl-status "wired"
+  :explanation "Given a directed graph with nonnegative edge weights and a source node, computes the shortest path from source to every reachable node. Returns a list of triples (node distance predecessor) where predecessor lets you reconstruct the shortest path back to source. Unreachable nodes appear with 'unreachable in the distance slot. Graph may be an edge list ((from to weight) ...) OR an alist ((node ((neighbor . weight) ...)) ...) — the verb detects both. Dijkstra is O((n+m) log n) with a heap; this implementation uses the simpler O(n²) unsorted-array pick, which is fine for small graphs and gives the same answer."
+  :examples (
+    (:tier "novice"
+     :code "(ops/dijkstra (list (list (quote A) (quote B) 1) (list (quote A) (quote C) 4) (list (quote B) (quote C) 2) (list (quote C) (quote D) 1)) (quote A))"
+     :note "Four-node graph. Shortest A→D is A→B→C→D with distance 4. Result includes the predecessor chain.")
+    (:tier "apprentice"
+     :code "(let ((edges (list (list (quote S) (quote A) 2) (list (quote S) (quote B) 5) (list (quote A) (quote B) 1) (list (quote A) (quote T) 6) (list (quote B) (quote T) 2)))) (ops/dijkstra edges (quote S)))"
+     :note "Five edges, source S, target T. Cheapest S→T is S→A→B→T at cost 5.")
+    (:tier "intermediate"
+     :code "(let* ((edges (list (list (quote A) (quote B) 3) (list (quote B) (quote C) 2) (list (quote A) (quote C) 6) (list (quote C) (quote D) 1))) (table (ops/dijkstra edges (quote A))) (d-entry (assoc (quote D) table))) (if d-entry (list (quote distance-to-D) (cadr d-entry)) (quote unreachable)))"
+     :note "Extract the distance to a specific node D from Dijkstra's table via assoc.")
+    (:tier "expert"
+     :code "(define (nearest-neighbor edges source) (let* ((table (ops/dijkstra edges source)) (candidates (let loop ((tbl table) (acc (quote ()))) (if (null? tbl) acc (let* ((row (car tbl)) (node (car row)) (dist (cadr row))) (if (and (number? dist) (not (eq? node source))) (loop (cdr tbl) (cons (list dist node) acc)) (loop (cdr tbl) acc))))))) (if (null? candidates) (quote none) (let* ((sorted (sort candidates (lambda (a b) (< (car a) (car b)))))) (cadar sorted))))) (nearest-neighbor (list (list (quote H) (quote A) 5) (list (quote H) (quote B) 3) (list (quote H) (quote C) 8)) (quote H))"
+     :note "Wrap Dijkstra to find the single nearest non-source node. Uses sort with a lambda comparator.")
+    (:tier "master"
+     :code "(let* ((edges (list (list (quote depot) (quote store-a) 5) (list (quote depot) (quote store-b) 3) (list (quote store-a) (quote store-c) 4) (list (quote store-b) (quote store-c) 6) (list (quote store-c) (quote store-d) 2))) (table (ops/dijkstra edges (quote depot)))) (list (quote from-depot) table))"
+     :note "Realistic delivery scenario: named nodes for depot and stores. The distance to each store is the shortest driving path — useful for planning routes.")
+  )
+  :caveats
+    ("Edge weights must be nonnegative. Negative weights give incorrect results — use ops/bellman-ford instead."
+     "Graph may be edge-list or alist form; the verb detects which."
+     "Unreachable nodes appear in the table with distance = 'unreachable and predecessor = null."
+     "Node names can be symbols, numbers, or strings — the verb compares by name equality.")
+  :drawbacks
+    ("O(n²) implementation — for very large graphs a heap-based variant would be O((n+m) log n)."
+     "No handling of parallel edges (multiple edges between the same pair); if present, uses whichever appears first in the edge list."
+     "No support for path reconstruction as a single call — you get predecessors and walk them yourself.")
+  :usecases
+    ("Route planning between locations with distance / travel-time as edge weights."
+     "Shortest-path in a game grid."
+     "Cost minimization in a supplier network."
+     "Curriculum: introduce the greedy shortest-path idea before Bellman–Ford.")
+  :related ("ops/bellman-ford" "ops/max-flow" "ops/pagerank")
+  :learn
+    (:concept "Greedy shortest paths: at each step, finalize the closest unvisited node — its distance can't be improved."
+     :prerequisites ("directed graph adjacency" "nonnegative weights")
+     :progression "Small graph by hand. Then ops/dijkstra. Then reconstruct a full path via predecessors. Then compare with ops/bellman-ford.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/bellman-ford"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/bellman-ford graph source) -> (distances predecessors) | infeasible"
+  :summary "Bellman–Ford shortest paths: supports negative edge weights, detects negative cycles."
+  :impl-status "wired"
+  :explanation "Given a directed graph (edge list or alist) with possibly-negative weights and a source, computes shortest paths OR returns the sentinel 'infeasible if a negative cycle is reachable. Relaxes all edges up to n-1 times; if a further relaxation still improves any distance, a negative cycle exists (paths can be made arbitrarily short). Time is O(n·m). Slower than Dijkstra but strictly more capable — use whenever you can't rule out negative weights. Result is a two-list — first list is (node distance) pairs, second is (node predecessor) pairs — so you can reconstruct the shortest path if you need it."
+  :examples (
+    (:tier "novice"
+     :code "(ops/bellman-ford (list (list 0 1 4) (list 0 2 2) (list 1 2 3) (list 2 3 5)) 0)"
+     :note "Positive weights only, no negative cycle. Standard shortest-path answer — same as Dijkstra would give.")
+    (:tier "apprentice"
+     :code "(let ((edges (list (list (quote A) (quote B) 5) (list (quote A) (quote C) 4) (list (quote B) (quote C) -3) (list (quote C) (quote D) 2)))) (ops/bellman-ford edges (quote A)))"
+     :note "Contains a negative edge (B→C = -3). Bellman–Ford handles it; shortest A→D goes A→B→C→D = 4.")
+    (:tier "intermediate"
+     :code "(let* ((res (ops/bellman-ford (list (list (quote A) (quote B) 4) (list (quote A) (quote C) 2) (list (quote C) (quote B) -3)) (quote A))) (distances (if (pair? res) (car res) (quote none)))) (list (quote distances) distances))"
+     :note "Destructure the two-list result. First half is (node dist) pairs. -3 edge shortens A→C→B path.")
+    (:tier "expert"
+     :code "(define (safe-shortest-path edges source) (let ((res (ops/bellman-ford edges source))) (cond ((eq? res (quote infeasible)) (list (quote error) (quote negative-cycle-detected))) ((pair? res) (list (quote ok) (quote distances) (car res))) (else (list (quote unexpected) res))))) (safe-shortest-path (list (list 0 1 1) (list 1 2 -2) (list 2 0 -1)) 0)"
+     :note "Handle the negative-cycle case explicitly. This graph has a cycle 0→1→2→0 with weight -2 → infeasible.")
+    (:tier "master"
+     :code "(let* ((edges (list (list (quote S) (quote A) 4) (list (quote S) (quote B) 5) (list (quote A) (quote C) 6) (list (quote B) (quote C) -3) (list (quote C) (quote T) 2))) (result (ops/bellman-ford edges (quote S)))) (if (eq? result (quote infeasible)) (list (quote status) (quote infeasible)) (list (quote status) (quote solved) (quote distances) (car result) (quote predecessors) (cadr result))))"
+     :note "Full report with both halves of the result. Shows distances AND predecessors — enough to reconstruct any shortest path.")
+  )
+  :caveats
+    ("Returns 'infeasible atomically when a negative cycle is reachable — no partial data."
+     "Slower than Dijkstra (O(n·m) vs O((n+m) log n)); prefer Dijkstra when weights are nonnegative."
+     "Edge weights may be any real number (positive, negative, zero)."
+     "Unreachable nodes appear with distance 'unreachable.")
+  :drawbacks
+    ("Slow on dense graphs — a repeated-Dijkstra-with-potentials (Johnson's algorithm) is faster in that regime."
+     "Detects negative cycles but does not identify WHICH cycle — just returns 'infeasible."
+     "No streaming; requires the full edge list.")
+  :usecases
+    ("Currency-arbitrage detection: negative log-exchange-rate cycles mean profit."
+     "Critical-path method (negate durations, find longest path)."
+     "Constraint satisfaction with distance-like constraints."
+     "Anywhere weights represent 'costs' that can be positive or negative (e.g. shipping discounts).")
+  :related ("ops/dijkstra" "ops/max-flow")
+  :learn
+    (:concept "Relaxation-based shortest paths: iterate n-1 times through all edges; extra improvement means a negative cycle."
+     :prerequisites ("ops/dijkstra" "directed edge weights (any sign)")
+     :progression "Positive-only graph. Then add a negative edge. Then add a negative cycle → 'infeasible.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/max-flow"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/max-flow graph source sink) -> max-flow-value"
+  :summary "Maximum flow via Edmonds–Karp (BFS-augmenting-paths). Returns the max flow from source to sink."
+  :impl-status "wired"
+  :explanation "The max-flow problem: given a directed graph with edge CAPACITIES (nonnegative) plus a source and a sink node, find the maximum total flow that can be routed from source to sink respecting capacity constraints. Implementation is Edmonds–Karp: repeatedly find the shortest (BFS) augmenting path in the residual graph and push flow through it, until no augmenting path remains. Time is O(V·E²), practical for graphs with hundreds of edges. Returns just the numeric max-flow value; the underlying flow assignment is not exposed."
+  :examples (
+    (:tier "novice"
+     :code "(ops/max-flow (list (list (quote S) (quote A) 10) (list (quote S) (quote B) 5) (list (quote A) (quote B) 3) (list (quote A) (quote T) 4) (list (quote B) (quote T) 8)) (quote S) (quote T))"
+     :note "Small 4-node network. Bottleneck sits at S's outbound + T's inbound. Max flow = 12.")
+    (:tier "apprentice"
+     :code "(let ((net (list (list (quote src) (quote v1) 5) (list (quote src) (quote v2) 3) (list (quote v1) (quote dst) 3) (list (quote v2) (quote dst) 5)))) (ops/max-flow net (quote src) (quote dst)))"
+     :note "Two parallel paths from src to dst, each with mismatched capacity. Total flow = 6.")
+    (:tier "intermediate"
+     :code "(let* ((net (list (list (quote s) 1 3) (list (quote s) 2 3) (list 1 3 2) (list 1 4 3) (list 2 3 2) (list 2 4 2) (list 3 (quote t) 3) (list 4 (quote t) 4))) (flow (ops/max-flow net (quote s) (quote t)))) (list (quote max-flow) flow))"
+     :note "Larger network with intermediate nodes 1-4. Max flow = 6 (both source-adjacent edges saturate).")
+    (:tier "expert"
+     :code "(define (bottleneck-test net s t candidate-caps) (map (lambda (cap) (let ((scaled (map (lambda (e) (list (car e) (cadr e) (min (caddr e) cap))) net))) (list (quote cap-limit) cap (quote max-flow) (ops/max-flow scaled s t)))) candidate-caps)) (bottleneck-test (list (list (quote a) (quote b) 5) (list (quote a) (quote c) 8) (list (quote b) (quote d) 6) (list (quote c) (quote d) 4)) (quote a) (quote d) (list 3 5 7 10))"
+     :note "Sensitivity analysis: what if every edge were capped at K? Vary K, see max flow. Explores how single-edge bottlenecks matter.")
+    (:tier "master"
+     :code "(let* ((warehouse-net (list (list (quote inbound) (quote sort-a) 100) (list (quote inbound) (quote sort-b) 80) (list (quote sort-a) (quote pack-1) 60) (list (quote sort-a) (quote pack-2) 50) (list (quote sort-b) (quote pack-2) 40) (list (quote sort-b) (quote pack-3) 70) (list (quote pack-1) (quote ship) 60) (list (quote pack-2) (quote ship) 90) (list (quote pack-3) (quote ship) 70))) (throughput (ops/max-flow warehouse-net (quote inbound) (quote ship)))) (list (quote daily-throughput-cap) throughput))"
+     :note "Warehouse operations model: inbound → sort → pack → ship, with capacities per stage. Max flow tells you the daily throughput ceiling.")
+  )
+  :caveats
+    ("Capacities must be nonnegative."
+     "Only the numeric flow value is returned; the flow assignment on each edge is not exposed."
+     "Multiple edges between the same pair (u,v) get their capacities SUMMED."
+     "Unreachable sink returns 0 rather than erroring.")
+  :drawbacks
+    ("Slower than push-relabel on dense graphs, but simpler to reason about."
+     "No min-cut extraction as a companion output."
+     "No cost side — for min-cost flow, use ops/lp-solve or a dedicated MCMF solver.")
+  :usecases
+    ("Network capacity planning."
+     "Bipartite matching by flow (unit-capacity edges + source→left→right→sink)."
+     "Warehouse / distribution throughput."
+     "Traffic modeling.")
+  :related ("ops/dijkstra" "ops/bellman-ford")
+  :learn
+    (:concept "Augmenting paths in the residual graph; the max-flow / min-cut duality."
+     :prerequisites ("directed graph capacities" "BFS")
+     :progression "Small hand-solved network. Then ops/max-flow. Then think about the min cut that certifies the max.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/pagerank"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/pagerank edges [damping]) -> ((node score) ...)"
+  :summary "PageRank via power iteration. Returns each node's importance score summing to 1."
+  :impl-status "wired"
+  :explanation "The original Google PageRank algorithm: model a random surfer who follows outbound links from each page with probability damping (default 0.85), and otherwise teleports to a random page. The stationary distribution of this random walk is the PageRank vector. Given edges (list of (from to) pairs), builds the transition matrix, adds damping and sink-mass handling, and iterates until convergence. Returns a list of (node score) pairs. Sum of scores is 1. Higher score = 'more important' node in the link graph."
+  :examples (
+    (:tier "novice"
+     :code "(ops/pagerank (list (list (quote A) (quote B)) (list (quote B) (quote C)) (list (quote C) (quote A)) (list (quote A) (quote C))))"
+     :note "4 edges, 3 nodes. A points to B and C; B and C form part of a cycle. Scores sum to 1; C has highest.")
+    (:tier "apprentice"
+     :code "(let ((edges (list (list (quote hub) (quote leaf1)) (list (quote hub) (quote leaf2)) (list (quote hub) (quote leaf3)) (list (quote leaf1) (quote hub))))) (ops/pagerank edges))"
+     :note "Hub-and-spokes network: hub links to three leaves, one leaf links back. Hub gets high score from feedback loop.")
+    (:tier "intermediate"
+     :code "(let* ((edges (list (list 1 2) (list 2 3) (list 3 1) (list 3 4) (list 4 3))) (ranks (ops/pagerank edges)) (top (car (sort ranks (lambda (a b) (> (cadr a) (cadr b)))))) ) (list (quote most-important) top))"
+     :note "Find the top-ranked node by sorting the returned list by score descending. Node 3 ranks highest — cycle 1→2→3 pumps mass into it.")
+    (:tier "expert"
+     :code "(define (rank-comparison edges dampings) (map (lambda (d) (list (quote damping) d (quote ranks) (ops/pagerank edges d))) dampings)) (rank-comparison (list (list (quote A) (quote B)) (list (quote B) (quote C)) (list (quote C) (quote A))) (list 0.5 0.75 0.85 0.95))"
+     :note "How does damping change the rankings? Higher damping (less teleportation) makes the structure of the graph matter more.")
+    (:tier "master"
+     :code "(let* ((social-graph (list (list (quote alice) (quote bob)) (list (quote alice) (quote carol)) (list (quote bob) (quote carol)) (list (quote carol) (quote alice)) (list (quote carol) (quote dave)) (list (quote dave) (quote bob)) (list (quote dave) (quote carol)))) (ranks (ops/pagerank social-graph)) (sorted (sort ranks (lambda (a b) (> (cadr a) (cadr b)))))) (list (quote ranking) sorted))"
+     :note "Friend-of-friend social graph, ranked by influence. Carol emerges as most-linked — she's on 3 paths, half the traffic goes to her.")
+  )
+  :caveats
+    ("Damping must be in (0, 1). Default 0.85 matches the original Google value."
+     "Dangling nodes (no outbound edges) have their mass distributed uniformly across all nodes."
+     "Converges in ~100 iterations for reasonable graphs; harder graphs may not fully converge but still produce a useful ranking."
+     "Scores are approximate; sum to 1 up to floating-point drift.")
+  :drawbacks
+    ("Does not handle edge weights — treats every out-link as equally likely to be followed."
+     "Slow on very large graphs — power iteration is O(iterations · edges)."
+     "Not personalized — no support for a query-dependent teleport distribution.")
+  :usecases
+    ("Reputation ranking on a citation or follower graph."
+     "Content ranking in a hyperlink network."
+     "Node importance in a knowledge graph."
+     "Curriculum: introduce Markov chain stationarity through a familiar application.")
+  :related ("ops/stationary" "ops/markov" "ops/dijkstra")
+  :learn
+    (:concept "PageRank as the stationary distribution of a random walk with teleportation."
+     :prerequisites ("Markov chain stationarity" "damping factor intuition")
+     :progression "Small graph by hand. Then ops/pagerank with default damping. Then sweep damping.")
+  :entry-provenance "authored")
+
+
+

@@ -30,14 +30,16 @@
 //
 // Author: Zain (Lacuna Eng — ops lane, 2026-07-14)
 
-import { Sym } from './reader.js'
+import { Sym, sym } from './reader.js'
 import { registerPrimitive } from './registry.js'
 
 // ─── tiny helpers ────────────────────────────────────────────────────
 
 const nm  = (x) => (x instanceof Sym ? x.name : x)
 const num = (x) => (typeof x === 'number' ? x : Number(x) || 0)
-const sym = (s) => new Sym(s)
+// `sym` is the reader's INTERNED constructor — Sym('foo') from `sym('foo')`
+// is (eq?)-equal to the reader-parsed `foo`. This is load-bearing for
+// callers that do (eq? result 'infeasible) etc.
 
 // list<->array is transparent in this Scheme (both are JS arrays).
 const isList = (x) => Array.isArray(x)
@@ -112,11 +114,20 @@ function normcdf(z) {
 //   1. edge list: ((from to weight) ...)
 //   2. alist:      ((node ((neighbor . weight) ...)) ...)
 //
-// Returns { adj: Map<node, [[neighbor, weight] ...]>, nodes: Set }.
+// Returns { adj: Map<key, [[neighborKey, weight] ...]>, nodes: Set of keys,
+//           orig: Map<key, originalNode> } — the orig map lets us return
+// node identities in the SAME TYPE the caller passed in (Sym stays Sym).
 function parseGraph(g) {
   const adj = new Map()
   const nodes = new Set()
-  if (!isList(g)) return { adj, nodes }
+  const orig = new Map()
+  const key = (n) => nm(n)
+  const remember = (n) => {
+    const k = key(n)
+    if (!orig.has(k)) orig.set(k, n)
+    return k
+  }
+  if (!isList(g)) return { adj, nodes, orig }
 
   // Detect alist shape: first element is (node, list-of-pairs)
   const looksAlist = g.length > 0 && isList(g[0]) && g[0].length === 2 &&
@@ -125,15 +136,14 @@ function parseGraph(g) {
   if (looksAlist) {
     for (const entry of g) {
       if (!isList(entry) || entry.length < 2) continue
-      const u = nm(entry[0])
+      const u = remember(entry[0])
       nodes.add(u)
       if (!adj.has(u)) adj.set(u, [])
       const neigh = entry[1]
       if (!isList(neigh)) continue
       for (const pair of neigh) {
-        // pair could be (v . w) → [v, w], or (v w) → [v, w]
         if (isList(pair)) {
-          const v = nm(pair[0])
+          const v = remember(pair[0])
           const w = num(pair[1])
           nodes.add(v)
           adj.get(u).push([v, w])
@@ -141,18 +151,17 @@ function parseGraph(g) {
       }
     }
   } else {
-    // edge list
     for (const e of g) {
       if (!isList(e) || e.length < 3) continue
-      const u = nm(e[0])
-      const v = nm(e[1])
+      const u = remember(e[0])
+      const v = remember(e[1])
       const w = num(e[2])
       nodes.add(u); nodes.add(v)
       if (!adj.has(u)) adj.set(u, [])
       adj.get(u).push([v, w])
     }
   }
-  return { adj, nodes }
+  return { adj, nodes, orig }
 }
 
 // ─── matrix helpers ─────────────────────────────────────────────────
@@ -482,8 +491,9 @@ export function installOps(env) {
   //          OR edge list ((from to weight) ...).
   //   Returns list of pairs ((node distance predecessor-or-null) ...).
   reg('ops/dijkstra', (graph, start) => {
-    const { adj, nodes } = parseGraph(graph)
+    const { adj, nodes, orig } = parseGraph(graph)
     const src = nm(start)
+    if (!orig.has(src)) orig.set(src, start)
     nodes.add(src)
     const dist = new Map(), prev = new Map()
     for (const n of nodes) dist.set(n, Infinity)
@@ -503,8 +513,11 @@ export function installOps(env) {
       }
     }
     const out = []
+    // Return nodes in their ORIGINAL type (Sym stays Sym, number stays number).
+    const nodeOf = (k) => orig.has(k) ? orig.get(k) : k
     for (const [n, d] of dist) {
-      out.push([n, d === Infinity ? sym('unreachable') : d, prev.get(n) ?? null])
+      const p = prev.get(n)
+      out.push([nodeOf(n), d === Infinity ? sym('unreachable') : d, p != null ? nodeOf(p) : null])
     }
     return out
   })
@@ -513,8 +526,9 @@ export function installOps(env) {
   //   Returns (list distances predecessors) — each is a list-of-pairs.
   //   If a negative cycle is reachable, returns 'infeasible.
   reg('ops/bellman-ford', (graph, source) => {
-    const { adj, nodes } = parseGraph(graph)
+    const { adj, nodes, orig } = parseGraph(graph)
     const src = nm(source)
+    if (!orig.has(src)) orig.set(src, source)
     nodes.add(src)
     const dist = new Map(), prev = new Map()
     for (const n of nodes) dist.set(n, Infinity)
@@ -533,14 +547,14 @@ export function installOps(env) {
       }
       if (!changed) break
     }
-    // Negative cycle detection.
     for (const [u, v, w] of edges) {
       if (dist.get(u) === Infinity) continue
       if (dist.get(u) + w < dist.get(v)) return sym('infeasible')
     }
+    const nodeOf = (k) => orig.has(k) ? orig.get(k) : k
     const distList = [], prevList = []
-    for (const [n, d] of dist) distList.push([n, d === Infinity ? sym('unreachable') : d])
-    for (const [n, p] of prev)  prevList.push([n, p])
+    for (const [n, d] of dist) distList.push([nodeOf(n), d === Infinity ? sym('unreachable') : d])
+    for (const [n, p] of prev)  prevList.push([nodeOf(n), p != null ? nodeOf(p) : null])
     return [distList, prevList]
   })
 
@@ -767,12 +781,17 @@ export function installOps(env) {
   reg('ops/pagerank', (edges, damping = 0.85) => {
     if (!isList(edges) || edges.length === 0) return []
     const d = num(damping)
-    // Collect nodes and outbound edges.
     const outEdges = new Map()
     const nodes = new Set()
+    const orig = new Map()
+    const remember = (raw) => {
+      const k = nm(raw)
+      if (!orig.has(k)) orig.set(k, raw)
+      return k
+    }
     for (const e of edges) {
       if (!isList(e) || e.length < 2) continue
-      const u = nm(e[0]), v = nm(e[1])
+      const u = remember(e[0]), v = remember(e[1])
       nodes.add(u); nodes.add(v)
       if (!outEdges.has(u)) outEdges.set(u, [])
       outEdges.get(u).push(v)
@@ -800,7 +819,9 @@ export function installOps(env) {
       score = nxt
       if (diff < 1e-9) break
     }
-    return pairsFromMap(score)
+    const out = []
+    for (const [k, v] of score) out.push([orig.has(k) ? orig.get(k) : k, v])
+    return out
   })
 
   // Hungarian algorithm for square cost matrix.
