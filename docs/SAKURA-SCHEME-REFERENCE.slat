@@ -20326,12 +20326,20 @@
   :kind "meta"
   :signature "(vec/= a b) -> boolean"
   :summary "Test exact component-wise equality of two vectors."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Dim check first, then strict === per component. No tolerance."
   :explanation "Returns true if and only if two vectors have the same dimension and every corresponding component is exactly equal (using Scheme's = predicate on numbers). Dimension mismatch returns false. This is a strict equality test, not approximate; use it for validation and exact comparisons, not for floating-point tolerance checks."
   :examples (
-    (:tier "novice" :code "(define v1 (vec/make (list 1 2 3)))\n(define v2 (vec/make (list 1 2 3)))\n(vec/= v1 v2)" :note "Two identically constructed vectors are equal.")
-    (:tier "intermediate" :code "(define orig (vec/make (list 2 3)))\n(define scaled (vec/scale 2 (vec/make (list 1 1.5))))\n(if (vec/= orig scaled) 'match 'differ)" :note "Tests whether scaling one vector produces the same result as direct construction.")
-    (:tier "expert" :code "(define (all-parallel? vecs)\n  (if (null? vecs) #t\n    (let ((v0 (car vecs)))\n      (and (every (lambda (v) (vec/= v v0)) vecs)\n           #t))))\n(all-parallel? (list (vec/make (list 1 0)) (vec/make (list 1 0))))" :note "Uses vec/= inside every to check if all vectors in a list are identical (a building block for deeper checks).")
+    (:tier "novice" :code "(vec/= '(1 2 3) '(1 2 3))" :note "Two identical 3-vectors return #t.")
+    (:tier "apprentice" :code "(vec/= '(1 2 3) '(1 2 4))" :note "One component differs — vec/= is all-or-nothing, so #f.")
+    (:tier "intermediate" :code "(define orig '(2 3))\n(define scaled (vec/scale '(1 1.5) 2))\n(if (vec/= orig scaled) 'match 'differ)" :note "Round-trip: build the target directly, then via vec/scale, verify they agree. (vec/scale v k) returns v*k componentwise.")
+    (:tier "expert" :code "(define (all-equal? vecs)\n  (if (null? vecs) #t\n    (let ((v0 (car vecs)))\n      (let loop ((rest (cdr vecs)))\n        (cond ((null? rest) #t)\n              ((vec/= v0 (car rest)) (loop (cdr rest)))\n              (else #f))))))\n(all-equal? (list '(1 0) '(1 0) '(1 0)))" :note "Fold vec/= to check every vector equals the first. Manual short-circuit exits on first mismatch.")
+    (:tier "master" :code "(define (find-index target vecs)\n  (let loop ((rest vecs) (i 0))\n    (cond ((null? rest) -1)\n          ((vec/= target (car rest)) i)\n          (else (loop (cdr rest) (+ i 1))))))\n(find-index '(2 3) (list '(1 0) '(0 1) '(2 3) '(5 5)))" :note "Linear search returns 0-based position of first match. Returns 2 — target is at index 2.")
   )
+  :math (:algebra ("equivalence relation") :total #t :domain "two vectors" :codomain "boolean")
+  :cs (:complexity "time O(d), space O(1)" :effects (none) :pure #t)
+  :ai (:deterministic #t :cacheable #t :cardinality one)
   :caveats ("Exact equality: 0.3 ≠ (0.1 + 0.2) due to floating-point rounding." "Different dimensions always compare false; no automatic alignment or zero-padding." "Both arguments must be vectors; passing non-vectors yields false or error depending on implementation.")
   :drawbacks ("Too strict for many numerical applications; consider approximate comparison (e.g., checking vec/norm of difference)." "Does not short-circuit on dimension mismatch in all implementations; may be slower than a custom predicate." "Not idempotent with floating-point: (vec/= v1 v1) is always true, but (vec/= (vec/+ a b) (vec/+ a b)) may differ if intermediate rounding differs.")
   :usecases ("Unit tests: verifying that a transformation produces an expected exact result." "Discrete geometry: checking whether two lattice points coincide." "Symbolic computation: comparing vectors over exact rational or symbolic components.")
