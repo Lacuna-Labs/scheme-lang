@@ -20197,18 +20197,27 @@
   :library "vec"
   :kind "meta"
   :signature "(vec/- v1 [v2 ...]) -> vector"
-  :summary "Element-wise subtraction of vectors; all must have the same dimension."
-  :explanation "Vector subtraction is addition of the negated vector: v1 − v2 = v1 + (−v2). If v1 = [a, b, c] and v2 = [d, e, f], then v1 − v2 = [a−d, b−e, c−f]. Exact arithmetic is preserved. Dimension mismatch raises 'dim-mismatch. With one argument, returns the negation (zero-minus that vector). With 2+ arguments, subtracts left-to-right: vec/- v1 v2 v3 = (v1 − v2) − v3."
+  :summary "Element-wise subtraction of vectors; single-arg negates, N-ary subtracts left-to-right."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Variadic component-wise subtraction. One arg negates. Two args = v1-v2. N-ary = (((v1-v2)-v3)-v4). Missing components zero-pad rather than raise — see vec/+ for the matching design."
+  :explanation "Vector subtraction is addition of the negated vector: v1 − v2 = v1 + (−v2). If v1 = [a, b, c] and v2 = [d, e, f], then v1 − v2 = [a−d, b−e, c−f]. Exact arithmetic is preserved. With one argument, returns the negation. With 2+ arguments, subtracts left-to-right: vec/- v1 v2 v3 = (v1 − v2) − v3."
   :examples (
-    (:tier "novice" :code "(vec/- '(5 7 9) '(1 2 3))" :note "Simple 3-D subtraction; returns (4 5 6).")
-    (:tier "intermediate" :code "(let ((start '(3 4))\n      (end '(7 1)))\n  (vec/- end start))" :note "Compute displacement vector (end − start) from two position vectors; returns (4 -3).")
-    (:tier "expert" :code "(let* ((p1 '(1 2 3))\n       (p2 '(4 6 8))\n       (p3 '(7 2 1))\n       (d12 (vec/- p2 p1))\n       (d23 (vec/- p3 p2))\n       (rel-accel (vec/- d23 d12)))\n  (list 'displacement-12-to-23 rel-accel\n        'magnitude (vec/norm rel-accel)))" :note "Chain differences for relative motion analysis; then compute magnitude of relative acceleration.")
+    (:tier "novice" :code "(vec/- '(5 7 9) '(1 2 3))" :note "3-D subtraction. Returns (4 5 6).")
+    (:tier "apprentice" :code "(vec/- '(1 2 3))" :note "One-arg negates every component. Returns (-1 -2 -3) — cleaner than writing (vec/- '(0 0 0) v) for the same effect.")
+    (:tier "intermediate" :code "(let ((start '(3 4))\n      (end '(7 1)))\n  (vec/- end start))" :note "Displacement vector (end − start) from two positions. Returns (4 -3) — four right, three up in screen space where Y grows downward.")
+    (:tier "expert" :code "(vec/- '(10 10 10) '(1 2 3) '(1 1 1))" :note "N-ary left-to-right subtraction. (10-1-1, 10-2-1, 10-3-1) = (8 7 6). Handy for subtracting several offsets in one call.")
+    (:tier "master" :code "(define (velocity from to dt)\n  ;; Given two positions and a time delta, return the average\n  ;; velocity vector: displacement / dt applied component-wise.\n  (map (lambda (x) (/ x dt)) (vec/- to from)))\n(velocity '(0 0) '(6 8) 2)" :note "Compose vec/- with map to compute a velocity. From (0,0) to (6,8) over 2 seconds: (3 4). Magnitude 5 — the 3-4-5 triangle appearing in kinematics.")
   )
-  :caveats ("Dimension mismatch is an error; all input vectors must have the same length." "Left-associative: vec/- a b c = (a − b) − c, not a − (b − c)." "Single-argument form returns negation; vec/- v is equivalent to vec/- (list 0 0 ...) v." "Exact arithmetic is preserved; 1/2 − 1/3 yields 1/6 exactly.")
+  :caveats ("Component-count mismatch does not raise; shorter vectors are zero-padded." "Left-associative: vec/- a b c = (a − b) − c, not a − (b − c)." "Single-argument form returns negation." "Exact arithmetic is preserved; 1/2 − 1/3 yields 1/6 exactly.")
   :drawbacks ("Variadic left-associativity can be counterintuitive; use parentheses to clarify intent." "No in-place operation; creates a fresh vector each time." "Exact rationals can accumulate large numerators/denominators over many operations.")
   :usecases ("Physics: computing relative velocity or displacement between two points." "Graphics: computing edge vectors from vertex pairs." "Linear algebra: forming differences for numerical methods (e.g. gradient descent)." "Signal processing: computing deltas or differences in time series.")
   :related ("vec/+" "vec/scale" "vec/norm" "vec/dot")
-  :learn (:concept "Vector subtraction as component-wise negation and addition; left-to-right evaluation" :prerequisites ("vec/+" "vec/make") :progression "Use vec/- to compute displacements, then combine with vec/norm to compute distances, then study vec/angle-between for relative orientation."))
+  :learn (:concept "Vector subtraction as component-wise negation and addition; left-to-right evaluation" :prerequisites ("vec/+" "vec/make") :progression "Use vec/- to compute displacements, then combine with vec/norm to compute distances, then study vec/angle-between for relative orientation.")
+  :math (:algebra ("not-commutative" "identity: zero-vector on the right") :total #t :domain "one or more vectors" :codomain "vector of the largest input dimension")
+  :cs (:complexity "time O(k·d), space O(d)" :effects (none) :pure #t)
+  :ai (:deterministic #t :cacheable #t :cardinality one :common-mistakes "Expecting right-associative evaluation. (vec/- a b c) subtracts BOTH b and c from a, not (a - (b-c)).")
+  :hacker (:primitive #f :kin ("NumPy: v1 - v2 - v3; Clojure: (mapv - v1 v2 v3)") :history "Follows Grassmann's vector algebra; the negation-of-one-arg convention echoes Scheme's numeric (-)."))
 
 (verb
   :name "vec/->string"
