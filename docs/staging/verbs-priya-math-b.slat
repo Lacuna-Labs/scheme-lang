@@ -96,3 +96,76 @@
         :long  "Declare state-machine invariants for lint and simulator; no runtime effect. Rules are free-form; tools that understand your rule language machine-check them; the driver treats the call as a no-op."
         :for-ai "Use to document safety contracts for state handlers. Zero runtime cost. Rules are consumed by lint/simulator, not the driver."
         :for-kid "A note to the robot that reads code before it runs. It says 'these things should always be true here.' The robot may warn you if they aren't; the program keeps running either way.")))
+
+;; ─── obj-get — safe JS object property access ─────────────────────
+
+(verb
+  :name "obj-get"
+  :library "core"
+  :signature "(obj-get object key) -> value | #f"
+  :summary "Retrieve a property value from an object or association list, or #f if not found."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(obj-get (list 'x 3 'y 4) 'x)"
+     :note "Alist stored as flat key-value pairs. Returns 3.")
+    (:tier "apprentice"
+     :code "(obj-get (list (list 'x 3) (list 'y 4)) 'y)"
+     :note "Alist stored as pairs (assoc-style). Returns 4. obj-get handles both shapes.")
+    (:tier "intermediate"
+     :code "(let ((state (list 'x 100 'y 50 'k 1.5)))\n  (list (obj-get state 'x) (obj-get state 'y) (obj-get state 'k)))"
+     :note "Read three fields off a state alist. Returns (100 50 1.5). Common pattern for reading a shape you got back from another verb.")
+    (:tier "expert"
+     :code "(define (has? o k)\n  (if (equal? (obj-get o k) #f) 'missing 'present))\n(list (has? (list 'x 3) 'x) (has? (list 'x 3) 'y))"
+     :note "Wrap obj-get to distinguish present from absent. Returns (present missing). Note: obj-get returns #f for both 'not found' and 'value is null/undefined'; if you need to tell them apart, store a sentinel.")
+    (:tier "master"
+     :code "(define (extract-fields obj fields)\n  (map (lambda (f) (list f (obj-get obj f))) fields))\n(extract-fields (list 'name \"Sakura\" 'age 21 'role 'assistant)\n                (list 'name 'role 'age))"
+     :note "Given a shape and a list of fields, return an alist of (field value) pairs. Useful when marshaling a subset of an object into a downstream verb. Returns ((name \"Sakura\") (role assistant) (age 21))."))
+  :related ("camera-state" "card-get" "card-set!" "ctx-get")
+  :caveats ("Returns #f for both 'key not found' and 'value is #f or null'; cannot distinguish them without a sentinel." "Symbol keys are converted to their string name; ensure key naming is consistent." "Does not walk the prototype chain; only own properties are accessible." "If object is nil or not an object/list, returns #f silently.")
+  :drawbacks ("No way to distinguish 'missing' from 'present but falsy'." "No nested-path access; use repeated obj-get for nested lookup." "Symbol / string interning matters; a keyword written as ':x' vs a symbol 'x' may not match if the caller mixes conventions.")
+  :usecases ("Reading a field off a state alist returned by another verb." "Marshaling a subset of an object into a downstream call." "Defensive property access with a sensible fallback.")
+  :learn (:concept "Total, safe access on an association list — returns the value if present, #f otherwise. No thrown error for missing keys." :prerequisites ("list" "quote" "equal?") :progression "After this, look at assoc for the raw pair, or ctx-get for context-local state in a state machine handler.")
+
+  :+math
+    (:algebra ("obj-get is left-total on the domain (object, key) → value or ⊥; the ⊥ representative is #f.")
+     :total #t
+     :domain "any pair (obj, key) where obj is an alist / object and key is a symbol / string"
+     :codomain "value ∪ {#f}"
+     :proofs "Trivially total: every input returns exactly one output; there is no partial branch that could throw for well-typed inputs.")
+
+  :+cs
+    (:complexity "time O(n) where n is the length of the alist; O(1) for a plain JS object with hasOwnProperty."
+     :effects (none)
+     :pure #t
+     :evaluation-order "applicative")
+
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Handles three shapes in this order: (a) flat keyword-value alist ('x 3 'y 4), (b) pair-list alist ((x 3) (y 4)), (c) plain JS object via hasOwnProperty. Symbols coerce via .name; strings compared directly."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (obj-get (list 'x 3 'y 4) 'x) → 3; (obj-get (list (list 'x 3)) 'x) → 3; (obj-get '() 'x) → #f."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("display" "list")
+     :consumes-from ("camera-state" "card-get" "ctx-get")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing 'not found' with 'value is #f'. If your data contains #f as a legitimate value, obj-get cannot distinguish it from missing; use assoc + null? on the pair."
+     :when-not-to-use "You need nested-path access — use repeated obj-get. You need mutation — use a card-set! or similar."
+     :returns-confidence #f)
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Retrieve a property value from an object or alist, or #f if not found."
+        :long  "Retrieve a property value from an object or alist, or #f if not found. Handles flat keyword-value pairs, pair-list alists, and plain JS objects. Cannot distinguish missing from #f-valued."
+        :for-ai "Total safe accessor; returns #f as the missing sentinel. Handles multiple alist shapes."
+        :for-kid "Ask an object what value it stores under a name. If it doesn't know, you get #f (false).")))
