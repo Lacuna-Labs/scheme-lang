@@ -2210,3 +2210,262 @@
     (:deterministic #t
      :cacheable #t
      :raises ("(quote use-backend) for |G| > 8")))
+
+
+(verb
+  :name "alg/quotient"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/quotient G H) -> list-of-cosets"
+  :summary "Return the quotient group G/H as a list of left cosets of H in G."
+  :impl-status "wired"
+  :explanation "When H is a normal subgroup of G, the set of cosets G/H forms a group under (aH)(bH) = (ab)H. This verb returns the cosets as a list of lists; each inner list is one coset. If H is not normal, the return is still valid (the cosets partition G), but they don't form a group under multiplication. Verify normality via alg/is-normal? first."
+  :examples (
+    (:tier "novice" :code "(alg/quotient (alg/cyclic 6) '(0 3))"
+     :note "Cosets of {0,3} in Z_6: ((0 3) (1 4) (2 5)) — 3 cosets, index 2 subgroup gives 3 cosets? Actually |Z_6|/|{0,3}| = 6/2 = 3.")
+    (:tier "apprentice" :code "(length (alg/quotient (alg/cyclic 12) '(0 4 8)))"
+     :note "|Z_12| / |{0,4,8}| = 12/3 = 4 cosets.")
+    (:tier "intermediate" :code "(alg/quotient (alg/cyclic 4) '(0))"
+     :note "Quotient by the trivial subgroup: each element is its own coset. 4 cosets total.")
+    (:tier "expert" :code "(alg/quotient (alg/cyclic 6) '(0 1 2 3 4 5))"
+     :note "Quotient by the whole group: one coset containing everything.")
+    (:tier "master" :code "(define (lagrange-check G H) (= (length (alg/quotient G H)) (/ (length G) (length H)))) (lagrange-check (alg/cyclic 12) '(0 4 8))"
+     :note "Verify Lagrange's theorem: number of cosets equals [G:H] = |G|/|H|.")
+  )
+  :caveats
+    ("Return is a LIST of cosets, not a group structure — you still need to interpret them."
+     "If H is not normal, cosets exist but don't form a group.")
+  :drawbacks
+    ("O(|G| * |H|) — one coset per group element."
+     "Doesn't build the quotient's Cayley table.")
+  :usecases
+    ("Enumerate cosets of a subgroup."
+     "Test Lagrange's theorem."
+     "Build quotient groups when H is known normal.")
+  :related ("alg/left-cosets" "alg/right-cosets" "alg/is-normal?" "alg/index")
+  :learn
+    (:concept "Quotient groups — the group of cosets when H is normal."
+     :prerequisites ("alg/is-normal?" "alg/left-cosets")
+     :progression "quotient -> homomorphism theorems -> Jordan-Hölder theorem.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Left cosets deduplicated by sorted-set key."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G| * |H|), space O(|G|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/kernel"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/kernel G H phi) -> list"
+  :summary "Return the kernel of a homomorphism phi: G -> H, i.e. the set of g in G with phi(g) = identity of H."
+  :impl-status "wired"
+  :explanation "The kernel of a group homomorphism phi: G -> H is the set of elements that phi sends to the identity of H. It is always a normal subgroup of G, and by the first isomorphism theorem, G/ker(phi) is isomorphic to the image of phi. This verb iterates over G, calls phi on each element, and collects those whose image is H's identity."
+  :examples (
+    (:tier "novice" :code "(alg/kernel (alg/cyclic 6) (alg/cyclic 6) (lambda (x) x))"
+     :note "Identity homomorphism: kernel is just the identity element (0).")
+    (:tier "apprentice" :code "(alg/kernel (alg/cyclic 6) (alg/cyclic 3) (lambda (x) (modulo x 3)))"
+     :note "Reduction mod 3: kernel is {0, 3} — the elements that map to 0 in Z_3.")
+    (:tier "intermediate" :code "(alg/kernel (alg/cyclic 12) (alg/cyclic 4) (lambda (x) (modulo x 4)))"
+     :note "Reduction mod 4: kernel is {0, 4, 8}.")
+    (:tier "expert" :code "(length (alg/kernel (alg/cyclic 8) (alg/cyclic 8) (lambda (x) 0)))"
+     :note "Trivial homomorphism (everything goes to 0): kernel is the whole group. Length 8.")
+    (:tier "master" :code "(define (first-iso-check G H phi) (= (length (alg/kernel G H phi)) (/ (length G) (length (alg/quotient G (alg/kernel G H phi)))))) (first-iso-check (alg/cyclic 6) (alg/cyclic 3) (lambda (x) (modulo x 3)))"
+     :note "Verify first-iso relationship: |G/ker| corresponds to the image size.")
+  )
+  :caveats
+    ("phi must be callable — either a JS function or a Scheme lambda."
+     "Doesn't verify that phi is a homomorphism; results only make sense if it is.")
+  :drawbacks
+    ("O(|G|) phi calls per kernel."
+     "Returns just the elements; no Cayley-table structure.")
+  :usecases
+    ("Compute kernels for the first isomorphism theorem."
+     "Test whether a homomorphism is injective (kernel is trivial)."
+     "Find the pre-image of the identity.")
+  :related ("alg/homomorphism" "alg/is-homomorphism?" "alg/isomorphism?")
+  :learn
+    (:concept "Kernel of a homomorphism — the normal subgroup that measures its non-injectivity."
+     :prerequisites ("alg/homomorphism")
+     :progression "kernel -> first isomorphism theorem -> group cohomology.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Iterate G; collect g where phi(g) = identity(H)."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|), space O(|kernel|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/homomorphism"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/homomorphism G H phi) -> descriptor"
+  :summary "Wrap a candidate group homomorphism as a tagged descriptor (G, H, phi)."
+  :impl-status "wired"
+  :explanation "Bundle a candidate map phi: G -> H with its domain and codomain into a tagged tuple. This descriptor can then be passed to alg/kernel, alg/image, or alg/is-homomorphism? for verification and analysis. This verb does no validation — it's a constructor for a triple. Downstream verbs check the homomorphism axiom phi(a*b) = phi(a) * phi(b)."
+  :examples (
+    (:tier "novice" :code "(alg/homomorphism (alg/cyclic 6) (alg/cyclic 3) (lambda (x) (modulo x 3)))"
+     :note "Build a descriptor for the reduction-mod-3 map. Result is a tagged list.")
+    (:tier "apprentice" :code "(car (alg/homomorphism (alg/cyclic 4) (alg/cyclic 2) (lambda (x) (modulo x 2))))"
+     :note "First element of the descriptor is the tag 'homomorphism.")
+    (:tier "intermediate" :code "(define f (alg/homomorphism (alg/cyclic 8) (alg/cyclic 4) (lambda (x) (modulo x 4)))) (list-ref f 0)"
+     :note "Extract the tag from the tuple for inspection.")
+    (:tier "expert" :code "(let ((h (alg/homomorphism (alg/cyclic 6) (alg/cyclic 3) (lambda (x) (modulo x 3))))) (alg/is-homomorphism? (list-ref h 1) (list-ref h 2) (list-ref h 3)))"
+     :note "Unpack the descriptor and verify phi is a homomorphism.")
+    (:tier "master" :code "(define (map-descriptor G H f name) (alg/homomorphism G H f)) (map-descriptor (alg/cyclic 6) (alg/cyclic 3) (lambda (x) (modulo x 3)) 'reduce-mod-3)"
+     :note "Wrap a homomorphism with a name label (name is ignored by this constructor, but callers may attach it).")
+  )
+  :caveats
+    ("No validation of the homomorphism property — check with alg/is-homomorphism?."
+     "The descriptor is a plain list; not a special type.")
+  :drawbacks
+    ("Doesn't wire phi to actually be checked lazily; validation must be explicit."
+     "The descriptor loses type information about G, H.")
+  :usecases
+    ("Bundle a candidate homomorphism with its domain and codomain for passing around."
+     "Build a small library of named homomorphisms.")
+  :related ("alg/is-homomorphism?" "alg/kernel" "alg/isomorphism?")
+  :learn
+    (:concept "Descriptor for a candidate homomorphism."
+     :prerequisites ("alg/op")
+     :progression "homomorphism -> is-homomorphism? -> kernel + image + first-iso-theorem.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Returns ['homomorphism', G, H, phi]."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/isomorphism?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/isomorphism? G H phi) -> boolean"
+  :summary "Test whether phi is an isomorphism from G to H — i.e. a bijective homomorphism."
+  :impl-status "wired"
+  :explanation "Given groups G and H and a candidate map phi, this verb checks: (1) phi is injective (no two elements of G map to the same element in H); (2) phi is a homomorphism (phi(ab) = phi(a) phi(b)); (3) since |G| = |H| is required by the fact that phi is injective and both are finite, surjectivity follows from injectivity. Returns #t if all conditions hold, #f otherwise."
+  :examples (
+    (:tier "novice" :code "(alg/isomorphism? (alg/cyclic 6) (alg/cyclic 6) (lambda (x) x))"
+     :note "The identity map is always an isomorphism.")
+    (:tier "apprentice" :code "(alg/isomorphism? (alg/cyclic 4) (alg/cyclic 6) (lambda (x) x))"
+     :note "Different sizes; can't be an isomorphism. Returns #f.")
+    (:tier "intermediate" :code "(alg/isomorphism? (alg/cyclic 4) (alg/cyclic 4) (lambda (x) (modulo (* 3 x) 4)))"
+     :note "Multiplication by 3 mod 4 — since gcd(3,4)=1, this is a bijection. Is it a homomorphism under +? phi(a+b) = 3(a+b) mod 4 = 3a + 3b mod 4 = phi(a) + phi(b). Yes.")
+    (:tier "expert" :code "(alg/isomorphism? (alg/cyclic 4) (alg/cyclic 4) (lambda (x) (modulo (* 2 x) 4)))"
+     :note "Multiplication by 2 is NOT bijective (gcd(2,4)=2); should return #f.")
+    (:tier "master" :code "(define (find-automorphisms G) (filter (lambda (m) (alg/isomorphism? G G (lambda (x) (modulo (* m x) (length G))))) (list 1 2 3 4 5))) (find-automorphisms (alg/cyclic 5))"
+     :note "Find multiplicative automorphisms of Z_5 — should be {1, 2, 3, 4} (the units).")
+  )
+  :caveats
+    ("Uses injectivity + homomorphism as the test; sufficient when both groups are finite of equal size."
+     "phi must be callable; returns #f if not.")
+  :drawbacks
+    ("O(|G|^2) — nested loop over group elements."
+     "Doesn't identify WHERE the failure is when returning #f.")
+  :usecases
+    ("Verify a candidate isomorphism between explicit groups."
+     "Find all automorphisms of a group by testing candidates."
+     "Test conjugation is an inner automorphism.")
+  :related ("alg/homomorphism" "alg/is-homomorphism?" "alg/kernel")
+  :learn
+    (:concept "Isomorphisms — bijective homomorphisms; the notion of 'same group up to relabeling.'"
+     :prerequisites ("alg/is-homomorphism?")
+     :progression "isomorphism? -> alg/is-isomorphic? (existential) -> automorphism groups.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Inject via image set; homomorphism via nested loop."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|^2), space O(|G|)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/is-homomorphism?"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/is-homomorphism? G H phi) -> boolean"
+  :summary "Test whether phi: G -> H is a group homomorphism: phi(a*b) = phi(a)*phi(b) for all a, b in G."
+  :impl-status "wired"
+  :explanation "Checks the homomorphism axiom for every pair (a, b) of group elements. If phi(a*b) equals phi(a)*phi(b) throughout, returns #t; otherwise #f. This is O(|G|^2) — for small groups fast, for larger groups slow. The verb uses alg/op for the group operations in G and H, so it handles Cayley-table, dihedral, and permutation-group representations uniformly."
+  :examples (
+    (:tier "novice" :code "(alg/is-homomorphism? (alg/cyclic 6) (alg/cyclic 3) (lambda (x) (modulo x 3)))"
+     :note "Reduction mod 3 respects addition: it's a homomorphism.")
+    (:tier "apprentice" :code "(alg/is-homomorphism? (alg/cyclic 4) (alg/cyclic 4) (lambda (x) (modulo (+ x 1) 4)))"
+     :note "Translation by 1 is NOT a homomorphism (doesn't send identity to identity). Returns #f.")
+    (:tier "intermediate" :code "(alg/is-homomorphism? (alg/cyclic 8) (alg/cyclic 8) (lambda (x) 0))"
+     :note "Trivial homomorphism (everything to 0) IS a homomorphism.")
+    (:tier "expert" :code "(alg/is-homomorphism? (alg/cyclic 6) (alg/cyclic 6) (lambda (x) (modulo (* 2 x) 6)))"
+     :note "Doubling is a homomorphism: 2(a+b) = 2a + 2b mod 6. Returns #t.")
+    (:tier "master" :code "(define (count-homomorphisms G H maps) (length (filter (lambda (phi) (alg/is-homomorphism? G H phi)) maps))) (count-homomorphisms (alg/cyclic 6) (alg/cyclic 6) (list (lambda (x) 0) (lambda (x) x) (lambda (x) (modulo (* 2 x) 6))))"
+     :note "All 3 of these are homomorphisms from Z_6 to itself.")
+  )
+  :caveats
+    ("phi must be a callable Scheme function or JS function."
+     "O(|G|^2) evaluations of phi — slow for large groups.")
+  :drawbacks
+    ("Short-circuits on first failure — but worst case is quadratic."
+     "No diagnostic — just #t/#f.")
+  :usecases
+    ("Verify a candidate homomorphism."
+     "Filter a list of candidate maps."
+     "Precondition check for alg/kernel and alg/image.")
+  :related ("alg/homomorphism" "alg/kernel" "alg/isomorphism?")
+  :learn
+    (:concept "The homomorphism property: phi(a*b) = phi(a)*phi(b) — the structure-preservation condition."
+     :prerequisites ("alg/op")
+     :progression "is-homomorphism? -> alg/kernel -> alg/quotient -> first isomorphism theorem.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Nested loop over |G|^2 pairs; use alg/op for both group ops."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(|G|^2), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
