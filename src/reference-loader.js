@@ -24,9 +24,11 @@ import { Sym } from './reader.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DEFAULT_REF_PATH = join(__dirname, '..', 'docs', 'SAKURA-SCHEME-REFERENCE.slat')
+const DEFAULT_SCHEMA_PATH = join(__dirname, '..', 'docs', 'SAKURA-SCHEME-REFERENCE-SCHEMA.slat')
 
 // ── module-level cache ──────────────────────────────────────────────
 let CACHE = null
+let SCHEMA_CACHE = null
 
 // ── helpers ─────────────────────────────────────────────────────────
 
@@ -198,4 +200,111 @@ export function referenceMeta() {
  */
 export function clearReferenceCache() {
   CACHE = null
+  SCHEMA_CACHE = null
+}
+
+
+// ── schema loader ──────────────────────────────────────────────────
+//
+// The schema file (docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat) is the
+// self-describing catalogue of what a verb entry may contain. It's
+// one (schema ...) record. We parse it and expose the list of
+// required fields so validateEntry can enforce them without importing
+// a hardcoded list.
+
+/**
+ * loadSchema({ path?, forceReload? }) — parse the reference schema
+ * SLAT and return the schema object.
+ *
+ * Cached. Test-seam: pass forceReload:true or use clearReferenceCache.
+ */
+export function loadSchema({ path, forceReload = false } = {}) {
+  if (SCHEMA_CACHE && !forceReload && !path) return SCHEMA_CACHE
+  const src = readFileSync(path || DEFAULT_SCHEMA_PATH, 'utf-8')
+  const forms = parse(src)
+  let schemaForm = null
+  for (const f of forms) {
+    if (!Array.isArray(f) || f.length === 0) continue
+    const head = f[0]
+    if (head instanceof Sym && head.name === 'schema') { schemaForm = f; break }
+  }
+  if (!schemaForm) {
+    throw new Error('reference-loader.loadSchema: no (schema ...) record found in ' + (path || DEFAULT_SCHEMA_PATH))
+  }
+  const body = schemaForm.slice(1)
+  function stripColon(name) { return name.startsWith(':') ? name.slice(1) : name }
+  const raw = {}
+  for (let i = 0; i < body.length; i++) {
+    const k = body[i]
+    if (!(k instanceof Sym)) continue
+    const key = stripColon(k.name)
+    raw[key] = body[i + 1]
+    i++
+  }
+  function symToBareName(v) { return v instanceof Sym ? stripColon(v.name) : v }
+  function symListToStrings(v) { return Array.isArray(v) ? v.map(symToBareName) : v }
+  function pairListToObject(v) {
+    if (!Array.isArray(v)) return v
+    const out = {}
+    for (const pair of v) {
+      if (Array.isArray(pair) && pair.length >= 2) {
+        const k = pair[0]
+        if (k instanceof Sym) out[stripColon(k.name)] = pair[1]
+      }
+    }
+    return out
+  }
+  function stringListToArray(v) {
+    if (!Array.isArray(v)) return v
+    return v.map((x) => (x instanceof Sym ? stripColon(x.name) : x))
+  }
+  const schema = {
+    version: raw.version || 'unknown',
+    required: symListToStrings(raw.required) || [],
+    general: symListToStrings(raw.general) || [],
+    disciplines: (function () {
+      const out = {}
+      if (!Array.isArray(raw.disciplines)) return out
+      for (const pair of raw.disciplines) {
+        if (!Array.isArray(pair) || pair.length < 2) continue
+        const nameTok = pair[0]
+        const fields = pair[1]
+        if (!(nameTok instanceof Sym)) continue
+        out[nameTok.name] = symListToStrings(fields)
+      }
+      return out
+    })(),
+    commerce: symListToStrings(raw.commerce) || [],
+    hacker: symListToStrings(raw.hacker) || [],
+    ai: symListToStrings(raw.ai) || [],
+    meta: symListToStrings(raw.meta) || [],
+    exampleTiers: stringListToArray(raw['example-tiers']) || [],
+    fieldDocs: pairListToObject(raw['field-docs']),
+    renderRules: stringListToArray(raw['render-rules']) || [],
+    entrySummaryRules: pairListToObject(raw['entry-summary-rules']),
+  }
+  SCHEMA_CACHE = schema
+  return schema
+}
+
+/**
+ * validateEntry(entry, schema?) — check a parsed verb entry against
+ * the schema's required-field list.
+ * Returns { ok: boolean, missingRequired: string[] }.
+ * Empty string / empty array / empty object all count as missing.
+ */
+export function validateEntry(entry, schema) {
+  const s = schema || loadSchema()
+  const required = Array.isArray(s.required) ? s.required : []
+  const missing = []
+  for (const field of required) {
+    const v = entry ? entry[field] : undefined
+    if (v === undefined || v === null) { missing.push(field); continue }
+    if (typeof v === 'string' && v.length === 0) { missing.push(field); continue }
+    if (Array.isArray(v) && v.length === 0) { missing.push(field); continue }
+    if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) {
+      missing.push(field); continue
+    }
+  }
+  return { ok: missing.length === 0, missingRequired: missing }
 }
