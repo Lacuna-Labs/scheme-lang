@@ -18743,12 +18743,17 @@
   :library "stat"
   :kind "meta"
   :signature "(stat/sd-sample dataset) -> number"
-  :summary "Calculate the sample standard deviation: √(Σ(x−x̄)²/(n−1)), using Bessel's correction."
-  :explanation "When you have a sample rather than the entire population, dividing by n−1 (instead of n) corrects for the bias introduced by estimating the mean from the sample itself. This makes the sample SD an unbiased estimator of the population SD. If you have only one data point or fewer, the sample SD is undefined; the verb escalates 'no-spread in this case. An empty dataset returns 'nan."
+  :summary "Sample standard deviation using Bessel's n-1 correction."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Sample SD: mean, then sqrt of sum-of-squared-deviations/(n-1). Empty or single-element list returns 0 (NOT 'no-spread or 'nan as older docs claimed). Impl is permissive on degenerate cases."
+  :explanation "Sample SD divides by n-1 instead of n, correcting for the bias from estimating the mean from the same sample. Unbiased estimator of population SD for the underlying distribution."
   :examples (
-    (:tier "novice" :code "(stat/sd-sample (list 5 10 15 20 25))" :note "Returns ~7.9; sample SD (divides by 4, not 5)")
-    (:tier "intermediate" :code "(let ((sample (list 100 105 110 95 120)))\n  (display \"Sample SD: \")\n  (display (stat/sd-sample sample))\n  (display \"; Population SD would be: \")\n  (display (stat/sd sample)))" :note "Sample SD (≈10.3) is slightly larger than population SD (≈9.2) due to Bessel's correction")
-    (:tier "expert" :code "(let ((trials (list 2.5 2.6 2.4 2.7 2.5 2.6)))  ; 6 measurements\n  (let ((mu (stat/mean trials))\n        (se (/ (stat/sd-sample trials) (sqrt 6))))\n    (list 'mean mu 'standard-error se 'ci-lower (- mu (* 2 se)) 'ci-upper (+ mu (* 2 se)))))" :note "Uses sample SD to compute standard error and approximate 95% confidence interval")
+    (:tier "novice" :code "(stat/sd-sample '(5 10 15 20 25))" :note "Returns ~7.91. Divides by n-1=4 instead of n=5. Compare with stat/sd for the same data.")
+    (:tier "apprentice" :code "(stat/sd-sample '(5))" :note "Only one data point. Returns 0 (not enough spread info); the impl doesn't raise. Guard with (>= (stat/count data) 2) if the caller needs a signaled underspec.")
+    (:tier "intermediate" :code "(let ((sample '(100 105 110 95 120)))\n  (list ':sample-sd (stat/sd-sample sample)\n        ':pop-sd    (stat/sd sample)))" :note "Sample SD (~9.62) is larger than population SD (~8.60) — Bessel's correction inflates by sqrt(n/(n-1)).")
+    (:tier "expert" :code "(define (confidence-interval trials z)\n  (let* ((n (stat/count trials))\n         (mu (stat/mean trials))\n         (se (/ (stat/sd-sample trials) (sqrt n))))\n    (list ':mean mu\n          ':se se\n          ':lower (- mu (* z se))\n          ':upper (+ mu (* z se)))))\n(confidence-interval '(2.5 2.6 2.4 2.7 2.5 2.6) 1.96)" :note "Approx 95% CI via z=1.96. Sample SD feeds standard error which feeds the interval width.")
+    (:tier "master" :code "(define (t-statistic sample hyp-mean)\n  ;; Compute a one-sample t-statistic against a hypothesized mean.\n  (let* ((n (stat/count sample))\n         (mu (stat/mean sample))\n         (sd (stat/sd-sample sample)))\n    (if (or (< n 2) (= sd 0)) 'no-t\n        (/ (- mu hyp-mean) (/ sd (sqrt n))))))\n(list (t-statistic '(100 102 101 99 100) 100)\n      (t-statistic '(5) 3))" :note "Text-book t-stat helper. Returns (~0.78 no-t) — the first sample's t-stat is small (mean close to hypothesis relative to sampling variability); the second is too small to compute.")
   )
   :caveats ("Empty dataset returns 'nan; guard with stat/count." "Dataset with fewer than 2 points escalates 'no-spread; cannot estimate spread from 0 or 1 observation." "Assumes data are a random sample; if data are already a population, use stat/sd instead." "Larger than stat/sd for the same data due to Bessel's correction (n−1 vs n).")
   :drawbacks ("Bessel's correction introduces a slight bias toward the high side for small samples; there is no perfect unbiased estimator of SD." "Sensitive to outliers; a single extreme value inflates the sample SD." "Assumes continuous or interval data; misleading for categorical or ordinal data." "Computationally more expensive than stat/range; use range for quick checks.")
