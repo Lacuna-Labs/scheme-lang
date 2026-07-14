@@ -1,0 +1,420 @@
+; Ren Lane — Motion + Tick + Cadence + Grid Verb Audit
+; ------------------------------------------------------
+; Author: Ren (Lacuna Eng Lead, motion+tick wiring lane)
+; Date:   2026-07-14
+; Branch: verbs/wire-596-2026-07-14
+; Scope:  grid/* motion/* tick/* cadence/*  (33 verbs total)
+;
+; Alfred: "We can't lie to people. They trust us."
+;
+; This audit distinguishes REAL implementations from
+; DESCRIPTOR STUBS. A descriptor stub is a function of shape
+;   (...args) => [name, ...args]
+; that returns a shaped list which LOOKS structured but
+; performs no semantic work. Under the no-lie rule these
+; count as lies.
+;
+; Sources cross-referenced:
+;   - docs/SAKURA-SCHEME-REFERENCE.slat            (the language)
+;   - src/wired-verbs.js                           (curated impls)
+;   - src/reference-impls.js                       (auto-stub floor)
+;   - REPL verified via ./bin/sakura-scheme eval
+
+(audit
+  :lane        "ren-motion"
+  :date        "2026-07-14"
+  :verb-count  33
+  :real        10
+  :stub        23
+  :note        "tick/* fully real. cadence/may-propose? real (trivial). Everything else is descriptor stub."
+)
+
+; ─── grid/* (12 verbs) ─────────────────────────────────────
+
+(verb-status
+  :name    "grid/card-center"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13197
+  :ref-signature "(grid/card-center id) -> pair or #f"
+  :real-need "Look up card by id in card layout registry; return (list x y) center or #f. Requires card registry/state."
+)
+
+(verb-status
+  :name    "grid/clear"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13215
+  :ref-signature "(grid/clear) -> null"
+  :real-need "Empty internal buffers for pending dots + glows. Needs a grid state module."
+)
+
+(verb-status
+  :name    "grid/dot"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13233
+  :ref-signature "(grid/dot x y [colour] [alpha]) -> null"
+  :real-need "Push {x, y, colour, alpha} record onto pending-dots buffer. Colour default light pink; alpha default 1.0."
+)
+
+(verb-status
+  :name    "grid/flower-clear!"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13251
+  :ref-signature "(grid/flower-clear!) -> null"
+  :real-need "Delete all entries in _flowers Map."
+)
+
+(verb-status
+  :name    "grid/flower-go-to!"
+  :status  "STUB"
+  :where   "src/reference-impls.js:2101 (auto-stub bulk)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13269
+  :ref-signature "(grid/flower-go-to! id cardId) -> boolean"
+  :real-need "Look up flower by id, look up card by cardId, compute card center, set flower target; return #t on success #f otherwise. Depends on card registry."
+)
+
+(verb-status
+  :name    "grid/flower-list"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13287
+  :ref-signature "(grid/flower-list) -> list"
+  :real-need "Return array of _flowers Map keys."
+)
+
+(verb-status
+  :name    "grid/flower-move-to!"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13305
+  :ref-signature "(grid/flower-move-to! id x y) -> boolean"
+  :real-need "Look up flower by id, set tx/ty to x/y, compute speed from distance, reset phase, reset glow. Return #t/#f."
+)
+
+(verb-status
+  :name    "grid/flower-pos"
+  :status  "STUB"
+  :where   "src/reference-impls.js:2101 (auto-stub bulk)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13323
+  :ref-signature "(grid/flower-pos id) -> (x . y) or #f"
+  :real-need "Look up flower by id, return (x . y) pair. Return #f if missing."
+)
+
+(verb-status
+  :name    "grid/flower-settled?"
+  :status  "STUB"
+  :where   "src/reference-impls.js:2101 (auto-stub bulk — endsWith?→false)"
+  :shape   "() => false"
+  :ref-line 13341
+  :ref-signature "(grid/flower-settled? id) -> boolean"
+  :real-need "Look up flower by id, return #t if phase='settled', #f otherwise. Current stub always returns #f which is a lie for settled flowers."
+)
+
+(verb-status
+  :name    "grid/flower-spawn!"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13359
+  :ref-signature "(grid/flower-spawn! id colour x y) -> null"
+  :real-need "Insert new flower into _flowers Map with settled phase, given colour + starting pos, default pattern."
+)
+
+(verb-status
+  :name    "grid/flower-state!"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13377
+  :ref-signature "(grid/flower-state! id motion amp rate) -> symbol-or-string"
+  :real-need "Look up flower by id, update motion/amp/rate/motionT0, return normalized motion name (or #f if missing)."
+)
+
+(verb-status
+  :name    "grid/glow"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1034 (gridExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 13395
+  :ref-signature "(grid/glow x y radius colour alpha) -> null"
+  :real-need "Push {x, y, radius (min 1), colour, alpha} onto pending-glows buffer. Colour default soft pink; alpha default 0.6."
+)
+
+; ─── motion/* (10 verbs) ───────────────────────────────────
+
+(verb-status
+  :name    "motion/anchor-to-input"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1005 (motionExtras)"
+  :shape   "(...args) => descriptor  (with 'animate perm)"
+  :ref-line 14723
+  :ref-signature "(motion/anchor-to-input target sensor param transform) -> null"
+  :real-need "Register a per-frame binding: each tick, read sensor, apply transform, write to target's param. Returns null. Depends on animation loop + sensor bus."
+)
+
+(verb-status
+  :name    "motion/arc"
+  :status  "STUB"
+  :where   "src/reference-impls.js:2132 (auto-stub bulk)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14741
+  :ref-signature "(motion/arc tensor-id) -> {kind:'arc', ok:bool, phrase_arc:list, duration_ms:num, ...}"
+  :real-need "Look up timing tensor by id; if not ready return {ok:false, reason:'pending-timing-tensor'}. Return {kind:'arc', ok:true, phrase_arc:[...], duration_ms:num}. Since we have no tensor store yet, honest impl: return {ok:false, reason:'no-timing-tensor-store'} — that is NOT a lie; that is truthful reporting."
+)
+
+(verb-status
+  :name    "motion/cadence"
+  :status  "STUB"
+  :where   "src/reference-impls.js:2132 (auto-stub bulk)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14759
+  :ref-signature "(motion/cadence bpm [division]) -> {kind:'cadence', ok:bool, bpm:num, division:str, periodMs:num, beatPeriodMs:num}"
+  :real-need "Pure math: 60000/bpm = beatPeriodMs. Division map: w=4beats, h=2beats, q=1beat, 8=0.5, 16=0.25, 32=0.125, dotted variants, triplets. Return shaped object. This is FULLY IMPLEMENTABLE with no host dependency."
+)
+
+(verb-status
+  :name    "motion/drop"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1005 (motionExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14777
+  :ref-signature "(motion/drop [targetBeat] [totalBeats]) -> {kind:'drop', ok:true, targetBeat:num, totalBeats:num, articulation:list}"
+  :real-need "Pure math: build a list of length totalBeats where index (targetBeat-1)%4, (targetBeat-1)%4+4, ... = 0.95 and others = 0.35. FULLY IMPLEMENTABLE."
+)
+
+(verb-status
+  :name    "motion/follow-input"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1005 (motionExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14795
+  :ref-signature "(motion/follow-input target sensor-field) -> null"
+  :real-need "Register per-frame binding: read sensor-field, set target position toward that value. Depends on animation loop + sensor bus."
+)
+
+(verb-status
+  :name    "motion/halt"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1005 (motionExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14813
+  :ref-signature "(motion/halt target) -> null"
+  :real-need "Cancel any in-flight motion binding on target in the motion registry. Idempotent no-op if none. Needs a motion binding registry."
+)
+
+(verb-status
+  :name    "motion/move-to"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1005 (motionExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14831
+  :ref-signature "(motion/move-to target x y :ms duration :curve easing-name) -> descriptor"
+  :real-need "Return a shaped descriptor {kind:'move-to', target, x, y, ms:duration|default, curve:easing|default, ok:true}. The reference EXPLICITLY says this returns a descriptor. Current stub returns [name, ...args] which does NOT respect keyword args (:ms, :curve). Real impl parses keyword args and returns a proper descriptor."
+)
+
+(verb-status
+  :name    "motion/pocket"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1006 (motionExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14849
+  :ref-signature "(motion/pocket :tolerance-ms tolerance :count n) -> descriptor"
+  :real-need "Return {kind:'pocket', ok:true, offsets:[-tol, ..., 0, ..., +tol]} of length n symmetric around 0. If count<=0 clamp to 1. FULLY IMPLEMENTABLE pure math."
+)
+
+(verb-status
+  :name    "motion/with-feel"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1005 (motionExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14867
+  :ref-signature "(motion/with-feel tensor-id :articulation style) -> descriptor"
+  :real-need "Parse :articulation kw arg (default 'legato'). Return {kind:'with-feel', tensor:id, articulation:style, ok:tensor-cached?}. No tensor store yet → ok:false honest report."
+)
+
+(verb-status
+  :name    "motion/with-pace"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1005 (motionExtras)"
+  :shape   "(...args) => descriptor"
+  :ref-line 14885
+  :ref-signature "(motion/with-pace tensor-id :intensity level) -> descriptor"
+  :real-need "Parse :intensity kw arg, clamp to [0,1]. Return {kind:'with-pace', tensor:id, intensity:clamped, ok:tensor-cached?}. No tensor store yet → ok:false honest."
+)
+
+; ─── tick/* (9 verbs) ──────────────────────────────────────
+
+(verb-status
+  :name    "tick/ease"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:153"
+  :shape   "(name, t) => easing(t) or 'nan"
+  :ref-line 19293
+  :ref-signature "(tick/ease name t) -> num or 'nan"
+  :notes   "16 easing curves registered. Verified in REPL."
+)
+
+(verb-status
+  :name    "tick/lissajous"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:129"
+  :shape   "(fx, fy, phx, phy, t) => [sin(fx*t+phx), sin(fy*t+phy)]"
+  :ref-line 19311
+  :ref-signature "(tick/lissajous fx fy phx phy t) -> (x y) pair"
+  :notes   "Real pure math."
+)
+
+(verb-status
+  :name    "tick/mod-n"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:115"
+  :ref-line 19329
+  :ref-signature "(tick/mod-n frame n) -> integer in [0, n)"
+  :notes   "Real, handles negative frame correctly."
+)
+
+(verb-status
+  :name    "tick/osc"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:88"
+  :ref-line 19347
+  :ref-signature "(tick/osc frame period lo hi) -> num in [lo, hi]"
+  :notes   "Real, sine-mapped to lo..hi."
+)
+
+(verb-status
+  :name    "tick/pattern"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:121"
+  :ref-line 19365
+  :ref-signature "(tick/pattern frame xs) -> element of xs"
+  :notes   "Real cyclic lookup."
+)
+
+(verb-status
+  :name    "tick/phase"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:95"
+  :ref-line 19383
+  :ref-signature "(tick/phase frame period) -> num in [0, 1)"
+  :notes   "Real, normalizes to unit interval."
+)
+
+(verb-status
+  :name    "tick/pulse"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:101"
+  :ref-line 19401
+  :ref-signature "(tick/pulse frame period duty) -> 0 or 1"
+  :notes   "Real square wave with duty cycle."
+)
+
+(verb-status
+  :name    "tick/sine"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:82"
+  :ref-line 19419
+  :ref-signature "(tick/sine frame period amp phase) -> num"
+  :notes   "Real sine wave."
+)
+
+(verb-status
+  :name    "tick/triangle"
+  :status  "REAL"
+  :where   "src/wired-verbs.js:108"
+  :ref-line 19437
+  :ref-signature "(tick/triangle frame period) -> num in [0, 1]"
+  :notes   "Real triangle wave."
+)
+
+; ─── cadence/* (2 verbs) ───────────────────────────────────
+
+(verb-status
+  :name    "cadence/may-propose?"
+  :status  "REAL (trivial)"
+  :where   "src/wired-verbs.js:1135"
+  :shape   "() => true"
+  :ref-line 2201
+  :ref-signature "(cadence/may-propose? last-ms now-ms tier) -> boolean"
+  :notes   "Currently always returns #t regardless of args — degenerate real. Reference specifies tier-budget logic against last-ms/now-ms. Honest fix: accept args, compare (now-ms - last-ms) vs tier budget (default plan lookup), return real boolean. Requires a cadence policy table."
+  :fix     "Upgrade to args-aware impl backed by cadence/plan tier table."
+)
+
+(verb-status
+  :name    "cadence/plan"
+  :status  "STUB"
+  :where   "src/wired-verbs.js:1136"
+  :shape   "(...args) => descriptor"
+  :ref-line 2219
+  :ref-signature "(cadence/plan tier) -> plan-object"
+  :real-need "Return plan object for tier. Static table of tiers (low/medium/high/urgent) mapping to {interval-ms, budget-per-hour, ...}. Simple pure lookup."
+)
+
+; ─── Summary ────────────────────────────────────────────────
+
+(summary
+  :real
+  ( "tick/ease" "tick/lissajous" "tick/mod-n" "tick/osc" "tick/pattern"
+    "tick/phase" "tick/pulse" "tick/sine" "tick/triangle"
+    "cadence/may-propose?"  ; degenerate real; upgrade planned
+  )
+  :stubs
+  ( "grid/card-center" "grid/clear" "grid/dot"
+    "grid/flower-clear!" "grid/flower-go-to!" "grid/flower-list"
+    "grid/flower-move-to!" "grid/flower-pos" "grid/flower-settled?"
+    "grid/flower-spawn!" "grid/flower-state!" "grid/glow"
+    "motion/anchor-to-input" "motion/arc" "motion/cadence"
+    "motion/drop" "motion/follow-input" "motion/halt"
+    "motion/move-to" "motion/pocket" "motion/with-feel"
+    "motion/with-pace"
+    "cadence/plan"
+  )
+  :notes "23 stubs to wire in Phase B. Some are pure math (motion/cadence, motion/drop, motion/pocket, cadence/plan) — trivial. Some need small state modules (grid flowers, grid pending dots/glows, motion binding registry). Some are honestly-not-ready-yet (motion/arc, motion/with-pace, motion/with-feel — depend on a timing-tensor store that doesn't exist yet; honest impl reports ok:false with reason instead of returning a shaped-but-empty lie)."
+)
+
+(plan-phase-b
+  :order-of-attack
+  (
+    ; Wave 1 — pure math, zero deps
+    "motion/cadence" "motion/drop" "motion/pocket" "cadence/plan"
+
+    ; Wave 2 — grid state module (create src/grid.js)
+    "grid/flower-clear!" "grid/flower-spawn!" "grid/flower-list"
+    "grid/flower-pos" "grid/flower-settled?" "grid/flower-move-to!"
+    "grid/flower-state!" "grid/flower-go-to!"
+    "grid/clear" "grid/dot" "grid/glow" "grid/card-center"
+
+    ; Wave 3 — motion binding registry (create src/motion.js)
+    "motion/halt" "motion/move-to" "motion/follow-input"
+    "motion/anchor-to-input"
+
+    ; Wave 4 — honest-not-ready reports (depend on tensor store)
+    "motion/arc" "motion/with-feel" "motion/with-pace"
+
+    ; Wave 5 — upgrade degenerate real
+    "cadence/may-propose?"  ; already returns true; make it args-aware
+  )
+  :ground-rules
+  (
+    "One verb per commit."
+    "5-tier examples per verb, master tier inside tick-frame animation loop where the verb belongs to a live loop."
+    "REPL-verified via ./bin/sakura-scheme eval for every example."
+    "Reference SLAT authored/updated FIRST (reference is the language)."
+    "+eng (latency ms) and +ai (cardinality + determinism) tags added to each verb entry."
+    "No auto-stubs. If a subsystem isn't ready, verb returns HONEST {ok:false, reason:...} — not a shaped-but-empty descriptor lie."
+    "Push after each verb. No --no-verify. No force."
+  )
+  :blocker
+  "Waiting for docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat from Alfred / schema-lock lane. Schema will lock the shape of every :examples/:tier/:code/:note record + the +eng/+ai metadata format. Do not begin Phase B until schema is present."
+)
