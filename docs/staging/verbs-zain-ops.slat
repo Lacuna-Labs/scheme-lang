@@ -258,3 +258,327 @@
      :prerequisites ("standard normal z-quantiles" "variance of a sum of independent RVs")
      :progression "Compute safety at a few service levels. Then feed into ops/reorder-point. Then compare with the ops/newsvendor answer for the single-period version of the same tradeoff.")
   :entry-provenance "authored")
+
+
+;; ─── Newsvendor (single-period stochastic inventory) ──────────────
+
+(verb
+  :name "ops/newsvendor-fractile"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/newsvendor-fractile cost price salvage) -> critical-ratio"
+  :summary "Newsvendor critical ratio (p-c)/(p-s) — the target service level for the newsvendor problem."
+  :impl-status "wired"
+  :explanation "The critical ratio determines the optimal order quantity in the newsvendor model: given per-unit cost c, selling price p, and salvage value s (what you get for unsold units), the optimal Q satisfies P(D ≤ Q*) = (p-c)/(p-s). The ratio compares the underage cost (missed profit p-c) against the total cost of getting the quantity wrong (p-s). A high critical ratio (close to 1) means stockouts are much more painful than salvage — stock plenty. A low ratio means salvage recoups most of the cost — stock lean."
+  :examples (
+    (:tier "novice"
+     :code "(ops/newsvendor-fractile 3 10 1)"
+     :note "Cost 3, price 10, salvage 1 → fractile 0.778. Order to the 78th percentile of demand.")
+    (:tier "apprentice"
+     :code "(let ((c 8) (p 20) (s 4)) (ops/newsvendor-fractile c p s))"
+     :note "Higher salvage narrows the gap; fractile drops to 0.75. Salvage matters.")
+    (:tier "intermediate"
+     :code "(let ((rows (list (list 2 10 0) (list 4 10 0) (list 6 10 0) (list 8 10 0)))) (map (lambda (r) (ops/newsvendor-fractile (car r) (cadr r) (caddr r))) rows))"
+     :note "As cost climbs from 2 to 8 (price fixed at 10, no salvage), the fractile falls from 0.8 to 0.2. Higher cost → order less.")
+    (:tier "expert"
+     :code "(define (fractile-report c p s) (let ((cr (ops/newsvendor-fractile c p s))) (list (quote underage-per-unit) (- p c) (quote overage-per-unit) (- c s) (quote target-fractile) cr))) (fractile-report 5 12 2)"
+     :note "Explain the fractile in terms of underage (opportunity cost of a stockout) and overage (dollars burned on unsold units).")
+    (:tier "master"
+     :code "(let* ((c 6) (p 15) (s 2) (fractile (ops/newsvendor-fractile c p s)) (nv (ops/newsvendor 200 50 c p s))) (list (quote fractile) fractile (quote Q*) (car nv) (quote expected-profit) (cadr nv)))"
+     :note "The fractile drives Q* in ops/newsvendor. See both numbers together and the connection is explicit: Q* is the inverse-CDF at the fractile.")
+  )
+  :caveats
+    ("Requires price > salvage; otherwise the formula degenerates (returns 0)."
+     "Assumes constant unit cost. Tiered pricing needs the piecewise version."
+     "Cost c should include only variable per-unit cost, not fixed setup — those don't affect the marginal fractile.")
+  :drawbacks
+    ("Ignores stockout goodwill cost; if losing a sale damages the customer relationship, add that to the underage side manually."
+     "Assumes salvage is guaranteed. If unsold units become worthless with probability, use expected salvage."
+     "Not itself a Q; combine with a demand distribution (or use ops/newsvendor directly).")
+  :usecases
+    ("Determine the target service level for a perishable / single-period SKU."
+     "Explain to an operator WHY the recommended order quantity is high or low — the fractile is the intuition."
+     "Cross-check ops/newsvendor's Q* against the demand distribution's inverse CDF at this fractile.")
+  :related ("ops/newsvendor" "ops/eoq" "ops/safety-stock")
+  :learn
+    (:concept "Underage vs overage costs — the two ways of getting the quantity wrong."
+     :prerequisites ("multiplication and subtraction")
+     :progression "Compute the fractile. Explain what it means. Then plug into ops/newsvendor.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/newsvendor"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/newsvendor mu sigma cost price salvage) -> (Q* expected-profit)"
+  :summary "Newsvendor optimum for normally distributed demand: order Q* = μ + z·σ where z is the inverse-normal at the critical ratio."
+  :impl-status "wired"
+  :explanation "The single-period stochastic inventory problem. Demand D ~ Normal(μ, σ). Under-order (D > Q) and you lose profit p-c per missed unit; over-order (Q > D) and you lose c-s per leftover unit. The optimal Q* balances the two: Q* = μ + Φ⁻¹((p-c)/(p-s))·σ. Expected profit is computed with the normal loss function L(z) = φ(z) − z·(1−Φ(z)). Real-shop compatible: gives an operator a concrete number for how many of the perishable-item to stock this week."
+  :examples (
+    (:tier "novice"
+     :code "(ops/newsvendor 100 20 3 10 1)"
+     :note "Mean demand 100, σ=20, cost 3, price 10, salvage 1 → Q* ≈ 115, expected profit ≈ 646.")
+    (:tier "apprentice"
+     :code "(let ((mu 500) (sigma 100) (c 4) (p 12) (s 2)) (ops/newsvendor mu sigma c p s))"
+     :note "Larger scale: μ=500, σ=100, healthier margins. Q* comes in around 567.")
+    (:tier "intermediate"
+     :code "(let ((sigmas (list 10 20 30 40 50))) (map (lambda (s) (car (ops/newsvendor 100 s 3 10 1))) sigmas))"
+     :note "As demand variability rises (σ from 10 to 50), Q* grows too — you buy more insurance for a wider outcome distribution.")
+    (:tier "expert"
+     :code "(define (nv-decision mu sigma c p s) (let* ((res (ops/newsvendor mu sigma c p s)) (Q (car res)) (profit (cadr res))) (list (quote order-quantity) (ceiling Q) (quote expected-daily-profit) profit))) (nv-decision 80 15 5 20 3)"
+     :note "Wrap up the operator-facing report. Ceiling the quantity to a whole unit; return labeled fields.")
+    (:tier "master"
+     :code "(let* ((mu 300) (sigma 60) (options (list (list 2 8 1) (list 3 12 1) (list 5 15 3)))) (map (lambda (opt) (let ((res (ops/newsvendor mu sigma (car opt) (cadr opt) (caddr opt)))) (list (quote cost) (car opt) (quote price) (cadr opt) (quote salvage) (caddr opt) (quote Q) (car res) (quote profit) (cadr res)))) options))"
+     :note "Portfolio view: same demand, three cost/price scenarios. Which SKU is worth stocking most aggressively? The one whose margin per unit dominates.")
+  )
+  :caveats
+    ("Assumes demand is normally distributed. Heavy-tailed demand (Zipf, lognormal) needs a different quantile."
+     "Salvage < cost is expected. Salvage > cost would make ordering infinitely profitable — return sanely handles the (price ≤ salvage) degenerate case with (0, 0)."
+     "Q* is a real number. Round up in practice — the loss function is asymmetric near the optimum but flat.")
+  :drawbacks
+    ("Single period only. Multi-period stochastic problems need dynamic programming (Wagner-Whitin or similar)."
+     "Ignores lead time — assumes decision + delivery happen simultaneously. If lead time matters, precompute lead-time demand and pass μ, σ accordingly."
+     "No consideration of substitute goods; each SKU is treated in isolation.")
+  :usecases
+    ("Bakery deciding how many cookies to bake tomorrow."
+     "Retailer deciding how much fresh produce to stock for the weekend."
+     "Fashion buyer deciding how deep to go on a one-season SKU."
+     "Curriculum: teach the underage/overage tradeoff with a concrete number.")
+  :related ("ops/newsvendor-fractile" "ops/eoq" "ops/safety-stock" "ops/reorder-point")
+  :learn
+    (:concept "Marginal analysis under uncertainty: order one more unit if expected marginal profit > expected marginal cost."
+     :prerequisites ("normal distribution" "inverse CDF" "profit / cost per unit")
+     :progression "Compute the fractile with ops/newsvendor-fractile. Then compute Q* here. Then compare Q* against a stubbornly-fixed order quantity to see the profit gap.")
+  :entry-provenance "authored")
+
+
+;; ─── Queueing ────────────────────────────────────────────────────
+
+(verb
+  :name "ops/mm1"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mm1 lambda mu) -> (rho L Lq W Wq)"
+  :summary "M/M/1 queue: Poisson arrivals, exponential service, one server — closed-form steady-state metrics."
+  :impl-status "wired"
+  :explanation "Given arrival rate λ and service rate μ (both per unit time), computes the five key steady-state metrics of the classical M/M/1 queue. ρ = λ/μ is server utilization. L = ρ/(1-ρ) is the average number of customers in the system (queue + service). Lq = ρ²/(1-ρ) is the average number in the queue. W = 1/(μ-λ) is the average time in system. Wq = ρ/(μ-λ) is the average time in queue. If λ ≥ μ the system is unstable — the queue grows without bound; we return a tagged list ('unstable λ μ) rather than infinity, so the caller can branch cleanly."
+  :examples (
+    (:tier "novice"
+     :code "(ops/mm1 4 5)"
+     :note "λ=4, μ=5 → ρ=0.8 (80% busy), L=4, Lq=3.2, W=1.0, Wq=0.8. High utilization → long wait.")
+    (:tier "apprentice"
+     :code "(let ((lambda 3) (mu 5)) (ops/mm1 lambda mu))"
+     :note "Lower utilization ρ=0.6: L=1.5, W=0.5. Half the wait of the previous example — utilization matters a lot.")
+    (:tier "intermediate"
+     :code "(let* ((res (ops/mm1 6 10)) (rho (car res)) (L (cadr res))) (list (quote utilization) rho (quote avg-in-system) L))"
+     :note "Destructure the result to name the metrics you care about — ρ and L are the two most quoted.")
+    (:tier "expert"
+     :code "(define (safe-mm1 lam mu) (let ((r (ops/mm1 lam mu))) (if (and (pair? r) (number? (car r))) r (list (quote system-unstable) (quote arrival-exceeds-service))))) (safe-mm1 12 10)"
+     :note "Handle the unstable case. When λ ≥ μ, ops/mm1 returns ('unstable λ μ); wrap it to return a friendly diagnosis.")
+    (:tier "master"
+     :code "(let* ((mu 8) (lambda-vals (list 2 4 6 7 7.5)) (metrics (map (lambda (lam) (ops/mm1 lam mu)) lambda-vals))) (list (quote lambdas) lambda-vals (quote L-values) (map cadr metrics)))"
+     :note "Utilization sweep: as λ approaches μ, L blows up nonlinearly. This is the M/M/1 congestion curve — the reason capacity planning is nonlinear.")
+  )
+  :caveats
+    ("Arrival and service rates must be in matching time units."
+     "Returns ('unstable λ μ) when λ ≥ μ instead of infinity — check for the 'unstable head before consuming numbers."
+     "Assumes Poisson arrivals AND exponential service times. If either fails you need a more general queueing model (G/M/1 or G/G/1)."
+     "Steady-state values; startup transients are ignored.")
+  :drawbacks
+    ("One server only. Multi-server → use ops/mmc."
+     "Assumes infinite queue capacity. Finite buffers → M/M/1/K, not implemented here."
+     "No priority classes, no jockeying, no reneging.")
+  :usecases
+    ("Estimate wait times at a single-checkout coffee shop."
+     "Sizing decision: is one server enough, or do we need ops/mmc?"
+     "Teach the utilization law — ρ near 1 is where systems break.")
+  :related ("ops/mmc" "ops/littles-law" "ops/erlang-b" "ops/erlang-c")
+  :learn
+    (:concept "Steady-state closed forms for the simplest nontrivial queue — one server, memoryless everything."
+     :prerequisites ("understanding of arrival rate and service rate" "Poisson vs exponential")
+     :progression "Play with ρ. Then add servers with ops/mmc. Then find the right number of servers with ops/mmc-servers-for.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/mmc"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mmc lambda mu c) -> (rho L Lq W Wq Pw)"
+  :summary "M/M/c queue: c identical parallel servers, Poisson arrivals, exponential service — closed-form metrics plus P(wait > 0)."
+  :impl-status "wired"
+  :explanation "Multi-server generalization of M/M/1. Given arrival rate λ, per-server service rate μ, and c parallel servers, computes ρ = λ/(c·μ), average number in system L, in queue Lq, time in system W, time in queue Wq, and probability of a nonzero wait Pw (the Erlang-C formula). The sixth number Pw is what a hotel manager or call-center supervisor stares at — it's the probability an arriving customer has to wait at all. Stable iff λ < c·μ; otherwise returns ('unstable λ μ c)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/mmc 8 3 4)"
+     :note "λ=8/hr, μ=3/hr, 4 servers → ρ≈0.67, L≈3.4, Wq≈0.09 hr (5.7 min avg wait).")
+    (:tier "apprentice"
+     :code "(let ((lam 15) (mu 4) (c 5)) (ops/mmc lam mu c))"
+     :note "5 servers each serving 4/hr against 15/hr demand — pretty busy but stable. ρ=0.75.")
+    (:tier "intermediate"
+     :code "(let ((cs (list 4 5 6 7))) (map (lambda (c) (let ((r (ops/mmc 10 3 c))) (list c (list-ref r 4)))) cs))"
+     :note "Wait-time sweep: at each c from 4 to 7, extract Wq. Adding servers has diminishing returns beyond a point. (c=3 would be unstable: 10 arrivals against 3·3=9 service.)")
+    (:tier "expert"
+     :code "(define (avg-wait-min lam mu c) (let ((res (ops/mmc lam mu c))) (if (and (pair? res) (number? (car res))) (* 60 (list-ref res 4)) (quote unstable)))) (avg-wait-min 12 4 4)"
+     :note "Wrap Wq in minutes and handle the unstable case. Business-facing report.")
+    (:tier "master"
+     :code "(let* ((lam 20) (mu 5)) (map (lambda (c) (let ((r (ops/mmc lam mu c))) (list (quote servers) c (quote utilization) (car r) (quote pwait) (list-ref r 5) (quote avg-wait-min) (* 60 (list-ref r 4))))) (list 5 6 7 8)))"
+     :note "Full staffing dashboard: for each c, show utilization, P(wait), and average wait. Pick the c where P(wait) hits your service target.")
+  )
+  :caveats
+    ("c must be a positive integer. Fractional c is meaningless."
+     "Assumes servers are identical and pooled — customers accept whoever is free."
+     "Same distributional assumptions as M/M/1 (Poisson, exponential)."
+     "Unstable case returns ('unstable λ μ c) with three elements — different arity from the stable 6-tuple.")
+  :drawbacks
+    ("No differentiated service — all customers pooled, all servers identical."
+     "No abandonment (reneging) — assumes callers wait forever."
+     "No priority tiers.")
+  :usecases
+    ("Call center staffing: how many agents to hit an SLA?"
+     "Warehouse: how many packing stations to keep the day's orders moving?"
+     "Curriculum: extend the M/M/1 story to parallel servers.")
+  :related ("ops/mm1" "ops/mmc-servers-for" "ops/erlang-c" "ops/littles-law")
+  :learn
+    (:concept "Server pooling: c parallel identical servers reduce mean wait more than c times."
+     :prerequisites ("ops/mm1" "Erlang-C intuition")
+     :progression "Compare a fixed λ across c=1..N. Then use ops/mmc-servers-for to invert the question.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/mmc-servers-for"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mmc-servers-for lambda mu target-Wq) -> c"
+  :summary "Minimum number of servers c such that the resulting M/M/c average queueing time Wq ≤ target."
+  :impl-status "wired"
+  :explanation "Given demand rate λ, per-server service rate μ, and a target average queueing time Wq_target, scans c upward from ⌈λ/μ⌉+1 and returns the smallest integer c that keeps average queue wait at or below the target. Uses ops/mmc under the hood. Caps at c=512 and returns 'infeasible if no c reaches the target — a signal that your target requires more capacity than the model supports at this parameterization. Handy for capacity planning: what's the smallest team that hits the SLA?"
+  :examples (
+    (:tier "novice"
+     :code "(ops/mmc-servers-for 8 3 0.1)"
+     :note "λ=8, μ=3, want Wq ≤ 0.1 hr (6 min) → answer 4 servers.")
+    (:tier "apprentice"
+     :code "(let ((lam 20) (mu 4) (target 0.05)) (ops/mmc-servers-for lam mu target))"
+     :note "Tighter target (3 min) at higher demand — need more servers. Returns 7.")
+    (:tier "intermediate"
+     :code "(let ((targets (list 0.5 0.2 0.1 0.05 0.02))) (map (lambda (t) (ops/mmc-servers-for 15 3 t)) targets))"
+     :note "How many servers as the wait target tightens? Watch c grow superlinearly at the low end.")
+    (:tier "expert"
+     :code "(define (staffing-report lam mu target-min) (let ((c (ops/mmc-servers-for lam mu (/ target-min 60)))) (if (number? c) (list (quote hire) c (quote servers)) (quote infeasible-at-this-target)))) (staffing-report 25 5 3)"
+     :note "Human-facing staffing recommendation with minutes as input. Handles the 'target unreachable' case honestly.")
+    (:tier "master"
+     :code "(let* ((lam 30) (mu 5) (targets-min (list 30 15 10 5 3 1)) (targets-hr (map (lambda (t) (/ t 60)) targets-min)) (staff (map (lambda (t) (ops/mmc-servers-for lam mu t)) targets-hr))) (list (quote target-minutes) targets-min (quote servers) staff))"
+     :note "Full SLA/staffing table: pick your tolerance, see the required headcount. This is what a call center capacity report looks like.")
+  )
+  :caveats
+    ("Target Wq must be positive. Zero or negative returns 0 (degenerate)."
+     "Caps at c=512 — for larger problems returns 'infeasible."
+     "Assumes M/M/c model. Real environments with G/G/c behavior may need more servers than the closed form predicts.")
+  :drawbacks
+    ("Linear scan — O(c) calls to ops/mmc. For large c a bisection would be faster, but the linear form is small in absolute cost."
+     "No cost side of the tradeoff — just capacity. Combine with a per-server cost to get a $-optimum.")
+  :usecases
+    ("Answer 'how many agents for a 3-minute SLA?'"
+     "Sizing new-store staffing given projected demand and per-service-desk speed."
+     "Cross-check a manual staffing decision against the closed-form optimum.")
+  :related ("ops/mmc" "ops/mm1" "ops/erlang-c")
+  :learn
+    (:concept "Invert an M/M/c query: fix the service target, find the c."
+     :prerequisites ("ops/mmc")
+     :progression "Play with target Wq. Then think about the cost per server — the model gives capacity, cost gives the tradeoff.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/erlang-b"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/erlang-b intensity num-channels) -> blocking-probability"
+  :summary "Erlang B: blocking probability in a lossy system with N channels at offered load A."
+  :impl-status "wired"
+  :explanation "The classical Erlang-B formula B(A, N) — the probability that an arriving call finds all N channels busy and is REJECTED (no queueing, no waiting, no retries). Computed via the numerically stable recursion B(A, n) = A·B(A, n-1) / (n + A·B(A, n-1)) with B(A, 0) = 1. Offered load A is in Erlangs — dimensionless, computed as arrival rate × average call duration. This is the metric telecommunications carriers actually engineer against: 'grade of service' P.01 means B ≤ 0.01."
+  :examples (
+    (:tier "novice"
+     :code "(ops/erlang-b 10 15)"
+     :note "10 Erlangs offered, 15 channels → B ≈ 3.6%. About one call in 28 gets blocked.")
+    (:tier "apprentice"
+     :code "(let ((A 5) (channels 8)) (ops/erlang-b A channels))"
+     :note "Lightly loaded system: 5 Erlangs on 8 channels → B ≈ 1.9%. Well below P.02.")
+    (:tier "intermediate"
+     :code "(let ((ns (list 10 12 14 16 18 20))) (map (lambda (n) (ops/erlang-b 10 n)) ns))"
+     :note "Blocking curve: as channels grow from 10 to 20, blocking falls steeply then flattens.")
+    (:tier "expert"
+     :code "(define (channels-for-gos A target) (let loop ((n 1)) (if (or (> n 500) (<= (ops/erlang-b A n) target)) n (loop (+ n 1))))) (channels-for-gos 20 0.01)"
+     :note "Invert Erlang-B: smallest N that meets a blocking target. Answers 'how many trunks for P.01?'")
+    (:tier "master"
+     :code "(let* ((loads (list 5 10 15 20 25))) (map (lambda (A) (list (quote load) A (quote channels-p01) (let loop ((n 1)) (if (or (> n 200) (<= (ops/erlang-b A n) 0.01)) n (loop (+ n 1)))))) loads))"
+     :note "Provisioning table: for each offered load, the number of channels needed to hit P.01 grade-of-service. This is what a telecom capacity planner ships.")
+  )
+  :caveats
+    ("Assumes calls that find all channels busy are LOST (no queueing, no retries) — that's the 'B' vs 'C' distinction."
+     "Poisson arrivals, exponential holding times."
+     "N must be a non-negative integer; N=0 always gives blocking probability 1."
+     "Numerically stable via recursion — no factorial overflow at large N.")
+  :drawbacks
+    ("No queueing model — if calls wait when blocked, use Erlang-C instead."
+     "No retry behavior — real users hang up and try again, which inflates apparent load."
+     "Assumes identical channels and calls; no priority tiers.")
+  :usecases
+    ("Sizing PBX trunk groups for a target grade of service."
+     "Estimating cellular sector blocking at peak hour."
+     "Curriculum: introduce the loss-system model before the delay-system model.")
+  :related ("ops/erlang-c" "ops/mmc" "ops/mm1")
+  :learn
+    (:concept "Loss systems: rejected calls disappear. Erlang-B is the canonical example."
+     :prerequisites ("offered load A in Erlangs = λ · mean holding time")
+     :progression "Compute B for a few (A, N). Then invert to find N for a target. Then compare Erlang-B (loss) with Erlang-C (delay).")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/erlang-c"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/erlang-c intensity num-servers) -> probability-of-wait"
+  :summary "Erlang C: probability that an arriving customer must wait (all servers busy) in an M/M/c queue."
+  :impl-status "wired"
+  :explanation "The Erlang-C formula P(wait > 0) — the fraction of arrivals who find every server busy and must queue. Companion to ops/mmc, which also exposes this as its sixth element. Given offered load A (in Erlangs) and c servers, computes C(A, c) using the standard closed form. Requires A < c (stability). Call centers engineer their service levels around this number: an 'answer 80% of calls within 20 seconds' SLA is essentially a bound on C(A, c) times the exponential tail."
+  :examples (
+    (:tier "novice"
+     :code "(ops/erlang-c 8 10)"
+     :note "A=8, c=10 → C ≈ 0.41. About 4 in 10 callers wait at least a moment.")
+    (:tier "apprentice"
+     :code "(let ((load 15) (servers 20)) (ops/erlang-c load servers))"
+     :note "Lightly loaded (ρ=0.75): C ≈ 0.28. Fewer waits than a heavily-loaded system.")
+    (:tier "intermediate"
+     :code "(let ((cs (list 10 12 14 16 18))) (map (lambda (c) (ops/erlang-c 10 c)) cs))"
+     :note "Wait-probability sweep as we add servers to a fixed load of 10 Erlangs. Diminishing returns are visible.")
+    (:tier "expert"
+     :code "(define (servers-for-wait-prob A target) (let loop ((c (+ 1 (ceiling A)))) (if (or (> c 500) (<= (ops/erlang-c A c) target)) c (loop (+ c 1))))) (servers-for-wait-prob 20 0.2)"
+     :note "Invert Erlang-C: smallest c such that P(wait) ≤ target. Matches how call centers set an SLA.")
+    (:tier "master"
+     :code "(let* ((A 30) (cs (list 32 34 36 40 45)) (rows (map (lambda (c) (list (quote c) c (quote pwait) (ops/erlang-c A c))) cs))) rows)"
+     :note "Staffing table with P(wait) at each candidate c. Combine with an average handle time to translate into average wait — that's ops/mmc.")
+  )
+  :caveats
+    ("Requires A < c (arrival rate must not saturate the servers) — otherwise the wait probability is trivially 1."
+     "A is in Erlangs (dimensionless offered load), NOT arrival rate in calls per second. A = λ · mean-service-time."
+     "Assumes Poisson arrivals + exponential service times + c identical pooled servers."
+     "Different from Erlang-B: here callers WAIT rather than being lost.")
+  :drawbacks
+    ("Says nothing about how long the wait is — for that combine with ops/mmc (Wq)."
+     "No abandonment model — real callers hang up."
+     "No skill-based routing.")
+  :usecases
+    ("Call center SLA planning: what P(wait) does my current headcount deliver?"
+     "Cross-check ops/mmc's sixth-element output."
+     "Sanity-check third-party workforce-management software.")
+  :related ("ops/erlang-b" "ops/mmc" "ops/mm1")
+  :learn
+    (:concept "Delay systems: everyone gets served eventually, but some wait. Erlang-C is the wait probability."
+     :prerequisites ("offered load in Erlangs")
+     :progression "Compute C at a few (A, c). Then invert. Then combine with ops/mmc for the full time-in-queue picture.")
+  :entry-provenance "authored")
+
