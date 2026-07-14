@@ -1,0 +1,400 @@
+;; ═══════════════════════════════════════════════════════════════
+;; LOST + MISPLACED MATERIAL — RECOVERY SCHEMA
+;; 2026-07-14, Alfred's directive
+;;
+;; This document is the plan for recovering every lost + misplaced
+;; scheme doc + book chapter + reference fragment, aligned with the
+;; new Base + Variant doctrine (see project_sakura_scheme_base_
+;; variant_doctrine_2026_07_14.md in memory).
+;;
+;; Two audiences read this:
+;;   1. Alfred — reviews the plan, adjusts priorities.
+;;   2. Recovery lane(s) — executes item-by-item.
+;;
+;; ─── The rules ──────────────────────────────────────────────────
+;;
+;; 1. Roman-numeral stuff (reason-i/ii/iii/iv, math-book-ii, etc.)
+;;    gets FLATTENED. Chapters merge into the canonical book under
+;;    semantic names — never a Roman numeral in the final filename.
+;;    Volume identity is preserved in the chapter TOPIC + optional
+;;    :arc field in the record, not in the filename.
+;;
+;; 2. References go to their proper home:
+;;      - Sakura Scheme Reference proper → scheme-lang/docs/
+;;      - Engineering docs → scheme-lang/docs/
+;;      - Book-shaped teaching material → curator/scheme-books/book-of-*
+;;
+;; 3. Shortened blocks (chapters abridged in a previous pass) get
+;;    restored to full length from BOOK/ recovery lanes.
+;;
+;; 4. Misfiled books (in .wrong-attribution/) get a home decision +
+;;    move. No content deleted; original preserved via Merkle trail.
+;;
+;; 5. "The Book of X" aliases (six mirror entries with 1 unique
+;;    chapter each) get verified against canonical, then archived to
+;;    scheme-books/.aliases/ — NOT deleted (no-deletes doctrine).
+;;
+;; 6. Every recovery item is a (recovery-item ...) SLAT record with
+;;    the schema below. Executor writes a stamp per item.
+;; ═══════════════════════════════════════════════════════════════
+
+(schema
+  :version "1.0"
+  :for "lost-material-recovery"
+  :required (:id :category :source-paths :new-canonical-home :variant)
+  :fields
+    ((:id                  "recovery-NNN, monotonic")
+     (:category            "one of: roman-numeral-flatten | reference-relocation | misfiled-book | alias-mirror | shortened-block | misattribution-review | ambient-cleanup")
+     (:source-paths        "list of absolute paths preserved in BOOK/ or elsewhere")
+     (:file-count          "count of source files")
+     (:current-status      "preserved-in-BOOK | misfiled-wrong-attribution | abridged-canonical | mirror-with-canonical | orphan | already-canonical")
+     (:new-canonical-home  "absolute or relative path where this lives after recovery")
+     (:variant             "base | curator | reference | engineering — per Base+Variant doctrine")
+     (:rename-map          "list of (:from path :to path) — semantic filename fixes")
+     (:merge-with          "canonical book/doc to merge into, or nil for standalone")
+     (:arc                 "optional volume/arc tag preserved in the record — e.g. 'four-gates for reason-i content")
+     (:verification        "how we confirm success — diff hash | REPL passes examples | chapter count matches source | ...")
+     (:priority            "high | medium | low")
+     (:estimate-hours      "rough time to execute")
+     (:depends-on          "list of other recovery-ids that must complete first")
+     (:notes               "free prose")))
+
+;; ═══════════════════════════════════════════════════════════════
+;; CATEGORY A — Roman-numeral flattening
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-item
+  :id "recovery-001"
+  :category "roman-numeral-flatten"
+  :source-paths ("/Users/alfred/code/curator/BOOK/A-branch-scheme-books/reason-i/"
+                 "/Users/alfred/code/curator/BOOK/B-main-scheme-books/scheme-books/reason-i/")
+  :file-count 16
+  :current-status "preserved-in-BOOK"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-reason/"
+  :variant "curator"
+  :rename-map
+    ((:from "reason-i/00-cover.md"                       :to "book-of-reason/ch-gates-00-cover.book.slatl")
+     (:from "reason-i/01-what-is-a-question.md"          :to "book-of-reason/ch-gates-01-what-is-a-question.book.slatl")
+     (:from "reason-i/02-check-your-bounds.md"           :to "book-of-reason/ch-gates-02-check-your-bounds.book.slatl")
+     (:from "reason-i/03-do-you-have-the-tool.md"        :to "book-of-reason/ch-gates-03-do-you-have-the-tool.book.slatl")
+     (:from "reason-i/04-is-there-time.md"               :to "book-of-reason/ch-gates-04-is-there-time.book.slatl")
+     (:from "reason-i/05-a-worked-refusal.md"            :to "book-of-reason/ch-gates-05-a-worked-refusal.book.slatl")
+     (:from "reason-i/06-a-worked-uncertainty.md"        :to "book-of-reason/ch-gates-06-a-worked-uncertainty.book.slatl")
+     (:from "reason-i/07-when-to-stop-checking.md"       :to "book-of-reason/ch-gates-07-when-to-stop-checking.book.slatl")
+     (:from "reason-i/08-partial-yes.md"                 :to "book-of-reason/ch-gates-08-partial-yes.book.slatl")
+     (:from "reason-i/09-multi-turn-refusal.md"          :to "book-of-reason/ch-gates-09-multi-turn-refusal.book.slatl")
+     (:from "reason-i/10-the-joyful-yes.md"              :to "book-of-reason/ch-gates-10-the-joyful-yes.book.slatl")
+     (:from "reason-i/11-the-four-gates-in-review.md"    :to "book-of-reason/ch-gates-11-in-review.book.slatl")
+     (:from "reason-i/12-when-two-gates-conflict.md"     :to "book-of-reason/ch-gates-12-when-two-conflict.book.slatl")
+     (:from "reason-i/13-uncertain-gates.md"             :to "book-of-reason/ch-gates-13-uncertain-gates.book.slatl")
+     (:from "reason-i/14-the-gate-that-needs-revising.md" :to "book-of-reason/ch-gates-14-needs-revising.book.slatl")
+     (:from "reason-i/15-the-caller-who-wont-argue.md"   :to "book-of-reason/ch-gates-15-caller-who-wont-argue.book.slatl")
+     (:from "reason-i/16-closing-the-first-book.md"      :to "book-of-reason/ch-gates-16-closing.book.slatl"))
+  :merge-with "book-of-reason"
+  :arc "four-gates"
+  :verification "hash the source .md content; verify all 16 chapters land as .book.slatl with :arc \"four-gates\" and content preserved verbatim (may reformat to SLAT wrapper). Sanity: `ls book-of-reason/ch-gates-*` returns 17 files."
+  :priority "high"
+  :estimate-hours 2
+  :notes "The Four Gates — Reason volume I. Foundational content. reason-ii/iii/iv follow the same pattern.")
+
+(recovery-item
+  :id "recovery-002"
+  :category "roman-numeral-flatten"
+  :source-paths ("/Users/alfred/code/curator/BOOK/B-main-scheme-books/scheme-books/reason-ii/")
+  :file-count 16
+  :current-status "preserved-in-BOOK"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-reason/"
+  :variant "curator"
+  :arc "how-she-comes-to-know"
+  :rename-map "prefix ch-epistemology-NN, semantic names per chapter"
+  :merge-with "book-of-reason"
+  :verification "same as recovery-001, 16 chapters land as ch-epistemology-*"
+  :priority "high"
+  :estimate-hours 2
+  :depends-on ("recovery-001")
+  :notes "Volume II — how she comes to know. Read source dir + name each chapter semantically before writing rename-map.")
+
+(recovery-item
+  :id "recovery-003"
+  :category "roman-numeral-flatten"
+  :source-paths ("/Users/alfred/code/curator/BOOK/B-main-scheme-books/scheme-books/reason-iii/")
+  :file-count 16
+  :current-status "preserved-in-BOOK"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-reason/"
+  :variant "curator"
+  :arc "this-is-like-that"
+  :rename-map "prefix ch-analogy-NN"
+  :merge-with "book-of-reason"
+  :priority "high"
+  :estimate-hours 2
+  :depends-on ("recovery-002"))
+
+(recovery-item
+  :id "recovery-004"
+  :category "roman-numeral-flatten"
+  :source-paths ("/Users/alfred/code/curator/BOOK/B-main-scheme-books/scheme-books/reason-iv/")
+  :file-count 16
+  :current-status "preserved-in-BOOK"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-reason/"
+  :variant "curator"
+  :arc "confidence-as-a-signal"
+  :rename-map "prefix ch-confidence-NN"
+  :merge-with "book-of-reason"
+  :priority "high"
+  :estimate-hours 2
+  :depends-on ("recovery-003"))
+
+(recovery-item
+  :id "recovery-005"
+  :category "roman-numeral-flatten"
+  :source-paths ("/Users/alfred/code/curator/scheme-books/book-of-math-ii/")
+  :file-count 18
+  :current-status "already-canonical-but-numeraled"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-math/"
+  :variant "base"
+  :arc "advanced-math"
+  :rename-map "prefix ch-advanced-NN, semantic names"
+  :merge-with "book-of-math"
+  :priority "medium"
+  :estimate-hours 3
+  :notes "Book of Math II gets flattened into Book of Math with :arc \"advanced-math\" on each chapter. Preserves progression from basic → advanced without a separate volume.")
+
+;; ═══════════════════════════════════════════════════════════════
+;; CATEGORY B — Reference relocation
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-item
+  :id "recovery-006"
+  :category "reference-relocation"
+  :source-paths ("/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reference-manual/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-book-sakura-scheme-reference-manual/")
+  :file-count "TBD — audit"
+  :current-status "misfiled-wrong-attribution"
+  :new-canonical-home "/Users/alfred/code/scheme-lang/docs/"
+  :variant "reference"
+  :verification "diff each misfiled fragment against SAKURA-SCHEME-REFERENCE.slat; if content already present, archive fragment; if novel, merge into reference following the schema."
+  :priority "high"
+  :estimate-hours 3
+  :notes "The reference IS the language. Anything reference-flavored lives in scheme-lang/docs/. Check for content NOT already in SAKURA-SCHEME-REFERENCE.slat before archiving.")
+
+(recovery-item
+  :id "recovery-007"
+  :category "reference-relocation"
+  :source-paths ("/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-scheme-lang-docs/"
+                 "/Users/alfred/code/curator/BOOK/I-scheme-lang-docs/")
+  :file-count 29
+  :current-status "misfiled-wrong-attribution + preserved-in-BOOK"
+  :new-canonical-home "/Users/alfred/code/scheme-lang/docs/"
+  :variant "engineering"
+  :verification "diff against existing scheme-lang/docs/*.md and *.slat; where a doc is newer/different, offer as alternate; where identical, archive."
+  :priority "high"
+  :estimate-hours 2
+  :notes "scheme-lang engineering docs. Currently split — some live copies in scheme-lang/docs, older/parallel in BOOK/I-scheme-lang-docs/, misfiled fragments in .wrong-attribution. Reconcile.")
+
+;; ═══════════════════════════════════════════════════════════════
+;; CATEGORY C — Misfiled books needing canonical dirs
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-item
+  :id "recovery-008"
+  :category "misfiled-book"
+  :source-paths ("/Users/alfred/code/scheme-lang/docs/BOOK-OF-JESSE.md"
+                 "/Users/alfred/code/curator/BOOK/II-shipped-books/BOOK-OF-JESSE.md"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-jesse/")
+  :file-count "1 shipped MD (75KB) + mirrors + .wrong-attribution fragments"
+  :current-status "shipped-as-single-md-not-chaptered"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-jesse/"
+  :variant "base"
+  :rename-map "chunk 75KB MD into ~15-20 chapters by heading. e.g. 00-cover, 01-why-this-book, 02-if-you-know-fennel, 03-if-you-know-tic-80, 04-if-you-know-clojure, 05-if-you-know-lua, 06-the-language-in-one-page, 07-drawing-basics, 08-the-loop, 09-sound, 10-input, 11-your-first-cart, ..."
+  :merge-with nil
+  :verification "chunked chapter count matches source heading count; concatenate chunks + diff against source; REPL any embedded code."
+  :priority "high"
+  :estimate-hours 3
+  :notes "The Fennel/TIC-80/Clojure/Lua onboarding. MEGA LANE 4 authored it as a single MD; needs the chapter-per-file treatment.")
+
+(recovery-item
+  :id "recovery-009"
+  :category "misfiled-book"
+  :source-paths ("/Users/alfred/code/scheme-lang/docs/BOOK-OF-SCHEME.md"
+                 "/Users/alfred/code/curator/BOOK/II-shipped-books/BOOK-OF-SCHEME.md"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-scheme-ramp-up/")
+  :file-count "1 shipped MD (64KB) + mirrors + fragments"
+  :current-status "shipped-as-single-md; canonical book-of-scheme also exists (34 ch)"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-scheme/"
+  :variant "base"
+  :rename-map "diff BOOK-OF-SCHEME.md vs existing book-of-scheme/. If ramp-up content overlaps, merge new chapters at 35+ as ch-ramp-up-*. If wholly new, create book-of-scheme-ramp-up/ separate."
+  :merge-with "book-of-scheme"
+  :verification "no chapter lost, no duplication; existing 34 chapters intact."
+  :priority "high"
+  :estimate-hours 2)
+
+(recovery-item
+  :id "recovery-010"
+  :category "misfiled-book"
+  :source-paths ("/Users/alfred/code/curator/BOOK/B-main-scheme-books/scheme-books/reason-code/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reason-code/")
+  :file-count "4 chapters (00-cover, 01-signals-and-symbols, 02-machines-that-think, 03-from-machines-to-minds)"
+  :current-status "preserved-in-BOOK"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-reason-code/"
+  :variant "curator"
+  :rename-map
+    ((:from "reason-code/00-cover.md"                    :to "book-of-reason-code/00-cover.book.slatl")
+     (:from "reason-code/01-signals-and-symbols.md"      :to "book-of-reason-code/01-signals-and-symbols.book.slatl")
+     (:from "reason-code/02-machines-that-think.md"      :to "book-of-reason-code/02-machines-that-think.book.slatl")
+     (:from "reason-code/03-from-machines-to-minds.md"   :to "book-of-reason-code/03-from-machines-to-minds.book.slatl"))
+  :merge-with nil
+  :verification "4 files land; source diff shows content preserved."
+  :priority "high"
+  :estimate-hours 1
+  :notes "Computing history + LLM self-awareness. Task #93 authored this. Standalone book.")
+
+(recovery-item
+  :id "recovery-011"
+  :category "misfiled-book"
+  :source-paths ("/Users/alfred/code/curator/BOOK/A-branch-scheme-books/book-extensions/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-book-extensions/")
+  :file-count "9 named appendices (a-i) + HANDOFF"
+  :current-status "preserved-in-BOOK"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/book-of-extensions/"
+  :variant "curator"
+  :rename-map
+    ((:from "book-extensions/book-ext-a-register-discrimination.md"           :to "book-of-extensions/01-register-discrimination.book.slatl")
+     (:from "book-extensions/book-ext-b-named-antipatterns.md"                :to "book-of-extensions/02-named-antipatterns.book.slatl")
+     (:from "book-extensions/book-ext-c-associative-cs-lore.md"               :to "book-of-extensions/03-associative-cs-lore.book.slatl")
+     (:from "book-extensions/book-ext-d-ramp-appendixes.md"                   :to "book-of-extensions/04-ramp-appendixes.book.slatl")
+     (:from "book-extensions/book-ext-e-library-extensions-shop-verbs.md"     :to "book-of-extensions/05-library-extensions-shop-verbs.book.slatl")
+     (:from "book-extensions/book-ext-f-kit-and-seed-generation.md"           :to "book-of-extensions/06-kit-and-seed-generation.book.slatl")
+     (:from "book-extensions/book-ext-g-deadpan-reality-check.md"             :to "book-of-extensions/07-deadpan-reality-check.book.slatl")
+     (:from "book-extensions/book-ext-h-determinism-vs-voice-words-coupling.md" :to "book-of-extensions/08-determinism-vs-voice.book.slatl")
+     (:from "book-extensions/book-ext-i-scalar-axes-cost-consent.md"          :to "book-of-extensions/09-scalar-axes-cost-consent.book.slatl"))
+  :merge-with nil
+  :verification "9 chapters + HANDOFF preserved as ARCHIVE-HANDOFF.md."
+  :priority "high"
+  :estimate-hours 1)
+
+;; ═══════════════════════════════════════════════════════════════
+;; CATEGORY D — Alias mirrors (six "The Book of X" duplicates)
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-item
+  :id "recovery-012"
+  :category "alias-mirror"
+  :source-paths ("/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-money/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-music/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-motion/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-instruments/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-miscellany/"
+                 "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-one-shot/")
+  :file-count "1 unique chapter each (shipped-MD mirror)"
+  :current-status "mirror-with-canonical"
+  :new-canonical-home "/Users/alfred/code/curator/scheme-books/.aliases-2026-07-14/"
+  :variant "n/a — archive"
+  :rename-map "verify each file's content matches its canonical book-of-X; then move to .aliases-*/ preserving path. NO DELETES."
+  :merge-with nil
+  :verification "for each 'The Book of X': hash content, compare against book-of-x/00-cover.book.slatl or equivalent. Log any content divergence; archive both if divergent."
+  :priority "low"
+  :estimate-hours 1
+  :notes "These are shipped-MD mirrors preserved from a previous round. Not lost content; just aliases. Archive per no-deletes rule.")
+
+;; ═══════════════════════════════════════════════════════════════
+;; CATEGORY E — Shortened blocks (chapters abridged in a previous pass)
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-item
+  :id "recovery-013"
+  :category "shortened-block"
+  :source-paths ("various — audit needed")
+  :file-count "TBD"
+  :current-status "abridged-canonical"
+  :new-canonical-home "existing canonical book-of-*"
+  :variant "curator or base per book"
+  :verification "for each canonical chapter, find any longer version in BOOK/*/scheme-books/<book>/<chapter> and diff. If preserved version is substantially longer, restore. Log every restoration."
+  :priority "medium"
+  :estimate-hours 8
+  :notes "The audit: walk BOOK/A-branch, BOOK/B-main, BOOK/D-remote-branches for each canonical book, compare chapter files by name, flag any where preserved > canonical in size or content depth. Restore.")
+
+;; ═══════════════════════════════════════════════════════════════
+;; CATEGORY F — Misattribution review (.wrong-attribution/ set-aside)
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-item
+  :id "recovery-014"
+  :category "misattribution-review"
+  :source-paths ("/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-lacuna-labs-doc/")
+  :file-count "hundreds — THE-PLAN.slat, THE-BIG-FORGE-PLAN.slat, BIG-BURNDOWN-PLAN.slat, dated architecture notes, mockups, AI_ROADMAP, alfred-decisions"
+  :current-status "misfiled-wrong-attribution"
+  :new-canonical-home "/Users/alfred/code/lacuna-labs/engineering/ + /Users/alfred/code/lacuna-labs/research/"
+  :variant "n/a — not scheme; lacuna-labs eng"
+  :verification "sort each file by kind: THE-PLAN + THE-BIG-FORGE-PLAN → lacuna-labs/engineering/. Dated architecture notes → lacuna-labs/research/. Mockups → lacuna-labs/assets/mockups/. alfred-decisions → lacuna-labs/engineering/decisions/."
+  :priority "medium"
+  :estimate-hours 4
+  :notes "Big cleanup. This dir is where THE-PLAN + THE-BIG-FORGE-PLAN got misfiled. All content stays in lacuna-labs (not scheme).")
+
+(recovery-item
+  :id "recovery-015"
+  :category "misattribution-review"
+  :source-paths ("/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-engineering-spine/")
+  :file-count 36
+  :current-status "misfiled-wrong-attribution"
+  :new-canonical-home "/Users/alfred/code/lacuna-labs/engineering/spine/"
+  :variant "n/a — engineering"
+  :verification "36 files moved; index at spine/README.slat."
+  :priority "medium"
+  :estimate-hours 2)
+
+;; ═══════════════════════════════════════════════════════════════
+;; CATEGORY G — Ambient cleanup
+;; ═══════════════════════════════════════════════════════════════
+
+(recovery-item
+  :id "recovery-016"
+  :category "ambient-cleanup"
+  :source-paths ("/Users/alfred/code/scheme-lang/1"
+                 "/Users/alfred/code/scheme-lang/undefined"
+                 "/Users/alfred/code/scheme-lang/42")
+  :file-count 3
+  :current-status "stray-shell-artifacts"
+  :new-canonical-home "removed"
+  :variant "n/a"
+  :verification "files no longer exist at repo root."
+  :priority "low"
+  :estimate-hours 0.1
+  :notes "Detritus from shell-redirect typos during earlier lanes. Auto-mode blocked cleanup; needs a one-line rm.")
+
+;; ═══════════════════════════════════════════════════════════════
+;; EXECUTION PLAN
+;; ═══════════════════════════════════════════════════════════════
+
+(execution-plan
+  :phase-1 "high-priority recoveries in dependency order: 001 → 002 → 003 → 004 (Reason volumes) — one commit per volume, tested by chapter count."
+  :phase-2 "misfiled books: 008 (Jesse), 009 (Scheme ramp-up), 010 (Reason Code), 011 (Book Extensions). Parallel-safe."
+  :phase-3 "reference-relocation: 006 (reference-manual fragments), 007 (scheme-lang-docs). Parallel-safe."
+  :phase-4 "medium-priority: 005 (Math II flatten), 013 (shortened-block audit), 014 (lacuna-labs eng misattribution), 015 (engineering-spine)."
+  :phase-5 "low-priority: 012 (alias-mirror archive), 016 (ambient cleanup)."
+  :protocol
+    ("Every recovery-item gets a stamp record in docs/reports/recovery-stamps-2026-07-14.slat when complete."
+     "No source files deleted — moves are copy+preserve; original stays under BOOK/ per NO-DELETES doctrine."
+     "Every migrated chapter tagged :arc <original-volume> so Sakura's :help can surface the arc when relevant."
+     "Every migrated chapter tagged :provenance :source-path <original> — so future audits can trace where each file came from."
+     "Merged books get a MANIFEST.slat updated to reflect the new chapter count + arc list.")
+  :verification-suite
+    ("For each recovered book, chapter count = source count minus any explicitly-flagged-as-alias duplicates."
+     "For each restored shortened block, canonical file grew in line count."
+     "For each relocated reference fragment, either merged into canonical reference OR archived — never both, never neither."
+     "Final: `find ~/code/curator/scheme-books/.wrong-attribution-2026-07-13/ -type f` returns only files documented as intentionally archived.")
+  :estimated-total-hours 34
+  :recommended-lane-count 3-4
+  :recommended-name "Lost Material Recovery Lane")
+
+;; ═══════════════════════════════════════════════════════════════
+;; SAFEGUARDS
+;; ═══════════════════════════════════════════════════════════════
+
+(safeguards
+  :no-deletes "NEVER delete a source file. Copy to canonical + leave source in BOOK/ or .aliases/. Merkle-preserved."
+  :no-content-loss "Concatenate all chunks + diff against source before committing a chunking split."
+  :every-move-logged "docs/reports/recovery-log-2026-07-14.slat gets a (moved :from :to :date :verification) record per file."
+  :chapter-count-invariant "For each book, chapter count after = chapter count before + net-added-from-recovery. Never less."
+  :arc-tags-durable "Roman-numeral volumes flattened lose the number but keep the arc — chapters remain findable by :arc field."
+  :provenance-chain "Every chapter has :provenance :source-path so 6-months-from-now anyone can trace where each file originated."
+  :on-conflict "If two source paths have same-named content: hash both, log divergence, ask Alfred. Never silently pick one.")
