@@ -65,4 +65,20 @@
     (:path "carts/tutorial/05-drawing.scm"
      :summary "framebuffer basics — pset, disc, line, rect, palette.")
     (:path "carts/tutorial/06-a-tiny-game.scm"
-     :summary "one entity, gravity, a floor, sixty frames.")))
+     :summary "one entity, gravity, a floor, sixty frames.")
+
+    ;; ── animation ──
+    (:path "carts/animation/orbit.scm"
+     :summary "two concentric orbits — sin/cos and pset.")
+    (:path "carts/animation/lissajous.scm"
+     :summary "3:2 and 5:4 Lissajous figures — beat frequencies.")
+    (:path "carts/animation/spiral.scm"
+     :summary "Archimedean spiral — r = a·theta, 5 turns.")
+    (:path "carts/animation/starfield.scm"
+     :summary "60 stars streaming past at warp.")
+    (:path "carts/animation/fireworks.scm"
+     :summary "four radial sparks with gravity drift.")
+    (:path "carts/animation/rain.scm"
+     :summary "40 drops falling into a growing puddle.")
+    (:path "carts/animation/waves.scm"
+     :summary "layered sines as a sea, with sun and birds.")))
