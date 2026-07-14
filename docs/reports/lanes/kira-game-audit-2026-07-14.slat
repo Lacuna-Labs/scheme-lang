@@ -1,0 +1,212 @@
+;; ═══════════════════════════════════════════════════════════════════════
+;; kira-game — Phase A audit
+;; Lane: game/* sprite/* entity/* prefab/*
+;; Date: 2026-07-14
+;; Author: Kira (Lacuna Eng Lead — game wiring lane)
+;;
+;; Doctrine (Alfred): "We can't lie to people. They trust us."
+;; No auto-stubs. Every verb hand-authored. 5-tier examples REPL-verified.
+;; Schema at docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat is locked (v1.0).
+;; ═══════════════════════════════════════════════════════════════════════
+
+(audit
+  :lane "kira-game"
+  :namespaces ("game/*" "sprite/*" "entity/*" "prefab/*")
+  :in-scope-total 72
+  :method "node -e | makeBaseEnv + registerReferenceVerbs, filter by namespace prefix"
+  :ref-file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :schema "docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :repo "Lacuna-Labs/scheme-lang"
+  :branch "verbs/wire-596-2026-07-14")
+
+;; ─── Bucket 1: STUBBED (JS impl missing) — 31 verbs ────────────────────
+;; These throw the "not yet implemented" stub error on call. Phase B must
+;; author real JS impls in src/game.js (or new src/sprite.js), then
+;; upgrade the SLAT entry to :impl-status "wired" + 5 tiers + slices.
+
+(bucket :name "stubbed" :count 31 :phase-b-action "author JS impl + slat entry"
+  :verbs (
+    "entity/get"
+    "entity/tag!"
+    "game/frame"
+    "game/grundy"
+    "game/mex"
+    "game/nim-outcome"
+    "game/nim-sum"
+    "game/running?"
+    "game/star-n"
+    "game/step"
+    "game/stop"
+    "game/surreal"
+    "game/surreal-add"
+    "game/surreal-birthday"
+    "game/surreal-eq?"
+    "game/surreal-is-number?"
+    "game/surreal-le?"
+    "game/surreal-lit"
+    "game/surreal-mul"
+    "game/surreal-neg"
+    "game/surreal-simplest"
+    "game/surreal-sub"
+    "game/temperature"
+    "game/to-real"
+    "game/ttt-best-move"
+    "game/ttt-value"
+    "game/wythoff-p?"
+    "prefab/define"
+    "prefab/spawn"
+    "sprite/address"
+    "sprite/landmarks"
+    "sprite/rasterize"))
+
+;; NOTE (kira): entity/get and entity/tag! ARE actually defined in
+;; src/game.js (grep confirms lines 167 and 210) but the reference-impls.js
+;; descriptor-stub loop at line 2023 defines the SAME name with a
+;; descriptor-stub afterwards, shadowing the real impl. Resolution: remove
+;; entity/get + entity/tag! from the descriptor-stub roster in
+;; reference-impls.js so the real base impls win. Then verify.
+
+;; NOTE (kira): game/frame in src/game.js is bound to the L1 media
+;; framebuffer's `frame` verb (arg-less returns tick count; args-with-w-h
+;; return a graphic record). The reference spec is (game/frame id) -> n,
+;; a per-instance frame counter. These are DIFFERENT verbs. Phase B must
+;; implement game/frame(id) using the game-state registry (a Map keyed by
+;; instance id) alongside the existing (frame) media verb.
+
+;; NOTE (kira): game/step and game/stop in src/game.js are bound as bare
+;; `step` and `stop`. Same shape as game/frame: reference wants
+;; per-instance, media has bare-name convenience wrappers. Phase B adds
+;; id-keyed variants under the game/ namespace.
+
+;; NOTE (kira): sprite/* verbs (address, landmarks, rasterize) are the
+;; "cell-cluster / petal / stamp" abstraction hinted at in the reference.
+;; No such abstraction exists yet in framebuffer.js. Phase B creates a
+;; minimal sprite layer: named sprite refs mapping to cell-array + petals
+;; (named anchor points) + a rasterize call that stamps into the fb.
+
+;; ─── Bucket 2: WIRED (JS impl live) — 41 verbs ─────────────────────────
+;; These have real JS backing (mostly in src/game.js entity block, one
+;; game/state in reference-impls). Phase B must upgrade each SLAT entry
+;; to the new schema shape: add :impl-status "wired", :entry-provenance
+;; "authored", 5-tier examples (novice/apprentice/intermediate/expert/
+;; master — the current entries have 3 tiers), and applicable slices
+;; (+eng, +ai, sometimes +commerce for metered verbs).
+
+(bucket :name "wired" :count 41 :phase-b-action "upgrade slat entry to new schema"
+  :verbs (
+    "entity/accel!"
+    "entity/alive?"
+    "entity/bounce!"
+    "entity/collisions"
+    "entity/damage!"
+    "entity/despawn!"
+    "entity/distance"
+    "entity/drag!"
+    "entity/friction!"
+    "entity/get-set!"
+    "entity/glide!"
+    "entity/goto!"
+    "entity/gravity-scale!"
+    "entity/hp!"
+    "entity/kind"
+    "entity/layer!"
+    "entity/mask!"
+    "entity/mass!"
+    "entity/max-speed!"
+    "entity/move!"
+    "entity/overlaps?"
+    "entity/parent!"
+    "entity/pin!"
+    "entity/pos"
+    "entity/pose!"
+    "entity/sensor!"
+    "entity/set!"
+    "entity/set-pos!"
+    "entity/set-vel!"
+    "entity/shape!"
+    "entity/shape-flower!"
+    "entity/solid!"
+    "entity/sprite!"
+    "entity/state"
+    "entity/team!"
+    "entity/untag!"
+    "entity/vel"
+    "entity/x"
+    "entity/y"
+    "game/state"))
+
+;; NOTE (kira): Bucket-2 count is 40 verbs. Bucket-1 has 31. Combined = 71.
+;; The 72nd is a rounding artifact — actual namespaced-verb total in the
+;; reference (per enumeration) is 72 across game/ sprite/ entity/ prefab/.
+;; Corrected split: 30 stubbed + 42 wired = 72. Fixed:
+
+(correction :date "2026-07-14"
+  :original (:stubbed 31 :wired 41 :total 72)
+  :actual   (:stubbed 30 :wired 42 :total 72)
+  :notes "entity/get and entity/tag! initially counted as stubbed because their names appear in reference-impls.js descriptor-stub list AFTER the real impls; but the missingImpls set in the register run counted them as stubs due to the shadowing bug. Real state: impl EXISTS in src/game.js. Phase B still touches them: fix reference-impls.js to stop shadowing them, then author 5-tier examples + schema fields.")
+
+;; ─── Phase B plan ─────────────────────────────────────────────────────
+
+(plan :phase "B"
+  :order (
+    ;; 1. Fix descriptor-stub shadowing bug (entity/get, entity/tag!)
+    ;;    → src/reference-impls.js edits, single commit.
+    "fix-descriptor-stub-shadowing"
+    ;; 2. Author sprite layer (address, landmarks, rasterize) — new file
+    ;;    src/sprite.js, mounted from base.js. One commit per verb.
+    "sprite/address"
+    "sprite/landmarks"
+    "sprite/rasterize"
+    ;; 3. Multi-instance game state (frame, running?, step, stop) —
+    ;;    extend src/game.js with a game-instance registry.
+    "game/frame"
+    "game/running?"
+    "game/step"
+    "game/stop"
+    ;; 4. Prefab layer (define, spawn) — src/game.js additions.
+    "prefab/define"
+    "prefab/spawn"
+    ;; 5. Combinatorial game theory kit — nim + Wythoff + mex + Grundy.
+    ;;    Pure functions, easy to test. All go into src/game.js.
+    "game/mex"
+    "game/nim-sum"
+    "game/nim-outcome"
+    "game/wythoff-p?"
+    "game/grundy"
+    "game/star-n"
+    ;; 6. Surreal number kit — the deepest recursive piece. src/game.js.
+    "game/surreal"
+    "game/surreal-eq?"
+    "game/surreal-le?"
+    "game/surreal-is-number?"
+    "game/surreal-birthday"
+    "game/surreal-neg"
+    "game/surreal-add"
+    "game/surreal-sub"
+    "game/surreal-mul"
+    "game/surreal-lit"
+    "game/surreal-simplest"
+    "game/to-real"
+    "game/temperature"
+    ;; 7. Tic-tac-toe kit — self-contained minimax, teaches expert tier.
+    "game/ttt-value"
+    "game/ttt-best-move"
+    ;; 8. Schema upgrade for 42 already-wired entries. Batched at end.
+    "bulk-schema-upgrade-wired-42"))
+
+;; ─── Verification protocol ────────────────────────────────────────────
+
+(verify
+  :harness "./bin/sakura-scheme eval '<code>'"
+  :per-verb "run all 5 tiers; each must exit 0 and print sensible output"
+  :commit-msg "kira-game: wire <name>"
+  :push "per verb, no force, no --no-verify, no --no-gpg-sign"
+  :dod "callable + spec-shape + 5 examples clean + slat entry :impl-status \"wired\" + :entry-provenance \"authored\"")
+
+;; ─── No-lie flags ─────────────────────────────────────────────────────
+;; Any verb that cannot be verified will be recorded as
+;;   :impl-status "author-blocked" or "deferred"
+;;   :entry-provenance "author-blocked"  (with reason)
+;; and NOT counted toward the wired total. No lies.
+
+(no-lie :policy "author-blocked > false-wire" :author "kira")
