@@ -81,4 +81,30 @@
     (:path "carts/animation/rain.scm"
      :summary "40 drops falling into a growing puddle.")
     (:path "carts/animation/waves.scm"
-     :summary "layered sines as a sea, with sun and birds.")))
+     :summary "layered sines as a sea, with sun and birds.")
+
+    ;; ── math ──
+    (:path "carts/math/plot-sine-wave.scm"
+     :summary "sin, cos, and their product plotted on axes.")
+    (:path "carts/math/mandelbrot.scm"
+     :summary "the Mandelbrot set at 40×40 with 20-iter escape.")
+    (:path "carts/math/sierpinski.scm"
+     :summary "Sierpinski triangle via chaos-game vertex-halving.")
+    (:path "carts/math/rose.scm"
+     :summary "polar rose curves: r = cos(k·theta) at k=3, 4, 5.")
+    (:path "carts/math/primes.scm"
+     :summary "sieve of Eratosthenes to 400, plotted as a comb.")
+    (:path "carts/math/pi-monte-carlo.scm"
+     :summary "estimate π by throwing 5000 darts at a quadrant.")
+
+    ;; ── music ──
+    (:path "carts/music/twinkle.scm"
+     :summary "Twinkle Twinkle Little Star as 42 MIDI numbers.")
+    (:path "carts/music/twelve-bar-blues.scm"
+     :summary "the 12-bar blues in C: C7 F7 G7 progression.")
+    (:path "carts/music/canon.scm"
+     :summary "a theme then its transposed copy — canon at the fifth.")
+    (:path "carts/music/scales.scm"
+     :summary "seven modes of the major scale from C.")
+    (:path "carts/music/random-melody.scm"
+     :summary "a random walk through the C minor pentatonic.")))
