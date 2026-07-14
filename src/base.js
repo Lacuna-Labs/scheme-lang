@@ -17,6 +17,7 @@ import {
 import { registerMedia } from './media.js'
 import { installEng } from './eng.js'
 import { installAlg } from './alg.js'
+import { installTime } from './time-verbs.js'
 
 export function makeBaseEnv(fuel) {
   const e = new Env()
@@ -1208,6 +1209,12 @@ export function makeBaseEnv(fuel) {
   // makeSakuraEnv, so the Jesse binary and Lacuna standalone were seeing
   // descriptor lies for alg/nr-P, alg/prime-form, alg/normal-form, etc.
   installAlg(e)
+
+  // ── L1.5 TIME — time/* extensions (nao-commerce lane, 2026-07-14).
+  // Wall-clock time/delta + FRP-lite clause builders (time/during,
+  // time/until, time/when, time/every-ms, time/then). time/across is
+  // AUTHOR-BLOCKED — reference is *[verify]*; refuse to hallucinate.
+  installTime(e)
 
   return e
 }
