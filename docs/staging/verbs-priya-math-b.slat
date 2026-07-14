@@ -600,3 +600,96 @@
         :long  "Remove an item from a list by id. Two-arg form is pure; one-arg form is a host descriptor."
         :for-ai "Functional delete-by-id on a list. O(n)."
         :for-kid "Take one thing out of a list; the list you get back is a bit shorter.")))
+
+;; ─── list-item-toss — reorder item within a list ─────────────────
+
+(verb
+  :name "list-item-toss"
+  :library "list"
+  :signature "(list-item-toss lst id from to) | (list-item-toss id from to) -> list | descriptor"
+  :summary "Move a list item from one index to another; pure 4-arg form or 3-arg host descriptor."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(list-item-toss (list 'a 'b 'c 'd) 'b 1 3)"
+     :note "Move 'b from index 1 to index 3. Returns (a c d b) — 'b relocated, others shifted left.")
+    (:tier "apprentice"
+     :code "(list-item-toss (list 'a 'b 'c 'd) 'b 1 0)"
+     :note "Move 'b to the head (index 0). Returns (b a c d).")
+    (:tier "intermediate"
+     :code "(let ((tasks (list 'wake 'brush 'code 'nap)))\n  (list-item-toss tasks 'nap 3 0))"
+     :note "Prioritize 'nap. Returns (nap wake brush code) — nap-first day.")
+    (:tier "expert"
+     :code "(define (swap lst i j)\n  (let ((item-i (list-ref lst i)))\n    (list-item-toss lst item-i i j)))\n(swap (list 'a 'b 'c 'd) 0 3)"
+     :note "Build swap on top of list-item-toss. Returns (b c d a).")
+    (:tier "master"
+     :code "(define (drag-drop items from-idx to-idx)\n  (let* ((n (length items))\n         (fi (max 0 (min (- n 1) from-idx)))\n         (ti (max 0 (min (- n 1) to-idx)))\n         (item (list-ref items fi)))\n    (list-item-toss items item fi ti)))\n(drag-drop (list 'A 'B 'C 'D 'E) 4 1)"
+     :note "Drag-and-drop with bounds clamping. Move 'E from index 4 to index 1. Returns (A E B C D). Clamping guards against out-of-range indices from a real UI."))
+  :related ("list-item-pluck" "list-ref" "reverse" "sort")
+  :caveats ("Out-of-bounds indices return the list unchanged (silent)." "The 4-arg form is pure; the 3-arg form returns a descriptor for a host store." "Zero-based indices.")
+  :drawbacks ("O(n) copy each call; not efficient for many reorderings on large lists — batch or use a mutable structure." "No swap-in-place; always returns a new list.")
+  :usecases ("Drag-and-drop UI reordering." "Priority queue promotion." "Any reorder-by-position UI action.")
+  :learn (:concept "Move an item by index without changing its identity. Preserves all other items in order." :prerequisites ("list-ref" "list-item-pluck") :progression "Learn list-item-pluck first; then compose reorder + remove for full list manipulation.")
+  :+math (:algebra () :total #t :domain "list + id + two indices" :codomain "list of same length")
+  :+cs (:complexity "O(n)" :effects (none) :pure #t)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "splice(from,1) then splice(to,0,item). Bounds check silently returns unchanged."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (list-item-toss (list 'a 'b 'c 'd) 'b 1 3) = (a c d b)."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #t
+        :common-mistakes "Passing indices as symbols instead of integers. Assuming mutation.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Move a list item from one index to another; pure or descriptor."
+             :long  "Move a list item from one index to another. Two forms: pure 4-arg or descriptor 3-arg. Bounds-safe."
+             :for-ai "Functional reorder-by-index."
+             :for-kid "Take one thing out of a list and put it somewhere else in the same list.")))
+
+;; ─── next — state-machine transition ─────────────────────────────
+
+(verb
+  :name "next"
+  :library "core"
+  :signature "(next state-name context) -> transition-tuple"
+  :summary "Signal the host to transition to a new state with updated context."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"
+     :code "(next 'wait-for-input '())"
+     :note "Return a transition tuple targeting the 'wait-for-input state with empty context. In REPL this is a tagged list; a real host consumes it and switches state.")
+    (:tier "apprentice"
+     :code "(define (idle ctx)\n  (next 'wait-for-input ctx))\n(idle 'my-ctx)"
+     :note "A trivial state handler that hands off to another state. Returns the descriptor.")
+    (:tier "intermediate"
+     :code "(define (count-up ctx)\n  (next 'count-up (+ 1 (if (number? ctx) ctx 0))))\n(count-up 5)"
+     :note "State recursion — the same state re-enters with updated context. Returns the tuple.")
+    (:tier "expert"
+     :code "(define (dispatch cmd ctx)\n  (cond ((eq? cmd 'start) (next 'running ctx))\n        ((eq? cmd 'stop)  (next 'idle    ctx))\n        (else             (next 'error   ctx))))\n(dispatch 'start 'my-ctx)"
+     :note "Command dispatcher. Different commands transition to different states. Returns the tuple for 'running.")
+    (:tier "master"
+     :code "(define (state-machine ctx trace)\n  (let ((event (obj-get ctx 'event)))\n    (cond ((eq? event 'begin) (list 'transition (next 'started ctx)  (cons 'started trace)))\n          ((eq? event 'end)   (list 'transition (next 'finished ctx) (cons 'finished trace)))\n          (else               (list 'stay ctx trace)))))\n(state-machine (list 'event 'begin) (list))"
+     :note "Compose next with a trace log. Returns (transition (next started (event begin)) (started))."))
+  :related ("done" "escalate" "wait" "after" "ctx-set" "ctx-get" "ctx-result")
+  :caveats ("next returns a special tuple, not a regular list. Treating it as a list may confuse the host." "The state-name must be defined as a state handler; referencing an undefined state causes a host dispatcher error." "context is passed verbatim; use ctx-set to update it before passing.")
+  :drawbacks ("No inspect / rewrite path — once returned, the host consumes it opaquely." "In headless REPL the transition doesn't happen; only the descriptor is returned.")
+  :usecases ("Every state handler ends in either next, done, or escalate." "Cart/state-machine programming, the primary control-flow verb.")
+  :learn (:concept "The transition primitive of a state-machine style program. Not a jump; the host schedules the next handler." :prerequisites ("define" "ctx-set") :progression "Learn done and escalate as the other exit points. Then look at act for asynchronous work between state transitions.")
+  :+math (:algebra () :total #t :domain "state-name + context" :codomain "transition tuple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/reference-impls.js"
+         :impl-notes "def('next', (state, ctx = null) => descriptor('next', state, ctx)). Returns [Sym 'next', state, ctx] as a tagged list. Host consumes this to schedule the next handler."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (next 'foo 'bar) returns (next foo bar)."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f
+        :common-mistakes "Trying to inspect the tuple with car/cdr. Continuing to run code AFTER next in the same state — that code is unreachable in a real host."
+        :when-not-to-use "You need synchronous return — use a normal call. You need to end the machine — use done.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Signal the host to transition to a new state."
+             :long  "Return a transition tuple that tells the host to enter the named state with the given context. Not a normal call — a hand-off."
+             :for-ai "State-machine transition primitive. Opaque to Scheme; consumed by host."
+             :for-kid "Say 'let's go to the next room' — you don't move yourself, you tell the world to switch rooms.")))
