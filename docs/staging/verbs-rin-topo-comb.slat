@@ -2345,3 +2345,333 @@
      :entry-provenance "authored"
      :required-fields-present #t
      :entry-summary "Upper-bound bottleneck distance via greedy L-infinity nearest-neighbor + diagonal projection. Documented approximation."))
+
+(verb
+  :name "topo/betti-curve"
+  :library "topo"
+  :signature "(topo/betti-curve filtration k) -> list-of-(scale betti_k)"
+  :summary "Betti_k as a function of filtration scale. Returns (scale betti_k) pairs, one per filtration step."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (topo/betti-curve filt 0))"
+     :note "Returns ((0 3) (1 1) (2 1)): at scale 0 three components; at scale 1 they merge into one; at scale 2 still one. This is the b_0 curve.")
+    (:tier "apprentice"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (topo/betti-curve filt 1))"
+     :note "Returns ((0 0) (1 0) (2 0)): no 1-dim classes at any scale for this trivial metric. The b_1 curve is flat zero.")
+    (:tier "intermediate"
+     :code "(let* ((ms (topo/metric-space '(a b c d) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 0.5 1 2) 2)))\n  (topo/betti-curve filt 2))"
+     :note "Returns ((0 0) (0.5 0) (1 1) (2 1)): b_2 curve. At scale 1 the 4-simplex-boundary emerges (2-sphere-like), giving b_2=1 that persists.")
+    (:tier "expert"
+     :code "(let* ((ms (topo/metric-space '(a b c d) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 0.5 1 2) 2)))\n  (map (lambda (k) (list ':dim k ':curve (topo/betti-curve filt k)))\n       (list 0 1 2)))"
+     :note "Compute all three Betti curves. Returns per-dim breakdown. b_0 collapses at scale 1; b_1 stays 0; b_2 rises to 1 at scale 1 and holds.")
+    (:tier "master"
+     :code "(define (persistence-diagram-summary filt k)\n  (let* ((curve (topo/betti-curve filt k))\n         (jumps (let loop ((remaining curve) (last-b 0) (acc '()))\n                  (cond ((null? remaining) (reverse acc))\n                        (else\n                         (let* ((step (car remaining))\n                                (scale (car step))\n                                (b (cadr step))\n                                (delta (- b last-b)))\n                           (loop (cdr remaining) b\n                                 (if (not (= delta 0))\n                                     (cons (list ':scale scale ':delta delta) acc)\n                                     acc)))))))) \n    (list ':dim k ':jumps jumps)))\n(let* ((ms (topo/metric-space '(a b c d) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 0.5 1 2) 2)))\n  (persistence-diagram-summary filt 0))"
+     :note "Domain: extract the DIFFERENCE curve — jumps in Betti_k across the filtration. Returns per-scale ('scale delta) records at points where b_0 changes. Foundation for compact persistence-diagram construction."))
+
+  :related ("topo/persistence" "topo/betti" "topo/rips-filtration")
+  :caveats ("Requires a filtration and a dimension k." "Returns exactly one (scale betti_k) pair per filtration step; no interpolation.")
+  :drawbacks ("Recomputes homology at each step; O(S · homology-cost)." "For persistence pairs, use topo/persistence directly.")
+  :usecases ("Plot Betti-k across scale for visualization." "Detect scale ranges where a particular Betti number is stable." "Feature engineering: 'how long does b_1 stay 1?' as a shape signature.")
+  :learn (:concept "Betti curve — the projection of the persistence barcode to one dimension. Plot it and you see the topological features rise and fall." :prerequisites ("topo/rips-filtration" "topo/betti") :progression "Learn topo/persistence for the fully-decomposed birth-death pairs; then persistence diagrams for visualization.")
+
+  :+math
+    (:algebra "beta_k(r) = dim H_k(VR(X, r)). Function of r on the scale range."
+     :total #t
+     :domain "filtration + dimension k"
+     :codomain "list of (scale betti_k) pairs"
+     :proofs "Trivial from definition of persistent homology.")
+
+  :+cs
+    (:complexity "Time O(S · (f_k)^3) — one homology computation per scale step."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Map over filtration steps, call homologyGf2 at each. Straightforward wrapper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-point trivial metric b_0 curve collapses from 3 to 1 at scale 1; 4-point metric b_2 rises to 1 at scale 1."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("map" "reduce" "plot")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing with topo/persistence — this returns raw curve values; persistence returns birth-death pairs."
+     :when-not-to-use "You want birth-death pairs — use topo/persistence.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Betti_k as function of filtration scale. Curve of raw values, one per scale step."))
+
+(verb
+  :name "topo/knot"
+  :library "topo"
+  :signature "(topo/knot crossings) -> (knot crossings count)"
+  :summary "Constructor for a knot value from a list of (optionally signed) crossings. See :caveats for format."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/knot '((1 1 2 3 4)))"
+     :note "Returns (knot ((1 1 2 3 4)) 1): a knot with one signed +1 crossing. Each element is (sign strand-a strand-b strand-c strand-d).")
+    (:tier "apprentice"
+     :code "(topo/knot '())"
+     :note "Returns (knot () 0): the unknot (zero crossings). This is the trivial knot.")
+    (:tier "intermediate"
+     :code "(topo/knot '((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12)))"
+     :note "Returns (knot ((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12)) 3): three signed crossings. This is a knot-diagram sketch; the impl only counts and passes on the data.")
+    (:tier "expert"
+     :code "(let ((k (topo/knot '((1 1 2 3 4) (1 5 6 7 8)))))\n  (list ':head (car k) ':crossings (cadr k) ':count (caddr k)))"
+     :note "Inspect the tagged-value shape. Returns (:head knot :crossings ((1 1 2 3 4) (1 5 6 7 8)) :count 2).")
+    (:tier "master"
+     :code "(define (knot-summary k)\n  (let ((crossings (cadr k)) (n (caddr k)))\n    (list ':crossings n\n          ':writhe (topo/writhe k)\n          ':crossing-number-bound n\n          ':unknot? (topo/unknot? k))))\n(list ':trivial (knot-summary (topo/knot '()))\n      ':three-crossing (knot-summary (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12)))))"
+     :note "Domain: comprehensive knot summary. Returns (crossings, writhe, lower-bound-crossing-number, unknot?). Empty knot: fully known (0 0 0 #t). 3-crossing: partial (3 3 3 unknown-beyond-bound). Honest bounded reporting."))
+
+  :related ("topo/writhe" "topo/crossing-number" "topo/unknot?")
+  :caveats ("**Representation**: signed crossings are lists starting with +1 or -1; unsigned crossings (any other first-element) contribute 0 to writhe." "This is a data-wrapper constructor — no validation that the crossings form a valid diagram." "PD-code and Gauss-code alternatives require signature changes and are not supported here.")
+  :drawbacks ("No isotopy checks; two 'different' knot values may represent the same knot topologically." "No conversion between PD/DT/Gauss code forms.")
+  :usecases ("Bundle knot-diagram data for downstream invariant computation." "Store knot state in Cortex for persistence.")
+  :learn (:concept "Knot constructor. Wraps a crossing list in a tagged value." :prerequisites ("list") :progression "Feed into topo/writhe, topo/crossing-number, topo/unknot? to compute invariants (or their bounded approximations).")
+
+  :+math
+    (:algebra "Knot diagram: sequence of over/under crossings on a planar closed curve. Signed by handedness of each crossing."
+     :total #t
+     :domain "list of crossings (any list format)"
+     :codomain "tagged list ('knot crossings count)"
+     :proofs "Data wrapper; no math beyond enumeration.")
+
+  :+cs
+    (:complexity "Time O(|crossings|) for length count."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Wraps input in a tagged list. No validation."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: empty knot, single-crossing knot, three-crossing knot all wrap correctly."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/writhe" "topo/crossing-number" "topo/unknot?")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming this validates the diagram — it doesn't; garbage in, garbage out."
+     :when-not-to-use "You need diagram-validation or PD/DT/Gauss-code conversions — not here.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Knot constructor. Data-wrapper for a crossing list."))
+
+(verb
+  :name "topo/writhe"
+  :library "topo"
+  :signature "(topo/writhe knot) -> integer"
+  :summary "Sum of the signs of the crossings in a knot diagram. Requires SIGNED crossings (first element +1 or -1)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/writhe (topo/knot '((1 1 2 3 4))))"
+     :note "Returns 1: a single +1 (positive) crossing has writhe 1.")
+    (:tier "apprentice"
+     :code "(topo/writhe (topo/knot '((-1 1 2 3 4))))"
+     :note "Returns -1: a single -1 (negative) crossing has writhe -1.")
+    (:tier "intermediate"
+     :code "(topo/writhe (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns 3: three positive crossings, writhe 3. This is the trefoil in one canonical orientation.")
+    (:tier "expert"
+     :code "(topo/writhe (topo/knot '((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns 1: two positives + one negative = net +1.")
+    (:tier "master"
+     :code "(define (analyze-orientation knot-crossings)\n  (let ((positive (length (filter (lambda (c) (= (car c) 1)) knot-crossings)))\n        (negative (length (filter (lambda (c) (= (car c) -1)) knot-crossings))))\n    (list ':positive positive\n          ':negative negative\n          ':writhe (topo/writhe (topo/knot knot-crossings)))))\n(analyze-orientation '((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12) (1 13 14 15 16)))"
+     :note "Domain: analyze crossing-sign distribution. Returns (:positive 3 :negative 1 :writhe 2). Writhe = positive - negative always; ratio tells you handedness of the diagram."))
+
+  :related ("topo/knot" "topo/crossing-number" "topo/unknot?")
+  :caveats ("Requires SIGNED crossings — the first element of each crossing must be +1 or -1. Unsigned crossings (e.g., pure PD-code with just (a b c d)) contribute 0." "Writhe is a diagram invariant, NOT a knot invariant — Reidemeister move 1 changes writhe by ±1.")
+  :drawbacks ("Not a knot invariant; two diagrams of the same knot can have different writhes." "For most knot analyses, self-linking number or framing is more useful.")
+  :usecases ("Diagram-level analysis: compare orientations." "Computing framings on framed knots." "Detecting handedness of a knot diagram.")
+  :learn (:concept "Writhe = signed sum of crossings. Diagram invariant, not a knot invariant. Related to framing on smooth knot embeddings." :prerequisites ("topo/knot") :progression "Learn about Reidemeister moves and how writhe changes. Study proper knot invariants (Jones polynomial, Alexander polynomial).")
+
+  :+math
+    (:algebra "w(D) = sum over crossings c in D of sign(c). Changes by +/-1 under Reidemeister move 1."
+     :total #t
+     :domain "knot value"
+     :codomain "integer"
+     :proofs "Direct from definition.")
+
+  :+cs
+    (:complexity "Time O(|crossings|). Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Iterate crossings, check first element for +1 or -1, sum. Unsigned crossings contribute 0."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: single-+1 → 1, single-(-1) → -1, three-+1 → 3, mixed → net sum."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming writhe is a knot invariant — it isn't. Passing unsigned crossings — they contribute 0, silently."
+     :when-not-to-use "You need a knot invariant — use Jones polynomial (not implemented). You have unsigned crossings — writhe cannot be computed.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Writhe = signed sum of crossings. Diagram-level invariant, not knot-level."))
+
+(verb
+  :name "topo/crossing-number"
+  :library "topo"
+  :signature "(topo/crossing-number knot) -> integer"
+  :summary "Number of crossings in this knot diagram. LOWER BOUND on the canonical (minimum-over-all-diagrams) crossing number of the knot."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/crossing-number (topo/knot '()))"
+     :note "Returns 0: the trivial knot has no crossings. Canonical crossing number is also 0.")
+    (:tier "apprentice"
+     :code "(topo/crossing-number (topo/knot '((1 1 2 3 4))))"
+     :note "Returns 1: a knot diagram with one crossing. But: single-crossing knot diagrams are reducible by Reidemeister move 1, so the canonical crossing number could be 0 (unknot).")
+    (:tier "intermediate"
+     :code "(topo/crossing-number (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns 3: three crossings in this diagram. The trefoil knot has canonical crossing number 3; if this represents a trefoil, it's minimal.")
+    (:tier "expert"
+     :code "(topo/crossing-number (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (-1 9 10 11 12) (1 13 14 15 16))))"
+     :note "Returns 4: four crossings. But the minimum crossing number over ALL diagrams of this knot could be lower (if diagram is not reduced).")
+    (:tier "master"
+     :code "(define (crossing-analysis knot)\n  (let ((n (topo/crossing-number knot))\n        (w (topo/writhe knot)))\n    (list ':diagram-crossings n\n          ':canonical-lower-bound n\n          ':canonical-upper-bound n\n          ':writhe w\n          ':note (cond ((= n 0) 'unknot-confirmed)\n                       ((= n 1) 'possibly-unknot-via-reidemeister-1)\n                       ((= n 2) 'possibly-unknot-via-reidemeister-2)\n                       (else 'requires-invariant-computation)))))\n(crossing-analysis (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Domain: reason honestly about crossing-number relative to canonical minimum. Returns diagram-crossings + honest bounds + note. NEVER claims the canonical crossing number without invariant proof."))
+
+  :related ("topo/knot" "topo/writhe" "topo/unknot?")
+  :caveats ("**LOWER BOUND ONLY**: canonical crossing number is the MINIMUM over all diagrams representing the same knot. This impl reports the length of the given diagram — always an UPPER BOUND if the knot is known, but a LOWER BOUND for the diagram itself." "For unknot: canonical is 0 but the impl returns whatever the diagram has.")
+  :drawbacks ("Does not simplify diagrams." "Does not compute knot invariants.")
+  :usecases ("Diagram-complexity metric." "Sanity-check knot representations.")
+  :learn (:concept "Diagram crossing count. Canonical crossing number is the minimum over all diagrams; NP-hard to compute." :prerequisites ("topo/knot") :progression "Learn about Reidemeister moves for diagram simplification. Study specific knot invariants that bound crossing number.")
+
+  :+math
+    (:algebra "c(D) = |{crossings in D}|. Canonical crossing number c(K) = min over all diagrams D of K of c(D). c(K) <= c(D) always; equal for reduced diagrams."
+     :total #t
+     :domain "knot value"
+     :codomain "non-negative integer"
+     :proofs "Trivial for the diagram-level count.")
+
+  :+cs
+    (:complexity "Time O(1) — just length."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Returns list length of the crossings component."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 0-crossing, 1-crossing, 3-crossing, 4-crossing all return correct counts."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming this returns the CANONICAL crossing number — it returns the DIAGRAM crossing number. Not the same thing."
+     :when-not-to-use "You need the canonical (minimum) crossing number — that's NP-hard; use tabulated knot invariants for small crossing number.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Number of crossings in the diagram. Lower bound on canonical crossing number (canonical is NP-hard)."))
+
+(verb
+  :name "topo/unknot?"
+  :library "topo"
+  :signature "(topo/unknot? knot) -> #t | 'unknown-beyond-bound"
+  :summary "Recognize the trivial knot. Returns #t only when the diagram has zero crossings; otherwise 'unknown-beyond-bound honestly (unknot recognition is nontrivial)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/unknot? (topo/knot '()))"
+     :note "Returns #t: zero crossings, definitely the unknot.")
+    (:tier "apprentice"
+     :code "(topo/unknot? (topo/knot '((1 1 2 3 4))))"
+     :note "Returns unknown-beyond-bound: one crossing. The impl doesn't try to check if it's a reducible diagram (which would be the unknot after Reidemeister 1). Honest 'unknown.")
+    (:tier "intermediate"
+     :code "(topo/unknot? (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns unknown-beyond-bound: three crossings. Could be a trefoil (not unknot) or a highly-decorated unknot. The impl doesn't compute Jones polynomial or other invariants.")
+    (:tier "expert"
+     :code "(define (safe-unknot-check k)\n  (let ((r (topo/unknot? k)))\n    (cond ((eq? r #t) 'definitely-unknot)\n          ((eq? r #f) 'definitely-not-unknot)\n          (else (list 'cannot-determine r)))))\n(list ':trivial (safe-unknot-check (topo/knot '()))\n      ':one-crossing (safe-unknot-check (topo/knot '((1 1 2 3 4)))))"
+     :note "Three-valued guard pattern. Returns definitely / cannot-determine appropriately.")
+    (:tier "master"
+     :code "(define (knot-verifier k expected-type)\n  (let ((unknot? (topo/unknot? k))\n        (crossings (topo/crossing-number k)))\n    (cond ((and (eq? expected-type 'unknot) (eq? unknot? #t))\n           '(verified))\n          ((and (eq? expected-type 'not-unknot) (eq? unknot? #f))\n           '(verified))\n          ((eq? unknot? #t)\n           '(discrepancy expected-not-unknot-but-is-unknot))\n          (else\n           (list 'cannot-verify ':crossings crossings ':unknot? unknot?)))))\n(list ':empty (knot-verifier (topo/knot '()) 'unknot)\n      ':trefoil-claim (knot-verifier (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))) 'not-unknot))"
+     :note "Domain: knot-type verification with HONEST reporting. Returns (verified) when the impl can confirm; (cannot-verify …) with reasons otherwise. NEVER claims to have verified something it cannot."))
+
+  :related ("topo/knot" "topo/crossing-number" "topo/writhe")
+  :caveats ("**Bounded**: only reliably returns #t for zero-crossing diagrams. Non-trivial recognition of the unknot is a research-grade algorithm (Jones polynomial, knot Floer homology, sum-of-tangles) — not implemented in this lane." "Never returns #f — the impl cannot prove non-triviality without an invariant.")
+  :drawbacks ("Extremely limited — most calls return 'unknown-beyond-bound. But honest.")
+  :usecases ("Detect the trivial-knot case explicitly." "Placeholder in workflows expecting future invariant computation." "Honest teaching example of Sakura's 'we cannot prove this' pattern.")
+  :learn (:concept "Unknot recognition — 'is this knot actually the trivial one?'. Non-trivial. Jones polynomial can prove non-triviality; knot Floer homology can definitively distinguish." :prerequisites ("topo/knot") :progression "Learn the Jones polynomial. Study Kauffman bracket. Understand why unknot recognition is decidable but computationally hard.")
+
+  :+math
+    (:algebra "The unknot is the equivalence class of knots isotopic to a circle in R^3. Unknot recognition is decidable (by algorithms of Haken and later refinements) but not implemented here."
+     :total #t
+     :domain "knot value"
+     :codomain "#t | Sym('unknown-beyond-bound')"
+     :proofs "Zero-crossing diagram trivially represents the unknot.")
+
+  :+cs
+    (:complexity "Time O(1) — length check."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Trivial: zero crossings → #t; else 'unknown-beyond-bound. No invariant computation."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: empty knot #t; non-empty knot 'unknown-beyond-bound. Never returns #f (impl cannot prove non-triviality)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("eq?" "cond")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Treating as a plain boolean — it's three-valued (#t, #f, or 'unknown-beyond-bound). Guard with eq?. Expecting non-trivial recognition — impl only handles the zero-crossing case."
+     :when-not-to-use "You need to prove a knot is NON-trivial — this impl cannot. Use Jones polynomial or Alexander polynomial (via a specialized library).")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Unknot recognition. #t for zero-crossing diagrams; 'unknown-beyond-bound otherwise. Impl does not compute knot invariants."))
