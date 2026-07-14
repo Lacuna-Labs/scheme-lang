@@ -557,3 +557,269 @@
   :+ai
     (:deterministic #t
      :cacheable #t))
+
+
+(verb
+  :name "alg/perm-sign"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-sign p) -> integer"
+  :summary "Return +1 if the permutation is even, -1 if odd."
+  :impl-status "wired"
+  :explanation "The sign (or signum, or parity) of a permutation is +1 if the permutation can be written as an even number of transpositions and -1 otherwise. Equivalently, it's (-1)^(n - #cycles-including-fixed-points). Sign is a group homomorphism from S_n to {+1, -1}; even permutations form the alternating subgroup A_n. The sign of a single transposition is -1; the sign of any k-cycle is (-1)^(k-1)."
+  :examples (
+    (:tier "novice" :code "(alg/perm-sign '(1 0 2))"
+     :note "One transposition (swap 0 and 1). Sign is -1 (odd).")
+    (:tier "apprentice" :code "(alg/perm-sign (alg/perm-identity 5))"
+     :note "The identity has sign +1 (zero transpositions).")
+    (:tier "intermediate" :code "(alg/perm-sign '(1 2 0))"
+     :note "A 3-cycle is even: it equals two transpositions. Sign is +1.")
+    (:tier "expert" :code "(equal? (alg/perm-sign (alg/perm-compose '(1 0 2 3) '(0 1 3 2))) (* (alg/perm-sign '(1 0 2 3)) (alg/perm-sign '(0 1 3 2))))"
+     :note "Sign is multiplicative: sign(p q) = sign(p) sign(q). This is the homomorphism property.")
+    (:tier "master" :code "(define (even? p) (= (alg/perm-sign p) 1)) (filter even? (list '(0 1 2) '(1 0 2) '(1 2 0) '(2 0 1) '(2 1 0) '(0 2 1)))"
+     :note "Filter S_3 down to its even elements — the alternating subgroup A_3.")
+  )
+  :caveats
+    ("Returns the integer +1 or -1, not #t/#f."
+     "For the identity permutation the sign is +1 (empty product convention).")
+  :drawbacks
+    ("Computed via cycle decomposition; O(n) time. No shortcut for known-small permutations."
+     "Loses information — many permutations have the same sign.")
+  :usecases
+    ("Distinguish even from odd permutations (alternating vs. non-alternating)."
+     "Compute determinants of permutation matrices via sign summation."
+     "Verify the sign homomorphism property in group-theory tests.")
+  :related ("alg/perm-parity" "alg/perm->cycles" "alg/alternating" "alg/symmetric")
+  :learn
+    (:concept "The sign homomorphism S_n -> {+1, -1} — the simplest non-trivial group homomorphism on S_n."
+     :prerequisites ("alg/perm->cycles")
+     :progression "perm-sign -> alg/alternating -> studying A_n as a subgroup of S_n.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Count total cycles (including fixed points), return (-1)^(n - #cycles)."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "homomorphism"
+     :total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm-order"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-order p) -> integer"
+  :summary "Return the smallest positive k such that p^k equals the identity permutation."
+  :impl-status "wired"
+  :explanation "The order of a permutation is the least positive integer k for which applying p k times gives back the identity. By the cycle-decomposition theorem, the order equals the LCM of the cycle lengths (including implicit 1-cycles). For a k-cycle, the order is k; for a product of disjoint cycles of lengths a, b, c, the order is lcm(a, b, c). The identity has order 1."
+  :examples (
+    (:tier "novice" :code "(alg/perm-order '(1 2 0))"
+     :note "A 3-cycle has order 3: after 3 applications you return to the identity.")
+    (:tier "apprentice" :code "(alg/perm-order (alg/perm-identity 5))"
+     :note "The identity has order 1 by convention.")
+    (:tier "intermediate" :code "(alg/perm-order '(1 0 3 2))"
+     :note "Product of two disjoint 2-cycles; order is lcm(2, 2) = 2.")
+    (:tier "expert" :code "(alg/perm-order '(1 2 0 4 3))"
+     :note "A 3-cycle and a 2-cycle; order is lcm(3, 2) = 6.")
+    (:tier "master" :code "(define (verify-order p) (equal? (alg/perm-pow p (alg/perm-order p)) (alg/perm-identity (length p)))) (verify-order '(1 2 3 0 5 4))"
+     :note "Verify the defining property: p^order(p) equals the identity. Should return #t.")
+  )
+  :caveats
+    ("Order is always a positive integer >= 1."
+     "For the identity, order is 1 (empty LCM convention).")
+  :drawbacks
+    ("O(n) — requires cycle decomposition first."
+     "Doesn't tell you the order of the ambient group — just this element.")
+  :usecases
+    ("Determine periodicity: after how many shuffles does the deck return?"
+     "Bound the runtime of a permutation-based algorithm."
+     "Test whether a permutation is a specific power of a generator.")
+  :related ("alg/perm->cycles" "alg/perm-pow" "alg/element-order")
+  :learn
+    (:concept "Order of a group element — the size of the cyclic subgroup it generates."
+     :prerequisites ("alg/perm->cycles" "alg/perm-pow")
+     :progression "perm-order -> alg/element-order -> alg/exponent (LCM of all element orders).")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "LCM over cycle lengths from perm->cycles decomposition."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/perm-conjugate"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/perm-conjugate g p) -> perm"
+  :summary "Conjugate a permutation: return g * p * g^-1."
+  :impl-status "wired"
+  :explanation "Conjugation is the fundamental way to compare permutations 'up to relabeling.' The conjugate g * p * g^-1 has the same cycle structure as p (same list of cycle lengths) — only the specific points involved are relabeled by g. Two permutations are conjugate in S_n if and only if they have the same cycle type. This is why conjugacy classes of S_n correspond bijectively to partitions of n."
+  :examples (
+    (:tier "novice" :code "(alg/perm-conjugate '(1 0 2) '(2 0 1))"
+     :note "Conjugate (2 0 1) by the transposition (1 0 2). Same cycle structure, relabeled.")
+    (:tier "apprentice" :code "(equal? (alg/perm->cycles '(2 0 1)) (alg/perm->cycles (alg/perm-conjugate '(1 0 2) '(2 0 1))))"
+     :note "Wait — cycle sequences may differ in order but the cycle STRUCTURE (multiset of lengths) is invariant.")
+    (:tier "intermediate" :code "(equal? (sort (map length (alg/perm->cycles '(2 0 1))) <) (sort (map length (alg/perm->cycles (alg/perm-conjugate '(1 0 2) '(2 0 1)))) <))"
+     :note "The multiset of cycle lengths is invariant under conjugation — the correct invariant.")
+    (:tier "expert" :code "(equal? (alg/perm-conjugate (alg/perm-identity 3) '(2 0 1)) '(2 0 1))"
+     :note "Conjugation by the identity is a no-op: e * p * e^-1 = p.")
+    (:tier "master" :code "(define (self-conjugate? p) (equal? p (alg/perm-conjugate p p))) (self-conjugate? '(1 0 2))"
+     :note "A permutation is self-conjugate under itself (p * p * p^-1 = p). Always true — a sanity check.")
+  )
+  :caveats
+    ("g and p must have the same degree."
+     "The result has the same cycle STRUCTURE as p, but the specific cycles may be relabeled.")
+  :drawbacks
+    ("Two compositions and an inverse — O(n) but with more allocations than necessary."
+     "No shortcut for known-abelian pairs (where conjugation is trivial).")
+  :usecases
+    ("Test cycle-structure invariants."
+     "Enumerate conjugacy classes of S_n."
+     "Verify normal-subgroup properties: H is normal iff gHg^-1 = H for all g.")
+  :related ("alg/perm-compose" "alg/perm-inverse" "alg/conjugacy-classes")
+  :learn
+    (:concept "Conjugation as relabeling — the natural notion of equivalence in a group."
+     :prerequisites ("alg/perm-compose" "alg/perm-inverse")
+     :progression "perm-conjugate -> alg/conjugacy-classes -> alg/is-normal?.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Compute g * (p * g^-1) via two calls to perm-compose and one perm-inverse."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+;; ─── Zn ring — integers modulo n — 5 verbs ────────────────────────
+
+(verb
+  :name "alg/zn"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/zn n) -> ring"
+  :summary "Construct the ring ℤ/nℤ (integers modulo n) as the ordered list (0 1 ... n-1)."
+  :impl-status "wired"
+  :explanation "The ring Z/nZ (also written Z_n) is the set {0, 1, ..., n-1} with addition and multiplication taken modulo n. This verb returns that set as an ordered list. The additive structure is always the cyclic group C_n; the multiplicative structure depends on n — invertible elements are those coprime to n. When n is prime, Z_n is a field."
+  :examples (
+    (:tier "novice" :code "(alg/zn 5)"
+     :note "The 5-element ring: (0 1 2 3 4).")
+    (:tier "apprentice" :code "(length (alg/zn 12))"
+     :note "The ring Z_12 has exactly 12 elements.")
+    (:tier "intermediate" :code "(alg/zn 1)"
+     :note "The trivial ring: just (0). A degenerate case; use it to test edge-case handling.")
+    (:tier "expert" :code "(equal? (alg/zn 6) (list 0 1 2 3 4 5))"
+     :note "The ring is returned as a plain list of integers in ascending order.")
+    (:tier "master" :code "(define (units-fraction n) (/ (length (alg/zn-units n)) (length (alg/zn n)))) (map units-fraction (list 5 6 7 12))"
+     :note "Compute the fraction of units in each ring — a rough measure of how field-like Z_n is.")
+  )
+  :caveats
+    ("n must be a positive integer; negative values return the empty list."
+     "The returned list is the element set only — arithmetic goes through alg/zn-add and alg/zn-mul.")
+  :drawbacks
+    ("Materializes the whole ring; for large n this can be memory-hungry."
+     "Doesn't tell you which elements are units — use alg/zn-units for that.")
+  :usecases
+    ("Iterate over all elements of Z_n."
+     "Test modular-arithmetic properties on small rings."
+     "Feed into alg/zn-units to find the multiplicative group.")
+  :related ("alg/zn-add" "alg/zn-mul" "alg/zn-inverse" "alg/zn-units")
+  :learn
+    (:concept "Modular arithmetic — the simplest non-trivial ring structure."
+     :prerequisites ("(core)/modulo")
+     :progression "alg/zn -> zn-add + zn-mul -> zn-units + zn-inverse -> Z_p as a field.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "Allocate a list of integers 0..n-1."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "ring"
+     :total #t)
+  :+cs
+    (:complexity "time O(n), space O(n)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
+
+
+(verb
+  :name "alg/zn-add"
+  :library "alg"
+  :kind "pure"
+  :signature "(alg/zn-add n a b) -> integer"
+  :summary "Add two elements of Z/nZ and return the sum modulo n."
+  :impl-status "wired"
+  :explanation "Modular addition. Computes (a + b) mod n. The result is always in the range [0, n). Handles negative inputs correctly by using the mathematical mod (not JavaScript's %, which can return negatives). This is the group operation of the additive group of Z_n, which is the cyclic group C_n."
+  :examples (
+    (:tier "novice" :code "(alg/zn-add 5 3 4)"
+     :note "3 + 4 = 7, and 7 mod 5 = 2.")
+    (:tier "apprentice" :code "(alg/zn-add 12 8 5)"
+     :note "8 + 5 = 13, mod 12 = 1. Clock arithmetic: 8 o'clock + 5 hours = 1 o'clock.")
+    (:tier "intermediate" :code "(alg/zn-add 7 -3 5)"
+     :note "-3 + 5 = 2, mod 7 = 2. Negative inputs are handled correctly.")
+    (:tier "expert" :code "(equal? (alg/zn-add 10 (alg/zn-add 10 3 4) 5) (alg/zn-add 10 3 (alg/zn-add 10 4 5)))"
+     :note "Modular addition is associative — verify (a + b) + c = a + (b + c) in Z_10.")
+    (:tier "master" :code "(define (subgroup-generated-by-add n g) (define (loop x acc) (if (member x acc) (sort acc <) (loop (alg/zn-add n x g) (cons x acc)))) (loop 0 '())) (subgroup-generated-by-add 12 4)"
+     :note "The subgroup of Z_12 generated (additively) by 4 is (0 4 8) — a cyclic subgroup of order 3.")
+  )
+  :caveats
+    ("First argument is n (the modulus); a and b follow."
+     "n must be positive; n = 0 returns 0."
+     "Handles negative a or b using mathematical mod.")
+  :drawbacks
+    ("No overflow check for large n * (a + b) — assumes JavaScript number precision."
+     "Doesn't validate that a and b are in [0, n); silently wraps.")
+  :usecases
+    ("Clock arithmetic and cyclic index calculations."
+     "Traverse a circular buffer or ring topology."
+     "Implement modular-arithmetic algorithms like Fermat pseudo-primality tests.")
+  :related ("alg/zn-mul" "alg/zn-inverse" "alg/zn" "(core)/modulo")
+  :learn
+    (:concept "Modular addition — the group operation on Z_n."
+     :prerequisites ("(core)/modulo")
+     :progression "zn-add -> zn-mul -> zn-inverse -> Z_p as a field.")
+  :+eng
+    (:impl-file "src/alg.js"
+     :impl-notes "((a + b) % n + n) % n handles negatives correctly."
+     :permission "read"
+     :latency-class "sync-fast"
+     :since "1.0")
+  :+math
+    (:algebra "abelian associative commutative identity"
+     :total #t)
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects "none"
+     :pure #t)
+  :+ai
+    (:deterministic #t
+     :cacheable #t))
