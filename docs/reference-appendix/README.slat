@@ -1,0 +1,48 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SAKURA SCHEME — REFERENCE APPENDIX
+;;
+;; Location: /Users/alfred/code/scheme-lang/docs/reference-appendix/
+;; Recovered: 2026-07-14 by recovery-lane-3, recovery-006
+;; Source (preserved, not deleted):
+;;   /Users/alfred/code/curator/scheme-books/
+;;     .wrong-attribution-2026-07-13/book-of-reference-manual/
+;;
+;; This appendix is the "cookbook" that sits at the end of the main
+;; Sakura Scheme reference manual (docs/SAKURA-SCHEME-REFERENCE.slat).
+;; The main reference is the DICTIONARY — every verb, every atom, every
+;; primitive with its signature and shape. This appendix is the
+;; COOKBOOK — canonical CS problems worked end-to-end in runnable
+;; Scheme, SICP-style.
+;;
+;; Two arcs share the 11–16 chapter slot:
+;;
+;;   Arc A (SICP-flavored, CHAPTERS.slat manifest):
+;;     01-conway               02-sorting-viz          03-tail-recursion
+;;     04-macros               05-sicp-flavor          06-metacircular
+;;     07-streams              08-continuations        09-environments
+;;     10-a-tiny-compiler      11-lazy-evaluation      12-symbolic-differentiation
+;;     13-algebraic-data       14-a-small-typechecker  15-testing-in-scheme
+;;     16-closing-the-reference
+;;
+;;   Arc B (runtime/registry, alternate 11–16):
+;;     11-hygienic-macros           12-first-class-continuations
+;;     13-the-fuel-budget           14-the-five-gate-dispatcher
+;;     15-the-verb-registry         16-composing-verbs-into-carts
+;;
+;; Both arcs are preserved verbatim. CHAPTERS.slat is the manifest for
+;; Arc A; Arc B chapters remain independent records for now.
+;;
+;; Plus:
+;;     A-slat-for-carts.slat  — Appendix A (SLAT-for-carts format spec)
+;; ═══════════════════════════════════════════════════════════════
+
+(reference-appendix
+  :name "sakura-scheme-reference-appendix"
+  :version "1.0"
+  :landed-at "2026-07-14"
+  :landed-by "recovery-lane-3"
+  :file-count 25
+  :parent-doc "/Users/alfred/code/scheme-lang/docs/SAKURA-SCHEME-REFERENCE.slat"
+  :provenance "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reference-manual/"
+  :arcs (:sicp :runtime :appendix-a)
+  :notes "Every file here is a SLAT wrapper record with :kind :chapter and :book \"Reference Manual\". The :content field embeds the actual chapter markdown verbatim from the original book prose. Do NOT edit files directly — regenerate from the source markdown via the book toolchain.")
