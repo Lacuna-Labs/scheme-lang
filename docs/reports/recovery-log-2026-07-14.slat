@@ -7004,3 +7004,101 @@
      "Category C confirmed complete + well-structured — all 4 books have canonical dirs, manifests, and match schema spec."
      "Cross-repo caution honored: touched all 3 repos in filesystem, only 1 (scheme-lang) needs a commit for the log update."))
 
+
+;; ═══════════════════════════════════════════════════════════════
+;; LANE R-ALPHA — Category D alias-mirror archive (2026-07-14)
+;; ═══════════════════════════════════════════════════════════════
+
+(lane-r-alpha
+  :date "2026-07-14"
+  :category "D"
+  :status "partial-with-holds"
+  :recovery-item "recovery-012"
+  :dirs-processed 17
+  :dirs-fully-archived 8
+  :dirs-partially-archived 9
+  :dirs-held-entirely 0
+  :files-archived 486
+  :files-held-for-merge 84
+  :subdirs-held-for-merge 1
+  :verification-method
+    ("v3 script at /tmp/lane-r-alpha/verify.mjs — for each alias file:"
+     "  1. compute sha256[:16], look for exact stamp in canonical dir contents"
+     "  2. look for :source-path referencing the alias basename in canonical"
+     "  3. filename-mapped canonical whose unescaped :prose contains alias body"
+     "  4. any canonical file whose :prose contains alias body head+tail (rename case)"
+     "held == none of the above matched")
+  :dirs-processed-detail
+    ((:alias "hello-surface"      :canonical "book-of-hellosurface"       :safe 11 :held 0  :subdirs-safe 0 :subdirs-held 0 :dir-removed t)
+     (:alias "instruments"        :canonical "book-of-instruments"        :safe 11 :held 0  :subdirs-safe 0 :subdirs-held 0 :dir-removed t)
+     (:alias "listening"          :canonical "book-of-listening"          :safe 6  :held 0  :subdirs-safe 0 :subdirs-held 0 :dir-removed t)
+     (:alias "llm-philosophy"     :canonical "book-of-llm-philosophy"     :safe 6  :held 0  :subdirs-safe 0 :subdirs-held 0 :dir-removed t)
+     (:alias "cs-curriculum"      :canonical "book-of-cs-curriculum"      :safe 11 :held 0  :subdirs-safe 0 :subdirs-held 0 :dir-removed t)
+     (:alias "scenes"             :canonical "book-of-scenes"             :safe 11 :held 0  :subdirs-safe 0 :subdirs-held 0 :dir-removed t)
+     (:alias "self"               :canonical "book-of-self"               :safe 72 :held 0  :subdirs-safe 2 :subdirs-held 0 :dir-removed t
+      :subdirs ("philosopher-inner-life (4)" "situations (12)"))
+     (:alias "items-and-scenarios" :canonical "book-of-items-and-scenarios" :safe 10 :held 0  :subdirs-safe 2 :subdirs-held 0 :dir-removed t
+      :subdirs ("category-primers (6)" "scenarios (3)"))
+     (:alias "flower-stories"     :canonical "book-of-flower-stories"     :safe 30 :held 1  :subdirs-safe 0 :subdirs-held 0 :dir-removed nil
+      :held-files ("MANIFEST.slat")
+      :held-reason "book-level cast-anchors + themes metadata not present in canonical dir; may warrant a MANIFEST.book.slatl in book-of-flower-stories")
+     (:alias "donts"              :canonical "book-of-don-ts"             :safe 53 :held 16 :subdirs-safe 3 :subdirs-held 0 :dir-removed nil
+      :subdirs ("five-doctrine (6)" "register (6)" "silent-if-trouble (10)")
+      :held-files ("ch01-the-gentle-no-b.md" "ch02-cant-not-wont-b.md" "ch03-the-redirect-b.md" "ch04-im-not-a-person-b.md" "ch05-not-taking-the-bait-b.md" "ch06-no-bluffing-b.md" "ch07-the-honest-null-b.md" "ch08-owning-that-i-could-be-wrong-b.md" "ch09-i-dont-auto-run-b.md" "ch10-no-wooing-when-spending-b.md" "ch11-not-my-choice-to-make-b.md" "ch12-the-slow-boil-b.md" "ch13-the-authority-claim-b.md" "ch14-the-kind-hard-no-b.md" "ch15-the-absolute-line-b.md" "ch16-the-hard-walk-b.md")
+      :held-reason "each ~37-49KB of unique 'more' / expanded worked-example content not in canonical ch*.book.slatl")
+     (:alias "music"              :canonical "book-of-music"              :safe 59 :held 20 :subdirs-safe 1 :subdirs-held 0 :dir-removed nil
+      :subdirs ("poetry-forms (8)")
+      :held-files ("01-sound-and-time.md" "02-melody.md" "03-twinkle-on-piano.md" "04-jazz-and-swing.md" "05-calypso-soca-funk.md" "06-world-percussion.md" "07-african-rhythms.md" "08-japanese-bamboo.md" "09-indian-tala.md" "10-toward-rach-two.md" "ch11-world-percussion-r1.md" "ch11-world-percussion-r2.md" "ch12-ornamentation-r1.md" "ch12-ornamentation-r2.md" "ch13-dynamics-rubato-r1.md" "ch13-dynamics-rubato-r2.md" "ch14-orchestration-r1.md" "ch14-orchestration-r2.md" "ch15-form-structure-r1.md" "ch15-form-structure-r2.md")
+      :held-reason "10 old-numbering chapters (parallel authorship, different chapter titles than canonical ch01-16); 10 rN drafts for ch11-15 whose base chapters landed as appendix-drill-*.book.slatl in Lane 5 but rN variants were not folded in")
+     (:alias "money"              :canonical "book-of-money"              :safe 41 :held 10 :subdirs-safe 0 :subdirs-held 0 :dir-removed nil
+      :held-files ("01-money-is-not-a-vector.md" "02-convert-audit-trail.md" "03-live-rates.md" "04-comparing-values.md" "05-a-worked-purchase.md" "06-currency-in-a-cart.md" "07-taxes-and-rounding.md" "08-a-worked-refund.md" "09-multi-currency-carts.md" "10-money-and-honesty.md")
+      :held-reason "old-numbering parallel authorship not in canonical")
+     (:alias "motion"             :canonical "book-of-motion"             :safe 47 :held 10 :subdirs-safe 0 :subdirs-held 0 :dir-removed nil
+      :held-files ("01-what-motion-is.md" "02-embodiment-axis.md" "03-easing-and-overshoot.md" "04-settling-and-lag.md" "05-composing-motion.md" "06-heavy-vs-floaty.md" "07-camera-motion.md" "08-motion-and-mood.md" "09-motion-timing-and-counters.md" "10-a-worked-scene.md")
+      :held-reason "old-numbering parallel authorship not in canonical")
+     (:alias "miscellany"         :canonical "book-of-miscellany"         :safe 43 :held 10 :subdirs-safe 0 :subdirs-held 1 :dir-removed nil
+      :subdirs-held ("ordinary-world (6)")
+      :held-files ("01-spreadsheets.md" "02-documents.md" "03-a-touch-of-chemistry.md" "04-a-touch-of-physics.md" "05-composing-tools.md" "06-general-scripting.md" "07-a-touch-of-biology.md" "08-a-touch-of-geography.md" "09-composing-tools-deeper.md" "10-what-else-belongs-here.md")
+      :held-reason "old-numbering parallel authorship + ordinary-world/ kid-readable prose scenes (streets/families/relationships/weather/bodies/mornings) not in canonical")
+     (:alias "marionette"         :canonical "book-of-marionette"         :safe 41 :held 10 :subdirs-safe 0 :subdirs-held 0 :dir-removed nil
+      :held-files ("01-who-what-a-sprite-is.md" "02-moods-and-personalities.md" "03-roll-and-dash.md" "04-timing-with-a-counter.md" "05-seeing-each-other.md" "06-grid-anticipation.md" "07-scripted-scenes.md" "08-sound-cues.md" "09-a-worked-dance.md" "10-composing-marionette.md")
+      :held-reason "old-numbering parallel authorship not in canonical")
+     (:alias "one-shot"           :canonical "book-of-one-shot"           :safe 22 :held 10 :subdirs-safe 0 :subdirs-held 0 :dir-removed nil
+      :held-files ("01-one-form.md" "02-a-simple-one-shot.md" "03-a-complicated-one-shot.md" "04-a-wire-spanning-one-shot.md" "05-when-not-to-one-shot.md" "06-refactoring-toward-one-shot.md" "07-when-one-shot-hides-complexity.md" "08-one-shot-and-testing.md" "09-one-shot-and-composition.md" "10-atomic-forms-in-practice.md")
+      :held-reason "old-numbering parallel authorship not in canonical")
+     (:alias "systems"            :canonical "book-of-systems"            :safe 41 :held 10 :subdirs-safe 0 :subdirs-held 0 :dir-removed nil
+      :held-files ("01-networks-fall-over.md" "02-read-the-log.md" "03-service-catalog.md" "04-fake-shop-probing.md" "05-when-a-service-is-down.md" "06-graceful-reconnect.md" "07-diagnosing-latency.md" "08-l1-l2-loam-catalog.md" "09-a-worked-outage.md" "10-the-quiet-fallback.md")
+      :held-reason "old-numbering parallel authorship not in canonical"))
+  :merge-candidates
+    (
+     (:dir "flower-stories" :file "MANIFEST.slat" :reason "book-level metadata seed — cast-anchors + themes list — consider promoting to book-of-flower-stories/MANIFEST.book.slatl")
+     (:dir "donts" :file "ch*-b.md (16 files)" :reason "expanded 'more' worked-example content ~37-49KB each — appendix-defer per Lane 5 rN pattern likely applies")
+     (:dir "music" :file "01-10 old-numbering + ch11-15 rN drafts (20 files)" :reason "10 parallel-authorship chapters need decision; 10 rN drafts for ch11-15 should probably follow Lane 5 appendix pattern applied to ch01-ch10")
+     (:dir "money"      :file "01-10 old-numbering (10 files)" :reason "parallel authorship — appendix-defer or archive-as-alt")
+     (:dir "motion"     :file "01-10 old-numbering (10 files)" :reason "parallel authorship — appendix-defer or archive-as-alt")
+     (:dir "miscellany" :file "01-10 old-numbering + ordinary-world/ (16 files)" :reason "parallel authorship + kid-prose scenes; ordinary-world is unique ordinary-world corpus per project memory")
+     (:dir "marionette" :file "01-10 old-numbering (10 files)" :reason "parallel authorship — appendix-defer or archive-as-alt")
+     (:dir "one-shot"   :file "01-10 old-numbering (10 files)" :reason "parallel authorship — appendix-defer or archive-as-alt")
+     (:dir "systems"    :file "01-10 old-numbering (10 files)" :reason "parallel authorship — appendix-defer or archive-as-alt"))
+  :git-commits
+    ("a915f633c recovery-012 (R-alpha): archive hello-surface alias mirror"
+     "4f807213b recovery-012 (R-alpha): archive 5 fully-safe alias mirrors"
+     "b4f4f4167 recovery-012 (R-alpha): archive self + items-and-scenarios alias mirrors"
+     "66908f837 recovery-012 (R-alpha): archive flower-stories alias mirror (partial)"
+     "d9536dda5 recovery-012 (R-alpha): archive donts alias mirror (partial)"
+     "8482998ef recovery-012 (R-alpha): archive music alias mirror (partial)"
+     "891600d6c recovery-012 (R-alpha): archive 5 partial alias mirrors"
+     "3a803da03 recovery-012 (R-alpha): archive miscellany alias mirror (partial)")
+  :safeguards-enforced
+    ("NO-DELETES: every archived file moved via git mv (tracked) or mv+git add (untracked) to .aliases-2026-07-14/<alias-name>/, path preserved."
+     "NO --force / NO --no-verify: pre-commit + commit-msg hooks passed on every commit."
+     "MATH-BOOK-II NOT TOUCHED: reserved for R-beta roman-numeral flatten."
+     "PROTECTED DIRS NOT TOUCHED: reason-i/ii/iii/iv, training-engineering-manual-*, .aliases-2026-07-14/*, .consolidated-wrong-2026-07-13/*, .dupes-2026-07-14/*, .wrong-attribution-2026-07-13/*, .rendered-test/*."
+     "NO CANONICAL FILE TOUCHED: only alias-dir sources moved; every book-of-*/ dir untouched."
+     "PER-DIR VERIFICATION: v3 script re-run before each archival batch; held items left in place per merge-not-throw doctrine.")
+  :notes
+    ("Empty source dirs (hello-surface, instruments, listening, llm-philosophy, cs-curriculum, scenes, self, items-and-scenarios) removed with rmdir after full archival — this preserves content per no-deletes since content lives at .aliases-2026-07-14/<name>/."
+     "9 dirs remain in place because they hold merge-candidate files: donts, music, money, motion, miscellany, marionette, one-shot, systems, flower-stories."
+     "The 50 'old-numbering' held files (10 each × 5 dirs) share a shape — they look like an earlier authoring pass before the ch01-16 numbering convention was locked. Alfred may want a single decision covering all 50."
+     "One held subdir (miscellany/ordinary-world/, 6 files) is genuinely-unique kid-readable ordinary-world prose per project memory; worth its own book decision."
+     "Verify scripts left at /tmp/lane-r-alpha/{verify.mjs,verify-subdir.mjs,do-archive.mjs,archive.sh,report-*.json,sub-*.json} for audit."))
