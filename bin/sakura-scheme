@@ -19,6 +19,7 @@
 //   sakura-scheme login            — Google OAuth device-flow sign-in
 //   sakura-scheme logout           — sign out (clear stored token)
 //   sakura-scheme whoami           — show current auth state
+//   sakura-scheme copilot          — Motoi Copilot (savant completion; stub, not yet trained)
 //   sakura-scheme --version        — version + short git sha
 //   sakura-scheme --help           — usage summary
 //
@@ -141,6 +142,67 @@ function cmdVersion() {
   process.stdout.write(`sakura-scheme ${VERSION} (${shortSha()})\n`)
 }
 
+// ── copilot subcommand ──────────────────────────────────────────────
+// Motoi Copilot — a tiny savant model that only knows Motoi Scheme.
+// Personality: none. Voice: none. Cortex: not wired. Character: zero.
+// Reads a Scheme buffer, suggests the next form. Not a chatbot.
+// Not a Sakura persona. Just extremely good at one language.
+//
+// Tonight this is a stub — the model itself is weeks of GPU work.
+// See /Users/alfred/code/lacuna-labs/research/motoi-copilot-spec-2026-07-14.slat
+// for the full design, corpus plan, training strategy, and CLI schema.
+
+function cmdCopilotHelp() {
+  process.stdout.write(`sakura-scheme copilot — Motoi Copilot (stub)
+
+  A tiny savant model that only knows Motoi Scheme. Reads a Scheme
+  buffer prefix, suggests the next form. Not a chatbot. Not a
+  persona. No character, no voice, no memory.
+
+  Status: NOT YET TRAINED. This subcommand is a stub — invocations
+  exit 0 with a pointer to the design SLAT.
+
+Usage (planned):
+  sakura-scheme copilot                 read stdin, write stdout
+  sakura-scheme copilot --repl          interactive completion loop
+  sakura-scheme copilot --file <path>   complete at cursor point
+    --line <N> --col <M>                (1-indexed)
+  sakura-scheme copilot --json          structured JSON output
+  sakura-scheme copilot --n <k>         return k candidates (max 5)
+  sakura-scheme copilot --temperature <t>   default 0.2
+  sakura-scheme copilot --top-p <p>         default 0.9
+  sakura-scheme copilot --max-tokens <N>    default 512
+  sakura-scheme copilot --no-stream         buffer full output
+  sakura-scheme copilot --model <path>      override GGUF path
+  sakura-scheme copilot --backend <name>    llama-cpp | mlx
+  sakura-scheme copilot --version           model version
+  sakura-scheme copilot --help              this help
+
+Spec:
+  /Users/alfred/code/lacuna-labs/research/motoi-copilot-spec-2026-07-14.slat
+`)
+}
+
+function cmdCopilot(args) {
+  if (args.includes('--help') || args.includes('-h')) return cmdCopilotHelp()
+  if (args.includes('--version')) {
+    process.stdout.write(`motoi-copilot: not-yet-trained (stub)\n`)
+    return
+  }
+  process.stdout.write(
+    'motoi copilot: not yet trained — see ' +
+    'docs/reports/motoi-copilot-spec.slat\n' +
+    '  (canonical path: /Users/alfred/code/lacuna-labs/research/' +
+    'motoi-copilot-spec-2026-07-14.slat)\n' +
+    '  run `sakura-scheme copilot --help` for the planned CLI shape.\n'
+  )
+  // Exit 0 — this is a stub, not an error. Consumers scripting against
+  // the eventual CLI should treat "not trained" as a "no completion"
+  // signal, not a failure.
+  process.exit(0)
+}
+
+
 function cmdHelp() {
   process.stdout.write(`sakura-scheme ${VERSION} — the Sakura Scheme CLI
 
@@ -156,6 +218,7 @@ Usage:
   sakura-scheme login               sign in with Google (device flow)
   sakura-scheme logout              sign out
   sakura-scheme whoami              show current auth state
+  sakura-scheme copilot             Motoi Copilot (stub; not yet trained)
   sakura-scheme --version           print version + git sha
   sakura-scheme --help              this help
 
@@ -192,6 +255,7 @@ async function main() {
   if (argv[0] === 'run') return cmdRun(argv[1])
   if (argv[0] === 'help') return cmdVerbHelp(argv[1])
   if (argv[0] === 'repl') return startRepl({ dialect: 'sakura', version: VERSION })
+  if (argv[0] === 'copilot') return cmdCopilot(argv.slice(1))
 
   // Terminal IDE
   if (argv[0] === 'ide') {
