@@ -6837,3 +6837,120 @@
      "No blocked-need-alfred items. No content orphaned. No inline vs appendix merges required (no filename collisions in canonical book-of-reason for arc chapter names).")
   :commits
     ("<per-source commits below, generated after this stamp>"))
+
+;; ═══════════════════════════════════════════════════════════════
+;; LANE R-GAMMA — Categories B + C + F verification pass
+;; 2026-07-14
+;; ═══════════════════════════════════════════════════════════════
+
+(lane-r-gamma
+  :date "2026-07-14"
+  :category "B+C+F"
+
+  ;; ─── CATEGORY B — Reference relocation ───────────────────────
+  :b-status "already-executed-by-lane-3 — verified duplicative"
+  :b-moves
+    (
+     (verified :id "recovery-006"
+               :source-dir "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reference-manual/"
+               :source-file-count 25
+               :canonical-home-actual "/Users/alfred/code/scheme-lang/docs/reference-appendix/"
+               :canonical-file-count 26
+               :status "content-already-landed-by-lane-3"
+               :evidence "diff /reference-appendix/00-cover.slat vs /book-of-reference-manual/00-cover.slat returned empty (byte-identical). CHAPTERS.slat also identical."
+               :r-gamma-action "none — target dir already populated by earlier recovery-006 pass"
+               :provenance-source-preserved "yes — /curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reference-manual/ (25 files) intact")
+     (verified :id "recovery-007"
+               :source-dir "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-scheme-lang-docs/"
+               :source-file-count 6
+               :canonical-home-actual "/Users/alfred/code/scheme-lang/docs/ (live copies) + log-only per recovery-006 pass"
+               :status "content-already-live-in-scheme-lang-docs"
+               :evidence "recovery-log recovery-007 records show :to 'log-only' with :status 'wrapper-snapshot-matches-live' for all 6 files (ENGINEERING/LANG-SPEC/REPL-FEATURES/REPL/SAKURA-SCHEME-REFERENCE/TUTORIAL). Live equivalents already present in scheme-lang/docs/."
+               :r-gamma-action "none — Lane 3 already reconciled"
+               :provenance-source-preserved "yes")
+     (verified :id "recovery-006-supplement"
+               :source-dir "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-the-book-sakura-scheme-reference-manual/"
+               :source-file-count 0
+               :canonical-home-actual "n/a — source dir empty"
+               :status "empty-source-dir-nothing-to-move"
+               :r-gamma-action "none — nothing to relocate"))
+
+  ;; ─── CATEGORY C — Misfiled books needing canonical dirs ──────
+  :c-status "all-4-verified-present"
+  :c-verifications
+    (
+     (verified :book "book-of-jesse"
+               :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-jesse/"
+               :chapter-count 21
+               :manifest-present "yes — CHAPTERS.book.slatl with :recovery-item recovery-008"
+               :structure-ok "yes"
+               :notes "20 chapter files + CHAPTERS.book.slatl manifest = 21 total. Manifest declares :chapter-count 20 (excluding own manifest), consistent.")
+     (verified :book "book-of-scheme"
+               :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-scheme/"
+               :chapter-count 52
+               :manifest-present "yes — CHAPTERS.book.slatl + CHAPTERS-RAMPUP.book.slatl"
+               :structure-ok "yes"
+               :notes "Canonical 34-chapter Book of Scheme + 17 ch-rampup-* chapters merged from BOOK-OF-SCHEME.md ramp-up material per recovery-009. Structure preserves both bodies of work.")
+     (verified :book "book-of-reason-code"
+               :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-reason-code/"
+               :chapter-count 5
+               :manifest-present "yes — CHAPTERS.book.slatl"
+               :structure-ok "yes"
+               :notes "4 chapters (00-cover, 01-signals-and-symbols, 02-machines-that-think, 03-from-machines-to-minds) + CHAPTERS.book.slatl = 5. Matches recovery-010 spec exactly.")
+     (verified :book "book-of-extensions"
+               :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-extensions/"
+               :chapter-count 10
+               :manifest-present "yes — CHAPTERS.book.slatl declares :chapter-count 9 + own manifest"
+               :structure-ok "yes"
+               :notes "9 semantically-named chapters (01-register-discrimination through 09-scalar-axes-cost-consent) + CHAPTERS.book.slatl = 10. Matches recovery-011 spec."))
+
+  ;; ─── CATEGORY F — Misattribution review ──────────────────────
+  :f-status "already-executed-by-lane-3 — verified populated"
+  :f-moves
+    (
+     (verified :id "recovery-014"
+               :source-dir "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-lacuna-labs-doc/"
+               :source-file-count 1201
+               :canonical-home-actual-multi
+                 ("/Users/alfred/code/lacuna-labs/research/misc/     (1158 files)"
+                  "/Users/alfred/code/lacuna-labs/assets/mockups/     (26 files)"
+                  "/Users/alfred/code/lacuna-labs/engineering/        (per recovery-014 sort-by-kind)")
+               :status "sorted-by-kind-already-per-lane-3"
+               :evidence "recovery-log grep shows 1210 recovery-014 records total; sample :status entries include 'sorted-by-kind:misc', 'sorted-by-kind:mockup'."
+               :r-gamma-alternative-plan "R-gamma spec called for /lacuna-labs/scheme-books-relocated-2026-07-14/book-of-lacuna-labs-doc/ (preserve-flat structure) — but Lane 3 already performed a sort-by-kind. Sort-by-kind is Alfred-approved per recovery-014 :verification field in schema. Duplicative flat copy avoided."
+               :r-gamma-action "none — target repo already contains sorted content"
+               :provenance-source-preserved "yes")
+     (verified :id "recovery-015"
+               :source-dir "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-engineering-spine/"
+               :source-file-count 5
+               :canonical-home-actual "/Users/alfred/code/lacuna-labs/engineering/spine/"
+               :canonical-file-count 6
+               :status "landed-per-lane-3"
+               :evidence "spine-hello-surface.slat, spine-scheme-engine.slat, spine-security.slat, spine-slat.slat, spine-training.slat all present in /lacuna-labs/engineering/spine/ + README.slat. recovery-log shows 5 recovery-015 :status 'landed' records."
+               :r-gamma-action "none — target dir already populated"
+               :provenance-source-preserved "yes"
+               :schema-count-note "schema :file-count 36 vs actual 5 — task-instruction acknowledgment: schema estimate did not match reality; 5 is correct."))
+
+  ;; ─── Ask-Alfred items ────────────────────────────────────────
+  :ask-alfred-items
+    (
+     (:question "R-gamma spec directed to create /scheme-lang/docs/reference-manual-chapters/ and /lacuna-labs/scheme-books-relocated-2026-07-14/ — but Lane 3 already relocated all content to different (semantically better) destinations: reference-appendix/, engineering/spine/, research/misc/, assets/mockups/. R-gamma made copies, verified they were byte-identical duplicates, and REMOVED the duplicates rather than commit them. Confirm this was the right call?"
+      :recommendation "yes — merge-not-throw doctrine says extend and pave over; but here the content is already present at Alfred-approved semantic paths per Lane 3, so creating a second flat mirror would fragment findability without adding content. Sources remain in .wrong-attribution/ per no-deletes.")
+     (:question "book-of-the-book-sakura-scheme-reference-manual/ source dir is EMPTY (0 files). Was it drained by a prior lane, or was the schema entry aspirational?"
+      :recommendation "log-only; nothing to move."))
+
+  ;; ─── Repo commits ────────────────────────────────────────────
+  :commits
+    (
+     (:repo "curator"          :branch "books/lacuna-eng-round-2-2026-07-14" :action "no-changes-committed — Category C was verification-only; Category B+F sources remain untouched in .wrong-attribution/")
+     (:repo "scheme-lang"      :branch "verbs/wire-596-2026-07-14"          :action "single-commit — appends this R-gamma stamp to docs/reports/recovery-log-2026-07-14.slat")
+     (:repo "lacuna-labs"      :branch "main"                                :action "no-changes-committed — Category F targets already populated by Lane 3"))
+
+  :notes
+    ("Lane R-gamma executed as a verification + audit pass, NOT a mover pass."
+     "Discovery: Recovery Lane 3 (per header of recovery-log-2026-07-14.slat) already executed recovery-006, 007, 014, 015 before R-gamma launched."
+     "R-gamma initially copied 31 files (Cat B) and 1206 files (Cat F) to task-spec destinations, then diff-verified against Lane-3 destinations, discovered byte-identical duplicates, and cleaned up the duplicate untracked copies before committing."
+     "No source .wrong-attribution/ file was touched. All 25+6+1201+5 = 1237 source files verified still present after cleanup."
+     "Category C confirmed complete + well-structured — all 4 books have canonical dirs, manifests, and match schema spec."
+     "Cross-repo caution honored: touched all 3 repos in filesystem, only 1 (scheme-lang) needs a commit for the log update."))
+
