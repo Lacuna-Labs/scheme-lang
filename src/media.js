@@ -231,6 +231,15 @@ export function registerMedia(env, fuel) {
     return fb.toObject()
   })
 
+  // (framebuffer) — friendly discoverable name. Same as (render) / (fb-snapshot);
+  // returns a framebuffer snapshot the REPL renders as an image. Ships as a
+  // verb so `(framebuffer)` in the REPL shows what you've drawn without
+  // needing to remember the fb-snapshot name.
+  def('framebuffer', () => {
+    const fb = getMediaState().fb
+    return { kind: 'framebuffer', w: fb.w, h: fb.h, palette: fb.palette.map(c => c.slice()), pixels: Array.from(fb.pixels) }
+  })
+
   // (fb-restore snap) — load a snapshot back into the buffer.
   def('fb-restore', (snap) => {
     const st = getMediaState()
