@@ -2244,5 +2244,90 @@ announce         &rarr; queue the morning envelope, then (done)</code></pre>
 <div class="takeaway">Five functions, recursion, lists. That&rsquo;s Scheme. The parentheses tell you where each expression starts and ends.</div>
 </section>
 
+<section>
+<h2>15. Cool sound demos &mdash; make it beep</h2>
+
+<p>You have a full 16-voice mixer at your fingertips. Cross-platform (macOS <code>afplay</code>, Linux <code>aplay</code>, Windows PowerShell). Zero setup, zero deps. Open the REPL, paste, hear it.</p>
+
+<h3>The absolute simplest thing that sounds</h3>
+
+<pre><code>(tone 440 300)   ; 440 Hz for 300 ms &mdash; concert A</code></pre>
+
+<p>That&rsquo;s it. That&rsquo;s the whole first lesson. If you&rsquo;re on a laptop with speakers, you just made a sine wave.</p>
+
+<h3>Notes by name</h3>
+
+<pre><code>(note "C4" 300)              ; middle C, 300 ms
+(note "A4" 400 0.8)          ; concert A, louder (velocity 0.8)
+(note "C#5" 200)              ; sharps and flats work</code></pre>
+
+<h3>Chords &mdash; more than one note at once</h3>
+
+<pre><code>(chord (list "C4" "E4" "G4") 800)          ; C major
+(chord (list "A3" "C4" "E4") 800)          ; A minor
+(chord (list "C4" "E4" "G4" "B4") 1200)    ; C major seventh, held longer</code></pre>
+
+<h3>Melodies &mdash; sequences that unfold in time</h3>
+
+<pre><code>; Twinkle Twinkle Little Star &mdash; first phrase
+(melody (list "C4" "C4" "G4" "G4" "A4" "A4" "G4") 300)
+
+; Ode to Joy &mdash; the recognizable four bars
+(melody (list "E4" "E4" "F4" "G4" "G4" "F4" "E4" "D4"
+              "C4" "C4" "D4" "E4" "E4" "D4" "D4") 250)
+
+; C major scale up and down
+(melody (list "C4" "D4" "E4" "F4" "G4" "A4" "B4" "C5"
+              "C5" "B4" "A4" "G4" "F4" "E4" "D4" "C4") 150)</code></pre>
+
+<h3>Chord progressions &mdash; the four-chord song</h3>
+
+<pre><code>; I &ndash; V &ndash; vi &ndash; IV in the key of C
+; (this is the chord shape behind an outrageous number of pop songs)
+(chord (list "C4" "E4" "G4") 700)          ; C  (I)
+(chord (list "G3" "B3" "D4") 700)          ; G  (V)
+(chord (list "A3" "C4" "E4") 700)          ; Am (vi)
+(chord (list "F3" "A3" "C4") 700)          ; F  (IV)</code></pre>
+
+<h3>Arpeggio &mdash; a chord unrolled</h3>
+
+<pre><code>; Same C major, but one note at a time
+(melody (list "C4" "E4" "G4" "C5" "G4" "E4") 120)</code></pre>
+
+<h3>Polyphony &mdash; up to 16 voices at once</h3>
+
+<pre><code>; Sustain a pad chord while a melody dances over it.
+; The chord holds for 2 seconds; the melody starts immediately,
+; and the 16-voice mixer keeps them separate.
+(chord (list "C3" "E3" "G3" "C4") 2000 0.3)
+(melody (list "E5" "G5" "A5" "G5" "E5" "D5" "C5" "E5") 200 0.7)</code></pre>
+
+<h3>Blues scale &mdash; five notes and one that bends</h3>
+
+<pre><code>; C minor pentatonic + the flat-5 blue note
+(melody (list "C4" "Eb4" "F4" "F#4" "G4" "Bb4" "C5") 200)</code></pre>
+
+<h3>SFX &mdash; percussion, blips, sweeps</h3>
+
+<pre><code>(sfx 'kick 60 200)          ; kick drum &mdash; low pulse
+(sfx 'snare 200 100)        ; snare &mdash; short noise burst
+(sfx 'hihat 800 60)         ; hi-hat &mdash; short high hiss
+
+; A four-on-the-floor bar (approximate; timing is best in a loop)
+(sfx 'kick  60  120)
+(sfx 'hihat 800  60)
+(sfx 'snare 200 100)
+(sfx 'hihat 800  60)</code></pre>
+
+<h3>Sakura&rsquo;s morning chime</h3>
+
+<pre><code>; A three-note motif with a resolving fourth &mdash; the shape
+; Sakura uses when a new session opens cleanly.
+(melody (list "G4" "C5" "E5" "G5") 220 0.6)
+(chord  (list "C4" "E4" "G4" "C5") 1200 0.4)</code></pre>
+
+<div class="takeaway">Sound is a first-class primitive in Sakura Scheme. Every verb is stateless &mdash; call and it plays. Use <code>chord</code> for stacks, <code>melody</code> for sequences, <code>tone</code> for raw sine waves, <code>sfx</code> for percussion. The 16-voice mixer keeps everything separate. Nothing to install. It just beeps.</div>
+</section>
+
 </body>
 </html>
