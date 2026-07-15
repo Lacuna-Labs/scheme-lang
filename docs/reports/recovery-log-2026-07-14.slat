@@ -6801,3 +6801,39 @@
      "82df57e26 recovery-013: merge book-of-systems rN drafts — appendix-585 archive-0"
      "fdca91956 recovery-013: merge book-of-music rN drafts — appendix-660 archive-0")
   :status "complete")
+
+(lane-r-beta
+  :date "2026-07-14"
+  :category "A"
+  :status "complete"
+  :sources-processed ("scheme-books/reason-i" "scheme-books/math-book-ii" "scheme-books/book-of-math-ii")
+  :sources-not-processed-per-doctrine
+    ("BOOK/A-branch-scheme-books/reason-i" "BOOK/B-main-scheme-books/scheme-books/reason-i"
+     "BOOK/B-main-scheme-books/scheme-books/reason-ii" "BOOK/B-main-scheme-books/scheme-books/reason-iii"
+     "BOOK/B-main-scheme-books/scheme-books/reason-iv")
+  :sources-not-processed-note "BOOK/*/ is the canonical merkle-preserved snapshot per no-deletes doctrine — sources stay there per safeguard :no-deletes ('Copy to canonical + leave source in BOOK/ or .aliases/'). Only scheme-books/* copies moved to .aliases-2026-07-14/roman-numeral-sources/."
+  :prior-work-detected
+    "All 68 arc chapters (gates/epistemology/analogy/confidence 00-16 each, 4×17=68) already migrated to book-of-reason/ with :arc + :arc-source-volume + :provenance-recovery tags. All 18 book-of-math-ii chapters already migrated to book-of-math/ as ch-advanced-NN-*.book.slatl. Migration was done in an earlier pass (timestamps 2026-07-14T22:18:48Z–22:29:37Z). This lane's job reduced to source-archival + log-stamping + invariant-verification."
+  :chapters-added-to-canonical 0
+  :chapters-merged-into-existing 0
+  :appendix-sections-added 0
+  :arc-tags-verified
+    ((:arc "four-gates"             :canonical-count 17 :chapters "ch-gates-00..16")
+     (:arc "how-she-comes-to-know"  :canonical-count 17 :chapters "ch-epistemology-00..16")
+     (:arc "this-is-like-that"      :canonical-count 17 :chapters "ch-analogy-00..16")
+     (:arc "confidence-as-a-signal" :canonical-count 17 :chapters "ch-confidence-00..16")
+     (:arc "advanced-math"          :canonical-count 18 :chapters "ch-advanced-01..18"))
+  :book-of-reason-chapter-count-before 214
+  :book-of-reason-chapter-count-after  214
+  :book-of-math-chapter-count-before   36
+  :book-of-math-chapter-count-after    36
+  :chapter-count-invariant-status "preserved (>= source-sum verified: book-of-reason has 68 arc chapters, source dirs had 11 + 16 + 16 + 16 = 59, canonical superset)"
+  :ask-alfred-items ()
+  :notes
+    ("Lane R-beta arrived after arc migration was already performed by an earlier pass — likely the same session that authored the recovery schema."
+     "reason-i/ in scheme-books/ was untracked (11 files: 00-10). BOOK/A-branch had the same 11 files. BOOK/B-main had files 11-16 (the remainder of the volume). All content survives via the ch-gates-00..16 canonical chapters."
+     "math-book-ii/ in scheme-books/ was untracked (32 files: 16 chapters × 2 for -r1 duplicates). book-of-math-ii/ was tracked with 18 .book.slatl (canonical intermediate). Both archived; canonical ch-advanced-*.book.slatl in book-of-math/ carries the content."
+     "Verified 4 sample provenance headers (ch-gates-00, ch-epistemology-00, ch-analogy-00, ch-confidence-00) — all carry :arc-source-volume and :provenance-recovery with source-path + source-sha256."
+     "No blocked-need-alfred items. No content orphaned. No inline vs appendix merges required (no filename collisions in canonical book-of-reason for arc chapter names).")
+  :commits
+    ("<per-source commits below, generated after this stamp>"))
