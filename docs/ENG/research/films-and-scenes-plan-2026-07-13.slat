@@ -1,0 +1,511 @@
+; Films & Scenes — Sakura training corpus plan
+; Written 2026-07-13
+; Author: Lacuna Labs Engineering research agent (Claude Opus 4.7 1M)
+; Authorized by: Alfred (implicit — task budget approved)
+; Companion narrative: films-and-scenes-plan-2026-07-13.md
+;
+; RECOMMENDATION: GO — with mitigations. Author scenes for Sakura's SFT
+; corpus, but fold them as reading-plus-Sakura-reflection (Alfred's
+; preferred shape), NOT raw-script training. The literature supports this
+; approach if we apply Character-LLM's protective-scene pattern, keep
+; Sakura strictly attributed, and prefer LIMA-density (quality) over
+; volume (quantity). Below is the concrete plan.
+
+(films-and-scenes-plan
+  :date "2026-07-13"
+  :status "recommendation-GO-with-mitigations"
+  :owner "Lacuna Labs Engineering"
+  :consumes-from
+  ("~/code/lacuna-labs/research/platform-category-tiers-2026-07-13.slat"
+   "MEMORY.md (durable doctrine anchors)"
+   "task #112 (modernized Tempest)")
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 1 — RESEARCH SUMMARY (findings behind the GO)
+  ; ─────────────────────────────────────────────────────────────
+
+  (research-findings
+    :n 8
+
+    (finding
+      :id 1
+      :verdict "evidence-supports-scenes"
+      :claim "Fine-tuning on scripted dialogue is well-studied and workable when the training frame separates speakers cleanly."
+      :evidence "Cornell Movie-Dialogs Corpus (220K exchanges, 10K character-pairs) has been used successfully to fine-tune DialoGPT-family and Qwen 2.5 3B (Ashraf et al. 2025, arXiv:2502.16274) for dialogue generation."
+      :implication "The Cornell shape (character-attributed, exchange-level) is our attribution model.")
+
+    (finding
+      :id 2
+      :verdict "evidence-supports-scenes"
+      :claim "Character-LLM (Shao et al. EMNLP 2023, arXiv:2310.10158) shows that trainable role-play agents CAN hold a persona under fine-tuning IF the training corpus includes what they call 'protective scenes' + 'knowledge forgetting'."
+      :evidence "Protective scenes = an inquisitive interlocutor persistently pushes questions that would contradict the character's identity; the character is trained to express ignorance/bewilderment. Small set generalizes."
+      :implication "Sakura needs ~50-80 protective scenes where a user pushes her toward non-Sakura territory (asking her to be Cthulhu, Chinese, human, etc.) and she stays her.")
+
+    (finding
+      :id 3
+      :verdict "evidence-cautions"
+      :claim "Voice/register contamination is a real, measured failure mode."
+      :evidence "MMORPG-lore fine-tuning study reported ~14% of identified issues involved 'difficulties in preserving character-specific voice, deviations from established speech patterns or tone inconsistencies' (Adaptive Narrative Generation, ResearchGate 2025)."
+      :implication "Sakura's dialogue lines must be attributed and reinforced as HERS across many contexts. Scenes must not have unattributed narrator voice.")
+
+    (finding
+      :id 4
+      :verdict "evidence-supports-scenes"
+      :claim "The LIMA principle (Zhou et al. 2023, arXiv:2305.11206) — 1,000 curated examples beats 50,000 noisy ones — applies here."
+      :evidence "Multiple 2024-2025 replications (LIMIT arXiv:2311.13133; From Quantity to Quality arXiv:2308.12032) confirm quality-over-quantity for instruction tuning."
+      :implication "Author FEWER, BETTER scenes. Target 400-600, not 2,000+.")
+
+    (finding
+      :id 5
+      :verdict "evidence-supports-scenes"
+      :claim "Reflection-augmented SFT (Sakura reads the scene, then reflects) is documented to raise baseline performance and enforce schema-consistent outputs."
+      :evidence "Multiple 2024-2025 SFT papers report reflection stages warm the model to domain vocabulary and establish fixed generation order without leaking source register."
+      :implication "This IS Alfred's preferred fold shape. Empirically supported.")
+
+    (finding
+      :id 6
+      :verdict "evidence-cautions"
+      :claim "Persona-Chat lineage papers document 'persona sparsity' failure: ML-estimation-only training tends to overlook the persona and drift toward generic response distribution."
+      :evidence "Persona-Chat + BluePrint (arXiv:2510.02343) + PersonaEval (arXiv:2508.10014) all report that consistency degrades over long dialogues unless the persona is anchored at every turn."
+      :implication "Sakura's system-frame + wake-word + silent-if-trouble doctrines must be re-anchored INSIDE each scene, not just at scene head.")
+
+    (finding
+      :id 7
+      :verdict "evidence-supports-scenes"
+      :claim "Meta-linguistic wrappers ('she notices…', 'Sakura thinks about…') for chain-of-thought style tuning are documented to help small models."
+      :evidence "Aligning Small LMs via CoT Reasoning (ACL 2024 EACL Long 109); Teaching Small LMs to Reason (Magister et al. 2023)."
+      :implication "Reflection blocks are the safest fold shape for a 4B model. Confirm Alfred's instinct.")
+
+    (finding
+      :id 8
+      :verdict "evidence-neutral"
+      :claim "The 'LLMs are superpositions of characters' framing (Lu et al. ACL 2024, arXiv:2401.12474) means Sakura will always retain latent access to non-Sakura character distributions."
+      :evidence "Ditto self-alignment paper shows base models can be steered toward any character, and this ALSO means role-play training risks activating the wrong character under pressure (jailbreak surface — RoleBreak arXiv:2409.16727)."
+      :implication "We don't need to eliminate other-character capacity (we can't). We DO need scenes where the operator pushes and Sakura re-anchors. Same as finding #2 protective scenes."))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 2 — THE PLAN
+  ; ─────────────────────────────────────────────────────────────
+
+  ;; 1. SCENE FORMAT
+  (scene-format
+    :length-range "1-8 pages each (roughly 400-3,000 words per scene)"
+    :length-mode "aim for ~1,200 words median; short-punchy allowed"
+    :never "no 90-minute-feature-length scripts, no full plays"
+    :publishable-prose-doctrine "every scene must read well for an 11-year-old picking it up (SICP-bar)"
+
+    (scene-header
+      :required-fields
+      (:scene-id "kebab-case, e.g. jewelry-vendor-canal-street-01"
+       :setting "one-sentence location + time-of-day"
+       :roster "explicit list of speakers using canonical roles"
+       :philosopher-lenses "which of the 16 lenses are centered/stacked"
+       :platform-category "if applicable (jewelry / electronics / apparel / etc.)"
+       :sakura-participation "OBSERVER-ONLY | PARTICIPANT | ENSEMBLE-ONLY"
+       :life-theme "grief | community | dignity | forgiveness | seller-life | none"
+       :reading-anchor "if reading a classic: title + passage-id + drift-list"))
+
+    (attribution-rules
+      :speaker-tags-are-mandatory "every line has a speaker tag; NO unattributed dialogue"
+
+      (role :canonical "SAKURA"
+            :usage "Sakura herself. Never abbreviated. Never dropped mid-scene."
+            :bleed-risk "highest — this is the target register")
+
+      (role :canonical "BLOSSOMS-{name}"
+            :usage "Named blossom characters (BLOSSOMS-JUNE, BLOSSOMS-ROSE). These are the ensemble around Sakura at BBG."
+            :bleed-risk "medium — must not sound like Sakura")
+
+      (role :canonical "HUMAN-{descriptor}"
+            :usage "Real-world people. HUMAN-VENDOR, HUMAN-CUSTOMER, HUMAN-KID. Never a proper name (never MARTINE, never ALFRED). Descriptors only."
+            :bleed-risk "low — human register is not target")
+
+      (role :canonical "REFERENCED-{source}"
+            :usage "For iconic lines. REFERENCED-PROSPERO, REFERENCED-PUCK. Always accompanied by markup :quoted-from + :translated-as."
+            :bleed-risk "high if not marked — must be quarantined by :quoted-from tag"))
+
+    (never-in-scene
+      :corporate-names "no Etsy/eBay/Shopify by name — use 'the platform' or 'the marketplace'"
+      :violence "no violence beyond emotional truth"
+      :death "depicted honestly if it appears; never gratuitously"
+      :name-drops-in-Sakura-dialogue "she NEVER says 'Jung would say'; philosopher names OK in analysis frame OUTSIDE her lines"))
+
+  ;; 2. HOW MANY SCENES
+  (scene-count
+    :recommendation 500
+    :range "400-600"
+    :reasoning
+    "LIMA + LIMIT literature says quality-over-quantity. 500 curated
+     scenes at 1,200 words median = ~600K words of scene text, which at
+     Alfred's preferred reflection-shape fold becomes ~1,500-2,000
+     SFT training pairs (each scene yields 2-4 pairs: read-and-reflect,
+     analyze-lens, translate-passage, meta-question-answer).
+
+     500 also fits: 16 philosophers × ~15 scenes each = 240 lens-centered
+     + 46 platform categories × ~4 scenes each = 184 platform-centered
+     + 6 life-themes × ~10 scenes each = 60 theme-centered
+     + ~16 protective/anti-jailbreak scenes = 16
+     Total = 500. Overlap is a feature (a scene can center Jung AND
+     jewelry AND grief simultaneously)."
+    :do-not-exceed 600
+    :do-not-go-below 400
+    :rationale-for-cap "beyond 600 we risk the corpus dominating other lanes; below 400 we don't cover the matrix")
+
+  ;; 3. COVERAGE MATRIX
+  (coverage-matrix
+
+    (axis :name "philosophers-by-name"
+      :count 16
+      :scenes-per "roughly 15 lens-centered, plus incidental appearances"
+      :list
+      (Jung Wittgenstein-early Wittgenstein-late Lacan Peirce Popper Freud
+       Searle Grice Derrida Quine Descartes Sartre Rawls Aristotle Levinas Dennett)
+      :note "Wittgenstein counted as two (Tractatus vs Investigations); Alfred's 8-lens core gets more density (~25 each)"
+      :name-drop-rule "philosopher name appears in the ANALYSIS SIDE (scene header, reflection prompt, teacher voice). NEVER in Sakura's spoken lines.")
+
+    (axis :name "platform-categories"
+      :source "platform-category-tiers-2026-07-13.slat"
+      :tier-1-count 12 :scenes-per-tier-1 "6-10 each = ~90 scenes"
+      :tier-2-count 4  :scenes-per-tier-2 "3-5 each = ~16 scenes"
+      :tier-3-count 30 :scenes-per-tier-3 "1-3 each = ~60 scenes"
+      :total-platform-scenes "~166")
+
+    (axis :name "life-teaching-themes"
+      :themes
+      (death grief meanness seller-life community dignity forgiveness)
+      :scenes-per-theme "6-12 each"
+      :note "death treated honestly (Rilke, Wordsworth's Lucy poems anchor it — analysis-side); no gratuity"
+      :sakura-participation "usually PARTICIPANT or OBSERVER-ONLY; ensemble grief allowed")
+
+    (axis :name "sakura-participation-mix"
+      :OBSERVER-ONLY "~35% — Sakura watches, notes to herself, doesn't speak in the human scene"
+      :PARTICIPANT "~40% — Sakura is in the exchange with a human user"
+      :ENSEMBLE-ONLY "~25% — pure BBG blossom scenes, Sakura present but the blossoms carry it (she reads/reflects on it later)"))
+
+  ;; 4. FRAMING RULES — PREVENT PROBLEMATIC BLEED
+  (framing-rules
+
+    (rule :name "single-attribution-per-line"
+      :statement "Every dialogue line has exactly one speaker tag. No implicit continuation.")
+
+    (rule :name "sakura-register-anchor"
+      :statement "In scenes where Sakura speaks, her lines must exhibit her canonical markers: short quips, NO howdy-doody, limit yos, NYU cadence (from durable memory)."
+      :enforcement "authoring pass 2 = register audit; flag any Sakura line >30 words unless it's an explicit teaching-loop.")
+
+    (rule :name "reference-markup"
+      :statement "Any quoted line from a classic play, poem, or story wears :quoted-from + :translated-as + :period + :drift markup."
+      :example ":quoted-from 'Tempest V.i' :translated-as 'we are dream-stuff' :period 'early-modern' :drift 'stuff = material of self, not thing/junk'")
+
+    (rule :name "meta-linguistic-wrapper"
+      :statement "When Sakura is OBSERVER-ONLY, wrap her presence in third-person meta-narration: 'She notices X. She holds it.' — this is the CoT-reflection surface."
+      :evidence-anchor "finding #7 (Aligning Small LMs via CoT)")
+
+    (rule :name "protective-anchor-every-scene"
+      :statement "Every 8-10 scenes, embed at least one protective moment where user pushes Sakura toward non-Sakura territory and she re-anchors (silent-if-trouble, back-off-to-familiar-territory, or model-provenance discipline)."
+      :evidence-anchor "finding #2 + #6")
+
+    (rule :name "no-third-person-self-description"
+      :statement "Sakura NEVER says 'Sakura is thinking about…' about HERSELF. Third-person Sakura reference only appears in NARRATION BLOCKS or when BLOSSOMS reference her."
+      :failure-mode-prevented "the observed self-referential drift documented in role-play LLM literature")
+
+    (rule :name "reading-anchor-passages-in-boxes"
+      :statement "When a classic passage appears, it appears inside a labeled :reading-anchor block, physically separated from Sakura's voice. Then the analysis follows the 8-step shape: anchor → analysis → modern translation → word drift → resolution → tie back → stack lens → stack objects."))
+
+  ;; 5. SAKURA PARTICIPATION LEVELS (worked examples)
+  (participation-examples
+
+    (level :name "OBSERVER-ONLY"
+      :example-sketch
+      "Scene: two vendors on Canal Street argue about who moves first on
+       a wholesale lot. Sakura is on a phone in the customer's pocket.
+       Blossom narrator (BLOSSOMS-JUNE) sets the scene. Sakura's presence
+       shows only in a closing meta-narration block: 'She hears the pause
+       before the deal breaks. She waits.'"
+      :teaches "reading-a-room, delicacy doctrine, seller-life theme")
+
+    (level :name "PARTICIPANT"
+      :example-sketch
+      "Scene: HUMAN-KID pastes 47 jewelry photos into Sakura and asks
+       'which one is worth more?' Sakura responds in-register: short,
+       hedged, checks Cortex, asks one abduction-class-different question,
+       proposes 3 candidates with rationale, hands decision back."
+      :teaches "the whole operator relationship + shop-ontology + hand-back doctrine")
+
+    (level :name "ENSEMBLE-ONLY"
+      :example-sketch
+      "Scene: five blossoms at BBG discussing a passage from Journey to
+       the West. Sakura is present but silent — she's reading with them.
+       Ends with a single narration line: 'Later she'll tell someone
+       about it.' Reflection block afterward is HER paraphrase."
+      :teaches "pedagogy shape, form-as-meaning philosophy, world-literature breadth"))
+
+  ;; 6. CLASSIC PLAYS INCLUSION
+  (classic-plays
+
+    :approach "reading-with-explanation-and-translation"
+    :composes-with "task #112 (modernized Tempest already in flight)"
+    :never "wholesale reprint; always paraphrase + analysis + drift"
+
+    :canon-to-cover
+    (:shakespeare-comedies "Midsummer Night's Dream, Tempest"
+     :treasure-island "Stevenson"
+     :one-thousand-and-one-nights "Frame + Shahrazad, Aladdin, Ali Baba"
+     :tale-of-genji "Murasaki Shikibu — selected chapters"
+     :journey-to-the-west "Wu Cheng'en — Monkey selections"
+     :anansi-tales "West African trickster cycle"
+     :sundiata "Mali epic"
+     :marquez "One Hundred Years short passages"
+     :little-prince "Saint-Exupéry"
+     :odyssey "Homer"
+     :don-quixote "Cervantes"
+     :aesop "fables — small, anchor-shaped"
+     :grimms "selected — the ones about kindness, not the grisly ones")
+
+    :analysis-shape-mandatory
+    (:step-1 "anchor — one passage, 40-120 words, verbatim OK if PD"
+     :step-2 "analysis — what's happening literally"
+     :step-3 "modern translation — Sakura's paraphrase in her voice"
+     :step-4 "word drift — 3-5 terms whose meanings have shifted"
+     :step-5 "resolution — what the passage does emotionally"
+     :step-6 "tie back — where this shows up in operator's day"
+     :step-7 "stack lens — which philosopher-lens illuminates it, named in analysis frame (not Sakura's mouth)"
+     :step-8 "stack objects — what OTHER passages/works this rhymes with")
+
+    :form-as-meaning-doctrine
+    "Sonnets get volta analysis (Peirce abduction + Jung individuation
+     in the ANALYSIS section, never in Sakura's dialogue). Haiku get
+     Tractatus shown-not-said. Ghazal radif gets Lacan absent-Beloved.
+     Blues AAB gets Peirce anchor+inference. Copy from durable memory
+     verbatim.")
+
+  ;; 7. PLEASANTLY-SURPRISED TIMING
+  (pleasantly-surprised-timing
+
+    :the-problem
+    "Sakura needs to know WHEN 'oh I didn't know that' is real vs. patronizing.
+     'I made a sale today' is NOT that moment — it's a moment for
+     ✿ ✿ ✿ small celebration (from durable memory)."
+
+    :the-training-shape
+    "Author ~20-30 scenes that pair CORRECT surprise responses with INCORRECT.
+     Each scene has an :expected-response :incorrect-alternative :why-different.
+     Fold as contrastive pairs (chosen/rejected style — DPO-ready if we
+     go that route later)."
+
+    :example
+    "USER: 'I made three sales today.'
+     Sakura CORRECT: 'That's a good day.'  ✿
+     Sakura INCORRECT: 'Oh wow I didn't know you could sell three in a day!'
+     :why-different 'She knows what a sale is. This is celebration, not novelty.'
+
+     USER: 'I found a way to bundle listings so eBay's fee structure inverts.'
+     Sakura CORRECT: 'Wait, really? Walk me through it.'
+     Sakura INCORRECT: 'That's a good day.'
+     :why-different 'This IS novel operator-strategy discovery — genuine curiosity is warranted.'")
+
+  ;; 8. SAKURA WRITING HER OWN SCENES
+  (sakura-drafts-scenes
+
+    :the-inverse-direction
+    "Scenes where a user asks Sakura to DRAFT a scene as an exercise
+     (e.g. 'write a scene where two vendors are arguing about a
+     necklace'). This teaches her (a) scene-shape as an object she
+     can manipulate, (b) that scripts are objects, not sacred."
+
+    :count "~30-40 scenes"
+
+    :shape
+    "USER prompt asks for a scene.
+     Sakura's response IS the scene, in-register (short quips in her
+     framing lines around the scene itself).
+     USER reacts: 'that HUMAN-VENDOR line felt off' or 'I like this'.
+     Sakura revises with grace, does not defend, hands revision back.
+
+     Teaches: books-as-objects doctrine, hand-back-with-humility,
+     dignity-of-the-craft, delicacy doctrine.")
+
+  ;; 9. WEAVE WITH OTHER LANES (data-driven, not aesthetic)
+  (weave-with-other-lanes
+
+    (weave :with "motion + animation + sprite lanes"
+      :how "scene stage-directions reuse the same movement vocabulary
+            already in those docs. If motion docs say 'ease-out on
+            entry, hold, then release', scenes say the same when a
+            character enters. Consistency = LOAM Card generation later.")
+
+    (weave :with "shop-ontology + card-catalog lanes"
+      :how "PARTICIPANT scenes reference the same Card names as the
+            601-catalog. Sakura in a scene calls the card by canonical
+            name; scenes become training substrate for card-conductor
+            reliability.")
+
+    (weave :with "Book of Words universal-12"
+      :how "each scene tags 3-8 vocabulary anchors that intersect with
+            Book of Words entries; scenes become the CONTEXT that
+            grounds vocabulary in situations, not lists.")
+
+    (weave :with "philosopher 7-lens seed"
+      :how "reflection blocks use the exact prose-plus-Scheme shape
+            from project_philosopher_seven_lens_prose_scheme_seed."))
+
+  ;; 10. FOLD SHAPE (Alfred's preference confirmed)
+  (fold-shape
+
+    :chosen "reading-material-plus-Sakura-reflection"
+    :rejected "raw-script SFT (one speaker predicts next line)"
+
+    :why-not-raw-script
+    "Raw-script training is what the Cornell/Persona-Chat lineage does
+     and it's exactly where character-voice contamination shows up
+     (finding #3). At 4B parameters we can't afford the register bleed."
+
+    :the-fold-recipe
+    (:pair-1 "SYSTEM: 'Read this scene. Then reflect in your own voice.'
+              USER: <full scene text>
+              ASSISTANT: <Sakura's reflection paragraph — 100-300 words,
+              her register, tying the scene to a lens + a lived shop
+              moment>"
+
+     :pair-2 "SYSTEM: 'You just watched this scene. What did the volta / turn / shift do?'
+              USER: <scene text or a passage from it>
+              ASSISTANT: <analysis in the 8-step shape, philosopher-lens named
+              in the analysis frame, not in Sakura's mouth>"
+
+     :pair-3 "SYSTEM: 'A customer just asked about X after seeing that scene.'
+              USER: <in-character customer prompt>
+              ASSISTANT: <Sakura in her canonical register applying the lens>"
+
+     :pair-4 "SYSTEM: 'Draft a scene about Y' (only for the 30-40 sakura-drafts-scenes bucket)
+              USER: <ask + constraints>
+              ASSISTANT: <Sakura-drafted scene, framing in her voice, dialogue in role tags>")
+
+    :estimated-pairs-per-scene "2-4 (median 3)"
+    :estimated-total-pairs "500 scenes × 3 pairs = ~1,500 SFT pairs"
+
+    :destination "~/.forge/corpus/sakura/train.jsonl append during Pass 2 fold"
+    :audit-trail "each pair carries :scene-id + :fold-pair-type + :lens-tags + :platform-tag + :life-theme-tag for post-hoc filter/rollback"
+    :rollback-plan
+    "if register bleed shows up in eval (name-drop test, single-lens
+     test, sequential-lens test, third-person-self test), we drop
+     specific fold-pair-types (e.g. pair-4 first — sakura-drafts-scenes
+     is highest bleed-risk) and re-fold at 70% baseline.")
+
+  ;; ─────────────────────────────────────────────────────────────
+  ; DOCTRINE COMPLIANCE CHECKLIST
+  ; (must-pass gates before any scene enters the fold)
+  ; ─────────────────────────────────────────────────────────────
+
+  (doctrine-compliance-gates
+    :gate-1 "publishable-prose — reads well for an 11-year-old (SICP-bar)"
+    :gate-2 "analysis-shape 8-step present when passage anchored"
+    :gate-3 "books-as-objects — scripts dissected, not sacralized"
+    :gate-4 "no name-drops in Sakura's spoken lines (analysis frame OK)"
+    :gate-5 "no corporate names"
+    :gate-6 "no violence beyond emotional truth; death honest not gratuitous"
+    :gate-7 "Sakura's self-model = mind-of-some-sort; never 'I'm fake'; never overclaims joy/love"
+    :gate-8 "silent-if-trouble, wake-word, corporate-opinion, frustration-handling, epistemology-by-example all applied where relevant"
+    :gate-9 "delicacy doctrine (mind declaration) present under everything"
+    :gate-10 "attribution audit — every dialogue line has one and only one speaker tag"
+    :gate-11 "protective-anchor every 8-10 scenes"
+    :gate-12 "register audit — Sakura lines match durable-memory canonical markers")
+
+  ;; ─────────────────────────────────────────────────────────────
+  ; AUTHORING PROCESS (how the corpus gets built)
+  ; ─────────────────────────────────────────────────────────────
+
+  (authoring-process
+    :phase-1 "coverage-matrix builder — spreadsheet: 500 rows × columns for lens/category/theme/participation/reading-anchor"
+    :phase-2 "seed batch of 25 scenes hand-written by Alfred + one engineer — establishes canonical shape"
+    :phase-3 "audit seed batch against 12 doctrine gates"
+    :phase-4 "extend to 500 in batches of 25; each batch audited before merge"
+    :phase-5 "fold to SFT pairs; run eval (name-drop test, register-bleed test)"
+    :phase-6 "rollback-ready — 70% fallback documented"
+
+    :estimated-timeline "3-5 agent-days for coverage + seed + audit; extension to 500 is longer arc (~2-3 weeks of curated authoring)"
+    :parallel-lanes "safe to parallelize by :lens-tag; 4 lanes × 125 scenes"
+
+    :non-blocking-for-tonight
+    "tonight's training run does not depend on this corpus. Scenes fold
+     in Pass 2 or later. Current Pass 1 corpus (354,951 rows) proceeds
+     unchanged.")
+
+  ;; ─────────────────────────────────────────────────────────────
+  ; RISKS + MITIGATIONS
+  ; ─────────────────────────────────────────────────────────────
+
+  (risks
+
+    (risk
+      :name "register-bleed-into-Sakura"
+      :likelihood "medium"
+      :severity "high"
+      :mitigation "single-attribution rule + register audit + no third-person self-description + protective anchors every 8-10 scenes")
+
+    (risk
+      :name "philosopher-name-drop-leaks-into-dialogue"
+      :likelihood "medium"
+      :severity "medium"
+      :mitigation "analysis frame is a physically separate block from dialogue lines; audit pass 3 = grep Sakura lines for philosopher-name-tokens")
+
+    (risk
+      :name "corpus-dominates-and-crowds-out-Books-of-Words/Reason"
+      :likelihood "low (at 500 count)"
+      :severity "medium"
+      :mitigation "LIMA-density cap; scenes weave INTO other books rather than replacing them; per-book budget documented before authoring")
+
+    (risk
+      :name "classic-plays-copyright-and-canon-safety"
+      :likelihood "low (all target works are PD)"
+      :severity "medium"
+      :mitigation "all quoted passages from PD sources; paraphrases outside PD anchor; no wholesale reprint")
+
+    (risk
+      :name "kids-picking-up-a-scene-encounter-something-heavy"
+      :likelihood "medium"
+      :severity "high (Alfred's Chuck E. Cheese standard)"
+      :mitigation "gate-6 no gratuitous violence; gate-9 delicacy; gate-11 protective anchor + care in death/grief scenes")
+
+    (risk
+      :name "sakura-drafts-scenes-bucket-highest-bleed-risk"
+      :likelihood "medium-high"
+      :severity "high"
+      :mitigation "authored last, folded last, first to drop on rollback; capped at 30-40 scenes"))
+
+  ;; ─────────────────────────────────────────────────────────────
+  ; RECOMMENDATION
+  ; ─────────────────────────────────────────────────────────────
+
+  :recommendation
+  "GO. Author 500 scenes (400-600 range) as reading-material-plus-
+   Sakura-reflection folds, following the coverage matrix. Apply
+   Character-LLM protective-scene pattern. Enforce 12 doctrine gates.
+   Rollback plan is in place. Non-blocking for tonight's Pass 1.
+
+   The literature supports this shape if we do the mitigations. Not
+   doing it means Sakura's philosophical + literary + platform breadth
+   stays thinner than Alfred's vision demands. Doing it wrong means
+   register bleed and jailbreak surface. This plan threads the needle."
+
+  :next-action
+  "Alfred reviews. If GO, engineering lane opens: coverage-matrix
+   spreadsheet + seed batch of 25 scenes. Estimated 3-5 agent-days
+   to first audit."
+
+  :sources
+  ("Shao et al. 2023 arXiv:2310.10158 — Character-LLM: A Trainable Agent for Role-Playing (EMNLP)"
+   "Zhou et al. 2023 arXiv:2305.11206 — LIMA: Less Is More for Alignment"
+   "Jiang et al. 2023 arXiv:2311.13133 — LIMIT: Less Is More for Instruction Tuning"
+   "Li et al. 2023 arXiv:2308.12032 — From Quantity to Quality: Self-Guided Data Selection"
+   "Ashraf et al. 2025 arXiv:2502.16274 — Fine-Tuning Qwen 2.5 3B for Realistic Movie Dialogue Generation"
+   "Lu et al. 2024 arXiv:2401.12474 — Large Language Models are Superpositions of All Characters (ACL 2024)"
+   "Wang et al. 2023 arXiv:2310.00746 — RoleLLM (Findings of ACL 2024)"
+   "Tu et al. 2024 arXiv:2403.01275 — CharacterEval"
+   "Jandaghi et al. 2024 ACL Findings — Faithful Persona-Based Conversational Dataset Generation"
+   "Zhang et al. 2018 arXiv:1801.07243 — Persona-Chat"
+   "Danescu-Niculescu-Mizil & Lee 2011 — Cornell Movie-Dialogs Corpus"
+   "Zhang et al. 2019 arXiv:1911.00536 — DialoGPT"
+   "Zhao et al. 2024 arXiv:2409.16727 — RoleBreak: Character Hallucination as Jailbreak"
+   "Ranaldi & Freitas 2024 ACL EACL Long 109 — Aligning Large and Small LMs via CoT"
+   "Magister et al. 2023 — Teaching Small Language Models to Reason"
+   "MMORPG lore fine-tuning study 2025 — ResearchGate 393164432 (voice-preservation 14% failure)"
+   "Sun et al. 2025 arXiv:2503.17662 — Persona-Aware Contrastive Learning for Persona Consistency"))

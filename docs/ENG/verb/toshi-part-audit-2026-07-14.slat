@@ -1,0 +1,330 @@
+;; ═══════════════════════════════════════════════════════════════════════
+;; toshi-part — Phase A audit
+;; Lane: part/*
+;; Date: 2026-07-14
+;; Author: Toshi (Lacuna Eng Lead — part/ wiring lane)
+;;
+;; Doctrine (Alfred): "We can't lie to people. They trust us."
+;; No auto-stubs. Every verb hand-authored. 5-tier examples REPL-verified.
+;; The reference SLAT IS the language — see the memory rule
+;;   "Reference manual IS the language" (2026-07-13).
+;;
+;; Lane brief label was "particle systems (~18 verbs)". Repo state
+;; contradicts the label — see :label-mismatch section below. This audit
+;; documents what actually exists so Phase B can be dispatched honestly.
+;; ═══════════════════════════════════════════════════════════════════════
+
+(audit
+  :lane "toshi-part"
+  :namespaces ("part/*")
+  :ref-file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :schema "docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :repo "Lacuna-Labs/scheme-lang"
+  :branch "verbs/wire-596-2026-07-14"
+  :method
+    "1. grep :name \"part/ in SAKURA-SCHEME-REFERENCE.slat"
+    " 2. grep part/ in src/*.js"
+    " 3. probe each verb via bin/sakura-scheme eval and record return value")
+
+;; ─── Label mismatch (report to Architect, non-blocking) ────────────────
+;;
+;; Lane brief says the part/ namespace holds "particle systems" verbs and
+;; instructs wiring to src/animation.js or src/framebuffer.js. The
+;; reference SLAT and the repo tell a different story:
+;;
+;;   Reference SLAT: 19 part/ verbs, ALL of them body-part puppetry pose
+;;                   verbs (bow, breathe, expression, grasp, lean,
+;;                   look-toward, lower, nod, point, raise, reach, shake,
+;;                   shrug, step, sway, tilt, turn, twist, wave). Each
+;;                   entry says the verb is "a motion specification" that
+;;                   composes into form-group / choreography — no particle
+;;                   systems mentioned.
+;;
+;;   Repo src/: wired-verbs.js §21 registers 18 of those puppetry verbs
+;;              as descriptor stubs (bow…wave, missing part/step).
+;;              reference-impls.js registers a SECOND, undocumented set
+;;              (part/spawn, part/emit, part/render, part/gravity!,
+;;              part/wind!, part/lifetime!, part/size!, part/color!,
+;;              part/velocity!, part/clear, part/kill, part/at, part/near,
+;;              part/emit-radial, part/spawn-radial) as descriptor stubs.
+;;              These "particle" verbs are NOT in the reference SLAT.
+;;
+;; Per memory doctrine "Reference manual IS the language — when reference
+;; and code disagree, REFERENCE WINS", the canonical part/ scope is the
+;; 19 puppetry verbs. The 15 phantom particle stubs in reference-impls.js
+;; are either (a) leftover from an older draft that never made it into
+;; the reference, or (b) awaiting Alfred's decision to promote them.
+;;
+;; This audit treats the 19 puppetry verbs as the primary lane scope.
+;; The 15 phantom particle stubs are documented under :phantom-verbs
+;; below so the Architect / Alfred can decide: (a) delete them,
+;; (b) author reference entries and wire them, or (c) rename them under
+;; a different namespace (e.g. particles/).
+
+;; ─── Bucket 1: Canonical scope — 19 puppetry verbs ─────────────────────
+;;
+;; All 19 currently return a bare tagged-list descriptor via
+;; wired-verbs.js §21 (18 of them) or the phantom stub loop in
+;; reference-impls.js line 2149 (part/step). Every call returns the same
+;; shape:  (part/bow)  =>  ("part/bow")
+;;
+;; None of them touch the framebuffer, none register a sprite pose, none
+;; alter game state. They are honest "descriptor" placeholders that a
+;; live host WOULD consume — but no live host in-repo exists.
+
+(bucket
+  :name "puppetry-pose"
+  :count 19
+  :current-impl "descriptor stub — returns tagged list [name]"
+  :phase-b-action
+    "author real motion-spec impls that (a) return a well-shaped record"
+    " with kind, sprite, pose data, duration, and phase; (b) optionally"
+    " render an immediate visual cue in the current framebuffer for kids"
+    " running standalone REPL; (c) attach permission = 'paint or 'read"
+    " per the reference kind field."
+  :verbs (
+    ;; TORSO / STANCE — bow, lean, sway, tilt (torso pose deltas)
+    "part/bow"                    ; torso bend forward, hold, return
+    "part/breathe"                ; looping expand/contract, background
+    "part/lean"                   ; torso tilt to a direction
+    "part/sway"                   ; slow side-to-side torso motion
+    "part/tilt"                   ; torso or head tilt
+
+    ;; HEAD / GAZE — look-toward, nod, shake, turn
+    "part/look-toward"            ; head/gaze aim at target
+    "part/nod"                    ; head yes-motion
+    "part/shake"                  ; head no-motion (or body shudder)
+    "part/turn"                   ; whole-body facing change
+
+    ;; ARM / HAND — grasp, point, raise, reach, lower, wave, twist
+    "part/grasp"                  ; hand close into grip
+    "part/point"                  ; arm extend toward target
+    "part/raise"                  ; arm/torso rise
+    "part/reach"                  ; arm extend forward
+    "part/lower"                  ; arm/torso drop
+    "part/wave"                   ; arm greeting gesture (cyclic)
+    "part/twist"                  ; torso or limb rotation
+
+    ;; FACE — expression, shrug
+    "part/expression"             ; named facial expression (symbolic)
+    "part/shrug"                  ; shoulders raise + drop
+
+    ;; LOCOMOTION — step
+    "part/step"                   ; one discrete walk-cycle step
+    ))
+
+;; ─── Bucket 2: Phantom stubs — NOT in reference (15 verbs) ─────────────
+;;
+;; These live in src/reference-impls.js at line 2149 as a mass descriptor
+;; loop. They have NO reference SLAT entry — they cannot be documented,
+;; verified, or examined. Per reference-IS-the-language doctrine they
+;; should be DELETED or PROMOTED (author reference entries first, then
+;; wire).
+;;
+;; Toshi's recommendation: DELETE the descriptor loop entries for these
+;; 15 phantom names. If Alfred wants a particle-system layer, dispatch a
+;; separate lane (particles/) with proper reference-first authoring.
+;;
+;; NOT part of this lane's Phase B wiring scope.
+
+(bucket
+  :name "phantom-particle"
+  :count 15
+  :location "src/reference-impls.js:2149"
+  :current-impl "descriptor stub — returns tagged list [name ...args]"
+  :phase-b-action "OUT OF SCOPE — flag to Architect + Alfred for decide"
+  :recommendation
+    "delete from reference-impls.js descriptor loop; the reference SLAT"
+    " does not document them so no reader can rely on them without lying"
+    " about what the language contains. If Alfred wants a particle layer,"
+    " it needs its own lane with reference-first authoring."
+  :verbs (
+    "part/spawn"                  ; spawn one particle
+    "part/emit"                   ; emit particles from a source
+    "part/render"                 ; render the particle field
+    "part/gravity!"               ; set particle-field gravity
+    "part/wind!"                  ; set particle-field wind vector
+    "part/lifetime!"              ; set particle lifetime
+    "part/size!"                  ; set particle size
+    "part/color!"                 ; set particle color
+    "part/velocity!"              ; set particle initial velocity
+    "part/clear"                  ; wipe all particles
+    "part/kill"                   ; kill particles matching predicate
+    "part/at"                     ; particles at a location
+    "part/near"                   ; particles near a location
+    "part/emit-radial"            ; radial burst emission
+    "part/spawn-radial"           ; radial spawn pattern
+    ))
+
+;; ─── Bucket 3: Collision bug — part/count clobber ──────────────────────
+;;
+;; While auditing, Toshi found an active bug NOT in lane scope but worth
+;; flagging. src/reference-impls.js line 1439 defines part/count as the
+;; combinatorics partition-count function (a real, useful math impl —
+;; (part/count 5) should return 7).
+;;
+;; However, the mass descriptor loop at line 2149-2159 in the SAME
+;; function ALSO defines part/count as a descriptor stub. Both defs run
+;; under the same installReferenceImpls call; the second call clobbers
+;; the first because the def helper's preExisting snapshot was taken at
+;; function entry (line 22), before EITHER def happened.
+;;
+;; Verified via bin/sakura-scheme eval:
+;;   (part/count 5)  =>  ("part/count" 5)     ; wrong — descriptor stub
+;;   (part/list 4)   =>  ((4) (3 1) (2 2) ...) ; correct — partition impl
+;;   (part/conjugate '(3 2 1)) => (3 2 1)     ; correct — partition impl
+;;
+;; part/count is ALSO not documented in the reference SLAT — so a
+;; reference-first cleanup would delete it entirely OR document it and
+;; keep it. Flagging to Architect.
+
+(bucket
+  :name "clobber-bug"
+  :count 1
+  :verbs ("part/count")
+  :diagnosis
+    "src/reference-impls.js line 2149 descriptor loop overwrites the"
+    " partition-count impl at line 1439 because installReferenceImpls"
+    " snapshots preExisting at function entry, not incrementally."
+  :fix-options
+    "(a) remove part/count from the descriptor loop at line 2149;"
+    " (b) delete part/count entirely (it is not in the reference); or"
+    " (c) if particle namespace gets promoted, rename combinatorics impl"
+    " to something like combinat/partition-count and keep separate."
+  :phase-b-action "OUT OF SCOPE — flag to Architect + Alfred for decide")
+
+;; ─── Ambiguities / open questions ─────────────────────────────────────
+
+(open-questions
+  :items (
+    (:q "Is the lane brief label 'particle systems' a typo, a relic from"
+        " an older reference, or an intent to add particles? If intent,"
+        " that is a separate lane requiring reference-first authoring."
+     :who "Architect")
+
+    (:q "Are the 15 phantom particle stubs to be deleted, promoted with"
+        " reference entries, or renamed to a new namespace?"
+     :who "Alfred")
+
+    (:q "part/count clobber bug: fix it in scope of this lane, or hand"
+        " off to a maintenance lane?"
+     :who "Architect")
+
+    (:q "Motion-spec return shape: the reference says these are 'meta"
+        " verbs' that compose into form-group / choreography. Should the"
+        " Phase B impl return a plain object record, a Sym-tagged pair"
+        " (per note/strike + synth/* pattern in wired-verbs.js), or a"
+        " tagged list (per current descriptor pattern)? Toshi's default"
+        " unless told otherwise: object record with :kind and enough"
+        " pose data for a real host to render. Fallback: keep tagged"
+        " list but expand args."
+     :who "Ada schema — pending SAKURA-SCHEME-REFERENCE-SCHEMA.slat")
+
+    (:q "For 'paint or 'read permission on motion-spec verbs: the current"
+        " descriptor return has NO visual side effect, so 'read is right."
+        " If Phase B adds an immediate framebuffer cue for kids in"
+        " standalone REPL (e.g. draw a tiny pose glyph next to a sprite"
+        " id), permission bumps to 'paint. Await schema."
+     :who "Ada schema"))
+
+  :non-blocking? true
+  :will-proceed
+    "Toshi will start Phase B on the 19 puppetry verbs the moment the"
+    " schema lands. No wiring begins before then. Phantom stubs and the"
+    " clobber bug wait for Alfred/Architect calls.")
+
+;; ─── Phase B plan (locked, ready) ─────────────────────────────────────
+
+(plan
+  :phase "B"
+  :when "after Ada lands docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :steps (
+    "1. Read the locked schema. Confirm return-record shape, permission"
+    "   field name, +eng / +cs / +ai slice shapes."
+
+    "2. Create src/part.js. Peer-pattern to src/game.js: exports an"
+    "   installPart(env) that defines all 19 verbs, called from"
+    "   sakuraEnv.js AFTER installGame and BEFORE installWiredVerbs so"
+    "   real impls win over the puppetry-descriptor loop in"
+    "   wired-verbs.js §21 (which should also be removed once part.js"
+    "   ships)."
+
+    "3. For each verb, author:"
+    "     - JS impl that returns a proper motion-spec record. Standalone"
+    "       REPL: render a tiny pose-glyph on the framebuffer at the"
+    "       sprite's location (if a sprite name is passed) so kids can"
+    "       SEE their (part/bow 'hero) do something. Hosted: return the"
+    "       record for the host choreographer to consume."
+    "     - 5-tier examples: novice (bare call), apprentice (with"
+    "       sprite arg), intermediate (composed with breathe/expression),"
+    "       expert (multi-step choreography sequence), master (game-loop"
+    "       usage in a whole scene — greeting NPC, farewell, dance)."
+    "     - +eng slice: latency budget for per-frame call (target < 200µs"
+    "       standalone; hosted defers to renderer)."
+    "     - +cs slice: complexity — O(1) per call; O(k) for k pose"
+    "       parameter updates; no allocation on the hot path (reuse a"
+    "       pooled record). Sprite lookup is O(1) via game.entities Map."
+    "     - +ai slice: cardinality (many verbs stack per frame); this"
+    "       verb pipes into (sprites) accumulator and the framebuffer"
+    "       draw verbs (line, circ, pset). Sakura should surface the"
+    "       gesture semantics in prose."
+
+    "4. Verify all 5 example tiers per verb via bin/sakura-scheme eval."
+    "   No stamp without a real green REPL run."
+
+    "5. Author SLAT entries in docs/staging/verbs-toshi-part.slat under"
+    "   the schema. Cross-check every field against schema before"
+    "   committing."
+
+    "6. Commit per verb with message toshi-part: wire <name>. Push per"
+    "   verb (no batches). Update stamps if convention set by Architect."
+
+    "7. Remove the 18-name loop in wired-verbs.js §21 once all 19 are"
+    "   wired and verified. Remove part/step from the reference-impls.js"
+    "   descriptor loop at line 2149 too. Cleanup commit at lane close."
+
+    "8. If phantom-particle bucket gets Alfred green light to delete,"
+    "   Toshi handles the deletion in a follow-up commit (also lane"
+    "   close). If they get promoted, a new lane opens."))
+
+;; ─── Permission notes ─────────────────────────────────────────────────
+
+(permission-notes
+  :items (
+    "All 19 verbs: perm = 'paint if Phase B adds a framebuffer pose"
+    " glyph; perm = 'read if they only return records. Default plan is"
+    " 'paint because the whole reason to wire them is so the kid sees"
+    " something when they call (part/bow)."
+
+    "None touch the cortex, none touch commercial APIs, none touch"
+    " network. Zero auth/entitlement gates."
+
+    "Fuel: cheap. O(1) per call; the pose-glyph draw is under 32 pixels"
+    " so it fits well within a per-frame fuel budget of 200000 tokens."))
+
+;; ─── Composition with kid-from-North-Georgia doctrine ─────────────────
+;;
+;; A kid reading (part/bow 'hero) in a book should see the hero sprite
+;; tilt forward on the framebuffer. Not because of some elsewhere host —
+;; because THIS repo, run standalone, draws it. The current descriptor
+;; stub returns ("part/bow") and nothing happens on screen. That IS the
+;; kind of lie the doctrine forbids. Phase B fixes it.
+;;
+;; The gesture set is small (19) so we can render a hand-authored pose
+;; delta for every one: bow = torso pixel-shift down + forward; wave =
+;; arm pixels cycle side-to-side; nod = head pixels bob 2px vertical.
+;; Kid opens Book of Marionette (docs/marionette book if it exists) or
+;; the demo cart, tweaks a number, sees the pose change. Same shape as
+;; the framebuffer verbs the kid already knows.
+;;
+;; Composes with:
+;;   - "Operators are first-class Scheme authors" — an operator running
+;;     a shop can call (part/wave 'greeter) in their card and get a real
+;;     rendered wave, not a hollow descriptor.
+;;   - "Publishable-prose doctrine" — the SLAT explanations already
+;;     read as prose, not training-data smell. Phase B preserves that.
+;;   - "The Book Fix-It PART TWO — Living Books" — a rendered book page
+;;     that says "Sakura bows to the reader" runs (part/bow 'sakura) and
+;;     the reader sees it. No living book if the verb lies.
+;;
+;; Toshi ready. Awaiting schema.

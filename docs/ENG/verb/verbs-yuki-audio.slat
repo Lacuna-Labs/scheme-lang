@@ -1,0 +1,2377 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-yuki-audio.slat — Yuki's authored verb entries
+;;
+;; Lane: audio (radio/* + synth/* + note/* + audio/* — 39 verbs)
+;; Author: Yuki (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Also required by architect verifier: :kind :explanation
+;;                                        :caveats :drawbacks :usecases
+;;                                        :related :learn
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval before landing.
+;; Alfred's floor doctrine: We can't lie to people. They trust us.
+;; Audio verbs in a headless REPL return descriptors or [status info]
+;; tuples — the verb is still callable, the shape is stable, and the
+;; caller can inspect it. That is the honest contract.
+;; ═══════════════════════════════════════════════════════════════
+
+
+;; ─── note/* — 3 verbs ────────────────────────────────────────────
+
+(verb
+  :name "note/strike"
+  :library "note"
+  :kind "mut"
+  :signature "(note/strike pitch duration) -> descriptor | undefined"
+  :summary "Sound a musical pitch for a duration; in the headless REPL returns a descriptor that a live audio host can consume."
+  :impl-status "wired-descriptor"
+  :explanation "note/strike is Sakura's monophonic ring-the-bell verb. Give it a pitch (a symbol like 'C4 or 'Fs3, or a MIDI number 0-127) and a duration in seconds, and it schedules a note. Under a live host surface the descriptor becomes an actual attack + sustain + release on the audio thread; under the headless REPL the same call returns the tagged list ('note/strike pitch duration) — the shape a host can inspect and turn into sound. Blocking-style callers should not expect the verb to wait for the note to finish; use `for-each` or `on-beat` to sequence."
+  :examples (
+    (:tier "novice"
+     :code "(note/strike (quote C4) 0.5)"
+     :note "Ring middle C for half a second. In REPL: returns (\"note/strike\" \"C4\" 0.5) — the shape a live host would translate into audio.")
+    (:tier "apprentice"
+     :code "(let ((notes (list (quote C4) (quote E4) (quote G4)))) (for-each (lambda (p) (note/strike p 0.25)) notes))"
+     :note "Sequence a C-major triad as three quarter notes. `for-each` returns undefined; the notes are the side effect.")
+    (:tier "intermediate"
+     :code "(map (lambda (p) (note/strike p 0.2)) (list (quote C4) (quote D4) (quote E4) (quote F4) (quote G4) (quote A4) (quote B4) (quote C5)))"
+     :note "Walk a full C-major scale and collect the eight descriptors into a list. Handy when you want to inspect the sequence you just played.")
+    (:tier "expert"
+     :code "(define (melodic-cell base intervals dur) (for-each (lambda (i) (note/strike (+ base i) dur)) intervals)) (melodic-cell 60 (list 0 2 4 2 0) 0.2)"
+     :note "A reusable melodic cell: pass a MIDI base (60 = middle C) and a list of intervals. Here we play C-D-E-D-C — a shape you can transpose by changing the base.")
+    (:tier "master"
+     :code "(let ((twinkle (list (quote C4) (quote C4) (quote G4) (quote G4) (quote A4) (quote A4) (quote G4) (quote F4) (quote F4) (quote E4) (quote E4) (quote D4) (quote D4) (quote C4)))) (for-each (lambda (p) (note/strike p 0.4)) twinkle))"
+     :note "Play the first two phrases of 'Twinkle, Twinkle, Little Star' as quarter notes. This is what a real cart delivers — a recognizable melody rendered from a plain list.")
+  )
+  :caveats
+    ("Pitch may be a symbol ('C4, 'Fs3, 'Db5) or a MIDI number (0–127). A malformed symbol falls through as its literal name in the descriptor."
+     "Duration is in seconds. Zero or negative durations are still accepted but produce no audible sound."
+     "In the standalone REPL the return is a shape, not a sound. The caller can inspect (car result) to confirm which verb ran."
+     "Not polyphonic: two overlapping (note/strike ...) calls will play sequentially under a hosted engine unless you spawn them across the async loop."
+     "Rapid loops without a rate limiter can starve the audio scheduler; wrap tight loops in `on-tick` or `after`.")
+  :drawbacks
+    ("No envelope shaping — no ADSR, no velocity curve. Use `synth/orch` or `synth/808` when you want a real timbre."
+     "Blocking flavor of the API: the descriptor returns instantly; there's no return value that lets you know the note has ended."
+     "No pitch bend, no vibrato, no slur — a note is a single event, not a phrase. Compose with `note/release` for staccato phrasing.")
+  :usecases
+    ("Teach the melodic-cell pattern: base pitch + interval list."
+     "Sight-read a printed melody one note at a time in a music-theory tutorial cart."
+     "Build a step sequencer over the base scale."
+     "Debug: sound a distinct pitch as a marker inside a long-running loop.")
+  :related ("note/release" "note/place-at" "synth/orch" "synth/play" "audio/play" "on-beat")
+  :learn
+    (:concept "Imperative single-voice note emission — one pitch, one duration, one descriptor per call."
+     :prerequisites ("(core)/for-each" "(core)/list" "(core)/lambda")
+     :progression "Start with (note/strike 'C4 0.5). Then sequence a scale. Then combine with `note/release` for staccato. Then move up to `synth/orch` for a real timbre with dynamics.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:173. Returns a descriptor list ('note/strike pitch duration). Host surfaces override this binding to route to a real audio engine."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('note/strike \"C4\" 0.5); apprentice=undefined (for-each); intermediate=(8 descriptors); expert=undefined; master=undefined (twinkle plays)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("note/release" "on-beat")
+     :consumes-from ("core scale/interval generators")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Passing a duration in milliseconds when the verb expects seconds. Confusing MIDI 60 (middle C) with 'C4 — both work, but mixing them in a list is confusing to read."
+     :when-not-to-use "You need polyphony — use `synth/chord`. You need timbral shaping — use `synth/orch`. You need precise timing across many voices — use `synth/play` with a score.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Sound one pitch for one duration. Bell-clean, single-voice."))
+
+(verb
+  :name "note/release"
+  :library "note"
+  :kind "mut"
+  :signature "(note/release) -> descriptor"
+  :summary "Cut any currently sustained note; returns the descriptor a live host uses to fire a release event."
+  :impl-status "wired-descriptor"
+  :explanation "note/release is the companion of note/strike: it ends whatever sustained pitch is currently sounding, immediately. Under a live host it fires a release into the audio engine; under the standalone REPL it returns the tagged list ('note/release) — the shape a host can consume. Paired with note/strike it lets you build staccato phrases, quick-cut articulations, and event-driven note-off responses. It is a no-op if no note is currently sustained; safe to call any time."
+  :examples (
+    (:tier "novice"
+     :code "(note/release)"
+     :note "Cut whatever's sounding. Returns (\"note/release\") — a single-element descriptor.")
+    (:tier "apprentice"
+     :code "(begin (note/strike (quote C4) 1) (note/release))"
+     :note "Ring middle C, then immediately release it. The release wins because it comes second in the begin.")
+    (:tier "intermediate"
+     :code "(for-each (lambda (p) (note/strike p 0.15) (note/release)) (list (quote C4) (quote E4) (quote G4)))"
+     :note "Play a C-major triad as three quick staccato hits: strike then release, three times. `for-each` returns undefined; the sound is the side effect.")
+    (:tier "expert"
+     :code "(define (staccato pitches dur) (for-each (lambda (p) (begin (note/strike p dur) (note/release))) pitches)) (staccato (list (quote C4) (quote D4) (quote E4) (quote F4)) 0.12)"
+     :note "A reusable `staccato` helper: give it a list of pitches and a duration, and it plays each pitch briefly then immediately cuts it. Same idea generalizes to any short-articulated phrase.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 4) (quote done) (begin (note/strike (list-ref (list (quote C4) (quote E4) (quote G4) (quote C5)) i) 0.1) (note/release) (loop (+ i 1)))))"
+     :note "An index-driven arpeggio: hit each degree of the tonic chord for 100ms, release, advance. Returns 'done when the four notes have played.")
+  )
+  :caveats
+    ("Cuts ALL currently sustained voices; there is no per-voice release."
+     "No fade curve — release is instantaneous under the live host. Combine with `audio/master-volume` steps for a fade-out."
+     "Calling it when nothing is playing is a no-op, not an error."
+     "The descriptor return in headless REPL always has arity zero: ('note/release), no arguments.")
+  :drawbacks
+    ("Global cut is coarse. You cannot release voice-2 while voice-1 keeps sustaining."
+     "No release curve exposed. Real ADSR release lives in `synth/orch`.")
+  :usecases
+    ("Play a staccato phrase from a plain list of pitches."
+     "Cut a long note in response to user input (spacebar, mouse-up)."
+     "Build a portamento-like effect: strike, release, strike a new pitch."
+     "Panic button: silence the current cell without stopping the audio subsystem.")
+  :related ("note/strike" "note/place-at" "audio/master-volume" "synth/orch" "audio/halt")
+  :learn
+    (:concept "Explicit voice termination — the counterpart to strike."
+     :prerequisites ("note/strike" "(core)/begin")
+     :progression "Pair note/release with note/strike to build staccato. Then discover that `synth/orch` lets you set a release curve at play time. Then move on to `audio/halt` for stopping a whole audio stream.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:174. Returns the zero-arg descriptor ('note/release). Host surfaces override this binding to emit a release event into the audio engine."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('note/release); apprentice=('note/release); intermediate=undefined; expert=undefined; master='done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("note/strike")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Calling release when nothing is sustained and expecting an error — it's a silent no-op. Expecting it to release only the last voice — it cuts everything."
+     :when-not-to-use "You want per-voice release control — use `synth/orch` with an explicit envelope. You want a fade — use `audio/master-volume`.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Cut the currently sustained note. Zero-arg. Idempotent."))
+
+(verb
+  :name "note/place-at"
+  :library "note"
+  :kind "paint"
+  :signature "(note/place-at pitch [stave] [clef]) -> descriptor"
+  :summary "Render a pitch glyph on a musical staff without sounding it; a paint-level operation."
+  :impl-status "wired-descriptor"
+  :explanation "note/place-at is the visual half of the note pair. It draws the pitch's glyph on the staff at the correct vertical slot, but does not produce sound. Pitch is a symbol like 'C4 or 'Fs3; stave is a numeric index (0 = treble is typical); clef is a symbol ('treble, 'bass, 'alto). The verb returns a descriptor a live cart surface consumes to actually paint the glyph — in headless REPL you inspect the return to confirm the placement. Useful for teaching notation, showing chord shapes, and building interactive scores where the user reads what they hear."
+  :examples (
+    (:tier "novice"
+     :code "(note/place-at (quote G4) 0 (quote treble))"
+     :note "Draw a G4 on the treble staff, slot 0. Returns (\"note/place-at\" \"G4\" 0 \"treble\").")
+    (:tier "apprentice"
+     :code "(begin (note/place-at (quote C4) 0 (quote treble)) (note/place-at (quote E4) 0 (quote treble)) (note/place-at (quote G4) 0 (quote treble)))"
+     :note "Show a C-major triad as three simultaneous glyphs on the treble staff. Under a live host all three appear together.")
+    (:tier "intermediate"
+     :code "(for-each (lambda (p) (note/place-at p 0 (quote treble))) (list (quote C4) (quote D4) (quote E4) (quote F4) (quote G4) (quote A4) (quote B4) (quote C5)))"
+     :note "Render a full one-octave scale as eight glyphs on the treble staff. Reads left-to-right the way a musician would.")
+    (:tier "expert"
+     :code "(define (show-chord pitches stave clef) (for-each (lambda (p) (note/place-at p stave clef)) pitches)) (show-chord (list (quote C4) (quote E4) (quote G4) (quote Bflat4)) 0 (quote treble))"
+     :note "A reusable `show-chord` helper: give it a list of pitches, a stave, and a clef, and it paints the chord. Here we show a C7 with the flat seventh.")
+    (:tier "master"
+     :code "(let ((scale (list (quote C4) (quote D4) (quote E4) (quote F4) (quote G4) (quote A4) (quote B4) (quote C5)))) (for-each (lambda (p) (note/place-at p 0 (quote treble)) (note/strike p 0.15) (note/release)) scale))"
+     :note "Read-and-hear: for each degree of the scale, paint the glyph AND sound the pitch. This is what a music-theory cart delivers to a student — the eye and the ear together.")
+  )
+  :caveats
+    ("Pitch must be a valid music-notation symbol or MIDI number; unparseable pitches produce a descriptor but no visible glyph."
+     "Stave index is numeric; 0 is standard treble. Other indices depend on the card's staff layout."
+     "Clef affects vertical positioning; a G4 on a bass staff sits in a different slot than on a treble staff."
+     "Multiple calls within one begin render simultaneously under a live host; they do not animate in sequence unless paced.")
+  :drawbacks
+    ("Paint-only — no audio. Pair with `note/strike` for sound."
+     "No duration display: all glyphs paint with the same default shape."
+     "Requires an active staff-bearing card; a bare call outside a card context has nothing to paint on.")
+  :usecases
+    ("Teach music-notation basics — pitch to glyph mapping."
+     "Show the answer to a music-theory exercise on-screen."
+     "Build a read-and-hear cart where students see the glyph AND hear the pitch."
+     "Annotate a score with specific pitches highlighted.")
+  :related ("note/strike" "note/release" "surface-paint-text" "card-do")
+  :learn
+    (:concept "Paint-level notation: pitch glyphs live on a staff geometry the card supplies."
+     :prerequisites ("(core)/for-each" "note/strike (for the paired ear-training pattern)")
+     :progression "Start with a single (note/place-at 'C4). Then show a chord. Then show a scale. Then pair with note/strike for read-and-hear.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:175-176. Returns ('note/place-at pitch stave clef) — a four-element descriptor the host surface consumes."
+     :permission "paint"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('note/place-at \"G4\" 0 \"treble\"); apprentice=last of three; intermediate=undefined; expert=undefined; master=undefined."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("note/strike")
+     :consumes-from ("core scale/chord generators")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming this makes sound — it does not. Confusing the stave numeric index with the clef symbol."
+     :when-not-to-use "You want sound — use `note/strike`. You need dynamic notation (rhythm, ties, dots) — this verb paints only the pitch, not the duration.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Paint a pitch on a staff. Silent. Complements note/strike for read-and-hear."))
+
+;; ─── audio/* — 13 verbs ──────────────────────────────────────────
+
+(verb
+  :name "audio/listen"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/listen) -> [status-tag envelope] | descriptor"
+  :summary "Ask the live audio analyser for a two-part status; the guard that all downstream audio/* reads depend on."
+  :impl-status "wired-descriptor"
+  :explanation "audio/listen is the permission gate for the live-audio subsystem. Under a browser host the first call triggers the microphone-permission gesture; subsequent calls return ['ok envelope] once the analyser is warm, or ['pending-audio ...] while it warms up. Under the standalone REPL there is no live analyser, so the verb returns the descriptor ('audio/listen) — callers that check (car result) will see the verb-name string and can branch cleanly. All other audio read verbs (spectrum, tempo, key, lufs, onset?, onset-strength) assume audio/listen has run first."
+  :examples (
+    (:tier "novice"
+     :code "(audio/listen)"
+     :note "Ask the analyser for its status. In REPL: returns (\"audio/listen\") — the guard shape. Under a live host: ('ok envelope) once warm.")
+    (:tier "apprentice"
+     :code "(let ((status (audio/listen))) (if (equal? (car status) (quote ok)) (quote ready) (quote pending)))"
+     :note "Branch on the first element of the status tuple. In REPL: returns 'pending because (car status) is \"audio/listen\", not 'ok.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/listen)) (list 1 2 3))"
+     :note "audio/listen is idempotent and safe to call repeatedly; a poll loop can call it every frame without state damage. Returns three copies of the descriptor.")
+    (:tier "expert"
+     :code "(define (check-audio) (let ((s (audio/listen))) (if (equal? (car s) (quote ok)) (quote go) (quote wait)))) (check-audio)"
+     :note "A reusable `check-audio` guard: returns 'go when the analyser is ready, 'wait otherwise. Standard shape for gating expensive downstream work.")
+    (:tier "master"
+     :code "(let loop ((n 0)) (let ((s (audio/listen))) (if (or (equal? (car s) (quote ok)) (>= n 3)) (list (quote final) (car s) n) (loop (+ n 1)))))"
+     :note "A capped retry loop: try up to 3 times, then return the last-seen status. Handles the browser permission handshake gracefully without hanging.")
+  )
+  :caveats
+    ("Under a live host the first call MUST occur inside a user gesture (click, keypress) — browser audio contexts refuse to start otherwise."
+     "In headless REPL the verb never returns 'ok; callers must accept the descriptor shape and continue."
+     "Idempotent — safe to call every frame."
+     "Returning 'pending-audio is not an error; it just means the caller should retry.")
+  :drawbacks
+    ("No timeout. A stalled permission dialog will keep returning pending forever."
+     "No explicit failure state. If the user denies the microphone, this verb still returns pending — not error.")
+  :usecases
+    ("Guard all downstream audio-reads with audio/listen so a headless run does not crash."
+     "Build a permission-aware UI that shows 'waiting for mic' or 'ready to listen'."
+     "Prime the analyser at cart startup so later spectrum/tempo/key calls are already warm.")
+  :related ("audio/spectrum" "audio/tempo" "audio/key" "audio/lufs" "audio/onset?" "audio/onset-strength" "audio/playing?")
+  :learn
+    (:concept "Permission gates and status tuples — the pattern for accessing async resources cleanly."
+     :prerequisites ("(core)/car" "(core)/if" "(core)/equal?")
+     :progression "Use audio/listen once. Then guard every downstream audio-read with it. Then move on to audio/spectrum for the FFT.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/listen) descriptor. Host surfaces override this to route to a real Web Audio AnalyserNode + permission dance."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/listen); apprentice='pending; intermediate=3 copies; expert='wait; master=('final \"audio/listen\" 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/spectrum" "audio/tempo" "audio/key" "audio/lufs" "audio/onset?" "audio/onset-strength")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming (car result) equals 'ok in REPL — it equals the verb-name string. Test with equal? on both possibilities."
+     :when-not-to-use "You just need to play a sound — use `audio/play` or `note/strike` directly; those do not need listen.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Guard verb for the live audio analyser. Callable in REPL as a descriptor; ok under a live host."))
+
+(verb
+  :name "audio/playing?"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/playing?) -> boolean | descriptor"
+  :summary "Ask whether the audio system currently has anything playing; a read-only status probe."
+  :impl-status "wired-descriptor"
+  :explanation "audio/playing? is a status predicate. Under a live host it returns #t if any audio stream is currently sounding, #f otherwise. Under the standalone REPL there is no live audio graph, so the verb returns the descriptor ('audio/playing?) — callers use (pair? result) or type-check to distinguish. The verb is idempotent, read-only, and safe to call at high frequency. Useful for guards, transport-state UIs, and knowing whether it is safe to start a new sound without stepping on a running one."
+  :examples (
+    (:tier "novice"
+     :code "(audio/playing?)"
+     :note "Ask if anything is playing. In REPL: returns (\"audio/playing?\"), a descriptor. Under a live host: #t or #f.")
+    (:tier "apprentice"
+     :code "(let ((p (audio/playing?))) (if (pair? p) (quote maybe) (if p (quote yes) (quote no))))"
+     :note "Distinguish the three shapes: descriptor (headless), #t (playing), #f (silent). Returns 'maybe in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/playing?)) (list 1 2 3))"
+     :note "audio/playing? is safe to call every frame. Returns three descriptor copies in REPL.")
+    (:tier "expert"
+     :code "(define (check) (let ((r (audio/playing?))) (if (pair? r) (car r) r))) (check)"
+     :note "A tiny helper: if the return is a descriptor, unwrap the tag; otherwise pass the boolean through. Returns \"audio/playing?\" in REPL.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (audio/playing?) (loop (+ i 1)))))"
+     :note "Poll three times; the verb has no side effects, so the loop just returns 'done. Under a live host you would branch on the return to decide whether to keep polling.")
+  )
+  :caveats
+    ("Descriptor return in headless REPL is a pair; a naive `(if (audio/playing?) ...)` will treat it as truthy. Use `pair?` to gate."
+     "Idempotent — polling is cheap.")
+  :drawbacks
+    ("No way to know WHICH stream is playing; just a yes/no aggregate."
+     "No stream count; if you need per-voice state, track handles yourself.")
+  :usecases
+    ("Gate a 'start music' button so it does not double-fire."
+     "Show a play/pause indicator in a transport UI."
+     "Skip an ambient sound when a foreground effect is already sounding.")
+  :related ("audio/play" "audio/halt" "audio/listen" "audio/master-volume")
+  :learn
+    (:concept "Read-only status probes and their three-shape returns (boolean live, descriptor headless)."
+     :prerequisites ("(core)/if" "(core)/pair?")
+     :progression "Use audio/playing? to gate transport UI. Combine with audio/halt for panic-stop. Then explore audio/listen for the analyser guard.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/playing?) descriptor in REPL; host overrides bind to a real transport state."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/playing?); apprentice='maybe; intermediate=3 copies; expert=\"audio/playing?\"; master='done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/halt" "audio/play")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Treating the descriptor as a boolean directly. Assuming false-returns are guaranteed — the shape varies between live and headless."
+     :when-not-to-use "You want to know which specific handle is playing — this verb aggregates.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Is anything sounding? Read-only. Callable in REPL as descriptor."))
+
+(verb
+  :name "audio/halt"
+  :library "audio"
+  :kind "mut"
+  :signature "(audio/halt handle) -> descriptor"
+  :summary "Stop a running audio handle; returns the halt descriptor a live host consumes to actually silence the stream."
+  :impl-status "wired-descriptor"
+  :explanation "audio/halt takes a handle (the value that `audio/play` returned) and stops the corresponding stream. Under a live host it disconnects the graph node; under headless REPL it returns the tagged list ('audio/halt handle) — the shape a host would consume. Halting an already-halted handle is a silent no-op, so it's safe to call twice. The verb pairs with `audio/play` to bracket a stream's lifetime."
+  :examples (
+    (:tier "novice"
+     :code "(audio/halt (quote handle-1))"
+     :note "Stop the stream named handle-1. Returns (\"audio/halt\" handle-1) — the descriptor a live host consumes.")
+    (:tier "apprentice"
+     :code "(let ((h (audio/play (quote kick)))) (audio/halt h))"
+     :note "Start a sound, then immediately stop it. The idiomatic play-then-halt bracket.")
+    (:tier "intermediate"
+     :code "(for-each (lambda (h) (audio/halt h)) (list (quote h1) (quote h2) (quote h3)))"
+     :note "Halt a batch of handles at once. Common when tearing down a whole scene.")
+    (:tier "expert"
+     :code "(define (cross-fade old new-source) (let ((newh (audio/play new-source))) (audio/halt old) newh)) (cross-fade (quote old) (quote track-b))"
+     :note "A minimal crossfade: play the new source, halt the old, return the new handle. Real crossfades interpolate the volume; this is the transport skeleton.")
+    (:tier "master"
+     :code "(let ((h1 (audio/play (quote loop))) (h2 (audio/play (quote layer)))) (audio/halt h1) (audio/halt h2))"
+     :note "Play two overlapping streams, halt them both. Under a live host this stops the mix cleanly; in REPL you get back the two descriptors.")
+  )
+  :caveats
+    ("A handle passed to audio/halt becomes invalid — do not reuse it."
+     "Halting a handle that never played is a silent no-op, not an error."
+     "No fade; halt is immediate. For a fade, ramp `audio/master-volume` before halting."
+     "The descriptor arity is 2: (verb handle).")
+  :drawbacks
+    ("No fade curve — abrupt cutoff can click. Combine with audio/master-volume ramps for smoothness."
+     "Global handles only; no per-channel selective halting.")
+  :usecases
+    ("Bracket a music track's lifetime around a scene."
+     "Cross-fade transport by playing the new one before halting the old."
+     "Panic-stop: iterate all active handles and halt them.")
+  :related ("audio/play" "audio/master-volume" "audio/playing?" "note/release")
+  :learn
+    (:concept "Handle lifecycle: play returns a handle, halt takes the same handle to end the stream."
+     :prerequisites ("audio/play")
+     :progression "Start with a single play-halt. Then a crossfade. Then a scene teardown loop.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/halt handle). Host surfaces override to disconnect the audio graph node."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/halt handle-1); apprentice=descriptor of halt(pending-audio); intermediate=undefined; expert=(pending-audio #<object>); master=descriptor of last halt."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/play")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Reusing a halted handle expecting it to restart — it does not. Call audio/play again for a new handle."
+     :when-not-to-use "You want to fade out — use audio/master-volume ramps first, then halt. You want to release a single sustained note — use note/release.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Stop a playing handle. Idempotent. Descriptor return in REPL."))
+
+(verb
+  :name "audio/play"
+  :library "audio"
+  :kind "mut"
+  :signature "(audio/play source [opts]) -> [status info] | handle"
+  :summary "Trigger sound playback; returns a handle you can pass to audio/halt or a pending-audio tuple in headless REPL."
+  :impl-status "wired-pending"
+  :explanation "audio/play is the primary sound-trigger verb. Give it a resource identifier (a symbol or string naming a pre-loaded sound) and optional keyword args (:volume :loop :rate). Under a live host it returns a playback handle. Under the standalone REPL it returns [pending-audio {source opts}] — the shape a host consumes. Handles are opaque; use them only to pass to audio/halt. Multiple calls queue independent playbacks — audio/play does NOT restart a running stream, it layers a new one."
+  :examples (
+    (:tier "novice"
+     :code "(audio/play (quote kick-drum))"
+     :note "Trigger the kick-drum sound. In REPL: returns (pending-audio #<object>) — the shape the host would consume.")
+    (:tier "apprentice"
+     :code "(let ((handle (audio/play (quote background-music)))) (car handle))"
+     :note "Save the handle for later halting; the first element is the status tag. Returns pending-audio in REPL.")
+    (:tier "intermediate"
+     :code "(map audio/play (list (quote hit1) (quote hit2) (quote hit3)))"
+     :note "Trigger three sounds in sequence and collect the handles. Under a live host they all play; in REPL you get three pending-audio pairs.")
+    (:tier "expert"
+     :code "(define (loop-music track) (let ((h (audio/play track))) (if (and (pair? h) (symbol? (car h)) (equal? (symbol->string (car h)) \"pending-audio\")) (list (quote will-play-when-ready) track) (list (quote playing) track)))) (loop-music (quote ambient))"
+     :note "Branch on the status tag: 'will-play-when-ready if headless, 'playing if the live host reported success. Uses symbol->string because the returned tag is a Sym.")
+    (:tier "master"
+     :code "(let* ((tracks (list (quote lofi) (quote jazz) (quote synth))) (handles (map audio/play tracks))) (list (quote tracks) (length tracks) (quote handles) (length handles)))"
+     :note "Fan out a playlist: fire off three tracks, save all three handles, report the counts. Real carts extend this to schedule crossfades between the tracks.")
+  )
+  :caveats
+    ("Handles are opaque; do not try to read them beyond passing to audio/halt."
+     "Multiple plays layer, they do not replace. Halt the old handle first if you want a swap."
+     "Comparing the head to 'pending-audio via `equal?` fails because Sym identity differs; use `symbol->string` or `symbol-name` if you need a string match."
+     "Resource must exist in the pre-loaded cache under a live host; unknown resources fail silently in REPL.")
+  :drawbacks
+    ("No built-in fade-in — combine with `audio/master-volume` ramping."
+     "Long-lived loops accumulate memory if never halted."
+     "No priority or voice-stealing — heavy calls can glitch the audio thread.")
+  :usecases
+    ("Trigger a sound effect on button press."
+     "Start a looping music bed at cart open."
+     "Layer ambient tracks with a per-source volume."
+     "Play a UI feedback ping on state transitions.")
+  :related ("audio/halt" "audio/master-volume" "audio/playing?" "note/strike" "synth/play")
+  :learn
+    (:concept "Handle-returning verbs — save the return, pass it to halt when done."
+     :prerequisites ("(core)/let" "audio/halt")
+     :progression "Start with a single audio/play + audio/halt bracket. Then fan out multiple tracks. Then build a crossfade helper.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:404. Returns [pending-audio {source opts}] in REPL. Host surfaces override with a real Web Audio buffer-source launcher."
+     :permission "state-change"
+     :latency-class "async-quick"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=(pending-audio #<object>); apprentice=pending-audio; intermediate=(3 pairs); expert=(will-play-when-ready ambient); master=(tracks 3 handles 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/halt")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming audio/play restarts a running stream — it layers. Comparing the return's head via `equal?` on a literal quote — Sym identity fails; use symbol->string."
+     :when-not-to-use "You want simple bell-clean pitches — use `note/strike`. You want a rich synthesized voice — use `synth/orch` or `synth/808`. You want to schedule a whole song — use `synth/play` with a score.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Trigger a sound. Returns a handle for later halting. Descriptor tuple in REPL."))
+
+(verb
+  :name "audio/master-volume"
+  :library "audio"
+  :kind "mut"
+  :signature "(audio/master-volume level) -> [ok {level}]"
+  :summary "Set the global audio-output gain. Records the intent in cortex; returns [ok info]."
+  :impl-status "wired-partial"
+  :explanation "audio/master-volume is one of the few audio verbs with a small real side effect in the standalone REPL: it stores the requested level in cortex under the key 'audio/master-volume' so subsequent (cortex/read 'audio/master-volume) recovers it. The return is [ok {level}] — the same shape a live host uses. Level is a number, conventionally in [0, 1] but clamping is host-specific. Multiple calls in one frame all record; the last one wins. Combine with a step-loop to build a fade."
+  :examples (
+    (:tier "novice"
+     :code "(audio/master-volume 0.5)"
+     :note "Set volume to 0.5. Returns (ok #<object>). The 0.5 is recorded in cortex so it survives across REPL frames.")
+    (:tier "apprentice"
+     :code "(begin (audio/master-volume 1) (audio/master-volume 0.5))"
+     :note "Two calls; the second wins. Under a live host the gain node's value settles at 0.5.")
+    (:tier "intermediate"
+     :code "(map audio/master-volume (list 0 0.25 0.5 0.75 1))"
+     :note "Sweep across five levels in one map. Returns five [ok ...] pairs — one per call.")
+    (:tier "expert"
+     :code "(define (fade steps) (let loop ((i 0)) (if (>= i steps) (quote faded) (begin (audio/master-volume (- 1 (/ i steps))) (loop (+ i 1)))))) (fade 5)"
+     :note "A simple linear fade-out over N steps. Under a live host the sound audibly ramps; in REPL the intent is recorded step by step.")
+    (:tier "master"
+     :code "(let* ((slider 60) (v (/ slider 100))) (audio/master-volume v))"
+     :note "Bridge a UI slider (0-100) to the [0, 1] master volume convention. This is what a real settings card does when the user drags the volume knob.")
+  )
+  :caveats
+    ("Level is a number; symbols and strings are not auto-coerced."
+     "The convention is [0, 1]; values outside may be clamped by the live host but are still recorded honestly."
+     "Global — no per-source volume via this verb. Use per-source rate/volume opts on audio/play instead."
+     "Recorded in cortex; you can read the last-set value with (cortex/read 'audio/master-volume).")
+  :drawbacks
+    ("No fade curve built in; you must orchestrate steps."
+     "No query verb specifically for master volume; the recorded key is a workaround.")
+  :usecases
+    ("Wire a volume slider in a UI card."
+     "Build a fade-out helper for scene transitions."
+     "Duck the mix when a foreground alert fires."
+     "Remember the user's preferred volume across sessions via cortex.")
+  :related ("audio/play" "audio/halt" "cortex/read" "radio/volume" "synth/play")
+  :learn
+    (:concept "Global gain control with intent-recording; the pattern of pairing a live-side effect with a cortex breadcrumb."
+     :prerequisites ("(core)/let" "cortex/read")
+     :progression "Set the master. Then build a fade loop. Then bridge a slider. Then remember the user's preference across sessions.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:398-403. Coerces level to a number, stores it in cortex under key 'audio/master-volume', returns [ok {level}]."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=(ok #<object>); apprentice=(ok #<object>) after last call; intermediate=5 (ok ...) pairs; expert='faded; master=(ok #<object>)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/play" "audio/halt")
+     :consumes-from ("UI sliders" "settings state")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing an integer like 50 expecting percent — the convention is [0, 1]. Combine with a divide (/ slider 100) to bridge."
+     :when-not-to-use "You want per-source volume — use audio/play's :volume opt. You want a fade curve — build it out of steps yourself.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Set global gain. Small side effect: records intent in cortex. [ok info] return."))
+
+(verb
+  :name "audio/spectrum"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/spectrum) -> [number ...] | descriptor"
+  :summary "Read the current FFT band values from the live analyser; a snapshot list of amplitudes per band."
+  :impl-status "wired-descriptor"
+  :explanation "audio/spectrum returns the current FFT (fast Fourier transform) band values from the live audio analyser — a flat list of numbers, one per frequency band, each in some analyser-normalised range. Under a live host it's the material for visualisers, EQ meters, and music-reactive animations. In the standalone REPL there is no live analyser, so the verb returns the descriptor ('audio/spectrum). Callers should check with `pair?` and treat the descriptor as an empty spectrum. audio/listen must have returned 'ok under a live host before spectrum values are meaningful."
+  :examples (
+    (:tier "novice"
+     :code "(audio/spectrum)"
+     :note "Snapshot the current FFT. In REPL: returns (\"audio/spectrum\"), a descriptor; under a live host: a list of numbers.")
+    (:tier "apprentice"
+     :code "(let ((s (audio/spectrum))) (if (pair? s) (quote descriptor) (length s)))"
+     :note "Guard on shape: descriptor vs live list. Returns 'descriptor in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/spectrum)) (list 1 2))"
+     :note "Poll twice. Safe to call every frame — the verb is read-only. Returns two descriptor copies in REPL.")
+    (:tier "expert"
+     :code "(define (draw-bars s) (if (pair? s) (list (quote no-spectrum-in-repl)) (map (lambda (b) (* b 10)) s))) (draw-bars (audio/spectrum))"
+     :note "A safe consumer: if the spectrum is a descriptor, fall through with a marker; otherwise scale each band. Returns (no-spectrum-in-repl) here.")
+    (:tier "master"
+     :code "(let loop ((n 0) (acc (list))) (if (>= n 3) (list (quote polled) (length acc) (quote times)) (loop (+ n 1) (cons (audio/spectrum) acc))))"
+     :note "Poll three times and accumulate the snapshots — the shape of a rolling-history buffer for a visualiser. Returns (polled 3 times).")
+  )
+  :caveats
+    ("Requires audio/listen == 'ok under a live host; without it, the spectrum is either descriptor or all-zero."
+     "Band count is analyser-configured; do not hardcode a length."
+     "Values are normalised by the analyser; ranges vary across hosts.")
+  :drawbacks
+    ("Read-only snapshot; you cannot request specific bands or windows."
+     "No smoothing built in; consecutive snapshots may jitter — apply your own low-pass.")
+  :usecases
+    ("Drive a bar-graph visualiser."
+     "Compute band energy for a music-reactive effect."
+     "Detect specific frequency-range activity (e.g. bass hits).")
+  :related ("audio/listen" "audio/onset?" "audio/onset-strength" "audio/tempo" "audio/key")
+  :learn
+    (:concept "Frame-rate reading of live FFT data; how to consume a variable-shape return safely."
+     :prerequisites ("audio/listen" "(core)/pair?")
+     :progression "Read audio/spectrum once. Then poll. Then smooth. Then build a visualiser.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/spectrum) descriptor in REPL. Host overrides with a real Web Audio AnalyserNode.getByteFrequencyData reader."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Yuki 2026-07-14: novice=('audio/spectrum); apprentice='descriptor; intermediate=(2 copies); expert=(no-spectrum-in-repl); master=(polled 3 times)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/onset?" "audio/lufs")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Hardcoding a band count. Skipping audio/listen and expecting real values."
+     :when-not-to-use "You need a single loudness number — use audio/lufs. You need an event trigger — use audio/onset?.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "FFT band snapshot. Live: list of numbers. REPL: descriptor."))
+
+(verb
+  :name "audio/tempo"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/tempo) -> number | descriptor"
+  :summary "Read the analyser's current estimate of the audio's tempo in beats per minute."
+  :impl-status "wired-descriptor"
+  :explanation "audio/tempo asks the live analyser for its current best guess of the tempo of whatever is playing. Under a live host it returns a number in BPM (typically 60-180 for music). In the headless REPL there is no live analyser, so it returns the descriptor ('audio/tempo). Callers should type-check the return with `number?` before using it, or fall through to a default. audio/listen must have returned 'ok under a live host for this to be meaningful."
+  :examples (
+    (:tier "novice"
+     :code "(audio/tempo)"
+     :note "Query the tempo. In REPL: returns (\"audio/tempo\"), a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((t (audio/tempo))) (if (pair? t) (quote descriptor) (if (number? t) t (quote unknown))))"
+     :note "Distinguish descriptor / number / other. Returns 'descriptor in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/tempo)) (list 1 2))"
+     :note "Two polls of the tempo. Read-only and idempotent.")
+    (:tier "expert"
+     :code "(define (tempo-bin) (let ((t (audio/tempo))) (cond ((pair? t) (quote unknown)) ((< t 90) (quote slow)) ((< t 130) (quote medium)) (else (quote fast))))) (tempo-bin)"
+     :note "Bin the tempo into slow/medium/fast. Returns 'unknown in REPL because the descriptor is a pair.")
+    (:tier "master"
+     :code "(let* ((probes (list 1 2 3 4)) (readings (map (lambda (_) (audio/tempo)) probes))) (list (quote readings) (length readings)))"
+     :note "Sample the tempo four times — the shape of a rolling-tempo estimator that averages several probes.")
+  )
+  :caveats
+    ("Requires audio/listen 'ok under a live host."
+     "Estimate — not exact. May jitter or lag by a bar."
+     "Genre-dependent: complex rhythms may yield unstable estimates.")
+  :drawbacks
+    ("No confidence value returned; a wild guess and a solid one look the same."
+     "Cannot request per-track tempo — global aggregate.")
+  :usecases
+    ("Sync visuals to the beat via bpm-aware pacing."
+     "Bin tempo for a genre classifier."
+     "Choose an appropriate fill or transition for the current beat.")
+  :related ("audio/listen" "audio/onset?" "audio/bar-clock" "audio/key")
+  :learn
+    (:concept "Live tempo estimation and how to consume it safely."
+     :prerequisites ("audio/listen" "(core)/cond")
+     :progression "Read audio/tempo. Then bin it. Then use audio/bar-clock to advance visuals per bar.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/tempo) descriptor. Host binds to a real tempo detector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/tempo); apprentice='descriptor; intermediate=2 copies; expert='unknown; master=(readings 4)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/bar-clock")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Treating the descriptor as a number. Believing the estimate is exact — it can wobble by 3-5 BPM."
+     :when-not-to-use "You want an exact bar clock — use audio/bar-clock instead.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Tempo estimate in BPM. Descriptor return in REPL."))
+
+(verb
+  :name "audio/key"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/key) -> [string string number] | #f | descriptor"
+  :summary "Read the analyser's current best guess of the musical key (root, mode, confidence)."
+  :impl-status "wired-descriptor"
+  :explanation "audio/key returns a three-element tuple: (root mode confidence) where root is a pitch string like \"C\" or \"F#\", mode is \"major\" or \"minor\", and confidence is a number in [0, 1]. Under a live host with warm analyser this reflects the detected key. If no key is currently detectable the host returns #f. In headless REPL there is no live analyser, so the verb returns the descriptor ('audio/key). Callers should check with `pair?` first, then either use the descriptor as a marker or extract car/cadr/caddr from the tuple."
+  :examples (
+    (:tier "novice"
+     :code "(audio/key)"
+     :note "Query the current key. In REPL: returns (\"audio/key\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((k (audio/key))) (if (pair? k) (car k) k))"
+     :note "Extract the head. In REPL the head is the verb-name string.")
+    (:tier "intermediate"
+     :code "(if (pair? (audio/key)) (quote no-key-in-repl) (audio/key))"
+     :note "Guard on descriptor shape; fall through to a symbolic marker.")
+    (:tier "expert"
+     :code "(define (mode-color) (let ((k (audio/key))) (cond ((pair? k) (quote gray)) ((null? k) (quote none)) ((and (pair? k) (>= (length k) 2) (equal? (cadr k) \"major\")) (quote warm)) (else (quote cool))))) (mode-color)"
+     :note "Palette by mode: 'gray if no live key, 'warm for major, 'cool for minor. Returns 'gray in REPL.")
+    (:tier "master"
+     :code "(let loop ((n 0) (last (quote none))) (if (>= n 2) (list (quote after) n (quote polls) (quote last) last) (loop (+ n 1) (audio/key))))"
+     :note "Poll audio/key twice, save the last observation. Under a live host this stabilises the reading; in REPL you accumulate the descriptor.")
+  )
+  :caveats
+    ("Returned as a tuple under live host; descriptor in REPL. Check with pair? first."
+     "Confidence is (0, 1]; low values mean the key detector is guessing."
+     "Enharmonic equivalents may collapse (\"Cs\" vs \"Db\") depending on the analyser.")
+  :drawbacks
+    ("Global aggregate; no per-track key."
+     "Slow to update; a mid-song modulation may lag by several bars.")
+  :usecases
+    ("Colour a palette by detected mode."
+     "Show the current key in a music-theory HUD."
+     "Guide a real-time accompaniment that must stay in key.")
+  :related ("audio/tempo" "audio/spectrum" "audio/listen")
+  :learn
+    (:concept "Live key detection and safe consumption of a tuple/descriptor union return."
+     :prerequisites ("audio/listen" "(core)/pair?" "(core)/cond")
+     :progression "Ask audio/key. Then extract root and mode. Then bind to a palette. Then read confidence to fade the effect.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/key) descriptor. Host binds to a key detector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/key); apprentice=\"audio/key\"; intermediate='no-key-in-repl; expert='gray; master=(after 2 polls last ('audio/key))."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Reading (car k) expecting the root string when the return is a descriptor. Assuming enharmonic normalisation."
+     :when-not-to-use "You need pitch-level accuracy — this is a coarse root+mode estimate.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Detected key: (root mode confidence). Descriptor in REPL."))
+
+(verb
+  :name "audio/lufs"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/lufs) -> number | #f | descriptor"
+  :summary "Read the analyser's integrated LUFS loudness measurement."
+  :impl-status "wired-descriptor"
+  :explanation "LUFS (Loudness Units, Full Scale) is a perceptual loudness standard used in broadcast and streaming. Under a live host, audio/lufs returns the integrated loudness over a short (~400ms) window as a number, typically negative (0 = clipping, -Inf = silence). Under headless REPL there is no live analyser, so the verb returns the descriptor ('audio/lufs). Callers use `number?` to distinguish live vs headless. Useful for perceptual gain matching and loudness normalisation."
+  :examples (
+    (:tier "novice"
+     :code "(audio/lufs)"
+     :note "Query loudness. In REPL: returns (\"audio/lufs\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((l (audio/lufs))) (if (number? l) l (quote no-signal)))"
+     :note "Return the LUFS number under live host, or 'no-signal in headless. Returns 'no-signal here.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/lufs)) (list 1 2 3))"
+     :note "Poll three times. LUFS is a windowed integrated measure — consecutive reads may hardly differ.")
+    (:tier "expert"
+     :code "(define (loudness-tier) (let ((l (audio/lufs))) (cond ((not (number? l)) (quote unknown)) ((< l -30) (quote quiet)) ((< l -18) (quote comfortable)) (else (quote loud))))) (loudness-tier)"
+     :note "Bin the loudness into quiet / comfortable / loud. Returns 'unknown in REPL.")
+    (:tier "master"
+     :code "(let loop ((n 0)) (if (>= n 3) (quote done-polling) (begin (audio/lufs) (loop (+ n 1)))))"
+     :note "Sample-poll three times. The shape of a rolling-loudness estimator that averages several probes for stability.")
+  )
+  :caveats
+    ("Integrated measure — instantaneous peaks are NOT captured. Use audio/spectrum + audio/onset-strength for transients."
+     "Requires audio/listen 'ok under a live host."
+     "Values are unbounded below; approaching -Inf for silence.")
+  :drawbacks
+    ("~400ms window lags real-time changes. Do not rely on it for sub-frame triggers."
+     "Adds cost — requires a warm analyser + integration buffer.")
+  :usecases
+    ("Adaptive gain: match perceived loudness across sources."
+     "Loudness meter in a mixing UI."
+     "Broadcast/podcast normalisation to -16 or -14 LUFS.")
+  :related ("audio/listen" "audio/spectrum" "audio/master-volume" "audio/tempo")
+  :learn
+    (:concept "Perceptual loudness — LUFS as a psychoacoustic measure — versus raw dBFS."
+     :prerequisites ("audio/listen")
+     :progression "Read audio/lufs. Then compute a target-difference. Then apply as an audio/master-volume gain change.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/lufs) descriptor. Host binds to a real LUFS integrator."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/lufs); apprentice='no-signal; intermediate=3 copies; expert='unknown; master='done-polling."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/master-volume")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Using LUFS for transient detection — it averages over ~400ms. Assuming LUFS ranges match dB gain sliders."
+     :when-not-to-use "You want transient detection — use audio/onset? or audio/onset-strength.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Integrated LUFS loudness. Descriptor in REPL. Number under live host."))
+
+(verb
+  :name "audio/onset?"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/onset?) -> boolean | descriptor"
+  :summary "Edge-triggered detection: is there an audio-onset (attack/hit) THIS frame?"
+  :impl-status "wired-descriptor"
+  :explanation "audio/onset? is a per-frame predicate. Under a live host it returns #t for exactly one frame per detected onset (drum hit, note attack, sharp transient) and #f otherwise. In headless REPL there is no live analyser, so the verb returns the descriptor ('audio/onset?). Callers use `pair?` to check for descriptor first, then treat #t/#f as the truth value. Must be called every frame to catch events — skipping frames drops onsets."
+  :examples (
+    (:tier "novice"
+     :code "(audio/onset?)"
+     :note "Ask if there's an onset. In REPL: returns (\"audio/onset?\"), a descriptor.")
+    (:tier "apprentice"
+     :code "(if (pair? (audio/onset?)) (quote no-live) (if (audio/onset?) (quote hit) (quote silence)))"
+     :note "Three-way branch: descriptor / hit / silence. Returns 'no-live in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/onset?)) (list 1 2 3))"
+     :note "Poll three times. Under a live host each poll is a fresh frame; in REPL all three return descriptors.")
+    (:tier "expert"
+     :code "(define (count-hits n) (let loop ((i 0) (hits 0)) (if (>= i n) hits (loop (+ i 1) (if (and (audio/onset?) (not (pair? (audio/onset?)))) (+ hits 1) hits))))) (count-hits 10)"
+     :note "Count onsets across 10 poll iterations. Returns 0 in REPL because no onsets fire in headless mode.")
+    (:tier "master"
+     :code "(let loop ((n 0)) (if (>= n 3) (quote done) (begin (audio/onset?) (loop (+ n 1)))))"
+     :note "The tight-loop pattern: check onset every frame, respond immediately. In a rhythm game this is where you register a beat hit.")
+  )
+  :caveats
+    ("MUST be called every frame under a live host — missing a frame drops the onset."
+     "May false-positive on noise/pops, false-negative on soft attacks."
+     "Timing lag: 10-50ms depending on FFT window."
+     "Descriptor in REPL is a truthy list; wrap in `pair?` guard.")
+  :drawbacks
+    ("Boolean only — no strength info. Use audio/onset-strength for a continuous score."
+     "Not sample-accurate — the frame it fires may lag the actual transient.")
+  :usecases
+    ("Rhythm-game beat detection."
+     "One-shot animation trigger on drum hits."
+     "Live-vocal detection for a lyrics scroller."
+     "Silence-vs-activity gating.")
+  :related ("audio/onset-strength" "audio/listen" "audio/spectrum" "audio/tempo")
+  :learn
+    (:concept "Edge-triggered event polling; the difference between a continuous signal and a discrete event."
+     :prerequisites ("audio/listen" "(core)/if" "(core)/pair?")
+     :progression "Read audio/onset? every frame. Then combine with audio/onset-strength to filter weak onsets. Then use audio/tempo for beat expectation.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/onset?) descriptor. Host binds to a real transient detector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/onset?); apprentice='no-live; intermediate=3 copies; expert=0 hits; master='done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("card-effect" "note/strike")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming missed frames don't matter — they do. Treating a REPL descriptor as truthy without pair? guard."
+     :when-not-to-use "You need transient strength — use audio/onset-strength. You need bar-relative timing — use audio/bar-clock.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Onset event predicate. Descriptor in REPL. #t/#f live."))
+
+(verb
+  :name "audio/onset-strength"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/onset-strength) -> number | descriptor"
+  :summary "Continuous onset intensity score; higher on stronger transients."
+  :impl-status "wired-descriptor"
+  :explanation "audio/onset-strength returns a continuous score reflecting how sharp the current spectral transient is. Under a live host it is a number, typically near 0 for stable audio and rising with the strength of a hit. In headless REPL there is no live analyser, so it returns the descriptor ('audio/onset-strength). Use `number?` to gate. Combines well with audio/onset? — the predicate tells you when an onset FIRES, the strength tells you HOW LOUD it hit."
+  :examples (
+    (:tier "novice"
+     :code "(audio/onset-strength)"
+     :note "Read the current onset intensity. In REPL: returns (\"audio/onset-strength\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((s (audio/onset-strength))) (if (number? s) s (quote no-live)))"
+     :note "Return the number under live host, or 'no-live in headless. Returns 'no-live here.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (audio/onset-strength)) (list 1 2 3))"
+     :note "Sample three times. Read-only and idempotent.")
+    (:tier "expert"
+     :code "(define (smoothed prev raw a) (if (number? raw) (+ (* prev (- 1 a)) (* raw a)) prev)) (smoothed 0 (audio/onset-strength) 0.2)"
+     :note "One-pole low-pass filter: output = prev*(1-a) + raw*a with a smoothing coefficient a. Handles the descriptor case by returning prev unchanged. Returns 0.")
+    (:tier "master"
+     :code "(let loop ((n 0) (peak 0)) (if (>= n 5) (list (quote peak) peak) (loop (+ n 1) (let ((s (audio/onset-strength))) (if (number? s) (max peak s) peak)))))"
+     :note "Peak-hold across 5 samples: track the maximum seen. Returns (peak 0) in REPL.")
+  )
+  :caveats
+    ("Raw and jittery — apply smoothing before using as animation input."
+     "No fixed upper bound; extreme loud transients can produce arbitrarily high values."
+     "Falls through to 0 or descriptor when audio/listen has not returned 'ok.")
+  :drawbacks
+    ("No unit — arbitrary intensity scale."
+     "Frame-rate-dependent smoothing coefficients across hosts.")
+  :usecases
+    ("Modulate a visualiser scale by transient strength."
+     "Threshold to filter weak onsets for a beat-sync trigger."
+     "Feed into a compressor-like envelope follower.")
+  :related ("audio/onset?" "audio/spectrum" "audio/listen" "audio/lufs")
+  :learn
+    (:concept "Continuous transient measurement complementary to the discrete audio/onset? event."
+     :prerequisites ("audio/listen" "(core)/max" "(core)/+")
+     :progression "Read audio/onset-strength. Smooth it. Threshold it. Compare to audio/onset? edges.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/onset-strength) descriptor. Host binds to a live spectral-flux measure."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/onset-strength); apprentice='no-live; intermediate=3 copies; expert=0; master=(peak 0)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Using the raw value directly for animation — it jitters. Smooth first."
+     :when-not-to-use "You need a boolean beat-hit — use audio/onset? instead.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Continuous onset intensity. Descriptor in REPL. Number under live host."))
+
+(verb
+  :name "audio/bar-clock"
+  :library "audio"
+  :kind "rd"
+  :signature "(audio/bar-clock handle [bars-per-rotation]) -> BarClockHandle | descriptor"
+  :summary "Create or query a bar-clock handle tied to a playing audio stream; the returned handle exposes phase and radians."
+  :impl-status "wired-descriptor"
+  :explanation "audio/bar-clock synchronises visual motion to musical bars. Give it an audio handle and optionally a bar-count that defines one full rotation; the returned handle carries phase (0..1) and radians. Under a live host, the handle updates every frame as the audio plays. In headless REPL the verb returns the descriptor ('audio/bar-clock handle bars-per-rotation) — a shape a host can consume. Useful for choreographies that pin animation to the audio's rhythm."
+  :examples (
+    (:tier "novice"
+     :code "(audio/bar-clock (quote h))"
+     :note "Create a bar-clock tied to handle 'h. In REPL: returns (\"audio/bar-clock\" h), a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((clock (audio/bar-clock (quote handle) 4))) (car clock))"
+     :note "Extract the tag from the handle. Returns \"audio/bar-clock\" in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (bars) (audio/bar-clock (quote h) bars)) (list 2 4 8 16))"
+     :note "Create four bar-clocks at 2, 4, 8, and 16 bars per rotation — each a different pacing.")
+    (:tier "expert"
+     :code "(define (make-clock h bars) (audio/bar-clock h bars)) (make-clock (quote track-1) 4)"
+     :note "Reusable helper: given a handle and bar count, return the clock. Composition-ready.")
+    (:tier "master"
+     :code "(let* ((clocks (map (lambda (b) (audio/bar-clock (quote h) b)) (list 1 2 4 8)))) (list (quote made) (length clocks) (quote clocks)))"
+     :note "Build a rotation-per-bar palette: 1-bar, 2-bar, 4-bar, 8-bar clocks — each drives a different animation layer.")
+  )
+  :caveats
+    ("Requires a valid audio handle; without one, the clock is a bare descriptor."
+     "bars-per-rotation defaults vary per host; pass explicitly for portability."
+     "In REPL the clock does not advance — it is a descriptor, not a running state.")
+  :drawbacks
+    ("No way to reset the clock without recreating."
+     "Global to the handle; multiple clocks on one handle read the same underlying phase.")
+  :usecases
+    ("Rotate a visual element every N bars."
+     "Beat-synced choreography for cards."
+     "Bar-relative scheduling of overlays.")
+  :related ("audio/tempo" "audio/onset?" "audio/listen" "across-beats")
+  :learn
+    (:concept "Bar-relative timing — deriving visual motion from musical structure."
+     :prerequisites ("audio/tempo" "audio/listen")
+     :progression "Create a bar-clock. Then use its phase to drive rotation. Then combine with audio/onset? for beat-accented motion.")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "reference-impls.js:1479-1483. Returns ('audio/bar-clock handle bars) descriptor. Host binds to a phase-tracking closure."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('audio/bar-clock h); apprentice=\"audio/bar-clock\"; intermediate=4 descriptors; expert=('audio/bar-clock track-1 4); master=(made 4 clocks)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/play" "audio/tempo")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming the clock advances in REPL — it does not. Sharing a handle across clocks without realising they read the same phase."
+     :when-not-to-use "You want beat-level (not bar-level) sync — use audio/onset? and audio/tempo directly.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Bar-clock tied to audio handle. Descriptor in REPL."))
+
+(verb
+  :name "audio/transcribe-with-cloud-help"
+  :library "audio"
+  :kind "io"
+  :signature "(audio/transcribe-with-cloud-help audio-clip) -> [pending-audio info] | text"
+  :summary "Send an audio clip to a cloud speech-to-text service; returns text or pending-audio in headless REPL."
+  :impl-status "wired-pending"
+  :explanation "audio/transcribe-with-cloud-help asks an external speech-to-text service to transcribe an audio clip. Under a wired live provider it returns the transcribed text; in the standalone REPL there is no cloud provider, so it returns [pending-audio {audio reason: 'no-cloud-provider-configured'}]. The verb is honest about the deferred nature of the operation — the caller can inspect (car result) to know whether to wait, retry, or fall back."
+  :examples (
+    (:tier "novice"
+     :code "(audio/transcribe-with-cloud-help (quote clip1))"
+     :note "Request transcription for clip1. In REPL: returns (pending-audio #<object>) — no cloud provider configured.")
+    (:tier "apprentice"
+     :code "(let ((r (audio/transcribe-with-cloud-help (quote spoken-clip)))) (car r))"
+     :note "Extract the status tag. Returns pending-audio (a Sym) in REPL.")
+    (:tier "intermediate"
+     :code "(map audio/transcribe-with-cloud-help (list (quote c1) (quote c2)))"
+     :note "Batch two transcription requests. Each returns its own pending tuple.")
+    (:tier "expert"
+     :code "(define (transcribe-batch clips) (map (lambda (c) (list c (car (audio/transcribe-with-cloud-help c)))) clips)) (transcribe-batch (list (quote clip-a) (quote clip-b)))"
+     :note "Bundle each clip with its status. Returns ((clip-a pending-audio) (clip-b pending-audio)) — shape ready for a status-render pass.")
+    (:tier "master"
+     :code "(let* ((results (map audio/transcribe-with-cloud-help (list (quote c1) (quote c2) (quote c3)))) (pending-count (length results))) (list (quote total) pending-count))"
+     :note "Fire off three transcription jobs, count them. Real carts would then poll for completion or receive callbacks.")
+  )
+  :caveats
+    ("Requires a cloud-provider configuration; otherwise always returns pending-audio."
+     "Provider selection and API key handling is out-of-band."
+     "Costs money per request under a real provider — meter accordingly.")
+  :drawbacks
+    ("No local fallback; deferred until a provider is wired."
+     "No language hint parameter exposed at this API level."
+     "Latency is provider-dependent — often > 500ms.")
+  :usecases
+    ("Transcribe voice memos for indexing."
+     "Speech-to-text for accessibility captions."
+     "Ingest voice commands and route to a command interpreter.")
+  :related ("audio/play" "audio/listen" "ai/summarize")
+  :learn
+    (:concept "Deferred network I/O with an honest pending-status return."
+     :prerequisites ("audio/play" "(core)/map")
+     :progression "Fire a single transcription. Then a batch. Then handle the pending-status branch. Then integrate a completion callback.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:405-406. Returns [pending-audio {audio reason: 'no-cloud-provider-configured'}]. Host binds to a real cloud STT."
+     :permission "network"
+     :latency-class "async-long"
+     :cost "external-billed"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=pending-audio; intermediate=2 tuples; expert=((clip-a pending-audio) (clip-b pending-audio)); master=(total 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("ai/summarize" "ai/classify")
+     :consumes-from ("audio/play")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Expecting text return in REPL — it's always pending. Missing the API-key configuration step under live host."
+     :when-not-to-use "You need low-latency transcription — this is async and expensive. You need pitch/note detection — use audio/key or audio/spectrum.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Cloud speech-to-text. Deferred. Pending-audio in REPL."))
+
+;; ─── synth/* — 9 verbs ───────────────────────────────────────────
+
+(verb
+  :name "synth/808"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/808 part [tune [decay [accent]]]) -> [status info]"
+  :summary "Trigger an 808-style drum voice with optional tuning, decay, and accent."
+  :impl-status "wired-pending"
+  :explanation "synth/808 is a drum voice trigger patterned on the classic Roland TR-808. Give it a voice name (a symbol: 'kick, 'snare, 'tom, 'hihat, 'cowbell, 'clap, etc.) and optionally tune (semitones), decay (seconds), and accent (0..1 velocity). Under a live host it fires the sound through the audio graph. In headless REPL there is no live 808 engine, so it returns [pending-audio {voice part tune decay accent}] — the shape a host consumes. Useful for building beats, rhythm games, and layered percussion."
+  :examples (
+    (:tier "novice"
+     :code "(synth/808 (quote kick))"
+     :note "Trigger a kick drum with defaults. In REPL: returns (pending-audio #<object>) — the shape a live 808 engine consumes.")
+    (:tier "apprentice"
+     :code "(synth/808 (quote snare) 0 0.3 0.8)"
+     :note "Trigger a snare at default tune, 0.3s decay, 0.8 accent. Four positional args build a specific drum hit.")
+    (:tier "intermediate"
+     :code "(map (lambda (v) (synth/808 v)) (list (quote kick) (quote snare) (quote hihat)))"
+     :note "Fire three drums at defaults. Under a live host they overlap; in REPL you get three pending-audio pairs.")
+    (:tier "expert"
+     :code "(define (kick-pattern beats) (for-each (lambda (b) (synth/808 (quote kick) 0 b 1)) beats)) (kick-pattern (list 0.2 0.3 0.2 0.4))"
+     :note "A reusable kick-pattern helper: fire kicks with a list of decay values as an accent envelope.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 4) (quote pattern-done) (begin (synth/808 (list-ref (list (quote kick) (quote snare) (quote kick) (quote snare)) i) 0 0.2 1) (loop (+ i 1)))))"
+     :note "Kick-snare-kick-snare — the fundamental groove. Advance an index, fire each drum in turn. Returns 'pattern-done.")
+  )
+  :caveats
+    ("Voice names are case-sensitive symbols; misspelled names still return pending-audio in REPL."
+     "tune is in semitones from the drum's natural pitch."
+     "decay is in seconds; very short values may click."
+     "Under a live host, requires a warm audio context (audio/listen 'ok).")
+  :drawbacks
+    ("Limited to the preset 808 palette; no custom samples via this verb."
+     "No pattern sequencing built in; you schedule each hit."
+     "Polyphony is host-dependent; overlapping hits may steal voices.")
+  :usecases
+    ("Rhythm games: fire drums on beat or on player input."
+     "Procedural beats: schedule patterns with `on-beat`."
+     "Sound effects: layer drums as impact accents in a game.")
+  :related ("synth/kit" "synth/chord" "synth/play" "on-beat" "audio/onset?")
+  :learn
+    (:concept "Drum-voice trigger with envelope shaping — the basic pattern for all synth/* percussion."
+     :prerequisites ("audio/listen" "(core)/for-each")
+     :progression "Fire one drum. Then combine two into a pattern. Then use `synth/kit` for pattern-string notation. Then move to `synth/play` for whole tracks.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:183-184. Returns [pending-audio {voice: '808', part, tune, decay, accent}]. Host binds to a live 808 emulator."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=(pending-audio #<object>); intermediate=3 pairs; expert=undefined; master='pattern-done."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("on-beat" "audio/onset?")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Passing tune expecting a frequency in Hz — it's semitones from natural pitch. Setting decay=0 expecting a click — you get a barely-audible chirp instead."
+     :when-not-to-use "You need a whole track — use synth/play. You need pitched notes — use synth/orch.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "TR-808-style drum voice. Voice + optional tune/decay/accent. pending-audio in REPL."))
+
+(verb
+  :name "synth/kit"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/kit name pattern [voice]) -> [status info]"
+  :summary "Trigger a drum kit with a binary pattern string; each '1' hits, each '0' rests."
+  :impl-status "wired-pending"
+  :explanation "synth/kit is pattern-based percussion. Give it a kit name (a symbol like 'electronic, 'acoustic, 'live), a pattern string of '0' and '1' characters (\"1000100010001000\" for four-on-the-floor), and optionally a voice within the kit. Under a live host it plays the pattern at the current tempo. In REPL it returns [pending-audio {kit pattern voice}] — the shape a host consumes. Composes with synth/808 and synth/chord to build a full arrangement."
+  :examples (
+    (:tier "novice"
+     :code "(synth/kit (quote electronic) \"1000100010001000\" (quote kick))"
+     :note "Four-on-the-floor kick pattern. Returns (pending-audio #<object>) in REPL.")
+    (:tier "apprentice"
+     :code "(let ((r (synth/kit (quote acoustic) \"1010\" (quote snare)))) (car r))"
+     :note "Fire an on-off-on-off snare pattern; extract the status tag. Returns pending-audio.")
+    (:tier "intermediate"
+     :code "(map (lambda (v) (synth/kit (quote electronic) \"1000100010001000\" v)) (list (quote kick) (quote snare) (quote hihat)))"
+     :note "Layer three voices of the same kit with the same pattern; each gets its own trigger.")
+    (:tier "expert"
+     :code "(define (drum-layers kit patterns) (for-each (lambda (p) (synth/kit kit (cdr p) (car p))) patterns)) (drum-layers (quote acoustic) (list (cons (quote kick) \"1000100010001000\") (cons (quote snare) \"0010001000100010\") (cons (quote hihat) \"1010101010101010\")))"
+     :note "A reusable helper: give it a kit name and an alist of (voice . pattern) pairs; layer them all. Complementary rhythms combine to make a groove.")
+    (:tier "master"
+     :code "(let* ((patterns (list \"1000\" \"0010\" \"1010\")) (results (map (lambda (p) (synth/kit (quote electronic) p (quote kick))) patterns))) (list (quote patterns-fired) (length results)))"
+     :note "Fire three patterns sequentially; count the results. Real carts extend this to a live editor that swaps patterns mid-play.")
+  )
+  :caveats
+    ("Pattern is a string of '0'/'1'; other characters are treated as rest."
+     "Timing follows the current audio tempo; changing tempo mid-pattern may drift."
+     "Voice must exist in the kit; unknown voices still return pending-audio in REPL.")
+  :drawbacks
+    ("Binary notation — no velocity or dynamics per hit within the pattern string."
+     "Fixed length by string; no built-in looping."
+     "Cannot query or stop a playing pattern via this verb; use audio/halt if the host exposes a handle.")
+  :usecases
+    ("Rhythm-game backing tracks."
+     "Procedural beat generation."
+     "Layered drum-kit sequencing without manual per-hit scheduling.")
+  :related ("synth/808" "synth/chord" "synth/play" "audio/tempo")
+  :learn
+    (:concept "Pattern-string drum notation — a compact way to write rhythms."
+     :prerequisites ("synth/808")
+     :progression "Fire a single kick pattern. Then layer three voices. Then use `synth/808` for per-hit control. Then move to `synth/play` for full arrangements.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:187-188. Returns [pending-audio {kit, pattern, voice}]. Host binds to a live kit engine."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=pending-audio; intermediate=3 pairs; expert=undefined; master=(patterns-fired 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/tempo")
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Using pattern chars other than '0'/'1'. Assuming the pattern loops — it does not; re-issue synth/kit for another cycle."
+     :when-not-to-use "You need per-hit velocity — use synth/808. You need note-level control — use synth/orch.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Pattern-string drum kit. Binary hit/rest notation. pending-audio in REPL."))
+
+(verb
+  :name "synth/chord"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/chord section pitches [duration [dynamic [articulation]]]) -> [status info]"
+  :summary "Play a chord (list of pitches) on a named orchestral section."
+  :impl-status "wired-pending"
+  :explanation "synth/chord plays a simultaneous cluster of pitches on a given section (a symbol: 'strings, 'brass, 'woodwinds, etc.). Pitches can be a list of pitch symbols ('C4 'E4 'G4) or MIDI numbers (60 64 67). Optional duration (seconds), dynamic ('mf, 'f, 'p), and articulation ('legato, 'staccato) shape the voicing. Under a live host it plays the chord through the section's timbre; in REPL it returns [pending-audio {section pitches duration dynamic articulation}]."
+  :examples (
+    (:tier "novice"
+     :code "(synth/chord (quote strings) (list (quote C4) (quote E4) (quote G4)))"
+     :note "C major triad on strings. Returns (pending-audio #<object>).")
+    (:tier "apprentice"
+     :code "(synth/chord (quote brass) (list 60 64 67) 2.0 (quote mf) (quote legato))"
+     :note "Two-second C major on brass, mezzo-forte, legato. All arguments used.")
+    (:tier "intermediate"
+     :code "(map (lambda (c) (synth/chord (quote strings) c 1)) (list (list (quote C4) (quote E4) (quote G4)) (list (quote D4) (quote F4) (quote A4)) (list (quote G3) (quote B3) (quote D4))))"
+     :note "Play three chords in sequence: I - ii - V - a fragment of a diatonic progression.")
+    (:tier "expert"
+     :code "(define (play-progression changes) (for-each (lambda (change) (synth/chord (car change) (cadr change) (caddr change))) changes)) (play-progression (list (list (quote strings) (list (quote C4) (quote E4) (quote G4)) 2) (list (quote brass) (list (quote G3) (quote B3) (quote D4)) 1.5)))"
+     :note "A reusable helper: given a list of (section pitches duration) tuples, play each. Extendable to include dynamics and articulation.")
+    (:tier "master"
+     :code "(let* ((progression (list (list (quote C4) (quote E4) (quote G4)) (list (quote D4) (quote F4) (quote A4)) (list (quote G3) (quote B3) (quote D4)) (list (quote C4) (quote E4) (quote G4)))) (chords-fired (map (lambda (p) (synth/chord (quote strings) p 1)) progression))) (list (quote i-vi-iv-i-fired) (length chords-fired)))"
+     :note "A four-chord loop: I - vi - IV - I on strings. The bread-and-butter of pop harmony. Returns (i-vi-iv-i-fired 4).")
+  )
+  :caveats
+    ("Section names are host-defined; unknown sections still return pending-audio in REPL."
+     "Pitches can be symbols or MIDI numbers; mixing styles in one call works but reads badly."
+     "Empty pitch list may return an error under a live host but pending-audio in REPL.")
+  :drawbacks
+    ("No voice-leading assistance; you specify raw voicings."
+     "Fixed sections; no custom timbres via this verb."
+     "No microtonal support; equal-tempered only.")
+  :usecases
+    ("Underscore composition."
+     "Chord progressions in a music-theory cart."
+     "Layer chords over synth/808 drums for a full arrangement.")
+  :related ("synth/orch" "synth/808" "synth/play" "synth/kit")
+  :learn
+    (:concept "Polyphonic voicing on a named section — the pattern for orchestral chord playback."
+     :prerequisites ("synth/orch")
+     :progression "Play one chord. Then a progression. Then layer with drums.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:185-186. Returns [pending-audio {section pitches duration dynamic articulation}]. Host binds to real section synths."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio #<object>); apprentice=(pending-audio #<object>); intermediate=3 pairs; expert=undefined; master=(i-vi-iv-i-fired 4)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Assuming voice-leading is handled — it is not. Passing a scalar pitch expecting an implicit chord."
+     :when-not-to-use "You want a single voice — use synth/orch. You want percussion — use synth/808 or synth/kit.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Chord on an orchestral section. Multi-voice, one-shot. pending-audio in REPL."))
+
+(verb
+  :name "synth/orch"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/orch section pitch [dur [dynamic [articulation]]]) -> [status info]"
+  :summary "Play a single note on an orchestral section (violin, cello, trumpet, etc.) with dynamic and articulation control."
+  :impl-status "wired-pending"
+  :explanation "synth/orch is the single-voice orchestral verb. Give it a section symbol ('violin, 'cello, 'viola, 'trumpet, 'trombone, 'horn, 'oboe, 'clarinet, etc.), a pitch (MIDI number or symbol), and optional duration (seconds), dynamic (0..1), and articulation ('legato, 'staccato, 'portamento). Under a live host it plays the note through the section's timbre; in REPL it returns [pending-audio {section pitch duration dynamic articulation}]. Layer multiple calls to build chords or polyphonic lines."
+  :examples (
+    (:tier "novice"
+     :code "(synth/orch (quote violin) 60 1.0)"
+     :note "Play a violin C4 for one second at defaults. Returns (pending-audio #<object>).")
+    (:tier "apprentice"
+     :code "(synth/orch (quote cello) 48 2.0 0.7 (quote legato))"
+     :note "Cello C3, two-second legato, moderate dynamic. All arguments used.")
+    (:tier "intermediate"
+     :code "(map (lambda (p) (synth/orch (quote trumpet) p 0.5)) (list 60 64 67 72))"
+     :note "Four trumpet notes: C4 E4 G4 C5 — an ascending arpeggio. Half-second each.")
+    (:tier "expert"
+     :code "(define (arpeggio section pitches dur) (for-each (lambda (p) (synth/orch section p dur 0.6 (quote staccato))) pitches)) (arpeggio (quote trumpet) (list 60 64 67 72) 0.4)"
+     :note "A reusable arpeggio helper: staccato notes on any section. Builds a punchy fanfare from a pitch list.")
+    (:tier "master"
+     :code "(let* ((sections (list (quote violin) (quote cello) (quote trumpet))) (results (map (lambda (s) (synth/orch s 60 1)) sections))) (list (quote fired) (length results) (quote voices)))"
+     :note "Play the same C4 on three sections simultaneously — a small ensemble. Returns (fired 3 voices).")
+  )
+  :caveats
+    ("Section name must be recognised by the host; unknown returns pending-audio in REPL."
+     "Pitch as MIDI number (0-127) or symbol ('C4, 'Fs3)."
+     "Requires audio/listen 'ok under live host."
+     "Multiple calls layer; they do not replace.")
+  :drawbacks
+    ("Onset latency; scheduling is async."
+     "Limited articulation palette."
+     "No ADSR envelope exposed at this level.")
+  :usecases
+    ("Compose orchestral underscores."
+     "Real-time orchestration in response to player input."
+     "Cinematic cue notes and stabs.")
+  :related ("synth/chord" "synth/orchestra" "synth/play" "synth/808")
+  :learn
+    (:concept "Single-voice orchestral synthesis — the polyphonic building block."
+     :prerequisites ("audio/listen" "synth/orchestra")
+     :progression "Play a note. Then layer three notes for a chord. Then use synth/chord for a cleaner API. Then move to synth/play for whole scores.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:189-190. Returns [pending-audio {section, pitch, duration, dynamic, articulation}]. Host binds to live section synths."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio); apprentice=(pending-audio); intermediate=4 pairs; expert=undefined; master=(fired 3 voices)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("audio/listen" "synth/orchestra")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Confusing pitch as frequency vs MIDI number. Passing dynamic as symbol expecting keyword — it's a number 0..1."
+     :when-not-to-use "You want a full chord — use synth/chord. You want a score — use synth/play.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Single-voice orchestral note. Section + pitch + envelope. pending-audio in REPL."))
+
+(verb
+  :name "synth/orchestra"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/orchestra hall) -> [ok info]"
+  :summary "Configure the orchestral reverb/hall model; subsequent synth/orch calls play through this acoustic space."
+  :impl-status "wired-partial"
+  :explanation "synth/orchestra sets the acoustic environment for orchestral synthesis. Give it a hall name (a symbol: 'concert, 'chamber, 'studio, 'cathedral, etc.) and it configures the reverb/space that colours every following synth/orch call. Under a live host it swaps the DSP reverb chain; in REPL it returns [ok {hall}] — recording the intent. This is one of the few synth/* verbs that returns 'ok even without a live host because setting state is a valid pure operation."
+  :examples (
+    (:tier "novice"
+     :code "(synth/orchestra (quote concert))"
+     :note "Switch to a concert-hall reverb. Returns (ok #<object>).")
+    (:tier "apprentice"
+     :code "(let ((r (synth/orchestra (quote chamber)))) (car r))"
+     :note "Extract the status tag from the result. Returns ok.")
+    (:tier "intermediate"
+     :code "(map synth/orchestra (list (quote concert) (quote chamber) (quote studio)))"
+     :note "Cycle through three halls in one map. Under a live host the last one wins.")
+    (:tier "expert"
+     :code "(define (set-hall mood) (cond ((equal? mood (quote intimate)) (synth/orchestra (quote chamber))) ((equal? mood (quote grand)) (synth/orchestra (quote concert))) (else (synth/orchestra (quote studio))))) (set-hall (quote grand))"
+     :note "Dispatch on a semantic mood tag to choose an acoustic environment. Returns (ok #<object>).")
+    (:tier "master"
+     :code "(for-each synth/orchestra (list (quote concert) (quote chamber) (quote studio) (quote cathedral)))"
+     :note "Cycle through four halls with for-each. Under a live host: the reverb tail changes with each call. Returns undefined (for-each contract).")
+  )
+  :caveats
+    ("Hall name must be known to the host; unknown names may still return ok in REPL."
+     "Switching halls disconnects the previous reverb tail — long tails may cut abruptly."
+     "Global — all synth/orch calls after the switch use the new hall.")
+  :drawbacks
+    ("No parameter tweaking (reverb time, diffusion); halls are presets."
+     "Latency on switch — DSP reallocation is not instantaneous.")
+  :usecases
+    ("Scene ambience: switch from 'studio (rehearsal) to 'concert (performance)."
+     "Match the hall to the composition (chamber for quartet, concert for orchestra)."
+     "Emotional colouring via acoustic space.")
+  :related ("synth/orch" "synth/chord" "synth/play")
+  :learn
+    (:concept "Acoustic environment modelling — how reverb defines the character of a sound."
+     :prerequisites ("synth/orch")
+     :progression "Set a hall. Then play a note. Then switch halls between sections of a piece.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:191-192. Returns [ok {hall}]. Host binds to a real reverb chain."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(ok); apprentice=ok; intermediate=3 (ok ...) pairs; expert=(ok); master=undefined."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("synth/orch" "synth/chord")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the hall applies to synth/808 or synth/kit — it does not; those have their own routing."
+     :when-not-to-use "You want per-source reverb control — use audio-graph opts directly.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Set orchestral reverb hall. State-change with [ok] return."))
+
+(verb
+  :name "synth/play"
+  :library "synth"
+  :kind "io"
+  :signature "(synth/play score tempo) -> [status info]"
+  :summary "Schedule and play a full musical score at a given tempo."
+  :impl-status "wired-pending"
+  :explanation "synth/play takes a structured score object — a plist with :tracks — and a tempo in BPM. Under a live host it schedules every note of every track into the audio timeline; in REPL it returns [pending-audio {score tempo}]. Score shape: (tracks ((notes (pitches ...)) ...)) at minimum; hosts may accept extended shapes with per-note duration, dynamics, etc. The high-level composition verb complementing synth/orch (single note), synth/chord (single chord), and synth/kit (drum pattern)."
+  :examples (
+    (:tier "novice"
+     :code "(synth/play (list (quote tracks) (list (list (quote notes) (list 60 64 67)))) 120)"
+     :note "Play a three-note score at 120 BPM. Returns (pending-audio #<object>).")
+    (:tier "apprentice"
+     :code "(let* ((score (list (quote tracks) (list (list (quote notes) (list 60 62 64))))) (r (synth/play score 100))) (car r))"
+     :note "Play a small ascending line at 100 BPM. Returns pending-audio.")
+    (:tier "intermediate"
+     :code "(map (lambda (tempo) (synth/play (list (quote tracks) (list (list (quote notes) (list 60)))) tempo)) (list 90 120 150))"
+     :note "Play the same single-note score at three different tempos. Returns three pending-audio pairs.")
+    (:tier "expert"
+     :code "(define (play-simple pitches tempo) (synth/play (list (quote tracks) (list (list (quote notes) pitches))) tempo)) (play-simple (list 60 62 64 65 67) 110)"
+     :note "A reusable helper that builds a one-track score from a pitch list and tempo. Composition-friendly shape.")
+    (:tier "master"
+     :code "(let* ((tempos (list 60 90 120 150 180)) (fired (map (lambda (t) (synth/play (list (quote tracks) (list (list (quote notes) (list 60)))) t)) tempos))) (list (quote all-tempos-fired) (length fired)))"
+     :note "Sweep across five tempos, all playing the same C4. Real carts extend the shape with per-note durations and articulation.")
+  )
+  :caveats
+    ("Score must be a proper plist with :tracks. Bare pitch lists are not scores."
+     "Tempo is BPM; scheduling drift may occur without a live master clock."
+     "Once scheduled under live host, the score plays to completion; there's no mid-play insert.")
+  :drawbacks
+    ("No real-time note editing — pre-compose the score."
+     "Memory scales with score length; huge scores warrant streaming, not buffering."
+     "Envelope curves are host-default; custom shapes need per-note modulation.")
+  :usecases
+    ("Background music tracks."
+     "Rhythm games with pre-composed accompaniment."
+     "Procedurally-generated music from data.")
+  :related ("synth/orch" "synth/chord" "synth/kit" "synth/load-score" "audio/tempo")
+  :learn
+    (:concept "Data-as-score — representing music as a list structure that a scheduler plays."
+     :prerequisites ("synth/orch" "(core)/list")
+     :progression "Play a three-note score. Then two tracks. Then generate from data. Then load pre-authored scores with synth/load-score.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:193-194. Returns [pending-audio {score, tempo}]. Host binds to a real scheduler."
+     :permission "state-change"
+     :latency-class "async-quick"
+     :tests "REPL-verified 2026-07-14: novice=(pending-audio); apprentice=pending-audio; intermediate=3 pairs; expert=(pending-audio); master=(all-tempos-fired 5)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/onset?" "synth/onset-tap")
+     :consumes-from ("synth/load-score")
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Passing a raw pitch list expecting a score wrap. Forgetting the tempo argument."
+     :when-not-to-use "You want a single voice — use synth/orch. You want drums only — use synth/kit.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Score-based playback. Multi-track. Tempo-locked. pending-audio in REPL."))
+
+(verb
+  :name "synth/load-score"
+  :library "synth"
+  :kind "io"
+  :signature "(synth/load-score name) -> [ok score] | [error info] | [pending-fetch info]"
+  :summary "Asynchronously fetch a pre-composed score by name from a known registry."
+  :impl-status "wired-pending"
+  :explanation "synth/load-score requests a pre-composed score from a name-to-URL registry. Under a live host with network access it fetches JSON, validates, and returns [ok score]; on failure returns [error status info]. In REPL there is no fetch, so it returns [pending-fetch {name reason: 'no-live-fetch'}]. The score returned by [ok ...] can be passed directly to synth/play. Useful for pre-authored compositions, tutorials, and canonical arrangements."
+  :examples (
+    (:tier "novice"
+     :code "(synth/load-score (quote beethoven-9))"
+     :note "Request a score. In REPL: returns (pending-fetch #<object>).")
+    (:tier "apprentice"
+     :code "(let ((r (synth/load-score (quote symphony-3)))) (car r))"
+     :note "Extract the status tag. Returns pending-fetch.")
+    (:tier "intermediate"
+     :code "(map synth/load-score (list (quote piece-1) (quote piece-2) (quote piece-3)))"
+     :note "Fire three loads in parallel. Each returns its own pending tuple.")
+    (:tier "expert"
+     :code "(define (try-load name) (let ((r (synth/load-score name))) (list name (car r)))) (try-load (quote canon-in-d))"
+     :note "Bundle the name with its status for a logging pass. Returns (canon-in-d pending-fetch).")
+    (:tier "master"
+     :code "(let* ((names (list (quote a) (quote b) (quote c))) (results (map (lambda (n) (list n (car (synth/load-score n)))) names))) results)"
+     :note "Batch-load with statuses. Returns ((a pending-fetch) (b pending-fetch) (c pending-fetch)). A real cart would poll for completion and swap 'pending-fetch to 'ok.")
+  )
+  :caveats
+    ("Requires a fetch-capable host and a name known to the registry."
+     "Async — the [ok score] does not come back on the same call in REPL."
+     "Score format is host-specific JSON.")
+  :drawbacks
+    ("No caching in REPL — every call returns pending-fetch."
+     "No timeout parameter exposed at this API level."
+     "Registry is hardcoded per-host; adding scores means editing the runtime.")
+  :usecases
+    ("Load canonical pieces for a music-theory cart."
+     "Sequence a curated concert program."
+     "Fetch user-selected arrangements at runtime.")
+  :related ("synth/play" "synth/orch" "artifact/fetch")
+  :learn
+    (:concept "Deferred JSON fetch — the pattern for async external resource loading."
+     :prerequisites ("synth/play")
+     :progression "Request one score. Then batch three. Then handle the pending-fetch branch. Then pipe [ok score] into synth/play.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:197-198. Returns [pending-fetch {name, reason: 'no-live-fetch'}]. Host binds to a real network fetch."
+     :permission "network"
+     :latency-class "async-long"
+     :cost "metered-cheap"
+     :tests "REPL-verified 2026-07-14: novice=(pending-fetch); apprentice=pending-fetch; intermediate=3 tuples; expert=(canon-in-d pending-fetch); master=((a pending-fetch) (b pending-fetch) (c pending-fetch))."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("synth/play")
+     :consumes-from ()
+     :cardinality one
+     :deterministic #f
+     :cacheable #t
+     :common-mistakes "Expecting immediate [ok score] — the load is async. Passing an unknown name expecting a helpful error — in REPL you get pending-fetch."
+     :when-not-to-use "You want to hand-compose a small score — use synth/play with an inline list.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Async score fetch. [ok score] under live host. pending-fetch in REPL."))
+
+(verb
+  :name "synth/onset-tap"
+  :library "synth"
+  :kind "io"
+  :signature "(synth/onset-tap handler) -> [ok {unsubscribe unsub event name}]"
+  :summary "Register a callback to fire on every synth-detected onset (attack transient)."
+  :impl-status "wired-partial"
+  :explanation "synth/onset-tap subscribes a handler function to the synth-onset event stream. Under a live host, whenever the synth-side detector fires an onset the handler is invoked with the event. It returns [ok {unsubscribe unsub event name}] — the object with an unsubscribe closure. In REPL there is no live detector, but the registration still succeeds (records the handler intent) so the caller gets an [ok ...] shape they can use. Complements audio/onset? on the input side."
+  :examples (
+    (:tier "novice"
+     :code "(synth/onset-tap (lambda (e) (quote noticed)))"
+     :note "Register a no-op handler. Returns (ok #<object>).")
+    (:tier "apprentice"
+     :code "(let ((r (synth/onset-tap (lambda (e) (quote hit))))) (car r))"
+     :note "Extract the status. Returns ok.")
+    (:tier "intermediate"
+     :code "(map (lambda (i) (synth/onset-tap (lambda (e) (list (quote listener) i)))) (list 1 2 3))"
+     :note "Register three independent listeners. Each returns its own [ok ...].")
+    (:tier "expert"
+     :code "(define (register-flash) (synth/onset-tap (lambda (event) (quote flash-fired)))) (car (register-flash))"
+     :note "A named handler-registration helper. Returns ok.")
+    (:tier "master"
+     :code "(let* ((subs (list (synth/onset-tap (lambda (e) 1)) (synth/onset-tap (lambda (e) 2)) (synth/onset-tap (lambda (e) 3)))) (statuses (map car subs))) statuses)"
+     :note "Register three listeners, verify all three returned ok. Returns (ok ok ok).")
+  )
+  :caveats
+    ("Handler must be a function; passing anything else returns [error ...] under a live host."
+     "The unsubscribe closure is inside the returned object; call it to remove the listener."
+     "In REPL the listener never fires because there is no live audio; still, registration succeeds.")
+  :drawbacks
+    ("Handlers run in the audio thread under a live host — keep them fast."
+     "Onset detection is heuristic — soft attacks may not fire.")
+  :usecases
+    ("Sync visual effects to synth-side beats."
+     "Log or measure the timing of synth-fired events."
+     "Build a rhythm-game hit-detector that keys off synth onsets rather than input onsets.")
+  :related ("audio/onset?" "audio/onset-strength" "synth/play" "on-beat")
+  :learn
+    (:concept "Callback-based event subscription with lifecycle management (unsubscribe)."
+     :prerequisites ("(core)/lambda" "audio/onset?")
+     :progression "Register a handler. Then multiple. Then use the unsubscribe closure to tear them down on scene exit.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:199-200. Returns [ok {unsubscribe, unsub, event, name}]. Host binds to a real onset-tap subscriber."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(ok); apprentice=ok; intermediate=3 (ok ...) pairs; expert=ok; master=(ok ok ok)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ("synth/play" "synth/808")
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Forgetting to unsubscribe on scene exit — leaks the handler. Assuming handlers fire immediately — they only fire on live onsets."
+     :when-not-to-use "You need input-audio onset detection — use audio/onset? on the input side.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Register onset callback. Returns [ok subscription]. Even works in REPL for registration."))
+
+(verb
+  :name "synth/sp1200"
+  :library "synth"
+  :kind "mut"
+  :signature "(synth/sp1200 sample pitch) -> [ok result] | [pending-sample-bank info]"
+  :summary "Play a drum sample with pitch shifting; emulates the classic SP-1200 sampler."
+  :impl-status "wired-pending"
+  :explanation "The SP-1200 is a vintage sampler famous for its 26 kHz sample rate and time-stretched pitch shifting. synth/sp1200 emulates this: give it a sample name and a pitch offset in semitones, and it triggers the sound modified. Under a live host with a loaded sample bank it plays; in REPL the sample bank is absent, so it returns [pending-sample-bank {sample pitch reason dsp_available spRate}]. The DSP algorithm is implemented and ready — this verb becomes real once a sample bank is wired."
+  :examples (
+    (:tier "novice"
+     :code "(synth/sp1200 (quote kick) 0)"
+     :note "Play kick at native pitch. Returns (pending-sample-bank #<object>) — DSP is ready, samples are not.")
+    (:tier "apprentice"
+     :code "(let ((r (synth/sp1200 (quote snare) 2))) (car r))"
+     :note "Snare tuned up two semitones. Returns pending-sample-bank.")
+    (:tier "intermediate"
+     :code "(map (lambda (s) (synth/sp1200 s 0)) (list (quote kick) (quote snare) (quote hihat)))"
+     :note "Trigger three samples at native pitch. Each returns pending-sample-bank.")
+    (:tier "expert"
+     :code "(define (drum-loop samples pitches) (for-each (lambda (s p) (synth/sp1200 s p)) samples pitches)) (drum-loop (list (quote kick) (quote snare)) (list 0 2))"
+     :note "A reusable loop that pairs samples with pitches — the shape for a step sequencer with per-hit pitch modulation.")
+    (:tier "master"
+     :code "(let* ((samples (list (quote kick) (quote snare) (quote hat))) (pitches (list 0 -2 3)) (results (map (lambda (s p) (synth/sp1200 s p)) samples pitches))) (list (quote fired) (length results) (quote samples)))"
+     :note "Three samples with three different pitches — the shape of a drum-machine grid row. Returns (fired 3 samples).")
+  )
+  :caveats
+    ("Sample bank not wired in v1; always returns pending-sample-bank in REPL."
+     "Pitch is in semitones from native; negative slows down, positive speeds up."
+     "Extreme pitch shifts introduce granular/metallic artifacts (the SP-1200 sound).")
+  :drawbacks
+    ("Blocking factor is sample-bank loading, not the DSP."
+     "No sample browsing UI — must know the exact name."
+     "Sample-rate quirks: the SP-1200's 26 kHz gives its characteristic lo-fi sound.")
+  :usecases
+    ("Drum machines with vintage character."
+     "Percussion accompaniment in retro-flavoured tracks."
+     "Sound design: pitch-shift and time-stretch acoustic samples.")
+  :related ("synth/808" "synth/kit" "synth/play" "audio/onset?")
+  :learn
+    (:concept "Sample-based percussion with real-time pitch shifting (time-stretch DSP)."
+     :prerequisites ("synth/808")
+     :progression "Fire a single sample. Then loop with pitch modulation. Then integrate into a full arrangement.")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:195-196. Returns [pending-sample-bank {sample, pitch, reason, dsp_available: false, spRate: 26040}]. Host binds to a real sample player once bank is loaded."
+     :permission "state-change"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=(pending-sample-bank); apprentice=pending-sample-bank; intermediate=3 tuples; expert=undefined; master=(fired 3 samples)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("audio/onset?")
+     :consumes-from ()
+     :cardinality one
+     :deterministic #t
+     :cacheable #f
+     :common-mistakes "Assuming it works today — it does not (bank absent). Passing large pitch offsets expecting clean sound — you get lo-fi grit."
+     :when-not-to-use "You want a modern clean drum — use synth/808. You want a whole kit pattern — use synth/kit.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "SP-1200 sample emulation. DSP ready, sample bank pending. pending-sample-bank in REPL."))
+
+;; ─── radio/* — 14 verbs ──────────────────────────────────────────
+
+(verb
+  :name "radio/stations"
+  :library "radio"
+  :kind "rd"
+  :signature "(radio/stations) -> [string ...] | descriptor"
+  :summary "List all available radio-station slugs; a read-only catalog probe."
+  :impl-status "wired-descriptor"
+  :explanation "radio/stations queries the internal station registry and returns a flat list of station-name slugs (lowercase, whitespace-stripped). Under a live host the list reflects the currently loaded stations. In headless REPL there is no live registry, so the verb returns the descriptor ('radio/stations). Read-only; safe to call frequently; useful for building station-picker UIs."
+  :examples (
+    (:tier "novice"
+     :code "(radio/stations)"
+     :note "Ask for the station list. In REPL: returns (\"radio/stations\") — a descriptor.")
+    (:tier "apprentice"
+     :code "(let ((s (radio/stations))) (if (pair? s) (car s) s))"
+     :note "Extract the head. In REPL the head is the verb-name string.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/stations)) (list 1 2))"
+     :note "Idempotent — safe to poll. Two calls, two descriptor copies.")
+    (:tier "expert"
+     :code "(define (station-count) (length (radio/stations))) (station-count)"
+     :note "Count the stations. In REPL: descriptor is length 1, so returns 1. Under a live host: number of registered stations.")
+    (:tier "master"
+     :code "(let ((all (radio/stations))) (list (quote available) (length all)))"
+     :note "Build a status summary. Real UIs feed this into a dropdown builder.")
+  )
+  :caveats
+    ("Returns descriptor in REPL, list of slugs under live host."
+     "Names are slugified (lowercase, no special chars); original names not preserved."
+     "Empty list is possible under live host if no stations are registered.")
+  :drawbacks ("No metadata beyond slug; no genre, country, bitrate." "Read-only; doesn't refresh the registry.")
+  :usecases ("Populate a station-picker dropdown." "Validate a user-selected station id." "Log available stations at startup.")
+  :related ("radio/play" "radio/now-playing" "radio/next" "radio/prev")
+  :learn
+    (:concept "Catalog probe — list-what's-available before user selection."
+     :prerequisites ("(core)/length")
+     :progression "List stations. Then pick one. Then feed it to radio/play.")
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "wired-verbs.js:984-991 auto-descriptor. Host binds to a real station registry."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/stations); apprentice=\"radio/stations\"; intermediate=2 copies; expert=1; master=(available 1)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/play") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Treating the descriptor as a real list of stations."
+     :when-not-to-use "You need station metadata beyond names.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "List of station slugs. Descriptor in REPL."))
+
+(verb
+  :name "radio/now-playing"
+  :library "radio"
+  :kind "rd"
+  :signature "(radio/now-playing) -> [id name] | #f | descriptor"
+  :summary "Query the currently playing station (or #f if none)."
+  :impl-status "wired-descriptor"
+  :explanation "radio/now-playing returns the current station's identifier and name as a two-element list, or #f if nothing is playing. Under a live host it reflects the current transport state. In headless REPL it returns the descriptor ('radio/now-playing) — pair? guard as usual. Useful for displays and for confirming a radio/play call took effect."
+  :examples (
+    (:tier "novice"
+     :code "(radio/now-playing)"
+     :note "Query the current station. In REPL: returns (\"radio/now-playing\").")
+    (:tier "apprentice"
+     :code "(let ((r (radio/now-playing))) (car r))"
+     :note "Extract the head. Returns \"radio/now-playing\" in REPL.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/now-playing)) (list 1 2))"
+     :note "Poll twice. Read-only and idempotent.")
+    (:tier "expert"
+     :code "(define (current) (radio/now-playing)) (car (current))"
+     :note "A helper that reads the current station. Under live host, `car` yields the id; in REPL the descriptor tag.")
+    (:tier "master"
+     :code "(begin (radio/play) (radio/now-playing))"
+     :note "Start playback, then confirm. Returns (\"radio/now-playing\") in REPL.")
+  )
+  :caveats ("Descriptor in REPL vs [id name] tuple under live host." "Returns #f when nothing plays.")
+  :drawbacks ("No metadata beyond id/name.")
+  :usecases ("Show 'now playing' in a UI." "Confirm a radio/play took effect." "Log playback state.")
+  :related ("radio/play" "radio/stations")
+  :learn
+    (:concept "Current-state read for the radio transport."
+     :prerequisites ("radio/play")
+     :progression "Read after play. Then show in UI. Then poll on tick.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/now-playing); apprentice=\"radio/now-playing\"; intermediate=2 copies; expert=\"radio/now-playing\"; master=('radio/now-playing)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming pair? implies a real (id name) — could be the descriptor."
+     :when-not-to-use "You want the full station list — use radio/stations.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Current station. Descriptor in REPL. [id name] live."))
+
+(verb
+  :name "radio/play"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/play [id]) -> [status info] | descriptor"
+  :summary "Start playing a radio station, optionally by ID; default plays the first station."
+  :impl-status "wired-descriptor"
+  :explanation "radio/play tunes and starts playback. With no argument it plays the first station in the registry; with a symbol id it tunes to that specific station. Under a live host it returns [ok {name ...}] on success, [error 'unknown-station ...] on failure. In REPL it returns the descriptor ('radio/play [id]). Idempotent — calling play on the currently-playing station is a no-op under a live host."
+  :examples (
+    (:tier "novice"
+     :code "(radio/play)"
+     :note "Play the first station. Returns (\"radio/play\") — the descriptor.")
+    (:tier "apprentice"
+     :code "(radio/play (quote lofi))"
+     :note "Play a specific station by slug. Returns (\"radio/play\" lofi).")
+    (:tier "intermediate"
+     :code "(map radio/play (list (quote lofi) (quote jazz) (quote synthwave)))"
+     :note "Fire three plays in sequence. Under a live host the last one wins; each returns its descriptor in REPL.")
+    (:tier "expert"
+     :code "(define (start-my-station id) (radio/play id)) (start-my-station (quote bbc-radio-1))"
+     :note "A tiny helper that starts a specific station by id. Composition-ready.")
+    (:tier "master"
+     :code "(begin (radio/pause) (radio/play (quote lofi)))"
+     :note "Pause anything currently playing, then start lofi. The idiomatic pause-then-play swap.")
+  )
+  :caveats ("id is a symbol matching a station slug; unknown ids return [error ...] under live host." "Repeated calls on the same station are no-ops.")
+  :drawbacks ("No preview of the station before playback starts." "No station metadata surfaced via this verb; use radio/now-playing.")
+  :usecases ("Play button in a UI." "Auto-play favourite station at startup." "Programmatic station switching.")
+  :related ("radio/pause" "radio/toggle" "radio/next" "radio/prev" "radio/now-playing")
+  :learn
+    (:concept "Transport start — the entry point for radio playback."
+     :prerequisites ("radio/stations")
+     :progression "Play the default station. Then pass an id. Then combine with pause/toggle.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/play); apprentice=('radio/play lofi); intermediate=3 descriptors; expert=('radio/play bbc-radio-1); master=('radio/play lofi)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing" "radio/next") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Passing a string instead of a symbol id. Assuming the descriptor is [ok ...]."
+     :when-not-to-use "You want to advance stations sequentially — use radio/next.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Tune-and-play. Optional id. Descriptor in REPL."))
+
+(verb
+  :name "radio/pause"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/pause) -> [ok info] | descriptor"
+  :summary "Pause the radio stream; state-only, no fade."
+  :impl-status "wired-descriptor"
+  :explanation "radio/pause halts audio without changing the tuned station. Under a live host it returns [ok {paused: true}]; in REPL it returns the descriptor ('radio/pause). Idempotent — pausing an already-paused radio is a no-op. Pairs with radio/play to resume and radio/toggle for one-verb play/pause."
+  :examples (
+    (:tier "novice"
+     :code "(radio/pause)"
+     :note "Stop playback. Returns (\"radio/pause\") — the descriptor.")
+    (:tier "apprentice"
+     :code "(begin (radio/play (quote lofi)) (radio/pause))"
+     :note "Start playback then pause. The pause wins because it comes second.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/pause)) (list 1 2 3))"
+     :note "Three pauses in a row. Idempotent, all return the descriptor.")
+    (:tier "expert"
+     :code "(define (pause-and-log) (radio/pause) (quote paused)) (pause-and-log)"
+     :note "A helper that pauses and returns a status symbol. Handy in a state machine.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (radio/pause) (loop (+ i 1)))))"
+     :note "Loop-pause pattern — safe to call in a tight loop because idempotent. Returns 'done.")
+  )
+  :caveats ("Preserves station; only stops the stream." "No fade; abrupt stop.")
+  :drawbacks ("No query verb specifically for pause state; use radio/now-playing.")
+  :usecases ("Pause button in transport UI." "Silence on notification." "Bind to a hotkey.")
+  :related ("radio/play" "radio/toggle" "radio/mute")
+  :learn
+    (:concept "Transport pause — the inverse of play."
+     :prerequisites ("radio/play")
+     :progression "Pause. Then combine with radio/play. Then use radio/toggle for the one-verb pattern.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/pause); apprentice=('radio/pause); intermediate=3 copies; expert='paused; master='done."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/play") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Confusing pause with mute — pause stops the stream, mute silences it."
+     :when-not-to-use "You want to preserve the audio stream but silence it — use radio/mute.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Halt the stream. Preserves station. Idempotent."))
+
+(verb
+  :name "radio/toggle"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/toggle) -> [status details] | descriptor"
+  :summary "Flip radio between play and pause; one-verb transport control."
+  :impl-status "wired-descriptor"
+  :explanation "radio/toggle flips the play/pause state without needing external state tracking. Under a live host: if playing, pause; if paused, play. Returns a status tuple describing the new state. In REPL it returns the descriptor ('radio/toggle). Idempotent to the sense that two toggles restore the original state."
+  :examples (
+    (:tier "novice"
+     :code "(radio/toggle)"
+     :note "Flip the transport. Returns (\"radio/toggle\") in REPL.")
+    (:tier "apprentice"
+     :code "(begin (radio/play) (radio/toggle))"
+     :note "Start playback, then toggle (pauses under a live host).")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/toggle)) (list 1 2 3))"
+     :note "Three toggles — the transport ends up in the opposite state from the start.")
+    (:tier "expert"
+     :code "(define (on-play-btn) (radio/toggle) (quote toggled)) (on-play-btn)"
+     :note "Wire a UI button to toggle without tracking play/pause externally.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (radio/toggle) (loop (+ i 1)))))"
+     :note "Toggle three times. Under a live host: play→pause→play. Returns 'done.")
+  )
+  :caveats ("Does not change the station; only flips play/pause." "Rapid toggles may race under live host; batch state changes when possible.")
+  :drawbacks ("No way to force a specific state — use radio/play or radio/pause explicitly for that.")
+  :usecases ("Spacebar handler for play/pause." "Minimalist media UI.")
+  :related ("radio/play" "radio/pause" "radio/mute")
+  :learn
+    (:concept "Stateless flip — no external state needed."
+     :prerequisites ("radio/play" "radio/pause")
+     :progression "Toggle. Then bind to a key. Then combine with radio/mute for full transport.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/toggle); apprentice=('radio/toggle); intermediate=3 copies; expert='toggled; master='done."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming toggle also changes station — it does not."
+     :when-not-to-use "You want to force play — use radio/play. You want to force pause — use radio/pause.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Flip play/pause. Stateless. Descriptor in REPL."))
+
+(verb
+  :name "radio/next"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/next) -> [status details] | descriptor"
+  :summary "Advance to the next station in the loaded list, wrapping around."
+  :impl-status "wired-descriptor"
+  :explanation "radio/next moves the transport forward by one station. Under a live host it cycles through the loaded station list, wrapping from the last back to the first, and begins playback on the newly selected station. In REPL it returns the descriptor ('radio/next)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/next)"
+     :note "Advance to the next station. Returns (\"radio/next\").")
+    (:tier "apprentice"
+     :code "(begin (radio/play) (radio/next))"
+     :note "Start playback, then advance. The next station takes over.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/next)) (list 1 2 3))"
+     :note "Three advances in a row. Under a live host: cycles through three stations.")
+    (:tier "expert"
+     :code "(define (cycle-forward n) (let loop ((i 0)) (if (>= i n) (quote done) (begin (radio/next) (loop (+ i 1)))))) (cycle-forward 3)"
+     :note "Cycle forward n stations with a helper. Wraps at the end of the list.")
+    (:tier "master"
+     :code "(for-each (lambda (_) (radio/next)) (list 1 2 3 4 5))"
+     :note "Advance five times using for-each. Returns undefined per for-each contract.")
+  )
+  :caveats ("Wraps around at the end of the list." "Playback begins immediately on the new station.")
+  :drawbacks ("Cannot peek at the next station before switching; use radio/now-playing after.")
+  :usecases ("Next button in a media UI." "Cycle through curated stations.")
+  :related ("radio/prev" "radio/play" "radio/now-playing" "radio/stations")
+  :learn
+    (:concept "Circular list navigation with side-effect playback."
+     :prerequisites ("radio/stations" "radio/play")
+     :progression "Advance once. Then cycle. Then use radio/prev for symmetry.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/next); apprentice=('radio/next); intermediate=3 copies; expert='done; master=undefined."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming next stops at the end — it wraps."
+     :when-not-to-use "You want to jump to a specific station by id — use radio/play with an id.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Advance one station. Wraps."))
+
+(verb
+  :name "radio/prev"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/prev) -> [status details] | descriptor"
+  :summary "Step back to the previous station in the loaded list, wrapping around."
+  :impl-status "wired-descriptor"
+  :explanation "radio/prev moves the transport backward by one station. Wraps from the first station back to the last. Under a live host playback begins immediately on the newly selected station. In REPL it returns the descriptor ('radio/prev)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/prev)"
+     :note "Step back one station. Returns (\"radio/prev\").")
+    (:tier "apprentice"
+     :code "(begin (radio/next) (radio/prev))"
+     :note "Advance, then step back — end up on the original station.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/prev)) (list 1 2 3))"
+     :note "Three previous-steps. Under a live host: cycles backward.")
+    (:tier "expert"
+     :code "(define (cycle direction) (if (equal? direction (quote back)) (radio/prev) (radio/next))) (cycle (quote back))"
+     :note "A direction-agnostic cycle helper.")
+    (:tier "master"
+     :code "(begin (radio/play) (radio/next) (radio/prev))"
+     :note "Play, advance, then step back — you end up where you started. Under a live host the transport is idle-idempotent for symmetric operations.")
+  )
+  :caveats ("Wraps at the beginning of the list to the end." "Playback begins immediately.")
+  :drawbacks ("Cannot peek at the previous station; use radio/now-playing after.")
+  :usecases ("Previous button in a UI." "Symmetric backward navigation.")
+  :related ("radio/next" "radio/play" "radio/now-playing")
+  :learn
+    (:concept "Circular list navigation — the counterpart of radio/next."
+     :prerequisites ("radio/stations" "radio/next")
+     :progression "Step back. Then combine with radio/next for full navigation.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/prev); apprentice=('radio/prev); intermediate=3 copies; expert=('radio/prev); master=('radio/prev)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/now-playing") :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming stop-at-start — it wraps."
+     :when-not-to-use "You want to jump — use radio/play with an id.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Step back one station. Wraps."))
+
+(verb
+  :name "radio/mute"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/mute) -> [ok info] | descriptor"
+  :summary "Silence the radio without stopping the stream; playback continues, gain is zeroed."
+  :impl-status "wired-descriptor"
+  :explanation "radio/mute sets the mute flag on the radio's gain stage. Unlike radio/pause (which stops the stream), mute keeps the stream running but silences it. Under a live host the mute gate goes to zero; audio buffer position advances. In REPL it returns the descriptor ('radio/mute)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/mute)"
+     :note "Silence the radio. Returns (\"radio/mute\").")
+    (:tier "apprentice"
+     :code "(let ((r (radio/mute))) (car r))"
+     :note "Extract the tag. Returns \"radio/mute\".")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/mute)) (list 1 2 3))"
+     :note "Three mute calls; idempotent.")
+    (:tier "expert"
+     :code "(define (mute-and-do) (radio/mute) (quote muted)) (mute-and-do)"
+     :note "Mute + status return in one helper.")
+    (:tier "master"
+     :code "(begin (radio/mute) (radio/unmute))"
+     :note "Mute then unmute — end state is unmuted. Returns the unmute descriptor.")
+  )
+  :caveats ("Stream keeps running — position advances silently." "Volume level is preserved separately; unmute restores it.")
+  :drawbacks ("No fade; abrupt gate.")
+  :usecases ("Mute button in a UI." "Silence on notification.")
+  :related ("radio/unmute" "radio/pause" "radio/volume")
+  :learn
+    (:concept "Silence-while-running — the difference between mute and pause."
+     :prerequisites ("radio/play")
+     :progression "Mute. Then unmute. Then combine with volume for a graceful fade-to-silence.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/mute); apprentice=\"radio/mute\"; intermediate=3 copies; expert='muted; master=('radio/unmute)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/unmute") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Confusing mute with pause. Assuming muted streams save bandwidth — they do not."
+     :when-not-to-use "You want to fully stop the stream — use radio/pause.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Zero the gate. Stream keeps running."))
+
+(verb
+  :name "radio/unmute"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/unmute) -> [ok info] | descriptor"
+  :summary "Restore audio output after a mute; volume level is preserved."
+  :impl-status "wired-descriptor"
+  :explanation "radio/unmute clears the mute flag on the radio's gain stage. Under a live host the gate reopens and the (still-running) audio stream becomes audible. Volume level is preserved separately; unmuting does not reset it. In REPL returns the descriptor ('radio/unmute)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/unmute)"
+     :note "Restore output. Returns (\"radio/unmute\").")
+    (:tier "apprentice"
+     :code "(begin (radio/mute) (radio/unmute))"
+     :note "Mute then unmute — end at unmuted.")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/unmute)) (list 1 2))"
+     :note "Two unmutes; idempotent.")
+    (:tier "expert"
+     :code "(define (focus-mode enabled?) (if enabled? (radio/mute) (radio/unmute))) (focus-mode #f)"
+     :note "A focus-mode toggle: mute when enabled, unmute when disabled.")
+    (:tier "master"
+     :code "(let loop ((i 0)) (if (>= i 3) (quote done) (begin (radio/unmute) (loop (+ i 1)))))"
+     :note "Idempotent loop.")
+  )
+  :caveats ("Volume is preserved; unmute does not reset to a default." "Does not start playback if paused; combine with radio/play if needed.")
+  :drawbacks ("No fade-in.")
+  :usecases ("Restore audio after focus mode." "Restore after ducking.")
+  :related ("radio/mute" "radio/play" "radio/volume")
+  :learn
+    (:concept "Reverse the mute flag — pair with radio/mute."
+     :prerequisites ("radio/mute")
+     :progression "Unmute. Then combine with focus mode.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/unmute); apprentice=('radio/unmute); intermediate=2 copies; expert=('radio/unmute); master='done."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Assuming unmute restores from pause — it does not; use radio/play."
+     :when-not-to-use "You need to restore from paused state — use radio/play.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Open the gate. Preserves volume."))
+
+(verb
+  :name "radio/volume"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/volume v) -> [ok info] | [error info] | descriptor"
+  :summary "Set the radio's output volume to a level in [0, 1]."
+  :impl-status "wired-descriptor"
+  :explanation "radio/volume sets the amplitude of the radio stream. Accepts a numeric argument in [0, 1] where 0 is silent and 1 is maximum. Clamps out-of-range values. Under a live host it applies immediately via a gain node. In REPL it returns the descriptor ('radio/volume v). Volume persists until changed; muting and unmuting preserve the level."
+  :examples (
+    (:tier "novice"
+     :code "(radio/volume 0.5)"
+     :note "Set volume to half. Returns (\"radio/volume\" 0.5).")
+    (:tier "apprentice"
+     :code "(let ((r (radio/volume 0.8))) (car r))"
+     :note "Extract the tag. Returns \"radio/volume\".")
+    (:tier "intermediate"
+     :code "(map radio/volume (list 0 0.25 0.5 0.75 1))"
+     :note "Sweep five levels. Each call returns its own descriptor.")
+    (:tier "expert"
+     :code "(define (fade-out steps) (let loop ((i 0)) (if (>= i steps) (quote faded) (begin (radio/volume (- 1 (/ i steps))) (loop (+ i 1)))))) (fade-out 5)"
+     :note "Linear fade-out over N steps. Composes with `after-frame` for real-time smoothness.")
+    (:tier "master"
+     :code "(let* ((slider 60) (v (/ slider 100))) (radio/volume v))"
+     :note "Bridge a UI slider (0-100) to volume level [0, 1]. The idiomatic pattern for a volume knob.")
+  )
+  :caveats ("Numeric only; symbols and strings are not coerced." "Values clamped to [0, 1]." "Independent of mute state.")
+  :drawbacks ("No query verb specifically for current volume." "No built-in fade curve.")
+  :usecases ("Volume slider handler." "Automatic ducking on notification." "Fade-out on cart close.")
+  :related ("radio/mute" "radio/unmute" "audio/master-volume")
+  :learn
+    (:concept "Continuous level control with clamping."
+     :prerequisites ("(core)/max" "(core)/min")
+     :progression "Set. Then fade. Then bridge to a slider.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/volume 0.5); apprentice=\"radio/volume\"; intermediate=5 descriptors; expert='faded; master=('radio/volume 0.6)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Passing 50 expecting percent — use (/ n 100) to bridge from a percent slider."
+     :when-not-to-use "You want global gain — use audio/master-volume.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Set stream gain in [0, 1]. Clamps."))
+
+(verb
+  :name "radio/eq"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/eq preset) -> [status info] | descriptor"
+  :summary "Request an equalizer preset ('flat, 'warm, 'sharp); a state-change with async settle."
+  :impl-status "wired-descriptor"
+  :explanation "radio/eq requests an EQ preset change. Give it a preset name (a symbol: 'flat, 'warm, 'sharp, or others host-defined) and the verb records the request. Under a live host it may return [pending-eq {...}] as the EQ graph is not yet fully wired; when wired it will apply the preset via the gain/filter chain. In REPL it returns the descriptor ('radio/eq preset)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/eq (quote warm))"
+     :note "Request a warm EQ. Returns (\"radio/eq\" warm).")
+    (:tier "apprentice"
+     :code "(let ((r (radio/eq (quote sharp)))) (car r))"
+     :note "Extract the tag. Returns \"radio/eq\".")
+    (:tier "intermediate"
+     :code "(map radio/eq (list (quote flat) (quote warm) (quote sharp)))"
+     :note "Cycle through three presets. Each returns its descriptor.")
+    (:tier "expert"
+     :code "(define (mood->eq mood) (cond ((equal? mood (quote energetic)) (radio/eq (quote sharp))) ((equal? mood (quote mellow)) (radio/eq (quote warm))) (else (radio/eq (quote flat))))) (mood->eq (quote mellow))"
+     :note "Dispatch on mood: warm for mellow, sharp for energetic, flat otherwise.")
+    (:tier "master"
+     :code "(for-each radio/eq (list (quote flat) (quote warm) (quote sharp) (quote flat)))"
+     :note "Cycle through four presets. Under a live host the last one wins.")
+  )
+  :caveats ("Presets are host-defined; unknown presets still return descriptor in REPL." "Under live host: EQ graph may not be fully wired — 'pending-eq return.")
+  :drawbacks ("Fixed presets; no per-band tweaking exposed at this level.")
+  :usecases ("EQ preset buttons in a UI." "Mood-driven audio coloring." "Log EQ changes as part of session state.")
+  :related ("radio/play" "radio/volume" "audio/spectrum")
+  :learn
+    (:concept "Request-async-settle — the pattern for state changes that may pend."
+     :prerequisites ("radio/play")
+     :progression "Set a preset. Then dispatch on mood. Then combine with radio/visualize for a mood-driven scene.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/eq warm); apprentice=\"radio/eq\"; intermediate=3 descriptors; expert=('radio/eq warm); master=undefined."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Assuming EQ is fully wired today — under some live hosts it returns pending-eq."
+     :when-not-to-use "You need per-band control — use a proper DSP verb.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "EQ preset request. Async-settle under live host."))
+
+(verb
+  :name "radio/mesh"
+  :library "radio"
+  :kind "rd"
+  :signature "(radio/mesh) -> [symbol ...] | descriptor"
+  :summary "List available mesh visualisation IDs; a catalog read for the visualiser."
+  :impl-status "wired-descriptor"
+  :explanation "radio/mesh returns the flat list of registered mesh-variation IDs — each ID names a visual style the radio visualiser can use when playing. Read-only; safe to call frequently. In REPL returns the descriptor ('radio/mesh); under a live host returns a list of symbols. Useful for populating a mesh-picker UI."
+  :examples (
+    (:tier "novice"
+     :code "(radio/mesh)"
+     :note "Ask for mesh IDs. Returns (\"radio/mesh\") in REPL.")
+    (:tier "apprentice"
+     :code "(let ((r (radio/mesh))) (if (pair? r) (car r) r))"
+     :note "Extract the head. In REPL: \"radio/mesh\" (verb-name tag).")
+    (:tier "intermediate"
+     :code "(map (lambda (_) (radio/mesh)) (list 1 2))"
+     :note "Two calls; idempotent.")
+    (:tier "expert"
+     :code "(define (mesh-count) (length (radio/mesh))) (mesh-count)"
+     :note "Count the meshes. In REPL: descriptor is length 1 so returns 1.")
+    (:tier "master"
+     :code "(let* ((all (radio/mesh)) (n (length all))) (list (quote count) n))"
+     :note "Build a status summary. In REPL: (count 1) because the descriptor has arity 1.")
+  )
+  :caveats ("Descriptor in REPL vs list of symbols under live host." "List is static per session under live host.")
+  :drawbacks ("No metadata beyond IDs; no descriptions or previews." "Static list.")
+  :usecases ("Populate a mesh-picker in a radio-player UI." "Validate a mesh ID before radio/visualize.")
+  :related ("radio/visualize" "radio/sync-to-beat")
+  :learn
+    (:concept "Static catalog read for visualisation."
+     :prerequisites () :progression "List meshes. Then feed one into radio/visualize.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/mesh); apprentice=\"radio/mesh\"; intermediate=2 copies; expert=1; master=(count 1)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/visualize") :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Treating the descriptor as a real mesh list."
+     :when-not-to-use "You want to apply a mesh — use radio/visualize.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Mesh IDs list. Read-only catalog."))
+
+(verb
+  :name "radio/visualize"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/visualize [mesh-id]) -> [ok info] | descriptor"
+  :summary "Activate a radio visualisation, optionally with a specific mesh ID."
+  :impl-status "wired-descriptor"
+  :explanation "radio/visualize turns on the animated visualiser tied to radio playback. With no argument it picks a default mesh based on host heuristics; with a mesh-id it uses that specific variation (or falls back to default if unknown). Under a live host it wires the mesh into the radio surface and returns [ok {variation path}]; in REPL it returns the descriptor ('radio/visualize [mesh-id])."
+  :examples (
+    (:tier "novice"
+     :code "(radio/visualize)"
+     :note "Activate the default visualiser. Returns (\"radio/visualize\").")
+    (:tier "apprentice"
+     :code "(radio/visualize (quote mesh-wave))"
+     :note "Activate a specific mesh. Returns (\"radio/visualize\" mesh-wave).")
+    (:tier "intermediate"
+     :code "(map radio/visualize (list (quote mesh-a) (quote mesh-b) (quote mesh-c)))"
+     :note "Cycle three meshes. Under a live host the last one wins.")
+    (:tier "expert"
+     :code "(define (viz-for-genre g) (radio/visualize (if (equal? g (quote electronic)) (quote mesh-grid) (quote mesh-flow)))) (viz-for-genre (quote electronic))"
+     :note "Genre-driven mesh selection. Electronic → grid; anything else → flow.")
+    (:tier "master"
+     :code "(begin (radio/play) (radio/visualize (quote mesh-wave)))"
+     :note "Play the radio, then activate a specific mesh. Real carts sync this with radio/sync-to-beat.")
+  )
+  :caveats ("Unknown mesh-ids fall back to default under live host." "Does not affect playback; use radio/play separately.")
+  :drawbacks ("No layering — one active mesh at a time.")
+  :usecases ("Activate a visualiser on scene enter." "Let users pick a mesh style." "Auto-select by genre.")
+  :related ("radio/mesh" "radio/sync-to-beat" "radio/play")
+  :learn
+    (:concept "Selecting and activating a resource from a registry with fallback."
+     :prerequisites ("radio/mesh")
+     :progression "Activate default. Then pick a mesh. Then sync to beat.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/visualize); apprentice=('radio/visualize mesh-wave); intermediate=3 descriptors; expert=('radio/visualize mesh-grid); master=('radio/visualize mesh-wave)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/sync-to-beat") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Assuming visualize also starts playback — it does not."
+     :when-not-to-use "You want to list meshes first — use radio/mesh.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Activate a mesh visualisation. Optional mesh-id."))
+
+(verb
+  :name "radio/sync-to-beat"
+  :library "radio"
+  :kind "mut"
+  :signature "(radio/sync-to-beat onOff) -> [ok info] | descriptor"
+  :summary "Toggle whether the radio visualisation locks to the audio's beat."
+  :impl-status "wired-descriptor"
+  :explanation "radio/sync-to-beat controls a boolean coupling between the audio's beat detection and the mesh animation. When enabled ('on or #t), the mesh phase locks to detected onsets. When disabled ('off or #f), it animates independently. The setting persists in radio state until changed. In REPL returns the descriptor ('radio/sync-to-beat onOff)."
+  :examples (
+    (:tier "novice"
+     :code "(radio/sync-to-beat (quote on))"
+     :note "Enable beat sync. Returns (\"radio/sync-to-beat\" on).")
+    (:tier "apprentice"
+     :code "(radio/sync-to-beat (quote off))"
+     :note "Disable beat sync. Returns (\"radio/sync-to-beat\" off).")
+    (:tier "intermediate"
+     :code "(map radio/sync-to-beat (list (quote on) (quote off)))"
+     :note "Toggle on then off. Each returns its descriptor.")
+    (:tier "expert"
+     :code "(define (mood->sync mood) (radio/sync-to-beat (if (equal? mood (quote energetic)) (quote on) (quote off)))) (mood->sync (quote energetic))"
+     :note "Mood-driven sync selection.")
+    (:tier "master"
+     :code "(begin (radio/sync-to-beat (quote on)) (radio/play))"
+     :note "Enable sync, then start playback. Under a live host visuals lock to the audio.")
+  )
+  :caveats ("Argument is a symbol ('on/'off) or boolean (#t/#f); other values default to 'off." "Requires an active radio/visualize for a visible effect.")
+  :drawbacks ("No query verb for current sync state." "Global — all meshes share one setting.")
+  :usecases ("DJ/live-performance sync toggle." "Ambient-mode toggle that decouples visuals from beats." "Auto-enable for high-energy genres.")
+  :related ("radio/visualize" "radio/mesh" "audio/onset?")
+  :learn
+    (:concept "Cross-domain coupling — audio → visual sync."
+     :prerequisites ("radio/visualize" "audio/onset?")
+     :progression "Enable sync. Then observe the effect with a visualiser. Then wire to mood.")
+  :+eng
+    (:impl-file "src/wired-verbs.js" :impl-notes "wired-verbs.js:984-991 auto-descriptor."
+     :permission "state-change" :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: novice=('radio/sync-to-beat on); apprentice=('radio/sync-to-beat off); intermediate=2 descriptors; expert=('radio/sync-to-beat on); master=('radio/play)."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("radio/visualize") :cardinality one :deterministic #t :cacheable #f
+     :common-mistakes "Assuming sync starts visualisation — it does not; use radio/visualize."
+     :when-not-to-use "You want beat detection for game logic — use audio/onset? directly.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :entry-provenance "authored" :required-fields-present #t
+     :entry-summary "Toggle visual↔audio beat coupling. State-change."))

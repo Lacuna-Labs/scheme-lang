@@ -1,0 +1,52 @@
+;; SLAT engineering spine — the ~15% teachable slice.
+;; Each record has provenance to the source doc it derives from.
+
+(spine
+ :domain          slat
+ :topic           format-grammar
+ :section-hash    "sha256:PLACEHOLDER-book-of-slat-ch01-what-a-slat-is"
+ :source          "curator/scheme-books/book-of-slat/01-what-a-slat-is.md"
+ :teach-shape     "why parenthesized, why records, why atoms"
+ :philosopher-lens ((wittgenstein-tractatus "world of facts"))
+ :body            "A slat is a small, flat piece of data. Text goes in, a structured value comes out. The value is inert — the reader never runs anything. Head + keys + positional + comment. Every incident narrative, every mailbox message, every saved cart, every cortex slice uses this pattern.")
+
+(spine
+ :domain          slat
+ :topic           why-merkle-matters
+ :section-hash    "sha256:PLACEHOLDER-book-of-slat-ch09-content-addressing"
+ :source          "curator/scheme-books/book-of-slat/09-content-addressing.md"
+ :teach-shape     "integrity chain — same bytes -> same hash -> same root; tampering surfaces immediately"
+ :philosopher-lens ((popper "falsifiable integrity"))
+ :body            "Every SLAT collection ends in a MANIFEST.slat that Merkle-roots the collection's entries. Merkle root anchors an ed25519 signature. Any tampering with any entry changes the root; the root's signature no longer verifies. Priya's audit trail depends on this chain.")
+
+(spine
+ :domain          slat
+ :topic           composition-types
+ :section-hash    "sha256:PLACEHOLDER-book-of-slat-ch05-fifteen-record-types"
+ :source          "curator/scheme-books/book-of-slat/05-fifteen-record-types.md"
+ :teach-shape     "records compose from a small kit — primitive slats stack into semantic types like atom / message / event / log / incident-narrative / cortex-slice / verb-primitive / verb-reference / chapter / prose-with-scheme / correction-record / manifest"
+ :body            "Twelve base composition types ship in Lacuna slat-tooling. Head symbols dispatch renderers; unknown records get a legible fallback rather than an error. Composition types can nest — a chapter can carry prose-with-scheme records; a conversation-document can carry utterance records with intent records inside.")
+
+(spine
+ :domain          slat
+ :topic           signing-walkthrough
+ :section-hash    "sha256:PLACEHOLDER-book-of-slat-ch10-signing"
+ :source          "curator/scheme-books/book-of-slat/10-signing.md"
+ :teach-shape     "one clean ed25519 signing walkthrough — the key at ~/.forge/keys/cortex-lacuna-signing.sk"
+ :body            "Signing a SLAT: (1) canonicalize with slat-write (keys sorted); (2) compute merkle-root over entries; (3) ed25519-sign the merkle-root using ~/.forge/keys/cortex-lacuna-signing.sk; (4) attach :signature to the manifest. Verification: recompute canonical bytes, recompute merkle-root, verify the signature with the public key. Any drift = alarm.")
+
+(spine
+ :domain          slat
+ :topic           default-composition-rule
+ :section-hash    "sha256:PLACEHOLDER-book-of-slat-ch11-auto-assembly"
+ :source          "curator/scheme-books/book-of-slat/11-auto-assembly.md"
+ :teach-shape     "when the head is in the registry, auto-assemble; when unknown, keep the generic record — this is why unknown records don't break things"
+ :body            "The runtime consults the composition registry keyed by head symbol. When the head is registered, the record auto-assembles into a native object using the registered builder. When it isn't, the record stays as a generic slat-record — still queryable, still writable, just not rehydrated into a class. Backward compatibility comes free: an old reader seeing a new record type keeps it as data.")
+
+(spine
+ :domain          slat
+ :topic           fallback-renderer-pattern
+ :section-hash    "sha256:PLACEHOLDER-book-of-slat-ch04-the-slat-record"
+ :source          "curator/scheme-books/book-of-slat/04-the-slat-record.md"
+ :teach-shape     "every renderer implements a per-type function AND a legible-fallback for unknown records — never blow up, always show something"
+ :body            "The book renderer, artifact renderer, and mailbox viewer all follow the same pattern: per-composition-type renderer for known heads; generic pretty-print fallback for unknown. Users never see a blank cell or a stack trace — they see the record in canonical form and know something is being received but not specialized.")

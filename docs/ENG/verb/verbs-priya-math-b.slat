@@ -1,0 +1,2587 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-priya-math-b.slat — Priya's authored verb entries
+;;
+;; Lane: no-namespace verbs, first letter i-p (77 verbs)
+;; Author: Priya (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;   Slices: :general, +math, +cs, +eng, +commerce, +hacker, +ai, +meta
+;;
+;; Doctrine (Alfred): reference IS the language. We can't lie to people.
+;;   - If a verb's true semantics need a live host (framebuffer surface,
+;;     audio hardware, card runtime, input runtime, music engine), the
+;;     entry ships :impl-status "deferred" with :impl-notes explaining
+;;     what the host actually does. Never a lie.
+;;   - Every example REPL-verified via bin/sakura-scheme eval.
+;;   - Kid-from-North-Georgia test: a kid types (paint-cell 'world 5 3
+;;     'red). The entry should be readable enough that they understand
+;;     what would happen under the full host, even if the REPL returns
+;;     a descriptor.
+;; ═══════════════════════════════════════════════════════════════
+
+;; ─── invariants — declaration verb ─────────────────────────────────
+
+(verb
+  :name "invariants"
+  :library "core"
+  :signature "(invariants rule ...) -> null"
+  :summary "Declare state-machine invariants for lint and simulator; no runtime effect."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(invariants '(counter >= 0))"
+     :note "One invariant, no runtime cost. Returns null. The linter reads the rule; the driver ignores it.")
+    (:tier "apprentice"
+     :code "(begin\n  (invariants '(counter >= 0) '(counter <= 100))\n  (display \"invariants declared\"))"
+     :note "Multiple invariants in one call. The display line executes normally; invariants leave no trace at runtime.")
+    (:tier "intermediate"
+     :code "(define (count-up ctx)\n  (invariants '(counter >= 0) '(counter <= 100))\n  (let ((c (ctx-get 'counter ctx)))\n    (if (< c 100)\n      (next 'count-up (ctx-set 'counter (+ c 1) ctx))\n      (done))))"
+     :note "Inline in a state handler. The invariants read as documentation for a linter or simulator; the runtime path is unchanged. If a static tool notices the ctx-set violates the range, it can warn.")
+    (:tier "expert"
+     :code "(define (stateful-loop ctx)\n  (invariants\n    '(mode in (read write idle))\n    '(buffer-size <= max-capacity)\n    '(error-count >= 0))\n  (let ((mode (ctx-get 'mode ctx)))\n    (cond ((eq? mode 'read)  (act 'read-data '() 'on-read))\n          ((eq? mode 'write) (act 'write-data '() 'on-write))\n          (else (done)))))"
+     :note "Three invariants together: an enum membership, a bound on a variable, and a non-negativity. These are exactly the shapes a lint pass can machine-check against the ctx-set calls elsewhere.")
+    (:tier "master"
+     :code "(define (elevator ctx)\n  (invariants\n    '(floor in (1 2 3 4 5))\n    '(doors in (open closed))\n    '(direction in (up down idle))\n    '(when (doors = open) (direction = idle)))\n  (let ((cmd (ctx-get 'command ctx)))\n    (cond ((eq? cmd 'call-up)   (next 'seek-up   ctx))\n          ((eq? cmd 'call-down) (next 'seek-down ctx))\n          (else (next 'idle ctx)))))"
+     :note "In a full cart: invariants become the safety contract for a critical system. The last rule is the safety property — doors open implies not moving. A simulator can exhaustively check this against every path through the state machine."))
+  :related ("next" "done" "ctx-get" "ctx-set" "act")
+  :caveats ("invariants have NO runtime cost or effect — they are purely for static analysis." "If an invariant is violated, the linter or simulator will warn, but the driver will not stop execution." "Rule syntax is free-form; the linter and simulator must understand the rule language you use (quoted lists or symbolic constraints).")
+  :drawbacks ("No enforcement at runtime; nothing stops a live program from violating them." "Rule syntax is not standardized — different tools may parse differently." "Cannot be composed or manipulated as data at runtime (they evaluate to null immediately).")
+  :usecases ("Documenting the safety contract of a state handler." "Feeding a lint pass that can check ctx-set against declared bounds." "Feeding a bounded model checker or simulator to verify safety properties.")
+  :learn (:concept "A declaration verb whose only purpose is to leave a machine-readable trace for external tools. The runtime treats it as a no-op." :prerequisites ("define" "next") :progression "After this, look at how the simulator or linter consumes these — the invariants become predicates it evaluates against symbolic execution paths.")
+
+  :+math
+    (:algebra ("null is the identity of sequencing (begin), so (invariants ...) is trivially absorbed into any code path.")
+     :total #t
+     :domain "one or more rule expressions"
+     :codomain "null"
+     :proofs "By definition of a no-op: forall inputs, result = null; forall traces including this call, trace is unchanged.")
+
+  :+cs
+    (:complexity "time O(1) — arguments are not evaluated for their meaning, only passed."
+     :effects (none)
+     :pure #t
+     :special-form #f
+     :evaluation-order "applicative — arguments are evaluated but their values discarded")
+
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "def('invariants', (..._rules) => null). Returns null unconditionally. Documented as a lint/simulator hook; the driver has no consumer."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (invariants '(x >= 0)) returns null."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ()
+     :consumes-from ()
+     :cardinality void
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Expecting invariants to fire an error at runtime. They do not. They are pure documentation for static tools."
+     :when-not-to-use "You need runtime enforcement — use assert or a guard instead. You need invariants that hold across concurrent handlers — the tool must be trace-aware, and free-form rules may confuse it."
+     :returns-confidence #f)
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Declare state-machine invariants for lint and simulator; no runtime effect."
+        :long  "Declare state-machine invariants for lint and simulator; no runtime effect. Rules are free-form; tools that understand your rule language machine-check them; the driver treats the call as a no-op."
+        :for-ai "Use to document safety contracts for state handlers. Zero runtime cost. Rules are consumed by lint/simulator, not the driver."
+        :for-kid "A note to the robot that reads code before it runs. It says 'these things should always be true here.' The robot may warn you if they aren't; the program keeps running either way.")))
+
+;; ─── obj-get — safe JS object property access ─────────────────────
+
+(verb
+  :name "obj-get"
+  :library "core"
+  :signature "(obj-get object key) -> value | #f"
+  :summary "Retrieve a property value from an object or association list, or #f if not found."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(obj-get (list 'x 3 'y 4) 'x)"
+     :note "Alist stored as flat key-value pairs. Returns 3.")
+    (:tier "apprentice"
+     :code "(obj-get (list (list 'x 3) (list 'y 4)) 'y)"
+     :note "Alist stored as pairs (assoc-style). Returns 4. obj-get handles both shapes.")
+    (:tier "intermediate"
+     :code "(let ((state (list 'x 100 'y 50 'k 1.5)))\n  (list (obj-get state 'x) (obj-get state 'y) (obj-get state 'k)))"
+     :note "Read three fields off a state alist. Returns (100 50 1.5). Common pattern for reading a shape you got back from another verb.")
+    (:tier "expert"
+     :code "(define (has? o k)\n  (if (equal? (obj-get o k) #f) 'missing 'present))\n(list (has? (list 'x 3) 'x) (has? (list 'x 3) 'y))"
+     :note "Wrap obj-get to distinguish present from absent. Returns (present missing). Note: obj-get returns #f for both 'not found' and 'value is null/undefined'; if you need to tell them apart, store a sentinel.")
+    (:tier "master"
+     :code "(define (extract-fields obj fields)\n  (map (lambda (f) (list f (obj-get obj f))) fields))\n(extract-fields (list 'name \"Sakura\" 'age 21 'role 'assistant)\n                (list 'name 'role 'age))"
+     :note "Given a shape and a list of fields, return an alist of (field value) pairs. Useful when marshaling a subset of an object into a downstream verb. Returns ((name \"Sakura\") (role assistant) (age 21))."))
+  :related ("camera-state" "card-get" "card-set!" "ctx-get")
+  :caveats ("Returns #f for both 'key not found' and 'value is #f or null'; cannot distinguish them without a sentinel." "Symbol keys are converted to their string name; ensure key naming is consistent." "Does not walk the prototype chain; only own properties are accessible." "If object is nil or not an object/list, returns #f silently.")
+  :drawbacks ("No way to distinguish 'missing' from 'present but falsy'." "No nested-path access; use repeated obj-get for nested lookup." "Symbol / string interning matters; a keyword written as ':x' vs a symbol 'x' may not match if the caller mixes conventions.")
+  :usecases ("Reading a field off a state alist returned by another verb." "Marshaling a subset of an object into a downstream call." "Defensive property access with a sensible fallback.")
+  :learn (:concept "Total, safe access on an association list — returns the value if present, #f otherwise. No thrown error for missing keys." :prerequisites ("list" "quote" "equal?") :progression "After this, look at assoc for the raw pair, or ctx-get for context-local state in a state machine handler.")
+
+  :+math
+    (:algebra ("obj-get is left-total on the domain (object, key) → value or ⊥; the ⊥ representative is #f.")
+     :total #t
+     :domain "any pair (obj, key) where obj is an alist / object and key is a symbol / string"
+     :codomain "value ∪ {#f}"
+     :proofs "Trivially total: every input returns exactly one output; there is no partial branch that could throw for well-typed inputs.")
+
+  :+cs
+    (:complexity "time O(n) where n is the length of the alist; O(1) for a plain JS object with hasOwnProperty."
+     :effects (none)
+     :pure #t
+     :evaluation-order "applicative")
+
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Handles three shapes in this order: (a) flat keyword-value alist ('x 3 'y 4), (b) pair-list alist ((x 3) (y 4)), (c) plain JS object via hasOwnProperty. Symbols coerce via .name; strings compared directly."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (obj-get (list 'x 3 'y 4) 'x) → 3; (obj-get (list (list 'x 3)) 'x) → 3; (obj-get '() 'x) → #f."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("display" "list")
+     :consumes-from ("camera-state" "card-get" "ctx-get")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing 'not found' with 'value is #f'. If your data contains #f as a legitimate value, obj-get cannot distinguish it from missing; use assoc + null? on the pair."
+     :when-not-to-use "You need nested-path access — use repeated obj-get. You need mutation — use a card-set! or similar."
+     :returns-confidence #f)
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Retrieve a property value from an object or alist, or #f if not found."
+        :long  "Retrieve a property value from an object or alist, or #f if not found. Handles flat keyword-value pairs, pair-list alists, and plain JS objects. Cannot distinguish missing from #f-valued."
+        :for-ai "Total safe accessor; returns #f as the missing sentinel. Handles multiple alist shapes."
+        :for-kid "Ask an object what value it stores under a name. If it doesn't know, you get #f (false).")))
+
+;; ─── pixels-wide — canvas width ────────────────────────────────────
+
+(verb
+  :name "pixels-wide"
+  :library "media"
+  :signature "(pixels-wide) -> number"
+  :summary "Return the total width of the drawing surface in pixels."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(pixels-wide)"
+     :note "Returns 80 in the default REPL — the framebuffer defaults to 80x80.")
+    (:tier "apprentice"
+     :code "(display (pixels-wide))\n(newline)\n(display (pixels-tall))"
+     :note "Read both dimensions. In the default REPL both are 80. In a browser or full host the values may differ.")
+    (:tier "intermediate"
+     :code "(let ((center-x (/ (pixels-wide) 2)))\n  (list 'center center-x))"
+     :note "Compute the horizontal center of the surface. Returns (center 40) with default dims. Used for centering avatars, HUDs, and dialogs.")
+    (:tier "expert"
+     :code "(let ((w (pixels-wide))\n      (h (pixels-tall)))\n  (list 'bounds 0 0 w h 'aspect (exact->inexact (/ w h))))"
+     :note "Build a bounds descriptor for camera framing. Returns (bounds 0 0 80 80 aspect 1.0) with the default square framebuffer.")
+    (:tier "master"
+     :code "(define (edge-positions n)\n  (let ((w (pixels-wide))\n        (h (pixels-tall)))\n    (list\n      (list 'top    (/ w 2) 0)\n      (list 'right  (- w 1)  (/ h 2))\n      (list 'bottom (/ w 2) (- h 1))\n      (list 'left   0       (/ h 2)))))\n(edge-positions 4)"
+     :note "Compute the four cardinal edge midpoints for a spawn ring. In real work, feed each to (world/spawn ...) or (sprite ...). Returns ((top 40 0) (right 79 40) (bottom 40 79) (left 0 40))."))
+  :related ("pixels-tall" "camera-frame" "card-screen-rect" "viewport-width")
+  :caveats ("The value is read from the current framebuffer; if the host resizes the canvas at runtime, subsequent reads reflect the new value." "Default REPL framebuffer is 80x80; hosts (browser, iOS) will have different dimensions." "Returns 0 if no framebuffer is attached (headless test env before media init).")
+  :drawbacks ("No cache; each call reads the framebuffer struct. In tight loops, hoist into a let." "No way to change the value from Scheme — the surface is host-configured.")
+  :usecases ("Compute horizontal center for HUDs and dialogs." "Compute bounds for camera framing." "Loop over columns without hardcoding the resolution.")
+  :learn (:concept "Query the width of the current drawing surface in pixels. Read-only; the host owns the value." :prerequisites () :progression "Pair with pixels-tall for full dimensions; then viewport-width for the visible portion under a camera transform.")
+  :+math
+    (:algebra ()
+     :total #t
+     :domain "()"
+     :codomain "non-negative integer"
+     :proofs "Reads a JS integer field; total by construction.")
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects (state)
+     :pure #f
+     :evaluation-order "applicative")
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Reads getMediaState().fb.w. Returns 0 if no fb exists yet."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (pixels-wide) = 80 in default REPL."
+     :since "1.0")
+  :+ai
+    (:raises ()
+     :pipes-into ("/" "-" "world/spawn" "sprite" "camera-frame")
+     :consumes-from ()
+     :cardinality one
+     :deterministic #f
+     :cacheable #f
+     :common-mistakes "Assuming the value is constant across hosts — it is not. Assuming pixels = logical cells — depends on the sub-pixel scale factor."
+     :when-not-to-use "You need the logical column count — that's a different quantity (typically pixels-wide divided by SUB)."
+     :returns-confidence #f)
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Return the total width of the drawing surface in pixels."
+        :long  "Return the total width of the drawing surface in pixels. Reads the current framebuffer; default REPL is 80x80, hosts vary."
+        :for-ai "Read-only accessor of the framebuffer width. O(1). Not deterministic across hosts."
+        :for-kid "Ask how wide the drawing canvas is right now. In your REPL it's 80.")))
+
+;; ─── pixels-tall — canvas height ───────────────────────────────────
+
+(verb
+  :name "pixels-tall"
+  :library "media"
+  :signature "(pixels-tall) -> number"
+  :summary "Return the total height of the drawing surface in pixels."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(pixels-tall)"
+     :note "Returns 80 in the default REPL — the framebuffer defaults to 80x80.")
+    (:tier "apprentice"
+     :code "(let ((h (pixels-tall))) (list 'half (/ h 2) 'full h))"
+     :note "Compute the vertical midpoint. Returns (half 40 full 80) with default dims.")
+    (:tier "intermediate"
+     :code "(let ((h (pixels-tall)))\n  (map (lambda (y) (list 'row y)) (list 0 (/ h 4) (/ h 2) (- h 1))))"
+     :note "Sample four y-positions: top, quarter, middle, bottom. Returns ((row 0) (row 20) (row 40) (row 79)).")
+    (:tier "expert"
+     :code "(define (is-in-bounds? x y)\n  (and (>= x 0) (< x (pixels-wide))\n       (>= y 0) (< y (pixels-tall))))\n(list (is-in-bounds? 5 5) (is-in-bounds? 100 5) (is-in-bounds? 5 -1))"
+     :note "Compose with pixels-wide for a total bounds check. Returns (#t #f #f). Common shape for a sprite's on-screen predicate.")
+    (:tier "master"
+     :code "(define (spawn-ladder count)\n  (let* ((h (pixels-tall))\n         (step (quotient h (+ count 1))))\n    (map (lambda (i) (list 'rung i (* i step)))\n         (range 1 (+ count 1)))))\n(spawn-ladder 4)"
+     :note "Evenly space N points vertically inside the surface. Returns ((rung 1 16) (rung 2 32) (rung 3 48) (rung 4 64)). Feed to (world/spawn ...) for a ladder."))
+  :related ("pixels-wide" "camera-frame" "card-screen-rect" "viewport")
+  :caveats ("Reads current framebuffer; hosts may resize between calls." "Default REPL fb is 80x80; browser and iOS may differ." "Returns 0 if no framebuffer is attached.")
+  :drawbacks ("No cache; hoist into a let for tight loops." "Not writable from Scheme; the host owns the value.")
+  :usecases ("Vertical centering." "Bounds check compositions with pixels-wide." "Evenly spacing N points along the vertical.")
+  :learn (:concept "Query the height of the current drawing surface in pixels. Read-only." :prerequisites () :progression "Pair with pixels-wide; then viewport for the visible portion under a camera transform.")
+  :+math
+    (:algebra ()
+     :total #t :domain "()"
+     :codomain "non-negative integer")
+  :+cs
+    (:complexity "time O(1), space O(1)"
+     :effects (state)
+     :pure #f)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Reads getMediaState().fb.h. Returns 0 if no fb."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (pixels-tall) = 80."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Confusing pixels with logical rows (divide by SUB for logical)."
+     :when-not-to-use "You need the logical row count.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Return the total height of the drawing surface in pixels."
+        :long  "Return the total height of the drawing surface in pixels. Reads the current framebuffer; default REPL is 80x80."
+        :for-ai "Read-only accessor of framebuffer height. O(1)."
+        :for-kid "Ask how tall the drawing canvas is right now.")))
+
+;; ─── interrupted — event-loop interruption predicate ──────────────
+
+(verb
+  :name "interrupted"
+  :library "core"
+  :signature "(interrupted) -> boolean"
+  :summary "True if the current handler has been interrupted by a higher-priority event; #f in a headless REPL."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(interrupted)"
+     :note "In a headless REPL, no interruption source exists. Returns #f.")
+    (:tier "apprentice"
+     :code "(if (interrupted)\n    'yielding\n    'keep-going)"
+     :note "Branch on interruption. In the REPL this always evaluates to 'keep-going. In a live host, a higher-priority event can flip it.")
+    (:tier "intermediate"
+     :code "(define (long-loop n)\n  (if (or (= n 0) (interrupted))\n      'done\n      (long-loop (- n 1))))\n(long-loop 100)"
+     :note "A cooperative loop that yields on interruption. Returns 'done. In headless REPL the interruption never fires so it runs to n=0.")
+    (:tier "expert"
+     :code "(define (checkpoint work)\n  (if (interrupted)\n      (list 'paused-at work)\n      (list 'completed work)))\n(map checkpoint (list 'step-1 'step-2 'step-3))"
+     :note "Attach the interruption state to each work unit. In headless REPL every element resolves to 'completed. In a host the state can toggle between calls.")
+    (:tier "master"
+     :code "(define (safe-fold fn init lst)\n  (define (go acc rest)\n    (cond ((null? rest) acc)\n          ((interrupted) (list 'partial acc rest))\n          (else (go (fn acc (car rest)) (cdr rest)))))\n  (go init lst))\n(safe-fold + 0 (list 1 2 3 4 5 6 7 8 9 10))"
+     :note "A fold that can be interrupted between elements, returning the partial accumulator plus remaining input. Returns 55 in the REPL; in a live host returns (partial <sum> <rest>) at the point of interruption."))
+  :related ("input-may-i?" "system/interrupt" "on-frame" "on-tick")
+  :caveats ("In headless REPL always returns #f; a live host wires it to an event source." "Not a real yield — merely a query. You still must return to yield control." "Value may change between calls in a live host; do not cache.")
+  :drawbacks ("No way to consume the interruption — you can only read it." "Not throttled; polling in a tight loop is legal but wasteful.")
+  :usecases ("Cooperative long-running loops that yield when a higher-priority event fires." "Chunked processing with checkpoint semantics.")
+  :learn (:concept "A read-only predicate that reports whether the current handler was interrupted. Cooperative — the handler decides what to do about it." :prerequisites ("if" "cond") :progression "Learn how to yield (return early with a partial result); then look at the event-loop docs for what triggers interruption.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs  (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "def('interrupted', () => false). Honest #f in a headless REPL where no interruption source exists."
+         :permission "read-only"
+         :latency-class "sync-fast"
+         :tests "REPL-verified: (interrupted) = #f."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Caching the result across ticks. It can flip between calls in a live host."
+        :when-not-to-use "You need to know WHY interruption happened — this only says whether.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "True if the current handler was interrupted by a higher-priority event."
+             :long  "True if the current handler was interrupted; #f in a headless REPL. Cooperative — the handler decides what to do."
+             :for-ai "Poll to check for pending interruption; return early to yield."
+             :for-kid "Ask if something more important came up. If yes, maybe stop what you're doing and check.")))
+
+;; ─── in-formation — character-formation state predicate ──────────
+
+(verb
+  :name "in-formation"
+  :library "motion"
+  :signature "(in-formation) -> boolean"
+  :summary "True if characters are currently arranged in a named formation; #f in headless REPL."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(in-formation)"
+     :note "In headless REPL no live characters exist. Returns #f.")
+    (:tier "apprentice"
+     :code "(if (in-formation) 'ready-to-march 'still-gathering)"
+     :note "Guard a march command on formation state. Returns 'still-gathering in the REPL.")
+    (:tier "intermediate"
+     :code "(define (start-parade)\n  (if (in-formation)\n      (list 'action 'march)\n      (list 'action 'wait 'reason 'not-in-formation)))\n(start-parade)"
+     :note "Formation-gated action. Returns (action wait reason not-in-formation).")
+    (:tier "expert"
+     :code "(define (formation-check retries)\n  (cond ((in-formation) 'go)\n        ((<= retries 0) 'give-up)\n        (else (formation-check (- retries 1)))))\n(formation-check 5)"
+     :note "Retry loop; in the REPL this always exhausts retries and returns 'give-up.")
+    (:tier "master"
+     :code "(define (choreograph steps)\n  (map (lambda (step)\n         (list step 'formation? (in-formation)))\n       steps))\n(choreograph (list 'assemble 'align 'march 'disperse))"
+     :note "Log formation state at each choreography step. In the REPL every entry pairs with #f; in a live host the state should progress from #f to #t to #f."))
+  :related ("motion-anchor-to-input" "motion-follow-input" "make-character" "on-frame")
+  :caveats ("Headless REPL has no live characters; always #f." "A live host wires this to the current character-registry snapshot." "Not throttled.")
+  :drawbacks ("No way to know WHICH formation." "No named-formation query — only the binary is/isn't.")
+  :usecases ("Gate parade / drill / choreography commands on formation state." "Log formation state at choreography checkpoints.")
+  :learn (:concept "Predicate over live-host character-formation state; #f in a headless REPL." :prerequisites () :progression "Learn make-character and the motion-* verbs; then look at how formations are declared and tracked in a full host.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs  (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "def('in-formation', () => false). Headless REPL has no live formation."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (in-formation) = #f."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Expecting true in the REPL. Live host required.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "True if characters are in formation; #f headless."
+             :long  "True if characters are currently arranged in a named formation. Headless REPL always returns #f."
+             :for-ai "Poll before triggering formation-gated actions."
+             :for-kid "Ask if everyone is in place. In your REPL nobody's there so it's always no.")))
+
+;; ─── note-dots — dotted-note duration multiplier ─────────────────
+
+(verb
+  :name "note-dots"
+  :library "music"
+  :signature "(note-dots duration-symbol) -> number"
+  :summary "Return the numeric duration multiplier for a dotted note symbol, relative to a whole note."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(note-dots 'quarter)"
+     :note "A plain quarter note. Returns 0.25 (one-quarter of a whole note).")
+    (:tier "apprentice"
+     :code "(list (note-dots 'whole) (note-dots 'half) (note-dots 'quarter) (note-dots 'eighth))"
+     :note "Base durations without dots. Returns (1 0.5 0.25 0.125). Each halves the previous.")
+    (:tier "intermediate"
+     :code "(list\n  (note-dots 'quarter)\n  (note-dots 'quarter-dot)\n  (note-dots 'quarter-dot-dot))"
+     :note "Zero, one, two dots on a quarter. Returns (0.25 0.375 0.4375). Each dot adds half of the previous addition (0.125, then 0.0625).")
+    (:tier "expert"
+     :code "(define (rhythmic-total notes)\n  (fold + 0 (map note-dots notes)))\n(rhythmic-total (list 'quarter 'quarter-dot 'eighth 'quarter))"
+     :note "Sum the durations of a rhythmic phrase. Returns 1.0 (a full bar of 4/4). The dotted quarter (0.375) + eighth (0.125) equals a half beat, which is the classic dotted-eighth-note filler.")
+    (:tier "master"
+     :code "(define (fits-in-bar? notes bar-length)\n  (let ((total (fold + 0 (map note-dots notes))))\n    (list 'total total 'fits? (<= total bar-length))))\n(fits-in-bar? (list 'half-dot 'quarter 'eighth) 1)"
+     :note "Verify a phrase fits a bar. Dotted-half (0.75) + quarter (0.25) + eighth (0.125) = 1.125 — overflows a whole bar. Returns (total 1.125 fits? #f)."))
+  :related ("note" "note-place" "note-strike" "tempo" "sub-position-per-beat")
+  :caveats ("Duration symbols follow the pattern base-dot-dot..., where base is whole/half/quarter/eighth/sixteenth/thirty-second/sixty-fourth." "Trailing '.' characters also count as dots (both note-dots 'quarter-dot and 'quarter. work)." "Unknown base defaults to quarter (0.25) silently. If you need strict parsing, wrap and validate first.")
+  :drawbacks ("No tuplet support (triplets, quintuplets need a different verb)." "No support for ties or slurs — those are compositional, not durational." "Fixed 2-based scale — no explicit tempo multiplier here.")
+  :usecases ("Compute total duration of a rhythmic phrase." "Bar-fit validation before rendering a score." "Feed downstream note-place / note-strike calls that need explicit numeric duration.")
+  :learn (:concept "Convert a symbolic note duration (with optional dot suffixes) into a numeric multiplier relative to a whole note. Each dot adds half of the previous addition." :prerequisites ("map" "fold") :progression "Learn the note verb (which uses these symbols directly); then tempo for beats-per-minute; then sub-position-per-beat for micro-timing.")
+  :+math
+    (:algebra ("Base recurrence: base(n+1) = base(n) / 2. Dot recurrence: dotted(k) = base * (1 + 1/2 + 1/4 + ... + 1/(2^k)) = base * (2 - 1/(2^k)).")
+     :total #t
+     :domain "symbol matching /^(whole|half|quarter|eighth|sixteenth|thirty-second|sixty-fourth)(-dot|.)*$/"
+     :codomain "positive rational number in (0, 2)"
+     :proofs "Dotted addition is a finite geometric sum; the closed form is a bounded product of a base in {1, 1/2, ..., 1/64} and a factor in [1, 2).")
+  :+cs
+    (:complexity "time O(d) where d = number of dots; space O(1)"
+     :effects (none)
+     :pure #t)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Peels trailing -dot / . suffixes off the input symbol name, looks up the base in a small dict, then applies the dotted-note geometric formula."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified: (note-dots 'quarter) = 0.25; (note-dots 'quarter-dot) = 0.375; (note-dots 'half-dot-dot) = 0.875."
+     :since "1.0")
+  :+ai
+    (:raises () :pipes-into ("+" "fold" "note-place") :cardinality one
+     :deterministic #t :cacheable #t
+     :common-mistakes "Adding a raw fraction instead of using note-dots — easy to slip a factor of 2. Confusing dotted with triplet (a triplet is 2/3, not 3/2).")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Return the duration multiplier for a dotted note symbol."
+        :long  "Return the numeric duration multiplier for a dotted note symbol, relative to a whole note. Each dot adds half of the previous addition."
+        :for-ai "Pure math over note-duration symbols. Total, deterministic."
+        :for-kid "A dotted note lasts one and a half of the plain note. Two dots is one and three-quarters. Three dots is one and seven-eighths.")))
+
+;; ─── land-on-downbeat — quantize beat offset to next downbeat ────
+
+(verb
+  :name "land-on-downbeat"
+  :library "music"
+  :signature "(land-on-downbeat offset [bar-length]) -> number"
+  :summary "Quantize a beat offset to the next downbeat, given an optional bar length (default 4)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(land-on-downbeat 3.5)"
+     :note "Round 3.5 up to the next multiple of 4. Returns 4.")
+    (:tier "apprentice"
+     :code "(map (lambda (o) (list o (land-on-downbeat o)))\n     (list 0 1 3 4 5 7 8))"
+     :note "Quantize several offsets to a 4-beat bar. Returns ((0 0) (1 4) (3 4) (4 4) (5 8) (7 8) (8 8)). Note: 0 stays 0.")
+    (:tier "intermediate"
+     :code "(let ((offsets (list 1.25 2.5 3.75)))\n  (map (lambda (o) (land-on-downbeat o 4)) offsets))"
+     :note "Explicit 4-beat bar. Returns (4 4 4). All three fractional beats round up to the same downbeat.")
+    (:tier "expert"
+     :code "(define (schedule-hit onset bar-length)\n  (let ((down (land-on-downbeat onset bar-length)))\n    (list 'onset onset 'downbeat down 'delay (- down onset))))\n(schedule-hit 2.3 4)"
+     :note "Compute the wait time until the next downbeat. Returns (onset 2.3 downbeat 4 delay 1.7).")
+    (:tier "master"
+     :code "(define (align-phrase phrase bar-length)\n  (let loop ((in phrase) (out (list)) (t 0))\n    (if (null? in)\n        (reverse out)\n        (let ((dur (car in)))\n          (loop (cdr in)\n                (cons (land-on-downbeat (+ t dur) bar-length) out)\n                (+ t dur))))))\n(align-phrase (list 0.5 0.75 1.25) 4)"
+     :note "Given a phrase of durations, compute the downbeat each note lands on. Cumulative offsets 0.5, 1.25, 2.5 quantize to 4, 4, 4 (all within the first bar). Returns (4 4 4)."))
+  :related ("note" "note-place-at" "tempo" "sub-position-per-beat")
+  :caveats ("Offsets already ON a downbeat round to themselves (0 → 0, 4 → 4)." "Negative offsets return 0 by convention (no negative downbeats)." "bar-length defaults to 4 (common 4/4 meter). Set explicitly for 3/4, 6/8, etc.")
+  :drawbacks ("Only forward-rounding; no 'nearest downbeat' variant here." "No handling of compound meter (6/8 vs 3/4 with dotted quarters) — you must feed the effective beat count.")
+  :usecases ("Anchor a hit or accent to the nearest downbeat." "Compute wait time until the next bar boundary." "Align a phrase to the metric grid.")
+  :learn (:concept "Given a fractional beat offset, return the next integer beat that is a multiple of the bar length. Forward-rounding, integer-valued." :prerequisites ("modulo" "quotient") :progression "Pair with tempo for wall-clock timing; then explore rhythm/quantize for a more general quantizer.")
+  :+math
+    (:algebra ("land-on-downbeat(o, b) = ceil(o / b) * b for o > 0.")
+     :total #t
+     :domain "any real offset, any positive bar length"
+     :codomain "non-negative multiple of bar-length")
+  :+cs (:complexity "O(1)" :effects (none) :pure #t)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Math.ceil(offset / bar-length) * bar-length. bar-length defaults to 4. Negative offsets return 0."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified: (land-on-downbeat 3.5 4) = 4; (land-on-downbeat 0) = 0; (land-on-downbeat 5 4) = 8."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Forgetting to specify bar-length in 3/4 or 6/8 meter — default is 4."
+     :when-not-to-use "You need nearest-downbeat (not next). Use round instead of ceil.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Quantize a beat offset to the next downbeat."
+        :long  "Round a beat offset up to the next multiple of the bar length (default 4). Zero stays zero."
+        :for-ai "Pure math. Forward-rounding to the metric grid."
+        :for-kid "If the song is in a 4-beat bar and you're 2.3 beats in, the next big beat is at 4.")))
+
+;; ─── measure-content — measure content dimensions of a card ──────
+
+(verb
+  :name "measure-content"
+  :library "card"
+  :signature "(measure-content id) -> ((w number) (h number)) | 'error"
+  :summary "Measure the width and height of a card's content; returns 0x0 in headless REPL."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"
+     :code "(measure-content 'my-card)"
+     :note "In headless REPL there is no live card. Returns ((w 0) (h 0)) as the honest zero-size answer.")
+    (:tier "apprentice"
+     :code "(let ((dims (measure-content 'canvas))) (obj-get dims 'w))"
+     :note "Read the width off the returned alist via obj-get. Returns 0 in the REPL.")
+    (:tier "intermediate"
+     :code "(define (fits-in-viewport id max-w)\n  (let* ((dims (measure-content id))\n         (w (car (cdr (assoc 'w dims)))))\n    (if (> w max-w) 'too-wide 'fits)))\n(fits-in-viewport 'content-card 300)"
+     :note "Bounds check against a viewport. In the REPL width=0 so always 'fits.")
+    (:tier "expert"
+     :code "(define (compare-cards id1 id2)\n  (let ((d1 (measure-content id1))\n        (d2 (measure-content id2)))\n    (list id1 d1 id2 d2)))\n(compare-cards 'header 'body)"
+     :note "Compare two cards. In headless REPL both return ((w 0) (h 0)); in a live host the values reflect actual rendered dimensions.")
+    (:tier "master"
+     :code "(define (auto-scale id target-aspect)\n  (let* ((dims (measure-content id))\n         (w (car (cdr (assoc 'w dims))))\n         (h (max 1 (car (cdr (assoc 'h dims))))))\n    (let ((ratio (/ w h)))\n      (cond ((< ratio target-aspect) 'stretch-width)\n            ((> ratio target-aspect) 'stretch-height)\n            (else 'no-change)))))\n(auto-scale 'canvas 1.5)"
+     :note "Aspect-ratio-driven scale hint. Guards against division by zero via (max 1 h). In REPL 0/1 < 1.5 so returns 'stretch-width."))
+  :related ("card-rect" "card-canvas-rect" "card-open" "obj-get")
+  :caveats ("Headless REPL returns 0x0 honestly; the full host reads from the renderer." "The alist shape ((w N) (h N)) is a two-pair list; use assoc or obj-get to read." "In a full host, dynamic content changes require re-measurement.")
+  :drawbacks ("No sub-pixel precision reported." "No bounding-box vs content-box distinction." "Blocks on renderer state in a full host — may not be sync-fast under heavy layout.")
+  :usecases ("Responsive layout decisions (fit / overflow / auto-scale)." "Aspect-ratio-driven UI." "Debugging card dimensions.")
+  :learn (:concept "Query a card's content bounding box. Read-only. Returns an alist so downstream code can pick w or h without positional order." :prerequisites ("assoc" "obj-get") :progression "Pair with card-open / card-canvas-rect for full geometry; then look at layout-bricklay! for automatic layouts.")
+  :+math (:algebra () :total #t :domain "card id" :codomain "((w N) (h N)) alist or 'error symbol")
+  :+cs (:complexity "O(1) in REPL; host-dependent in a full render pass" :effects (state) :pure #f)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Headless-safe: returns [[Sym 'w, 0], [Sym 'h, 0]]. The full host overrides this with a real renderer query. Signature matches the reference alist shape."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified: (measure-content 'anything) = ((w 0) (h 0))."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #f :cacheable #f
+     :common-mistakes "Assuming a numeric return — it's an alist. Assuming values are non-zero in headless REPL."
+     :when-not-to-use "You need a real live measurement — use in a full host, not headless REPL.")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Measure a card's content dimensions; ((w 0) (h 0)) headless."
+        :long  "Measure the width and height of a card's rendered content. Returns an alist ((w N) (h N)). Headless REPL returns zero-dimensions honestly."
+        :for-ai "Deferred to host renderer in full builds. Zero-safe in headless."
+        :for-kid "Ask how big a card is. In your REPL nothing's drawn so both are zero.")))
+
+;; ─── list-item-pluck — remove item from a list by id ─────────────
+
+(verb
+  :name "list-item-pluck"
+  :library "list"
+  :signature "(list-item-pluck id) | (list-item-pluck lst id) -> list | descriptor"
+  :summary "Remove an item from a list by id; supports both host-ambient (1-arg) and pure (2-arg) forms."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(list-item-pluck (list 'a 'b 'c) 'b)"
+     :note "Pure functional form: remove 'b from the list. Returns (a c).")
+    (:tier "apprentice"
+     :code "(list-item-pluck (list 'x 'y 'z) 'y)"
+     :note "Same shape, different letters. Returns (x z). No mutation — a new list is returned.")
+    (:tier "intermediate"
+     :code "(let ((tasks (list 'wake 'brush 'code 'nap)))\n  (list 'before tasks 'after (list-item-pluck tasks 'brush)))"
+     :note "Drop a task from the list. Returns (before (wake brush code nap) after (wake code nap)).")
+    (:tier "expert"
+     :code "(define (delete-many lst ids)\n  (fold (lambda (acc id) (list-item-pluck acc id))\n        lst\n        ids))\n(delete-many (list 'a 'b 'c 'd 'e) (list 'b 'd))"
+     :note "Batch delete. Returns (a c e). Fold peels one id at a time. Note the arg order: (fold fn init lst) calls fn as (fn acc x) — accumulator first.")
+    (:tier "master"
+     :code "(define (remove-by-tag items tag)\n  (fold\n    (lambda (acc item)\n      (if (equal? (obj-get item 'tag) tag)\n          acc\n          (cons item acc)))\n    (list) items))\n(remove-by-tag\n  (list (list 'name \"a\" 'tag 'x)\n        (list 'name \"b\" 'tag 'y)\n        (list 'name \"c\" 'tag 'x))\n  'x)"
+     :note "General filter-by-tag (semantically what list-item-pluck implements on richer objects). Returns ((name \"b\" tag y)) — the single non-matching item. Note fold arg order: (acc, item) — accumulator first."))
+  :related ("list-item-toss" "filter" "assoc" "fold")
+  :caveats ("Item id may be a bare symbol OR an alist with an :id field; both are matched." "The 1-arg form returns a descriptor (host-ambient store); the 2-arg form is pure." "Order of remaining items is preserved.")
+  :drawbacks ("No batch remove built in — fold or map to batch." "Not stable if duplicates exist — all matching items are removed.")
+  :usecases ("Delete a specific item from a UI list." "Filter out a bad row from tabular data." "Un-append after an experimental append.")
+  :learn (:concept "Removal by identifier from a list; a specialized filter that matches item identity." :prerequisites ("filter" "equal?") :progression "After this look at list-item-toss for reordering, or use filter directly for predicate-based removal.")
+  :+math (:algebra () :total #t :domain "list + id" :codomain "list (possibly shorter)")
+  :+cs (:complexity "O(n)" :effects (none) :pure #t)
+  :+eng
+    (:impl-file "src/wired-verbs-priya-i-p.js"
+     :impl-notes "Two-arg form filters the list by predicate 'id doesn't match'. One-arg form returns a descriptor for host consumption. Preserves order."
+     :permission "read-only" :latency-class "sync-fast"
+     :tests "REPL-verified: (list-item-pluck (list 'a 'b 'c) 'b) = (a c)."
+     :since "1.0")
+  :+ai
+    (:raises () :cardinality one :deterministic #t :cacheable #t
+     :common-mistakes "Expecting mutation — the returned list is new; the original is unchanged. Confusing with car/cdr (which trims one end).")
+  :+meta
+    (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+     :entry-provenance "authored"
+     :entry-summary
+       (:short "Remove item by id from a list."
+        :long  "Remove an item from a list by id. Two-arg form is pure; one-arg form is a host descriptor."
+        :for-ai "Functional delete-by-id on a list. O(n)."
+        :for-kid "Take one thing out of a list; the list you get back is a bit shorter.")))
+
+;; ─── list-item-toss — reorder item within a list ─────────────────
+
+(verb
+  :name "list-item-toss"
+  :library "list"
+  :signature "(list-item-toss lst id from to) | (list-item-toss id from to) -> list | descriptor"
+  :summary "Move a list item from one index to another; pure 4-arg form or 3-arg host descriptor."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(list-item-toss (list 'a 'b 'c 'd) 'b 1 3)"
+     :note "Move 'b from index 1 to index 3. Returns (a c d b) — 'b relocated, others shifted left.")
+    (:tier "apprentice"
+     :code "(list-item-toss (list 'a 'b 'c 'd) 'b 1 0)"
+     :note "Move 'b to the head (index 0). Returns (b a c d).")
+    (:tier "intermediate"
+     :code "(let ((tasks (list 'wake 'brush 'code 'nap)))\n  (list-item-toss tasks 'nap 3 0))"
+     :note "Prioritize 'nap. Returns (nap wake brush code) — nap-first day.")
+    (:tier "expert"
+     :code "(define (swap lst i j)\n  (let ((item-i (list-ref lst i)))\n    (list-item-toss lst item-i i j)))\n(swap (list 'a 'b 'c 'd) 0 3)"
+     :note "Build swap on top of list-item-toss. Returns (b c d a).")
+    (:tier "master"
+     :code "(define (drag-drop items from-idx to-idx)\n  (let* ((n (length items))\n         (fi (max 0 (min (- n 1) from-idx)))\n         (ti (max 0 (min (- n 1) to-idx)))\n         (item (list-ref items fi)))\n    (list-item-toss items item fi ti)))\n(drag-drop (list 'A 'B 'C 'D 'E) 4 1)"
+     :note "Drag-and-drop with bounds clamping. Move 'E from index 4 to index 1. Returns (A E B C D). Clamping guards against out-of-range indices from a real UI."))
+  :related ("list-item-pluck" "list-ref" "reverse" "sort")
+  :caveats ("Out-of-bounds indices return the list unchanged (silent)." "The 4-arg form is pure; the 3-arg form returns a descriptor for a host store." "Zero-based indices.")
+  :drawbacks ("O(n) copy each call; not efficient for many reorderings on large lists — batch or use a mutable structure." "No swap-in-place; always returns a new list.")
+  :usecases ("Drag-and-drop UI reordering." "Priority queue promotion." "Any reorder-by-position UI action.")
+  :learn (:concept "Move an item by index without changing its identity. Preserves all other items in order." :prerequisites ("list-ref" "list-item-pluck") :progression "Learn list-item-pluck first; then compose reorder + remove for full list manipulation.")
+  :+math (:algebra () :total #t :domain "list + id + two indices" :codomain "list of same length")
+  :+cs (:complexity "O(n)" :effects (none) :pure #t)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "splice(from,1) then splice(to,0,item). Bounds check silently returns unchanged."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (list-item-toss (list 'a 'b 'c 'd) 'b 1 3) = (a c d b)."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #t
+        :common-mistakes "Passing indices as symbols instead of integers. Assuming mutation.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Move a list item from one index to another; pure or descriptor."
+             :long  "Move a list item from one index to another. Two forms: pure 4-arg or descriptor 3-arg. Bounds-safe."
+             :for-ai "Functional reorder-by-index."
+             :for-kid "Take one thing out of a list and put it somewhere else in the same list.")))
+
+;; ─── next — state-machine transition ─────────────────────────────
+
+(verb
+  :name "next"
+  :library "core"
+  :signature "(next state-name context) -> transition-tuple"
+  :summary "Signal the host to transition to a new state with updated context."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"
+     :code "(next 'wait-for-input '())"
+     :note "Return a transition tuple targeting the 'wait-for-input state with empty context. In REPL this is a tagged list; a real host consumes it and switches state.")
+    (:tier "apprentice"
+     :code "(define (idle ctx)\n  (next 'wait-for-input ctx))\n(idle 'my-ctx)"
+     :note "A trivial state handler that hands off to another state. Returns the descriptor.")
+    (:tier "intermediate"
+     :code "(define (count-up ctx)\n  (next 'count-up (+ 1 (if (number? ctx) ctx 0))))\n(count-up 5)"
+     :note "State recursion — the same state re-enters with updated context. Returns the tuple.")
+    (:tier "expert"
+     :code "(define (dispatch cmd ctx)\n  (cond ((eq? cmd 'start) (next 'running ctx))\n        ((eq? cmd 'stop)  (next 'idle    ctx))\n        (else             (next 'error   ctx))))\n(dispatch 'start 'my-ctx)"
+     :note "Command dispatcher. Different commands transition to different states. Returns the tuple for 'running.")
+    (:tier "master"
+     :code "(define (state-machine ctx trace)\n  (let ((event (obj-get ctx 'event)))\n    (cond ((eq? event 'begin) (list 'transition (next 'started ctx)  (cons 'started trace)))\n          ((eq? event 'end)   (list 'transition (next 'finished ctx) (cons 'finished trace)))\n          (else               (list 'stay ctx trace)))))\n(state-machine (list 'event 'begin) (list))"
+     :note "Compose next with a trace log. Returns (transition (next started (event begin)) (started))."))
+  :related ("done" "escalate" "wait" "after" "ctx-set" "ctx-get" "ctx-result")
+  :caveats ("next returns a special tuple, not a regular list. Treating it as a list may confuse the host." "The state-name must be defined as a state handler; referencing an undefined state causes a host dispatcher error." "context is passed verbatim; use ctx-set to update it before passing.")
+  :drawbacks ("No inspect / rewrite path — once returned, the host consumes it opaquely." "In headless REPL the transition doesn't happen; only the descriptor is returned.")
+  :usecases ("Every state handler ends in either next, done, or escalate." "Cart/state-machine programming, the primary control-flow verb.")
+  :learn (:concept "The transition primitive of a state-machine style program. Not a jump; the host schedules the next handler." :prerequisites ("define" "ctx-set") :progression "Learn done and escalate as the other exit points. Then look at act for asynchronous work between state transitions.")
+  :+math (:algebra () :total #t :domain "state-name + context" :codomain "transition tuple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/reference-impls.js"
+         :impl-notes "def('next', (state, ctx = null) => descriptor('next', state, ctx)). Returns [Sym 'next', state, ctx] as a tagged list. Host consumes this to schedule the next handler."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (next 'foo 'bar) returns (next foo bar)."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f
+        :common-mistakes "Trying to inspect the tuple with car/cdr. Continuing to run code AFTER next in the same state — that code is unreachable in a real host."
+        :when-not-to-use "You need synchronous return — use a normal call. You need to end the machine — use done.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Signal the host to transition to a new state."
+             :long  "Return a transition tuple that tells the host to enter the named state with the given context. Not a normal call — a hand-off."
+             :for-ai "State-machine transition primitive. Opaque to Scheme; consumed by host."
+             :for-kid "Say 'let's go to the next room' — you don't move yourself, you tell the world to switch rooms.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; PODCAST CLUSTER (32 verbs)
+;;
+;; The podcast subsystem is a browser-side player in the full host.
+;; Here we ship an in-memory state model so verbs interoperate
+;; consistently. Predicates return real booleans read from the model.
+;; Mutators update the model + return sensible values. Audio playback
+;; itself is deferred to the host — but state queries and updates are
+;; honest and consistent within a REPL session.
+;;
+;; Each verb here uses the same runtime; hosts can override any
+;; individual verb to drive real audio.
+;; ═══════════════════════════════════════════════════════════════════
+
+;; ─── podcast-load — load an episode ──────────────────────────────
+
+(verb
+  :name "podcast-load"
+  :library "podcast"
+  :signature "(podcast-load episode-alist) -> guid-string | error-triple"
+  :summary "Load a podcast episode (identified by :audio-url) into the current player slot."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-load (list 'audio-url \"https://ex.com/ep.mp3\"))"
+     :note "Load an episode by URL. Returns the URL as fallback guid.")
+    (:tier "apprentice"
+     :code "(podcast-load (list 'guid \"ep-42\" 'audio-url \"https://ex.com/ep.mp3\" 'title \"Ep 42\"))"
+     :note "Load with an explicit guid. Returns \"ep-42\".")
+    (:tier "intermediate"
+     :code "(let ((r (podcast-load (list 'audio-url \"https://ex.com/ep.mp3\"))))\n  (if (string? r) 'loaded 'load-failed))"
+     :note "Branch on load result. Returns 'loaded when the audio-url is present.")
+    (:tier "expert"
+     :code "(podcast-load (list 'title \"missing-url\"))"
+     :note "Missing :audio-url returns an error triple. Returns (error missing-audio-url \"episode alist requires :audio-url\").")
+    (:tier "master"
+     :code "(define (load-and-check ep)\n  (let ((r (podcast-load ep)))\n    (if (and (pair? r) (equal? (car r) 'error))\n        (list 'failed (car (cdr r)))\n        (list 'ok r))))\n(load-and-check (list 'audio-url \"https://ex.com/a.mp3\" 'guid \"g1\"))"
+     :note "Wrap load with an ok/failed classifier. Returns (ok \"g1\")."))
+  :related ("podcast-play" "podcast-pause" "podcast-current" "podcast-state")
+  :caveats ("Requires :audio-url; missing it returns an error triple." "Loading replaces the currently loaded episode; the old one is abandoned." "State persists within a single REPL session; a new eval invocation starts empty.")
+  :drawbacks ("Does not fetch audio bytes — that's the host's job." "No progress reporting during load.")
+  :usecases ("Preload before playback." "Load-only when the user hovers over a card.")
+  :learn (:concept "Move an episode into the player's current slot without starting playback." :prerequisites () :progression "Learn podcast-play for load+play in one call; then podcast-queue-add for future playback.")
+  :+math (:algebra () :total #t :domain "alist with :audio-url" :codomain "string | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Validates alist has audio-url; sets podcast.current; adds guid to history; returns guid."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-load (list 'audio-url ...)) returns URL string; missing url returns error triple."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (bad-episode missing-audio-url) :pipes-into ("podcast-play" "podcast-state") :cardinality one
+        :deterministic #f :cacheable #f
+        :common-mistakes "Forgetting :audio-url. Passing a string instead of an alist.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Load an episode into the player."
+             :long  "Load a podcast episode alist into the current player slot; requires :audio-url. Returns guid or error triple."
+             :for-ai "Setter for the current episode. State mutation."
+             :for-kid "Tell the player which episode to get ready.")))
+
+;; ─── podcast-play — play the current or loaded episode ───────────
+
+(verb
+  :name "podcast-play"
+  :library "podcast"
+  :signature "(podcast-play [episode-alist]) -> guid | error-triple"
+  :summary "Start playback; optionally load a new episode first."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-play))"
+     :note "Load then play. Returns the guid.")
+    (:tier "apprentice"
+     :code "(podcast-play (list 'audio-url \"https://ex.com/e.mp3\"))"
+     :note "Load + play in one call. Returns the guid.")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (obj-get (podcast-state) 'playing))"
+     :note "Check playing state after play. Returns #t.")
+    (:tier "expert"
+     :code "(podcast-play)"
+     :note "No episode loaded, no arg → error triple. Returns (error nothing-loaded \"call podcast-load first\").")
+    (:tier "master"
+     :code "(define (safe-play ep)\n  (let ((r (podcast-play ep)))\n    (if (and (pair? r) (equal? (car r) 'error))\n        (list 'skipped (car (cdr r)))\n        (list 'playing r))))\n(safe-play (list 'audio-url \"https://ex.com/e.mp3\"))"
+     :note "Wrap play with error handling. Returns (playing \"https://ex.com/e.mp3\")."))
+  :related ("podcast-load" "podcast-pause" "podcast-resume" "podcast-state")
+  :caveats ("If called with no arg and no episode loaded, returns error triple." "In headless REPL 'playing' is a flag; no audio is emitted." "Host may still block on autoplay policies.")
+  :drawbacks ("Does not report actual audio start — only the state flag." "No fade-in / preroll.")
+  :usecases ("Play a specific episode." "Resume from paused state (via podcast-resume)." "Play button in UI.")
+  :learn (:concept "Start playback of the current episode; optional 1-arg loads first." :prerequisites ("podcast-load") :progression "Learn podcast-pause / podcast-resume for control; then podcast-seek for scrubbing.")
+  :+math (:algebra () :total #t :domain "() or alist" :codomain "string | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Optional load; sets podcast.playing = true. Host binds actual audio hw."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (begin (podcast-load ...) (podcast-play)) returns guid."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (nothing-loaded bad-episode) :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Calling with no arg + no prior load.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Start podcast playback."
+             :long  "Start playback of the current episode; optionally load a new one first."
+             :for-ai "Play button. State mutation."
+             :for-kid "Press play on the podcast.")))
+
+;; ─── podcast-pause — pause playback ──────────────────────────────
+
+(verb
+  :name "podcast-pause"
+  :library "podcast"
+  :signature "(podcast-pause) -> guid | #f"
+  :summary "Pause the current episode; returns its guid or #f if nothing loaded."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-pause)"
+     :note "With no episode loaded, returns #f.")
+    (:tier "apprentice"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-play) (podcast-pause))"
+     :note "Load, play, pause. Returns the guid.")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-pause) (obj-get (podcast-state) 'playing))"
+     :note "Confirm playing flag flipped to #f.")
+    (:tier "expert"
+     :code "(define (toggle) (if (obj-get (podcast-state) 'playing) (podcast-pause) (podcast-resume)))\n(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (toggle) (obj-get (podcast-state) 'playing))"
+     :note "Toggle logic between pause and resume. After play + toggle → #f.")
+    (:tier "master"
+     :code "(define (auto-pause-after seconds)\n  (list 'scheduled 'pause 'in seconds 'unit 'seconds))\n(auto-pause-after 30)"
+     :note "Descriptor for a scheduled pause. Returns (scheduled pause in 30 unit seconds). A host runs the timer."))
+  :related ("podcast-play" "podcast-resume" "podcast-state")
+  :caveats ("Returns #f when nothing loaded (no error)." "Pausing a paused episode is a no-op; still returns the guid.")
+  :drawbacks ("No fade-out.")
+  :usecases ("Pause button." "Interrupt for a call." "Auto-pause on inactivity.")
+  :learn (:concept "Flip the playing flag to false; state persists so resume knows where we are." :prerequisites ("podcast-play") :progression "Pair with podcast-resume for the toggle pattern.")
+  :+math (:algebra () :total #t :domain "()" :codomain "string | #f")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Sets podcast.playing = false; returns current guid or #f."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-pause) with nothing loaded returns #f."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Assuming an error when nothing's loaded — returns #f silently.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Pause the current episode."
+             :long  "Pause the current episode; state persists so podcast-resume can pick up. Returns guid or #f."
+             :for-ai "Pause button. Idempotent."
+             :for-kid "Press pause on the podcast.")))
+
+;; ─── podcast-resume — resume paused playback ─────────────────────
+
+(verb
+  :name "podcast-resume"
+  :library "podcast"
+  :signature "(podcast-resume) -> guid | error-triple"
+  :summary "Resume playback of the currently loaded episode."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-resume)"
+     :note "Nothing loaded. Returns (error nothing-loaded \"call podcast-load first\").")
+    (:tier "apprentice"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-pause) (podcast-resume))"
+     :note "Play, pause, resume. Returns the guid.")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-pause) (podcast-resume) (obj-get (podcast-state) 'playing))"
+     :note "Verify playing flag flipped back to #t.")
+    (:tier "expert"
+     :code "(define (safe-resume)\n  (let ((r (podcast-resume)))\n    (if (and (pair? r) (equal? (car r) 'error)) 'no-episode 'resumed)))\n(safe-resume)"
+     :note "Wrap resume with error handling. Returns 'no-episode when nothing loaded.")
+    (:tier "master"
+     :code "(define (wake ep)\n  (begin\n    (podcast-load ep)\n    (podcast-resume)))\n(wake (list 'audio-url \"https://ex.com/e.mp3\"))"
+     :note "Load-and-resume shorthand for a Friday-morning wake pattern. Returns the guid."))
+  :related ("podcast-play" "podcast-pause")
+  :caveats ("Errors if nothing loaded — call podcast-load first." "Does not restart from beginning; picks up at podcast-seek position.")
+  :drawbacks ("No 'resume last episode across sessions' — needs a host store.")
+  :usecases ("Resume after pause." "Wake the player after a phone-call interruption.")
+  :learn (:concept "Flip playing back to true; picks up at the current seek position." :prerequisites ("podcast-pause") :progression "Pair with podcast-pause for the toggle pattern.")
+  :+math (:algebra () :total #t :domain "()" :codomain "string | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Sets podcast.playing = true if episode loaded; else returns error triple."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-resume) with nothing loaded returns error triple."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises (nothing-loaded) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Resume the current episode."
+             :long  "Resume playback of the currently loaded episode; errors if none loaded."
+             :for-ai "Resume button. Errors on missing episode."
+             :for-kid "Un-pause the podcast.")))
+
+;; ─── podcast-seek — jump to position ─────────────────────────────
+
+(verb
+  :name "podcast-seek"
+  :library "podcast"
+  :signature "(podcast-seek seconds) -> number | error-triple"
+  :summary "Jump playback to the given position in seconds."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-seek 60)"
+     :note "Seek to 1 minute. Returns 60.")
+    (:tier "apprentice"
+     :code "(begin (podcast-seek 120) (obj-get (podcast-state) 'position))"
+     :note "Set + read. Returns 120.")
+    (:tier "intermediate"
+     :code "(podcast-seek -5)"
+     :note "Negative position returns an error triple. Returns (error bad-position \"position must be >= 0\").")
+    (:tier "expert"
+     :code "(define (rewind delta)\n  (let ((now (obj-get (podcast-state) 'position)))\n    (podcast-seek (max 0 (- now delta)))))\n(begin (podcast-seek 60) (rewind 15))"
+     :note "Rewind by a delta with floor at 0. Returns 45.")
+    (:tier "master"
+     :code "(define (chapter-jump chapters idx)\n  (let ((c (list-ref chapters idx)))\n    (podcast-seek (car (cdr (assoc 'start c))))))\n(chapter-jump\n  (list (list 'name \"Intro\" 'start 0)\n        (list 'name \"Body\"  'start 60)\n        (list 'name \"Outro\" 'start 480)) 2)"
+     :note "Chapter navigation. Jumps to the outro at 480 seconds. Returns 480."))
+  :related ("podcast-play" "podcast-state")
+  :caveats ("Negative positions error." "Positions beyond episode length are permitted; host decides how to render.")
+  :drawbacks ("No unit override — always seconds.")
+  :usecases ("Chapter navigation." "Rewind / fast-forward." "Progress-bar scrubbing.")
+  :learn (:concept "Set the playback position in seconds. Guarded against negatives." :prerequisites () :progression "Pair with podcast-state to read the current position; then chapter-based navigation.")
+  :+math (:algebra () :total #t :domain "non-negative real" :codomain "number | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Guards non-negative; sets podcast.seek_position."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-seek 60) = 60; (podcast-seek -5) = error triple."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises (bad-position) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Seek to a position in the current episode."
+             :long  "Jump playback to the given position in seconds. Guarded against negatives."
+             :for-ai "Scrub. Idempotent."
+             :for-kid "Jump ahead or back in the podcast to a specific time.")))
+
+;; ─── podcast-volume — set / read volume ───────────────────────────
+
+(verb
+  :name "podcast-volume"
+  :library "podcast"
+  :signature "(podcast-volume [v]) -> number"
+  :summary "Get (no arg) or set the player volume in [0,1]; out-of-range values are clamped."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-volume)"
+     :note "Read current volume. Returns 0.8 (default).")
+    (:tier "apprentice"
+     :code "(podcast-volume 0.5)"
+     :note "Set to half. Returns 0.5.")
+    (:tier "intermediate"
+     :code "(podcast-volume 1.5)"
+     :note "Clamped to 1.0. Returns 1.")
+    (:tier "expert"
+     :code "(define (fade steps target)\n  (let loop ((i 0) (last (podcast-volume)))\n    (if (>= i steps)\n        (podcast-volume target)\n        (loop (+ i 1) (podcast-volume (+ last (/ (- target last) (- steps i))))))))\n(fade 4 0.2)"
+     :note "Linear volume fade to 0.2 in 4 steps. Returns 0.2 at end.")
+    (:tier "master"
+     :code "(define (duck-for-notification)\n  (let ((prev (podcast-volume)))\n    (podcast-volume 0.2)\n    (list 'ducked-from prev)))\n(duck-for-notification)"
+     :note "Duck volume for a notification, returning the previous level so the caller can restore it. Returns (ducked-from 0.8)."))
+  :related ("podcast-play" "podcast-muted?" "podcast-state")
+  :caveats ("Values are clamped to [0, 1] silently; log if you need to detect clamping." "No mute — that's podcast-muted? territory.")
+  :drawbacks ("No per-channel volume." "No dB scale; linear only.")
+  :usecases ("Volume slider." "Auto-duck for interruptions." "Linear fade-out on chapter end.")
+  :learn (:concept "Get/set the player volume in [0, 1]. Read with no arg; write with one arg." :prerequisites () :progression "Learn podcast-muted? for boolean mute; then fade patterns.")
+  :+math (:algebra () :total #t :domain "() or number in [0,1] (out-of-range clamped)" :codomain "number in [0,1]")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Read: return podcast.volume. Write: clamp to [0,1], assign, return the clamped value."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-volume) = 0.8; (podcast-volume 0.5) = 0.5; (podcast-volume 1.5) = 1."
+         :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Get or set the player volume in [0,1]."
+             :long  "Get (no arg) or set the player volume; out-of-range values are clamped to [0,1]."
+             :for-ai "Volume control. Idempotent."
+             :for-kid "Turn the podcast louder or quieter, between 0 and 1.")))
+
+;; ─── podcast-muted? — mute predicate ─────────────────────────────
+
+(verb
+  :name "podcast-muted?"
+  :library "podcast"
+  :signature "(podcast-muted?) -> boolean"
+  :summary "True if the player is muted; #f otherwise."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-muted?)"
+     :note "Default not muted. Returns #f.")
+    (:tier "apprentice"
+     :code "(if (podcast-muted?) 'muted 'sound-on)"
+     :note "Branch on mute state. Returns 'sound-on.")
+    (:tier "intermediate"
+     :code "(list 'volume (podcast-volume) 'muted (podcast-muted?))"
+     :note "Report both together. Returns (volume 0.8 muted #f).")
+    (:tier "expert"
+     :code "(define (audible?)\n  (and (not (podcast-muted?)) (> (podcast-volume) 0)))\n(audible?)"
+     :note "Combined predicate: not muted AND non-zero volume. Returns #t.")
+    (:tier "master"
+     :code "(define (should-play?)\n  (cond ((podcast-muted?) 'muted-skip)\n        ((< (podcast-volume) 0.05) 'inaudible-skip)\n        (else 'play)))\n(should-play?)"
+     :note "Guard for a smart-skip auto-play policy. Returns 'play under defaults."))
+  :related ("podcast-volume" "podcast-state")
+  :caveats ("Reflects only the mute flag, not the volume level. Volume 0 is NOT the same as muted.")
+  :drawbacks ("No mute toggle verb — a host provides that (or use a wrapper over an internal flag).")
+  :usecases ("Guard audible actions." "Report player status.")
+  :learn (:concept "Predicate over the mute flag. Independent of volume level." :prerequisites () :progression "Pair with podcast-volume for full audibility check.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Return podcast.muted."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-muted?) = #f."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f
+        :common-mistakes "Confusing with volume=0.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "True if the player is muted."
+             :long  "Predicate over the mute flag; independent of volume."
+             :for-ai "Mute check. Read-only."
+             :for-kid "Is the podcast muted? Yes or no.")))
+
+;; ─── podcast-current — get currently loaded episode ──────────────
+
+(verb
+  :name "podcast-current"
+  :library "podcast"
+  :signature "(podcast-current) -> episode-alist | #f"
+  :summary "Return the currently loaded episode alist, or #f if nothing loaded."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-current)"
+     :note "Nothing loaded. Returns #f.")
+    (:tier "apprentice"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\" 'title \"Ep\")) (podcast-current))"
+     :note "Read after loading. Returns the alist (audio-url \"https://ex.com/e.mp3\" title \"Ep\").")
+    (:tier "intermediate"
+     :code "(begin (podcast-load (list 'audio-url \"https://ex.com/e.mp3\" 'title \"Ep\")) (obj-get (podcast-current) 'title))"
+     :note "Pluck a field from the current episode. Returns \"Ep\".")
+    (:tier "expert"
+     :code "(define (now-playing)\n  (let ((c (podcast-current)))\n    (if c\n        (list 'title (obj-get c 'title) 'url (obj-get c 'audio-url))\n        'nothing)))\n(now-playing)"
+     :note "Report a display shape. Returns 'nothing when nothing loaded.")
+    (:tier "master"
+     :code "(define (with-current fn)\n  (let ((c (podcast-current)))\n    (if c (fn c) 'no-episode)))\n(begin\n  (podcast-load (list 'audio-url \"https://ex.com/e.mp3\" 'title \"Ep\"))\n  (with-current (lambda (ep) (list 'echo (obj-get ep 'title)))))"
+     :note "Higher-order wrapper that guards against no-episode. Returns (echo \"Ep\")."))
+  :related ("podcast-load" "podcast-play" "podcast-state")
+  :caveats ("Returns the exact alist that was loaded; the shape depends on what the caller passed." "Returns #f when nothing loaded — check before pluck.")
+  :drawbacks ("No lifetime info (loaded-at, played-count).")
+  :usecases ("Now-playing display." "Extract fields for downstream verbs.")
+  :learn (:concept "Read-side accessor for the loaded episode. Returns #f as the missing sentinel." :prerequisites ("podcast-load") :progression "Learn obj-get to pluck fields; then podcast-state for the full snapshot.")
+  :+math (:algebra () :total #t :domain "()" :codomain "alist | #f")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Return podcast.current or #f."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: nothing loaded returns #f; after load returns the alist."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Return the currently loaded episode alist or #f."
+             :long  "Read the currently loaded episode; returns the alist passed to podcast-load, or #f."
+             :for-ai "Getter. Read-only."
+             :for-kid "Ask which podcast episode is loaded right now.")))
+
+;; ─── podcast-state — snapshot of player state ────────────────────
+
+(verb
+  :name "podcast-state"
+  :library "podcast"
+  :signature "(podcast-state) -> alist"
+  :summary "Return a snapshot alist of the player's current state (playing, muted, volume, position, guid, queue length)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(podcast-state)"
+     :note "Initial snapshot. Returns ((playing #f) (muted #f) (volume 0.8) (position 0) (current-guid #f) (queue-length 0)).")
+    (:tier "apprentice"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (podcast-state))"
+     :note "After play: playing #t, guid set. Returns ((playing #t) (muted #f) (volume 0.8) (position 0) (current-guid \"https://ex.com/e.mp3\") (queue-length 0)).")
+    (:tier "intermediate"
+     :code "(begin (podcast-play (list 'audio-url \"https://ex.com/e.mp3\")) (obj-get (podcast-state) 'playing))"
+     :note "Pluck the playing flag. Returns #t.")
+    (:tier "expert"
+     :code "(define (summary)\n  (let ((s (podcast-state)))\n    (list 'is-playing (obj-get s 'playing) 'at (obj-get s 'position))))\n(summary)"
+     :note "Compress state into a display shape. Returns (is-playing #f at 0).")
+    (:tier "master"
+     :code "(define (health-check)\n  (let ((s (podcast-state)))\n    (cond ((not (obj-get s 'current-guid)) 'no-episode)\n          ((obj-get s 'muted) 'muted-warning)\n          ((< (obj-get s 'volume) 0.1) 'low-volume-warning)\n          (else 'ok))))\n(health-check)"
+     :note "Composite health-check across state fields. Returns 'no-episode initially."))
+  :related ("podcast-load" "podcast-play" "podcast-volume" "podcast-muted?")
+  :caveats ("Snapshot only — the returned alist is a copy; changes don't propagate back." "State is per-REPL-session; each eval invocation starts fresh.")
+  :drawbacks ("No timestamps." "Not extensible from Scheme — the fields are fixed.")
+  :usecases ("Debug display." "Health check across multiple flags." "Reactive UI that re-reads on every tick.")
+  :learn (:concept "One-shot snapshot of the whole player state as an alist." :prerequisites ("obj-get") :progression "Use with obj-get to pluck fields; then compose with health-check patterns.")
+  :+math (:algebra () :total #t :domain "()" :codomain "alist of 6 pairs")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js"
+         :impl-notes "Builds an alist of ((playing bool) (muted bool) (volume num) (position num) (current-guid str|#f) (queue-length int))."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: (podcast-state) returns the 6-pair alist."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t
+          :entry-provenance "authored"
+          :entry-summary
+            (:short "Return an alist snapshot of the player state."
+             :long  "One-shot snapshot alist with playing, muted, volume, position, current-guid, queue-length."
+             :for-ai "State snapshot. Read-only."
+             :for-kid "Ask the player how it's doing — one big message with everything.")))
+
+;; ─── podcast-queue — read the play queue ─────────────────────────
+
+(verb
+  :name "podcast-queue"
+  :library "podcast"
+  :signature "(podcast-queue) -> list-of-episodes"
+  :summary "Return the list of queued episodes."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-queue)"                                                                                         :note "Initial empty queue. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue))"                                    :note "After one add. Returns one-element list.")
+    (:tier "intermediate" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-add (list 'audio-url \"b\")) (length (podcast-queue)))" :note "Length. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (map (lambda (ep) (obj-get ep 'audio-url)) (podcast-queue)))" :note "Map to URLs. Returns (\"a\").")
+    (:tier "master"
+     :code "(define (queue-summary)\n  (map (lambda (ep) (obj-get ep 'title)) (podcast-queue)))\n(begin (podcast-queue-add (list 'audio-url \"a\" 'title \"first\")) (podcast-queue-add (list 'audio-url \"b\" 'title \"second\")) (queue-summary))"
+     :note "Summary titles. Returns (\"first\" \"second\")."))
+  :related ("podcast-queue-add" "podcast-queue-remove" "podcast-load")
+  :caveats ("Order is insertion order; head is next-to-play." "Queue is a snapshot — mutations after retrieval don't propagate back.")
+  :drawbacks ("No shuffle." "No priority/reorder in-place.")
+  :usecases ("Show queue in UI." "Compute queue length for HUD.")
+  :learn (:concept "Read-side snapshot of the queue." :prerequisites () :progression "Learn queue-add / queue-remove.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of alists")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return podcast.queue.slice()."
+         :permission "read-only" :latency-class "sync-fast"
+         :tests "REPL-verified: initial ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return the queue." :long "Snapshot of the podcast play queue." :for-ai "List of episodes." :for-kid "See what's coming up next.")))
+
+;; ─── podcast-queue-add ────────────────────────────────────────────
+
+(verb
+  :name "podcast-queue-add"
+  :library "podcast"
+  :signature "(podcast-queue-add episode-alist) -> new-length | error-triple"
+  :summary "Add an episode to the tail of the queue; returns the new queue length."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-queue-add (list 'audio-url \"a\"))" :note "Add one. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-add (list 'audio-url \"b\")))" :note "Two adds. Returns 2.")
+    (:tier "intermediate" :code "(podcast-queue-add \"not-an-alist\")" :note "Bad type returns error triple. Returns (error bad-episode \"expected an alist\").")
+    (:tier "expert"    :code "(define (add-many eps) (map podcast-queue-add eps)) (add-many (list (list 'audio-url \"a\") (list 'audio-url \"b\") (list 'audio-url \"c\")))" :note "Bulk add. Returns (1 2 3).")
+    (:tier "master"
+     :code "(define (schedule-playlist urls)\n  (fold (lambda (acc url) (podcast-queue-add (list 'audio-url url)) acc) 'done urls))\n(schedule-playlist (list \"a\" \"b\" \"c\"))"
+     :note "Schedule a playlist. Returns 'done."))
+  :related ("podcast-queue" "podcast-queue-remove" "podcast-load")
+  :caveats ("Bad type returns error triple." "No dedup.")
+  :drawbacks ("No priority-add." "No batch API.")
+  :usecases ("Playlist building." "Auto-continue after end.")
+  :learn (:concept "Append to the tail." :prerequisites () :progression "Pair with queue-remove and queue.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "number | error-triple")
+  :+cs (:complexity "O(1) amortized" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "podcast.queue.push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: 1, 2, 3." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (bad-episode) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Add an episode to the queue." :long "Append to the tail of the queue." :for-ai "Append." :for-kid "Add a podcast to the end of the queue.")))
+
+;; ─── podcast-queue-remove ─────────────────────────────────────────
+
+(verb
+  :name "podcast-queue-remove"
+  :library "podcast"
+  :signature "(podcast-queue-remove episode-alist) -> number-removed | error-triple"
+  :summary "Remove all queue entries matching the episode's guid."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-queue-remove (list 'audio-url \"a\"))" :note "Nothing to remove. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-remove (list 'audio-url \"a\")))" :note "Add + remove. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-add (list 'audio-url \"a\")) (podcast-queue-remove (list 'audio-url \"a\")))" :note "Duplicates removed. Returns 2.")
+    (:tier "expert"    :code "(podcast-queue-remove \"not-an-alist\")" :note "Bad type. Returns (error bad-episode \"expected an alist\").")
+    (:tier "master"    :code "(define (skip-and-drop ep) (list 'skipped (podcast-queue-remove ep) 'new-length (length (podcast-queue)))) (begin (podcast-queue-add (list 'audio-url \"a\")) (skip-and-drop (list 'audio-url \"a\")))" :note "Drop + report. Returns (skipped 1 new-length 0)."))
+  :related ("podcast-queue" "podcast-queue-add")
+  :caveats ("Matches all entries with the same guid." "Returns 0 when absent.")
+  :drawbacks ("No remove-by-index.")
+  :usecases ("Skip an episode." "Deduplicate a queue.")
+  :learn (:concept "Remove by episode identity." :prerequisites () :progression "Learn queue-add mirror.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "number | error-triple")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter by guid; return count removed."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: 0, 1, 2." :since "1.0")
+  :+ai (:raises (bad-episode) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Remove from queue by guid." :long "Filter matching guid entries out." :for-ai "Filter." :for-kid "Take a podcast out of the queue.")))
+
+;; ─── podcast-subscribe / -unsubscribe / -is-subscribed? / -subscriptions ─
+
+(verb
+  :name "podcast-subscribe"
+  :library "podcast"
+  :signature "(podcast-subscribe feed-url) -> subscription-count"
+  :summary "Add a podcast feed to the subscriptions list; return the new count."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-subscribe \"https://feed.example.com/rss\")" :note "Subscribe. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\"))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"a\"))" :note "Dedup — same URL. Returns 1.")
+    (:tier "expert"    :code "(define (bulk-subscribe feeds) (map podcast-subscribe feeds)) (bulk-subscribe (list \"a\" \"b\" \"c\"))" :note "Map. Returns (1 2 3).")
+    (:tier "master"
+     :code "(define (opml-import urls)\n  (list 'added (fold (lambda (acc url) (podcast-subscribe url) (+ acc 1)) 0 urls) 'total (length (podcast-subscriptions))))\n(opml-import (list \"a\" \"b\" \"c\"))"
+     :note "OPML import shape. Returns (added 3 total 3)."))
+  :related ("podcast-unsubscribe" "podcast-is-subscribed?" "podcast-subscriptions")
+  :caveats ("Dedups on exact string match.")
+  :drawbacks ("No feed validation.")
+  :usecases ("OPML import." "One-click subscribe.")
+  :learn (:concept "Add-once semantics." :prerequisites () :progression "Learn unsubscribe + is-subscribed?.")
+  :+math (:algebra () :total #t :domain "string" :codomain "count")
+  :+cs (:complexity "O(n) dedup" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Add-once via includes-guard."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Subscribe to a feed." :long "Add feed URL to subs; dedups on exact match." :for-ai "Add-once." :for-kid "Follow a podcast.")))
+
+(verb
+  :name "podcast-unsubscribe"
+  :library "podcast"
+  :signature "(podcast-unsubscribe feed-url) -> count-removed"
+  :summary "Remove a feed from subscriptions."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-unsubscribe \"a\")" :note "Nothing subscribed. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-unsubscribe \"a\"))" :note "Sub then unsub. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (podcast-unsubscribe \"a\") (length (podcast-subscriptions)))" :note "Returns 1.")
+    (:tier "expert"    :code "(define (cull-many urls) (map podcast-unsubscribe urls)) (begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (cull-many (list \"a\" \"b\")))" :note "Bulk cull. Returns (1 1).")
+    (:tier "master"
+     :code "(define (cleanup-abandoned pattern)\n  (fold (lambda (acc url) (if (and (string? url) (>= (string-length url) (string-length pattern))) (+ acc (podcast-unsubscribe url)) acc)) 0 (podcast-subscriptions)))\n(begin (podcast-subscribe \"abandoned-1\") (podcast-subscribe \"abandoned-2\") (podcast-subscribe \"keep\") (cleanup-abandoned \"abandoned-\"))"
+     :note "Pattern cleanup. Returns 3."))
+  :related ("podcast-subscribe" "podcast-subscriptions")
+  :caveats ("Exact string match.")
+  :drawbacks ("No regex.")
+  :usecases ("Unsub button." "Cleanup dead feeds.")
+  :learn (:concept "Remove-if-present." :prerequisites ("podcast-subscribe") :progression "Learn subscribe mirror.")
+  :+math (:algebra () :total #t :domain "string" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter matching URL; return count."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Unsubscribe from a feed." :long "Remove feed URL." :for-ai "Remove-if-present." :for-kid "Stop following a podcast.")))
+
+(verb
+  :name "podcast-is-subscribed?"
+  :library "podcast"
+  :signature "(podcast-is-subscribed? feed-url) -> boolean"
+  :summary "True if the feed URL is currently subscribed."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-is-subscribed? \"a\")" :note "Nothing subscribed. Returns #f.")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-is-subscribed? \"a\"))" :note "After sub. Returns #t.")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-is-subscribed? \"b\"))" :note "Different URL. Returns #f.")
+    (:tier "expert"    :code "(define (toggle-sub url) (if (podcast-is-subscribed? url) (podcast-unsubscribe url) (podcast-subscribe url))) (begin (toggle-sub \"a\") (podcast-is-subscribed? \"a\"))" :note "Toggle. Returns #t.")
+    (:tier "master"    :code "(define (import-if-new feeds) (for-each (lambda (f) (unless (podcast-is-subscribed? f) (podcast-subscribe f))) feeds) (length (podcast-subscriptions))) (import-if-new (list \"a\" \"b\" \"a\"))" :note "Import-if-new. Returns 2."))
+  :related ("podcast-subscribe" "podcast-unsubscribe")
+  :caveats ("Exact string match.")
+  :drawbacks ("No fuzzy.")
+  :usecases ("Toggle UI." "Guard bulk import.")
+  :learn (:concept "Membership predicate." :prerequisites () :progression "Learn subscribe / unsubscribe pair.")
+  :+math (:algebra () :total #t :domain "string" :codomain "boolean")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "subscriptions.includes(url)."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Is this feed subscribed?" :long "Predicate over subscription membership." :for-ai "Membership." :for-kid "Are you following this podcast?")))
+
+(verb
+  :name "podcast-subscriptions"
+  :library "podcast"
+  :signature "(podcast-subscriptions) -> list-of-strings"
+  :summary "Return the current list of subscribed feed URLs."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-subscriptions)" :note "Nothing subscribed. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-subscribe \"a\") (podcast-subscriptions))" :note "One sub. Returns (\"a\").")
+    (:tier "intermediate" :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (length (podcast-subscriptions)))" :note "Two subs. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (map string-length (podcast-subscriptions)))" :note "Map. Returns (1 1).")
+    (:tier "master"    :code "(define (export-opml) (list 'opml (map (lambda (u) (list 'outline u)) (podcast-subscriptions)))) (begin (podcast-subscribe \"a\") (podcast-subscribe \"b\") (export-opml))" :note "OPML export. Returns (opml ((outline \"a\") (outline \"b\")))."))
+  :related ("podcast-subscribe" "podcast-unsubscribe" "podcast-is-subscribed?")
+  :caveats ("Snapshot only.")
+  :drawbacks ("No metadata.")
+  :usecases ("OPML export." "UI list.")
+  :learn (:concept "Read-side snapshot." :prerequisites () :progression "Pair with subscribe / unsubscribe.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of strings")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return subscriptions.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return subscribed feed URLs." :long "Snapshot." :for-ai "List." :for-kid "See which podcasts you follow.")))
+
+;; ─── podcast speaker management ───────────────────────────────────
+
+(verb
+  :name "podcast-follow-speaker"
+  :library "podcast"
+  :signature "(podcast-follow-speaker speaker-id) -> count"
+  :summary "Follow a podcast speaker so their appearances are highlighted; returns the new follower count."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-follow-speaker 'alice)" :note "Follow. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-follow-speaker 'alice) (podcast-follow-speaker 'bob))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(begin (podcast-follow-speaker 'alice) (podcast-follow-speaker 'alice))" :note "Dedup. Returns 1.")
+    (:tier "expert"    :code "(define (invite guests) (map podcast-follow-speaker guests)) (invite (list 'alice 'bob 'carol))" :note "Bulk. Returns (1 2 3).")
+    (:tier "master"    :code "(define (follow-if-new sp) (if (member sp (podcast-followed-speakers)) 'already (begin (podcast-follow-speaker sp) 'added))) (list (follow-if-new 'alice) (follow-if-new 'alice))" :note "Guarded. Returns (added already)."))
+  :related ("podcast-unfollow-speaker" "podcast-followed-speakers")
+  :caveats ("Dedup on symbol match.")
+  :drawbacks ("No metadata.")
+  :usecases ("Follow a speaker across shows." "Personalized episode ranking.")
+  :learn (:concept "Add-once follow." :prerequisites () :progression "Learn unfollow + followed-speakers.")
+  :+math (:algebra () :total #t :domain "symbol|string" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Add-once via includes-guard."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Follow a speaker." :long "Add a speaker to the followed list; dedup." :for-ai "Add-once." :for-kid "Follow a person's podcast appearances.")))
+
+(verb
+  :name "podcast-unfollow-speaker"
+  :library "podcast"
+  :signature "(podcast-unfollow-speaker speaker-id) -> count-removed"
+  :summary "Unfollow a speaker."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-unfollow-speaker 'alice)" :note "Nothing followed. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-follow-speaker 'alice) (podcast-unfollow-speaker 'alice))" :note "Sub then unsub. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (podcast-unfollow-speaker 'a) (length (podcast-followed-speakers)))" :note "One remains. Returns 1.")
+    (:tier "expert"    :code "(define (drop-all) (map podcast-unfollow-speaker (podcast-followed-speakers))) (begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (drop-all))" :note "Bulk drop. Returns (1 1).")
+    (:tier "master"    :code "(define (toggle-follow sp) (if (member sp (podcast-followed-speakers)) (podcast-unfollow-speaker sp) (podcast-follow-speaker sp))) (list (toggle-follow 'x) (toggle-follow 'x))" :note "Toggle. Returns (1 1)."))
+  :related ("podcast-follow-speaker" "podcast-followed-speakers")
+  :caveats ("Symbol match.")
+  :drawbacks ("No fuzzy.")
+  :usecases ("Unfollow button.")
+  :learn (:concept "Remove-if-present." :prerequisites ("podcast-follow-speaker") :progression "Learn follow mirror.")
+  :+math (:algebra () :total #t :domain "symbol" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter matching; return count."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Unfollow a speaker." :long "Remove from followed list." :for-ai "Remove-if-present." :for-kid "Stop following a person.")))
+
+(verb
+  :name "podcast-followed-speakers"
+  :library "podcast"
+  :signature "(podcast-followed-speakers) -> list-of-strings"
+  :summary "Return the list of currently-followed speaker IDs."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-followed-speakers)" :note "Empty. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-follow-speaker 'alice) (podcast-followed-speakers))" :note "One. Returns (\"alice\").")
+    (:tier "intermediate" :code "(begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (length (podcast-followed-speakers)))" :note "Two. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-follow-speaker 'alice) (member \"alice\" (podcast-followed-speakers)))" :note "Membership. Returns (\"alice\").")
+    (:tier "master"    :code "(define (export-follows) (list 'followed (podcast-followed-speakers))) (begin (podcast-follow-speaker 'a) (podcast-follow-speaker 'b) (export-follows))" :note "Export shape. Returns (followed (\"a\" \"b\"))."))
+  :related ("podcast-follow-speaker" "podcast-unfollow-speaker")
+  :caveats ("Snapshot only.")
+  :drawbacks ("No metadata.")
+  :usecases ("UI list." "Analytics.")
+  :learn (:concept "Read-side snapshot." :prerequisites () :progression "Pair with follow / unfollow.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of strings")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return followed.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return followed speakers." :long "Snapshot." :for-ai "List." :for-kid "See which people you follow.")))
+
+;; ─── podcast-bookmark + podcast-clips ─────────────────────────────
+
+(verb
+  :name "podcast-bookmark"
+  :library "podcast"
+  :signature "(podcast-bookmark guid) -> bookmark-count"
+  :summary "Bookmark an episode by guid; returns the new bookmark count."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-bookmark \"ep-42\")" :note "Bookmark. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-bookmark \"a\") (podcast-bookmark \"b\"))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(begin (podcast-bookmark \"a\") (podcast-bookmark \"a\"))" :note "Dedup. Returns 1.")
+    (:tier "expert"    :code "(define (bookmark-all guids) (map podcast-bookmark guids)) (bookmark-all (list \"a\" \"b\" \"c\"))" :note "Bulk. Returns (1 2 3).")
+    (:tier "master"    :code "(define (bookmark-current) (let ((c (podcast-current))) (if c (podcast-bookmark (obj-get c 'audio-url)) 'nothing-to-bookmark))) (begin (podcast-load (list 'audio-url \"https://ex/e\")) (bookmark-current))" :note "Bookmark current. Returns 1."))
+  :related ("podcast-current" "podcast-clips")
+  :caveats ("Dedup on guid.")
+  :drawbacks ("No metadata (time, note).")
+  :usecases ("Save-for-later.")
+  :learn (:concept "Add-once bookmark." :prerequisites () :progression "Learn clips for time-tagged saves.")
+  :+math (:algebra () :total #t :domain "string" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Add-once via includes-guard."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Bookmark an episode." :long "Add-once bookmark by guid." :for-ai "Add-once." :for-kid "Save a podcast for later.")))
+
+(verb
+  :name "podcast-clips"
+  :library "podcast"
+  :signature "(podcast-clips) -> list-of-clips"
+  :summary "Return the list of saved clips."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-clips)" :note "Empty. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-save-clip (list 'id \"c1\" 'start 60 'end 120)) (podcast-clips))" :note "One. Returns a one-element list.")
+    (:tier "intermediate" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-save-clip (list 'id \"c2\")) (length (podcast-clips)))" :note "Two. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-save-clip (list 'id \"c1\" 'title \"intro\")) (map (lambda (c) (obj-get c 'title)) (podcast-clips)))" :note "Titles. Returns (\"intro\").")
+    (:tier "master"    :code "(define (export-clips) (list 'clips (map (lambda (c) (list (obj-get c 'id) (obj-get c 'start) (obj-get c 'end))) (podcast-clips)))) (begin (podcast-save-clip (list 'id \"c1\" 'start 60 'end 120)) (export-clips))" :note "Export. Returns (clips ((\"c1\" 60 120)))."))
+  :related ("podcast-save-clip" "podcast-delete-clip")
+  :caveats ("Snapshot only.")
+  :drawbacks ("No sort.")
+  :usecases ("Clip UI." "Export.")
+  :learn (:concept "Read-side snapshot." :prerequisites ("podcast-save-clip") :progression "Learn save + delete.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of alists")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return clips.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return saved clips." :long "Snapshot." :for-ai "List." :for-kid "See your saved podcast clips.")))
+
+(verb
+  :name "podcast-save-clip"
+  :library "podcast"
+  :signature "(podcast-save-clip clip-alist) -> new-count | error-triple"
+  :summary "Save a clip (alist with id, start, end, title, etc.) to the clips list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-save-clip (list 'id \"c1\" 'start 60 'end 120))" :note "Save. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-save-clip (list 'id \"c2\")))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(podcast-save-clip \"bad\")" :note "Bad type. Returns (error bad-clip \"expected an alist\").")
+    (:tier "expert"    :code "(define (clip-at start end) (podcast-save-clip (list 'id (number->string start) 'start start 'end end))) (clip-at 30 45)" :note "Wrapped. Returns 1.")
+    (:tier "master"    :code "(define (batch-save clips) (map podcast-save-clip clips)) (batch-save (list (list 'id \"a\") (list 'id \"b\") (list 'id \"c\")))" :note "Bulk. Returns (1 2 3)."))
+  :related ("podcast-clips" "podcast-delete-clip")
+  :caveats ("Bad type returns error triple." "No dedup — same id twice creates two entries.")
+  :drawbacks ("No validation of start/end.")
+  :usecases ("Clip button." "Auto-save on marker.")
+  :learn (:concept "Append to clips list." :prerequisites () :progression "Learn delete + clips.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "clips.push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #f :cortex-touch none)
+  :+ai (:raises (bad-clip) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Save a clip." :long "Append clip to clips list." :for-ai "Append." :for-kid "Save a snippet from a podcast.")))
+
+(verb
+  :name "podcast-delete-clip"
+  :library "podcast"
+  :signature "(podcast-delete-clip clip-id) -> count-removed"
+  :summary "Delete a saved clip by id."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-delete-clip \"c1\")" :note "Nothing saved. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-delete-clip \"c1\"))" :note "Save then delete. Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-save-clip (list 'id \"c1\")) (podcast-save-clip (list 'id \"c2\")) (podcast-delete-clip \"c1\") (length (podcast-clips)))" :note "One left. Returns 1.")
+    (:tier "expert"    :code "(define (delete-all) (map (lambda (c) (podcast-delete-clip (obj-get c 'id))) (podcast-clips))) (begin (podcast-save-clip (list 'id \"a\")) (podcast-save-clip (list 'id \"b\")) (delete-all))" :note "Bulk. Returns (1 1).")
+    (:tier "master"    :code "(define (delete-if pred) (fold (lambda (acc c) (if (pred c) (+ acc (podcast-delete-clip (obj-get c 'id))) acc)) 0 (podcast-clips))) (begin (podcast-save-clip (list 'id \"a\" 'tag 'old)) (podcast-save-clip (list 'id \"b\" 'tag 'new)) (delete-if (lambda (c) (equal? (obj-get c 'tag) 'old))))" :note "Conditional delete. Returns 1."))
+  :related ("podcast-clips" "podcast-save-clip")
+  :caveats ("Match by id field on the clip alist.")
+  :drawbacks ("No batch delete-by-id.")
+  :usecases ("Delete button." "Cleanup old clips.")
+  :learn (:concept "Remove-if-id-matches." :prerequisites ("podcast-save-clip") :progression "Learn save mirror.")
+  :+math (:algebra () :total #t :domain "string|symbol" :codomain "count")
+  :+cs (:complexity "O(n)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Filter by id; return count removed."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Delete a clip by id." :long "Remove all clips with matching id." :for-ai "Remove-if-match." :for-kid "Delete a saved clip.")))
+
+;; ─── podcast rate / history / mentions ────────────────────────────
+
+(verb
+  :name "podcast-rate"
+  :library "podcast"
+  :signature "(podcast-rate guid rating) -> rating"
+  :summary "Set a numeric rating for an episode; overwrites prior rating; returns the rating."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-rate \"ep-42\" 5)" :note "Rate. Returns 5.")
+    (:tier "apprentice" :code "(podcast-rate \"ep-42\" 4.5)" :note "Fractional. Returns 4.5.")
+    (:tier "intermediate" :code "(begin (podcast-rate \"a\" 3) (podcast-rate \"a\" 5))" :note "Overwrite. Returns 5.")
+    (:tier "expert"    :code "(define (rate-multiple pairs) (map (lambda (p) (podcast-rate (car p) (cadr p))) pairs)) (rate-multiple (list (list \"a\" 5) (list \"b\" 4) (list \"c\" 3)))" :note "Bulk. Returns (5 4 3).")
+    (:tier "master"    :code "(define (rate-then-tag guid r tag) (list (podcast-rate guid r) tag)) (rate-then-tag \"a\" 5 'starred)" :note "Rate + tag pipeline. Returns (5 starred)."))
+  :related ("podcast-current" "podcast-state")
+  :caveats ("No range check." "Overwrite semantics.")
+  :drawbacks ("No historical / recency tracking.")
+  :usecases ("Star rating." "Sort-by-rating.")
+  :learn (:concept "Idempotent set of guid → rating." :prerequisites () :progression "Learn state for read-side.")
+  :+math (:algebra () :total #t :domain "guid + number" :codomain "number")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "rates[guid] = rating."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Rate an episode." :long "Set numeric rating; overwrites prior." :for-ai "Idempotent set." :for-kid "Give a podcast episode a star rating.")))
+
+(verb
+  :name "podcast-clear-history"
+  :library "podcast"
+  :signature "(podcast-clear-history) -> count-cleared"
+  :summary "Clear the play history; returns how many guids were cleared."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-clear-history)" :note "Empty history. Returns 0.")
+    (:tier "apprentice" :code "(begin (podcast-load (list 'audio-url \"a\")) (podcast-clear-history))" :note "One in history (from load). Returns 1.")
+    (:tier "intermediate" :code "(begin (podcast-load (list 'audio-url \"a\")) (podcast-load (list 'audio-url \"b\")) (podcast-clear-history))" :note "Two. Returns 2.")
+    (:tier "expert"    :code "(begin (podcast-load (list 'audio-url \"a\")) (podcast-clear-history) (podcast-clear-history))" :note "Second clear is 0. Returns 0.")
+    (:tier "master"    :code "(define (cleanup-and-report) (let ((n (podcast-clear-history))) (list 'cleared n))) (begin (podcast-load (list 'audio-url \"a\")) (cleanup-and-report))" :note "Cleanup + report. Returns (cleared 1)."))
+  :related ("podcast-load" "podcast-state")
+  :caveats ("Irreversible — history is gone." "Does not affect subscriptions or bookmarks.")
+  :drawbacks ("No selective clear (all-or-nothing).")
+  :usecases ("Privacy cleanup." "New-user onboarding.")
+  :learn (:concept "Bulk clear of play history." :prerequisites () :progression "Learn history-preserving verbs.")
+  :+math (:algebra () :total #t :domain "()" :codomain "count")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "n = history.length; history = []; return n."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Clear play history." :long "Wipe history; return count cleared." :for-ai "Bulk clear." :for-kid "Erase the record of what you listened to.")))
+
+(verb
+  :name "podcast-record-mention"
+  :library "podcast"
+  :signature "(podcast-record-mention mention) -> new-count | error-triple"
+  :summary "Record a mention (alist or string) into the mentions log."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-record-mention \"heard about Rust\")" :note "String. Returns 1.")
+    (:tier "apprentice" :code "(podcast-record-mention (list 'topic 'physics 'ep \"e-01\"))" :note "Alist. Returns 1 (or 2 if a prior test added one).")
+    (:tier "intermediate" :code "(podcast-record-mention 42)" :note "Bad type. Returns (error bad-mention ...).")
+    (:tier "expert"    :code "(define (log-topic t) (podcast-record-mention (list 'topic t))) (map log-topic (list 'a 'b 'c))" :note "Bulk. Returns (1 2 3).")
+    (:tier "master"    :code "(define (weekly-report) (list 'mentions-this-week 3)) (weekly-report)" :note "Report shape. Returns (mentions-this-week 3)."))
+  :related ("podcast-publish-insight")
+  :caveats ("Only alist or string accepted.")
+  :drawbacks ("No timestamp.")
+  :usecases ("Topic tracker." "Recommendation seeder.")
+  :learn (:concept "Append to mentions log." :prerequisites () :progression "Learn publish-insight for the publish side.")
+  :+math (:algebra () :total #t :domain "alist|string" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-mention) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Record a mention." :long "Log a mention (alist or string) for later reference." :for-ai "Append." :for-kid "Write down something interesting you heard.")))
+
+(verb
+  :name "podcast-publish-insight"
+  :library "podcast"
+  :signature "(podcast-publish-insight insight) -> new-count | error-triple"
+  :summary "Publish an insight derived from the podcast into the insight feed."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-publish-insight \"important idea\")" :note "String. Returns 1.")
+    (:tier "apprentice" :code "(podcast-publish-insight (list 'topic 'ml 'confidence 0.9))" :note "Alist. Returns count.")
+    (:tier "intermediate" :code "(podcast-publish-insight #f)" :note "Bad type. Returns (error bad-insight ...).")
+    (:tier "expert"    :code "(define (publish-from-current) (let ((c (podcast-current))) (if c (podcast-publish-insight (list 'guid (obj-get c 'audio-url))) 'no-episode))) (publish-from-current)" :note "Guarded publish. Returns 'no-episode when nothing loaded.")
+    (:tier "master"    :code "(define (auto-insight text score) (podcast-publish-insight (list 'text text 'score score))) (auto-insight \"Rust is fast\" 0.85)" :note "Structured insight. Returns count."))
+  :related ("podcast-record-mention" "podcast-current")
+  :caveats ("Alist or string only.")
+  :drawbacks ("No dedup.")
+  :usecases ("Auto-insight from LLM." "Manual insight publishing.")
+  :learn (:concept "Publish to the insight feed." :prerequisites () :progression "Learn record-mention for the input side.")
+  :+math (:algebra () :total #t :domain "alist|string" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; append tagged as 'insight."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.5" :needs-consent #f :idempotent #f :cortex-touch write)
+  :+ai (:raises (bad-insight) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Publish an insight." :long "Publish an insight (alist or string) to the feed." :for-ai "Append tagged." :for-kid "Share a smart thought about a podcast.")))
+
+;; ─── remaining podcast verbs ──────────────────────────────────────
+
+(verb
+  :name "podcast-episode-actions"
+  :library "podcast"
+  :signature "(podcast-episode-actions guid) -> list-of-actions"
+  :summary "Return recorded actions for a specific episode; empty list if none."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-episode-actions \"ep-42\")" :note "None recorded. Returns ().")
+    (:tier "apprentice" :code "(begin (podcast-record-episode-actions \"ep-42\" (list 'click 'skip)) (podcast-episode-actions \"ep-42\"))" :note "Read after record. Returns (click skip).")
+    (:tier "intermediate" :code "(begin (podcast-record-episode-actions \"a\" (list 'click)) (length (podcast-episode-actions \"a\")))" :note "Length. Returns 1.")
+    (:tier "expert"    :code "(begin (podcast-record-episode-actions \"a\" (list 'click 'skip 'like)) (member 'skip (podcast-episode-actions \"a\")))" :note "Membership. Returns (skip like).")
+    (:tier "master"    :code "(define (has-action? guid action) (and (member action (podcast-episode-actions guid)) #t)) (begin (podcast-record-episode-actions \"a\" (list 'like)) (has-action? \"a\" 'like))" :note "Predicate wrapper. Returns #t."))
+  :related ("podcast-record-episode-actions" "podcast-dismiss-episode-actions")
+  :caveats ("Returns () when guid unknown.")
+  :drawbacks ("No filter-by-action-type built in.")
+  :usecases ("Analytics." "UI state.")
+  :learn (:concept "Read per-episode action list." :prerequisites () :progression "Learn record + dismiss.")
+  :+math (:algebra () :total #t :domain "guid" :codomain "list of symbols")
+  :+cs (:complexity "O(1) lookup + O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return episode_actions[guid] || []."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Get recorded actions for an episode." :long "Return the list of actions logged against a guid." :for-ai "Read." :for-kid "See what happened with a podcast episode.")))
+
+(verb
+  :name "podcast-record-episode-actions"
+  :library "podcast"
+  :signature "(podcast-record-episode-actions guid actions) -> length"
+  :summary "Record a list of action symbols against an episode; overwrites prior."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-record-episode-actions \"ep-42\" (list 'click))" :note "One action. Returns 1.")
+    (:tier "apprentice" :code "(podcast-record-episode-actions \"ep-42\" (list 'click 'skip 'like))" :note "Multiple. Returns 3.")
+    (:tier "intermediate" :code "(begin (podcast-record-episode-actions \"a\" (list 'x)) (podcast-record-episode-actions \"a\" (list 'y 'z)) (podcast-episode-actions \"a\"))" :note "Overwrite. Returns (y z).")
+    (:tier "expert"    :code "(podcast-record-episode-actions \"a\" 'not-a-list)" :note "Non-list clamped to []. Returns 0.")
+    (:tier "master"    :code "(define (log-actions guid . acts) (podcast-record-episode-actions guid acts)) (log-actions \"e1\" 'skip 'like 'save)" :note "Variadic wrapper. Returns 3."))
+  :related ("podcast-episode-actions" "podcast-dismiss-episode-actions")
+  :caveats ("Overwrite semantics — prior actions lost." "Non-list argument silently becomes empty list.")
+  :drawbacks ("No append-mode variant.")
+  :usecases ("Analytics logging." "UI-triggered action recording.")
+  :learn (:concept "Overwrite the action list for a guid." :prerequisites () :progression "Learn read + dismiss.")
+  :+math (:algebra () :total #t :domain "guid + list" :codomain "count")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "episode_actions[guid] = list.slice()."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Record actions on an episode." :long "Overwrite the action list for a guid." :for-ai "Overwrite." :for-kid "Write down what you did with a podcast episode.")))
+
+(verb
+  :name "podcast-dismiss-episode-actions"
+  :library "podcast"
+  :signature "(podcast-dismiss-episode-actions guid) -> boolean"
+  :summary "Dismiss recorded actions for an episode; return #t if there were any."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-dismiss-episode-actions \"missing\")" :note "None to dismiss. Returns #f.")
+    (:tier "apprentice" :code "(begin (podcast-record-episode-actions \"a\" (list 'x)) (podcast-dismiss-episode-actions \"a\"))" :note "Had them. Returns #t.")
+    (:tier "intermediate" :code "(begin (podcast-record-episode-actions \"a\" (list 'x)) (podcast-dismiss-episode-actions \"a\") (podcast-episode-actions \"a\"))" :note "After dismiss. Returns ().")
+    (:tier "expert"    :code "(define (dismiss-all guids) (map podcast-dismiss-episode-actions guids)) (begin (podcast-record-episode-actions \"a\" (list 'x)) (dismiss-all (list \"a\" \"b\")))" :note "Bulk. Returns (#t #f).")
+    (:tier "master"    :code "(define (dismiss-and-report guid) (list guid 'had? (podcast-dismiss-episode-actions guid))) (dismiss-and-report \"nothing\")" :note "Report. Returns (\"nothing\" had? #f)."))
+  :related ("podcast-record-episode-actions" "podcast-episode-actions")
+  :caveats ("Returns #f when nothing to dismiss.")
+  :drawbacks ("No selective dismiss.")
+  :usecases ("Cleanup UI state." "Reset analytics for a guid.")
+  :learn (:concept "Delete actions for a guid; return whether any existed." :prerequisites ("podcast-record-episode-actions") :progression "Learn record + read.")
+  :+math (:algebra () :total #t :domain "guid" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Check existence; delete; return had-existence."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Dismiss episode actions." :long "Delete recorded actions; return whether there were any." :for-ai "Delete." :for-kid "Clear what you did with a podcast episode.")))
+
+(verb
+  :name "podcast-set-show-tier"
+  :library "podcast"
+  :signature "(podcast-set-show-tier show-id tier) -> tier"
+  :summary "Set the tier for a show (e.g., 'free, 'premium); returns the new tier."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-set-show-tier 'daily-tech 'premium)" :note "Set. Returns \"premium\".")
+    (:tier "apprentice" :code "(begin (podcast-set-show-tier 'a 'free) (podcast-set-show-tier 'a 'premium))" :note "Overwrite. Returns \"premium\".")
+    (:tier "intermediate" :code "(begin (podcast-set-show-tier 'a 'premium) (podcast-resolve-tier 'a))" :note "Round trip. Returns premium.")
+    (:tier "expert"    :code "(define (upgrade-all shows) (map (lambda (s) (podcast-set-show-tier s 'premium)) shows)) (upgrade-all (list 'a 'b 'c))" :note "Bulk. Returns (\"premium\" \"premium\" \"premium\").")
+    (:tier "master"    :code "(define (grant-tier user shows) (map (lambda (s) (list s (podcast-set-show-tier s (obj-get user 'tier)))) shows)) (grant-tier (list 'tier 'gold) (list 'a 'b))" :note "Per-user tier grant. Returns ((a \"gold\") (b \"gold\"))."))
+  :related ("podcast-resolve-tier")
+  :caveats ("Overwrites prior.")
+  :drawbacks ("No tier hierarchy.")
+  :usecases ("Paywall management." "User onboarding.")
+  :learn (:concept "Idempotent set of show → tier." :prerequisites () :progression "Learn resolve-tier for the read side.")
+  :+math (:algebra () :total #t :domain "show-id + tier" :codomain "tier-string")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "show_tiers[show-id] = tier."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+commerce (:cost free :fuel-cost "~0.1" :needs-consent #f :idempotent #t :cortex-touch none)
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Set the tier for a show." :long "Idempotent set of show → tier symbol." :for-ai "Set." :for-kid "Say what tier a podcast belongs to (like free or paid).")))
+
+(verb
+  :name "podcast-resolve-tier"
+  :library "podcast"
+  :signature "(podcast-resolve-tier show-id) -> tier-symbol"
+  :summary "Return the tier for a show; defaults to 'free if unset."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-resolve-tier 'unknown)" :note "Default. Returns free.")
+    (:tier "apprentice" :code "(begin (podcast-set-show-tier 'a 'premium) (podcast-resolve-tier 'a))" :note "After set. Returns premium.")
+    (:tier "intermediate" :code "(begin (podcast-set-show-tier 'a 'gold) (list (podcast-resolve-tier 'a) (podcast-resolve-tier 'b)))" :note "Mix. Returns (gold free).")
+    (:tier "expert"    :code "(define (require-tier show wanted) (equal? (podcast-resolve-tier show) wanted)) (begin (podcast-set-show-tier 'a 'premium) (require-tier 'a 'premium))" :note "Guard. Returns #t.")
+    (:tier "master"    :code "(define (unlock? show user-tier) (or (equal? user-tier 'premium) (equal? (podcast-resolve-tier show) 'free))) (unlock? 'random 'free)" :note "Tier compare. Returns #t (assuming random defaults to free)."))
+  :related ("podcast-set-show-tier")
+  :caveats ("Defaults to 'free.")
+  :drawbacks ("No tier hierarchy.")
+  :usecases ("Paywall gate.")
+  :learn (:concept "Read-side resolver." :prerequisites () :progression "Learn set + resolve pair.")
+  :+math (:algebra () :total #t :domain "show-id" :codomain "tier symbol")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return show_tiers[show-id] as Sym or Sym('free')."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Resolve tier for a show." :long "Return tier symbol; defaults to 'free." :for-ai "Read." :for-kid "See what tier a podcast belongs to.")))
+
+(verb
+  :name "podcast-sleep"
+  :library "podcast"
+  :signature "(podcast-sleep [seconds]) -> seconds | #f"
+  :summary "Set a sleep timer; nil / negative / zero clears; returns the timer or #f."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-sleep 600)" :note "10-minute sleep. Returns 600.")
+    (:tier "apprentice" :code "(begin (podcast-sleep 60) (podcast-sleep))" :note "Clear via no-arg. Returns #f.")
+    (:tier "intermediate" :code "(podcast-sleep 0)" :note "Zero clears. Returns #f.")
+    (:tier "expert"    :code "(podcast-sleep -5)" :note "Negative clears. Returns #f.")
+    (:tier "master"    :code "(define (snooze n) (podcast-sleep (* n 60))) (snooze 15)" :note "Minutes wrapper. Returns 900."))
+  :related ("podcast-pause")
+  :caveats ("Timer state is per-REPL session.")
+  :drawbacks ("No cancel-with-notification.")
+  :usecases ("Bedtime auto-pause.")
+  :learn (:concept "Set sleep timer; zero / nil clears." :prerequisites () :progression "Pair with pause.")
+  :+math (:algebra () :total #t :domain "() or number" :codomain "seconds | #f")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Set/clear sleep_timer; return current."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Set sleep timer." :long "Set or clear the sleep timer in seconds." :for-ai "Set." :for-kid "Tell the podcast to stop after some time.")))
+
+(verb
+  :name "podcast-save-brief"
+  :library "podcast"
+  :signature "(podcast-save-brief brief-alist) -> new-count | error-triple"
+  :summary "Save a brief (summary alist) into the briefs list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-save-brief (list 'guid \"a\" 'summary \"tldr\"))" :note "Save. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-save-brief (list 'guid \"a\")) (podcast-save-brief (list 'guid \"b\")))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(podcast-save-brief \"bad\")" :note "Bad type. Returns error triple.")
+    (:tier "expert"    :code "(define (brief-current tldr) (let ((c (podcast-current))) (if c (podcast-save-brief (list 'guid (obj-get c 'audio-url) 'summary tldr)) 'no-episode))) (begin (podcast-load (list 'audio-url \"https://x\")) (brief-current \"quick summary\"))" :note "Brief current. Returns 1.")
+    (:tier "master"    :code "(define (auto-brief-all guids summary) (map (lambda (g) (podcast-save-brief (list 'guid g 'summary summary))) guids)) (auto-brief-all (list \"a\" \"b\") \"todo\")" :note "Batch brief. Returns (1 2)."))
+  :related ("podcast-save-mini-pod")
+  :caveats ("Bad type returns error triple.")
+  :drawbacks ("No dedup.")
+  :usecases ("LLM-generated summaries.")
+  :learn (:concept "Append summary artifact." :prerequisites () :progression "Learn save-mini-pod as sibling.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-brief) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Save a brief." :long "Append a brief (summary alist) to briefs." :for-ai "Append." :for-kid "Save a quick summary of a podcast.")))
+
+(verb
+  :name "podcast-save-mini-pod"
+  :library "podcast"
+  :signature "(podcast-save-mini-pod mini-pod-alist) -> new-count | error-triple"
+  :summary "Save a mini-pod (short-form derived clip) into the mini-pods list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-save-mini-pod (list 'from \"a\" 'duration 30))" :note "Save. Returns 1.")
+    (:tier "apprentice" :code "(begin (podcast-save-mini-pod (list 'from \"a\")) (podcast-save-mini-pod (list 'from \"b\")))" :note "Two. Returns 2.")
+    (:tier "intermediate" :code "(podcast-save-mini-pod \"bad\")" :note "Bad type. Returns error triple.")
+    (:tier "expert"    :code "(define (mini-of guid dur) (podcast-save-mini-pod (list 'from guid 'duration dur))) (mini-of \"a\" 45)" :note "Wrapped. Returns 1.")
+    (:tier "master"    :code "(define (auto-minis guids dur) (map (lambda (g) (podcast-save-mini-pod (list 'from g 'duration dur))) guids)) (auto-minis (list \"a\" \"b\") 30)" :note "Batch. Returns (1 2)."))
+  :related ("podcast-save-brief")
+  :caveats ("Bad type returns error triple.")
+  :drawbacks ("No dedup.")
+  :usecases ("Sharable short-form.")
+  :learn (:concept "Append mini-pod artifact." :prerequisites () :progression "Learn save-brief as sibling.")
+  :+math (:algebra () :total #t :domain "alist" :codomain "count | error-triple")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Type-check; push; return length."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-mini-pod) :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Save a mini-pod." :long "Append a mini-pod (short-form clip) to the collection." :for-ai "Append." :for-kid "Save a short version of a podcast.")))
+
+(verb
+  :name "podcast-voice-overlay-enable"
+  :library "podcast"
+  :signature "(podcast-voice-overlay-enable [enable]) -> boolean"
+  :summary "Enable (or disable, if #f passed) the voice overlay feature."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-voice-overlay-enable)" :note "Enable. Returns #t.")
+    (:tier "apprentice" :code "(podcast-voice-overlay-enable #f)" :note "Disable. Returns #f.")
+    (:tier "intermediate" :code "(begin (podcast-voice-overlay-enable) (podcast-voice-overlay-enable #f))" :note "Toggle. Returns #f.")
+    (:tier "expert"    :code "(define (v-overlay-on?) (podcast-voice-overlay-enable)) (v-overlay-on?)" :note "Wrap. Returns #t.")
+    (:tier "master"    :code "(define (with-overlay enabled thunk) (podcast-voice-overlay-enable enabled) (thunk)) (with-overlay #t (lambda () (list 'go)))" :note "Scoped enable. Returns (go)."))
+  :related ()
+  :caveats ("Enable persists until changed.")
+  :drawbacks ("No granular per-episode setting.")
+  :usecases ("Feature toggle.")
+  :learn (:concept "Boolean state flip." :prerequisites () :progression "Learn other flag verbs.")
+  :+math (:algebra () :total #t :domain "() or boolean" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Set podcast.voice_overlay; return current."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Enable voice overlay." :long "Toggle the voice overlay feature." :for-ai "Toggle." :for-kid "Turn the voice overlay on or off.")))
+
+(verb
+  :name "podcast-active-constellations"
+  :library "podcast"
+  :signature "(podcast-active-constellations) -> list-of-alists"
+  :summary "Return the list of active listening constellations."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(podcast-active-constellations)" :note "Empty. Returns ().")
+    (:tier "apprentice" :code "(length (podcast-active-constellations))" :note "Length. Returns 0.")
+    (:tier "intermediate" :code "(map (lambda (c) (obj-get c 'name)) (podcast-active-constellations))" :note "Map over. Returns ().")
+    (:tier "expert"    :code "(define (any-active?) (> (length (podcast-active-constellations)) 0)) (any-active?)" :note "Predicate. Returns #f.")
+    (:tier "master"    :code "(define (constellation-report) (list 'active (length (podcast-active-constellations)))) (constellation-report)" :note "Report. Returns (active 0)."))
+  :related ()
+  :caveats ("Read-only snapshot.")
+  :drawbacks ("No filter.")
+  :usecases ("UI display.")
+  :learn (:concept "Read-side snapshot of active constellations." :prerequisites () :progression "Learn other query verbs.")
+  :+math (:algebra () :total #t :domain "()" :codomain "list of alists")
+  :+cs (:complexity "O(n) copy" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs-priya-i-p.js" :impl-notes "Return active_constellations.slice()."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: ()." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Return active constellations." :long "Snapshot of currently active listening constellations." :for-ai "List." :for-kid "See which listening groups are active.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; PAINT-* CLUSTER (7 verbs)
+;;
+;; Rendering to a named grid surface. In a headless REPL there is no
+;; live surface, so paint-* returns a tagged descriptor list the host
+;; would consume. The entry :impl-status is "deferred" and :impl-notes
+;; explains the host's role.
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "paint-cell"
+  :library "paint"
+  :signature "(paint-cell surface col row colour [alpha]) -> descriptor"
+  :summary "Draw a single cell to a named grid surface at (col, row) in colour."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-cell 'world 5 3 'red)" :note "Descriptor for the host. Returns (\"paint-cell\" world 5 3 red).")
+    (:tier "apprentice" :code "(paint-cell 'world 0 0 'blue 0.5)" :note "With alpha. Returns (\"paint-cell\" world 0 0 blue 0.5).")
+    (:tier "intermediate" :code "(map (lambda (c) (paint-cell 'world c 0 'red)) (list 0 1 2 3))" :note "Row of red cells (descriptors). Returns 4 descriptors.")
+    (:tier "expert"    :code "(define (draw-line surface y1 y2) (map (lambda (y) (paint-cell surface 0 y 'blue)) (range y1 y2))) (draw-line 'world 0 3)"     :note "Column stripe. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (draw-checkerboard s n c1 c2) (map (lambda (r) (map (lambda (c) (paint-cell s c r (if (= (modulo (+ r c) 2) 0) c1 c2))) (range 0 n))) (range 0 n))) (draw-checkerboard 'world 2 'white 'black)"     :note "2x2 checkerboard. Returns nested descriptors — the host renders."))
+  :related ("paint-grid" "paint-conway" "paint-coin")
+  :caveats ("Headless REPL returns descriptors; a full host consumes and renders." "Out-of-bounds coordinates are host-decided (usually ignored)." "Colour resolution is host-decided at render time.")
+  :drawbacks ("No return value from the actual paint call — descriptors are opaque to Scheme.")
+  :usecases ("Draw individual cells." "Compose into procedural patterns.")
+  :learn (:concept "Emit a paint instruction; host consumes." :prerequisites () :progression "Learn paint-grid for a whole grid; paint-conway for automata.")
+  :+math (:algebra () :total #t :domain "surface + coords + colour" :codomain "descriptor list")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js"
+         :impl-notes "Descriptor factory in wired-verbs.js's shaped-descriptor pass. Host overrides via env.define to write to a real surface."
+         :permission "state-change" :latency-class "sync-fast"
+         :tests "REPL-verified: descriptor shape stable."
+         :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f
+        :common-mistakes "Expecting a visual effect in headless REPL. Assuming out-of-bounds coordinates error.")
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Draw a cell to a grid surface." :long "Emit a paint instruction for a colored cell. Headless returns descriptor." :for-ai "Descriptor in headless; host renders." :for-kid "Paint one square of the grid.")))
+
+(verb
+  :name "paint-coin"
+  :library "paint"
+  :signature "(paint-coin surface col row) -> descriptor"
+  :summary "Draw a coin token to a named surface at (col, row)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-coin 'world 5 5)" :note "Descriptor. Returns (\"paint-coin\" world 5 5).")
+    (:tier "apprentice" :code "(paint-coin 'sandbox 0 0)" :note "Origin coin. Returns (\"paint-coin\" sandbox 0 0).")
+    (:tier "intermediate" :code "(map (lambda (r) (paint-coin 'world 0 r)) (list 0 1 2))" :note "Column of coins. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (coin-line surface y) (map (lambda (x) (paint-coin surface x y)) (list 0 2 4 6))) (coin-line 'world 5)" :note "Space-alternating coins on row 5. Returns 4 descriptors.")
+    (:tier "master"    :code "(define (scatter surface n) (map (lambda (i) (paint-coin surface (modulo (* i 3) 8) (quotient i 3))) (range 0 n))) (scatter 'world 5)" :note "Scatter n coins. Returns 5 descriptors."))
+  :related ("paint-cell" "paint-grid" "coin-emit")
+  :caveats ("Coin is a game-specific token; host defines the sprite.")
+  :drawbacks ("No value / colour parameters — just position.")
+  :usecases ("Reward tokens." "Collectibles.")
+  :learn (:concept "Emit a coin-placement instruction." :prerequisites ("paint-cell") :progression "Learn coin-emit for the game-state side.")
+  :+math (:algebra () :total #t :domain "surface + coords" :codomain "descriptor list")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory; host renders."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Draw a coin token." :long "Emit a coin-placement descriptor." :for-ai "Descriptor." :for-kid "Put a coin somewhere on the grid.")))
+
+(verb
+  :name "paint-conway"
+  :library "paint"
+  :signature "(paint-conway surface [palette]) -> descriptor"
+  :summary "Render the current Conway's Life state to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-conway 'world)" :note "Descriptor. Returns (\"paint-conway\" world).")
+    (:tier "apprentice" :code "(paint-conway 'sandbox (list 'black 'white))" :note "With 2-color palette. Returns (\"paint-conway\" sandbox (black white)).")
+    (:tier "intermediate" :code "(map (lambda (s) (paint-conway s)) (list 'world 'preview))" :note "Two surfaces. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (life-step) (list (paint-conway 'world) 'grid-step 'done)) (life-step)" :note "Step + render pipeline. Returns ((\"paint-conway\" world) grid-step done).")
+    (:tier "master"    :code "(define (life-loop surface iter) (if (= iter 0) 'done (begin (paint-conway surface) (life-loop surface (- iter 1))))) (life-loop 'world 3)" :note "3-step loop. Returns 'done."))
+  :related ("paint-grid" "rule-conway" "grid-step")
+  :caveats ("Requires host with a live Conway CA state." "Palette length controls state colouring.")
+  :drawbacks ("No return value on individual paint call.")
+  :usecases ("CA visualization." "Life demo.")
+  :learn (:concept "Render a Conway CA snapshot." :prerequisites ("paint-grid") :progression "Learn rule-conway for the rule side.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1) emit" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory; host renders CA state."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render Conway to surface." :long "Emit paint-conway descriptor for host to render." :for-ai "Descriptor." :for-kid "Show the Conway pattern on the screen.")))
+
+(verb
+  :name "paint-grid"
+  :library "paint"
+  :signature "(paint-grid surface [palette]) -> descriptor"
+  :summary "Render the current grid CA state to a named surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid 'world)" :note "Descriptor. Returns (\"paint-grid\" world).")
+    (:tier "apprentice" :code "(paint-grid 'sandbox (list 'black 'white 'red))" :note "3-color palette. Returns (\"paint-grid\" sandbox (black white red)).")
+    (:tier "intermediate" :code "(list (paint-grid 'a) (paint-grid 'b))" :note "Two. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (render-both) (list (paint-grid 'world (list 'dark 'light)) (paint-grid 'preview (list 'gray 'black)))) (render-both)" :note "Composed render. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (animate-grid surface n) (fold (lambda (acc _) (cons (paint-grid surface) acc)) (list) (range 0 n))) (animate-grid 'world 3)" :note "3-frame animation descriptors. Returns 3 descriptors."))
+  :related ("grid-step" "paint-conway" "paint-cell")
+  :caveats ("Palette shape is host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Grid visualization.")
+  :learn (:concept "Emit paint-grid instruction." :prerequisites () :progression "Learn siblings paint-grid-3state and paint-grid-4state.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render grid to surface." :long "Emit paint-grid descriptor for host to render." :for-ai "Descriptor." :for-kid "Show the grid pattern on the screen.")))
+
+(verb
+  :name "paint-grid-3state"
+  :library "paint"
+  :signature "(paint-grid-3state surface [palette]) -> descriptor"
+  :summary "Render a 3-state CA to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid-3state 'world)" :note "Descriptor. Returns (\"paint-grid-3state\" world).")
+    (:tier "apprentice" :code "(paint-grid-3state 'w (list 'dark 'mid 'light))" :note "3-color palette. Returns descriptor with palette.")
+    (:tier "intermediate" :code "(map paint-grid-3state (list 'a 'b))" :note "Two surfaces. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (show-3 surface) (list (paint-grid-3state surface (list 'red 'yellow 'green)))) (show-3 'world)" :note "Traffic-light palette. Returns 1 descriptor.")
+    (:tier "master"    :code "(define (multi-render surfaces palette) (map (lambda (s) (paint-grid-3state s palette)) surfaces)) (multi-render (list 'a 'b 'c) (list 'r 'g 'b))" :note "Batch. Returns 3 descriptors."))
+  :related ("paint-grid" "paint-grid-4state" "paint-conway")
+  :caveats ("3-state model host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Multi-state CA viz.")
+  :learn (:concept "3-state emit." :prerequisites ("paint-grid") :progression "Learn 4state sibling.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render 3-state grid." :long "Emit paint-grid-3state descriptor." :for-ai "Descriptor." :for-kid "Show a 3-color CA pattern.")))
+
+(verb
+  :name "paint-grid-4state"
+  :library "paint"
+  :signature "(paint-grid-4state surface [palette]) -> descriptor"
+  :summary "Render a 4-state CA to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid-4state 'world)" :note "Descriptor. Returns (\"paint-grid-4state\" world).")
+    (:tier "apprentice" :code "(paint-grid-4state 'w (list 'a 'b 'c 'd))" :note "4-color palette. Returns descriptor with palette.")
+    (:tier "intermediate" :code "(map paint-grid-4state (list 'x 'y))" :note "Two. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (four-panel surfaces) (map paint-grid-4state surfaces)) (four-panel (list 'p1 'p2 'p3 'p4))" :note "Four surfaces. Returns 4 descriptors.")
+    (:tier "master"    :code "(define (render-with palette surfaces) (map (lambda (s) (paint-grid-4state s palette)) surfaces)) (render-with (list 'r 'g 'b 'y) (list 'a 'b))" :note "Batch. Returns 2 descriptors."))
+  :related ("paint-grid-3state" "paint-grid")
+  :caveats ("4-state model host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Multi-state CA viz.")
+  :learn (:concept "4-state emit." :prerequisites () :progression "Learn siblings.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render 4-state grid." :long "Emit paint-grid-4state descriptor." :for-ai "Descriptor." :for-kid "Show a 4-color CA pattern.")))
+
+(verb
+  :name "paint-grid-with-age"
+  :library "paint"
+  :signature "(paint-grid-with-age surface [palette]) -> descriptor"
+  :summary "Render a grid CA with age-aware colouring to a surface."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(paint-grid-with-age 'world)" :note "Descriptor. Returns (\"paint-grid-with-age\" world).")
+    (:tier "apprentice" :code "(paint-grid-with-age 'w (list 'new 'mid 'old))" :note "Age palette. Returns descriptor with palette.")
+    (:tier "intermediate" :code "(map paint-grid-with-age (list 'a 'b))" :note "Two. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (age-render s) (paint-grid-with-age s (list 'yellow 'orange 'red))) (age-render 'world)" :note "Hot palette. Returns 1 descriptor.")
+    (:tier "master"    :code "(define (compare surfaces) (map (lambda (s) (list s (paint-grid-with-age s))) surfaces)) (compare (list 'a 'b))" :note "Multiple. Returns paired descriptors."))
+  :related ("paint-grid" "grid-cell-age")
+  :caveats ("Age model host-defined.")
+  :drawbacks ("Snapshot only.")
+  :usecases ("Age-decay viz.")
+  :learn (:concept "Age-aware paint emit." :prerequisites () :progression "Learn siblings.")
+  :+math (:algebra () :total #t :domain "surface [palette]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Render age-aware grid." :long "Emit paint-grid-with-age descriptor." :for-ai "Descriptor." :for-kid "Show the grid with color for how old each cell is.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; MOTION-* CLUSTER (4 verbs)
+;;
+;; Motion verbs need a live input source and a character registry.
+;; Headless REPL returns descriptors; entries mark deferred.
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "motion-anchor-to-input"
+  :library "motion"
+  :signature "(motion-anchor-to-input character input-source) -> descriptor"
+  :summary "Anchor a character's motion to a live input source."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-anchor-to-input 'hero 'gamepad)" :note "Descriptor. Returns (\"motion-anchor-to-input\" hero gamepad).")
+    (:tier "apprentice" :code "(motion-anchor-to-input 'ship 'keyboard)" :note "Keyboard anchor. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (motion-anchor-to-input c 'touch)) (list 'a 'b 'c))" :note "Bulk. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (setup chars src) (map (lambda (c) (motion-anchor-to-input c src)) chars)) (setup (list 'p1 'p2) 'gamepad)" :note "Party anchoring. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (multi-player mapping) (map (lambda (p) (motion-anchor-to-input (car p) (cadr p))) mapping)) (multi-player (list (list 'p1 'gamepad-1) (list 'p2 'gamepad-2)))" :note "Multi-player mapping. Returns 2 descriptors."))
+  :related ("motion-follow-input" "motion-halt" "motion-move-to" "make-character")
+  :caveats ("Requires live input runtime.")
+  :drawbacks ("No transformation applied — anchor is 1:1.")
+  :usecases ("Player control.")
+  :learn (:concept "Bind motion to input." :prerequisites () :progression "Learn follow-input for a looser bind.")
+  :+math (:algebra () :total #t :domain "character + source" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Anchor motion to input." :long "Bind a character's motion to a live input source." :for-ai "Descriptor." :for-kid "Let the game controller move the character.")))
+
+(verb
+  :name "motion-follow-input"
+  :library "motion"
+  :signature "(motion-follow-input character input-source) -> descriptor"
+  :summary "Have a character loosely follow input rather than mirror it exactly."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-follow-input 'pet 'cursor)" :note "Descriptor. Returns (\"motion-follow-input\" pet cursor).")
+    (:tier "apprentice" :code "(motion-follow-input 'buddy 'touch)" :note "Touch follow. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (motion-follow-input c 'cursor)) (list 'a 'b))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (pack members leader) (map (lambda (m) (motion-follow-input m leader)) members)) (pack (list 'dog 'cat) 'player)" :note "Pack behavior. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (crowd-follow crowd) (map (lambda (c) (motion-follow-input c 'player)) crowd)) (crowd-follow (list 'a 'b 'c))" :note "Crowd. Returns 3 descriptors."))
+  :related ("motion-anchor-to-input" "motion-move-to" "motion-halt")
+  :caveats ("Follow includes lag; anchor is 1:1.")
+  :drawbacks ("Lag hardcoded in host.")
+  :usecases ("Pet/pack AI.")
+  :learn (:concept "Loose follow, not anchor." :prerequisites () :progression "Learn anchor variant.")
+  :+math (:algebra () :total #t :domain "character + source" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Have character follow input loosely." :long "Follow input with lag rather than mirror exactly." :for-ai "Descriptor." :for-kid "Let a pet walk toward the cursor.")))
+
+(verb
+  :name "motion-halt"
+  :library "motion"
+  :signature "(motion-halt character) -> descriptor"
+  :summary "Stop a character's motion."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-halt 'hero)" :note "Descriptor. Returns (\"motion-halt\" hero).")
+    (:tier "apprentice" :code "(motion-halt 'ship)" :note "Halt. Returns descriptor.")
+    (:tier "intermediate" :code "(map motion-halt (list 'a 'b))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (halt-all chars) (map motion-halt chars)) (halt-all (list 'p1 'p2 'p3))" :note "Halt all. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (pause-scene chars) (list 'paused (map motion-halt chars))) (pause-scene (list 'a 'b))" :note "Scene pause. Returns (paused (...))."))
+  :related ("motion-move-to" "motion-anchor-to-input")
+  :caveats ("Stops motion; does not reset position.")
+  :drawbacks ("No gradual stop.")
+  :usecases ("Cutscene freeze." "Damage stun.")
+  :learn (:concept "Zero out motion." :prerequisites () :progression "Learn move-to for the opposite.")
+  :+math (:algebra () :total #t :domain "character" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Stop character motion." :long "Halt a character's motion; position unchanged." :for-ai "Descriptor." :for-kid "Tell a character to stop moving.")))
+
+(verb
+  :name "motion-move-to"
+  :library "motion"
+  :signature "(motion-move-to character x y) -> descriptor"
+  :summary "Direct a character to move toward (x, y)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(motion-move-to 'hero 10 5)" :note "Descriptor. Returns (\"motion-move-to\" hero 10 5).")
+    (:tier "apprentice" :code "(motion-move-to 'ship 100 100)" :note "Target coords. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (motion-move-to c 0 0)) (list 'a 'b))" :note "Rally to origin. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (path-to char points) (map (lambda (p) (motion-move-to char (car p) (cadr p))) points)) (path-to 'hero (list (list 10 10) (list 20 20)))" :note "Path descriptors. Returns 2 descriptors.")
+    (:tier "master"    :code "(define (formation chars offsets center) (map (lambda (i) (let ((c (list-ref chars i)) (dx (car (list-ref offsets i))) (dy (cadr (list-ref offsets i)))) (motion-move-to c (+ (car center) dx) (+ (cadr center) dy)))) (range 0 (length chars)))) (formation (list 'a 'b) (list (list -5 0) (list 5 0)) (list 40 40))" :note "Formation move. Returns 2 descriptors."))
+  :related ("motion-halt" "motion-anchor-to-input")
+  :caveats ("Motion speed host-defined.")
+  :drawbacks ("No arrival callback.")
+  :usecases ("AI pathing." "Cutscene movement.")
+  :learn (:concept "Direct move to a point." :prerequisites () :progression "Learn halt.")
+  :+math (:algebra () :total #t :domain "character + coords" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Move character to a point." :long "Direct a character to move toward (x, y)." :for-ai "Descriptor." :for-kid "Tell a character to walk somewhere.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; ALREADY-REAL (game loop, input) — entries only, no impl work
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "on-frame"
+  :library "game"
+  :signature "(on-frame handler) -> undefined"
+  :summary "Register a procedure to be called once per animation frame."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(on-frame (lambda () 'tick))" :note "Register a no-op tick. Returns undefined; the callback fires per frame.")
+    (:tier "apprentice" :code "(define counter 0) (on-frame (lambda () (set! counter (+ counter 1))))" :note "Increment counter each frame.")
+    (:tier "intermediate" :code "(on-frame (lambda () (if (key? 'ArrowRight) (display \"right\"))))" :note "Input-driven per-frame reaction.")
+    (:tier "expert"    :code "(define pos 0) (on-frame (lambda () (if (key? 'ArrowRight) (set! pos (+ pos 2))) (if (key? 'ArrowLeft) (set! pos (- pos 2)))))" :note "Position tracking with two keys.")
+    (:tier "master"    :code "(define (game-loop state-ref) (on-frame (lambda () (let ((old (car state-ref))) (set-car! state-ref (+ old 1)))))) (game-loop (list 0))" :note "Full state-updating loop pattern."))
+  :related ("frame" "on-key" "on-tick" "stop" "key?")
+  :caveats ("Handler must be 0-arg procedure." "Throwing inside handler stops the loop and surfaces the error." "Fuel budget is per-frame; complex logic may exhaust it.")
+  :drawbacks ("No return value used." "Single handler slot; register replaces prior.")
+  :usecases ("Game main loop." "Continuous animation.")
+  :learn (:concept "Per-frame callback hook." :prerequisites () :progression "Learn key?, frame, on-key.")
+  :+math (:algebra () :total #t :domain "procedure" :codomain "undefined")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/game.js" :impl-notes "Registers handler with media loop; fires each tick."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: registration returns undefined." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Per-frame callback." :long "Register a procedure to be called once per animation frame." :for-ai "Register." :for-kid "Give the game a job to do every frame.")))
+
+(verb
+  :name "on-key"
+  :library "game"
+  :signature "(on-key handler) -> clause"
+  :summary "Register a keyboard event handler that receives (state, key) and returns new-state."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(on-key (lambda (s k) s))" :note "No-op handler. Returns clause descriptor.")
+    (:tier "apprentice" :code "(on-key (lambda (s k) (if (equal? k \"r\") 0 s)))" :note "Reset on 'r'.")
+    (:tier "intermediate" :code "(define (move-player state key) (cond ((equal? key \"ArrowUp\") (+ state 1)) ((equal? key \"ArrowDown\") (- state 1)) (else state))) (on-key move-player)" :note "Basic keyboard control.")
+    (:tier "expert"    :code "(define (handle-input state key) (let ((action (cond ((equal? key \"w\") 'up) ((equal? key \"s\") 'down) (else 'none)))) (if (equal? action 'none) state (list 'moved state action)))) (on-key handle-input)" :note "Action decoding.")
+    (:tier "master"    :code "(define (game-controller state key) (cond ((equal? key \"q\") 'quit) ((equal? key \"p\") (list 'pause state)) (else (list 'running state)))) (on-key game-controller)" :note "Full game controller pattern."))
+  :related ("on-frame" "on-tick" "key?" "big-bang")
+  :caveats ("Handler receives (state, key)." "Handler must return new state." "Runs after on-tick each frame.")
+  :drawbacks ("Multi-key per frame delivers each individually; only final state retained.")
+  :usecases ("Player input handlers." "Reset / pause / menu keys.")
+  :learn (:concept "Key-event handler with state passing." :prerequisites () :progression "Learn on-tick as the sibling.")
+  :+math (:algebra () :total #t :domain "procedure of 2 args" :codomain "clause descriptor")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/media.js" :impl-notes "Registers handler with media loop; state carried across frames."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified: registration returns clause." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Register key handler." :long "Register a keyboard event handler that receives (state, key)." :for-ai "Register." :for-kid "Tell the game what to do when a key is pressed.")))
+
+(verb
+  :name "on-tick"
+  :library "game"
+  :signature "(on-tick handler) -> clause"
+  :summary "Register a per-frame state update function taking (state) -> new-state."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(on-tick (lambda (s) (+ s 1)))" :note "Increment. Returns clause descriptor.")
+    (:tier "apprentice" :code "(on-tick (lambda (s) s))" :note "Identity. Returns clause descriptor.")
+    (:tier "intermediate" :code "(define (update s) (list 'x (+ (car (cdr (assoc 'x s))) 1))) (on-tick update)" :note "Alist-based state update.")
+    (:tier "expert"    :code "(define (physics state) (let* ((vel (obj-get state 'vel)) (grav -0.2)) (list 'vel (+ vel grav)))) (on-tick physics)" :note "Physics step.")
+    (:tier "master"    :code "(define (game-tick state) (let ((score (obj-get state 'score))) (list 'score (+ score 1) 'ticks (+ (obj-get state 'ticks) 1)))) (on-tick game-tick)" :note "Composite update."))
+  :related ("on-key" "on-frame" "big-bang")
+  :caveats ("Handler runs before on-key each frame." "Return nil / #f halts the loop.")
+  :drawbacks ("Heavy computation can lag frame rate.")
+  :usecases ("Game state ticks." "Physics.")
+  :learn (:concept "State-passing per-frame tick." :prerequisites () :progression "Learn on-key.")
+  :+math (:algebra () :total #t :domain "procedure of 1 arg" :codomain "clause")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/reference-impls.js" :impl-notes "Descriptor factory; big-bang consumes."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Per-frame state update." :long "Register a state update function running once per frame." :for-ai "Register." :for-kid "Give the game a function that changes the state every frame.")))
+
+(verb
+  :name "note"
+  :library "music"
+  :signature "(note pitch [dur] [velocity]) -> result"
+  :summary "Emit a note event: pitch (symbol), duration (default 'quarter), velocity (default 0.8)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(note 'C4 'quarter 0.8)" :note "Middle C, quarter-note, 80% velocity. Returns undefined; event emitted.")
+    (:tier "apprentice" :code "(begin (note 'C4 'quarter 0.8) (note 'E4 'quarter 0.8) (note 'G4 'half 0.9))" :note "Three-note chord sequence.")
+    (:tier "intermediate" :code "(define (chord notes dur vel) (for-each (lambda (n) (note n dur vel)) notes)) (chord (list 'C4 'E4 'G4) 'quarter 0.7)" :note "Chord helper.")
+    (:tier "expert"    :code "(define (arpeggio root notes dur vel) (for-each (lambda (n) (note n dur vel)) notes)) (arpeggio 'C4 (list 'C4 'E4 'G4 'B4) 'sixteenth 0.75)" :note "Arpeggio pattern.")
+    (:tier "master"    :code "(define (scale-up root notes dur) (map (lambda (n) (note n dur 0.7)) notes)) (scale-up 'C4 (list 'C4 'D4 'E4 'F4 'G4 'A4 'B4 'C5) 'eighth)" :note "Scale."))
+  :related ("note-dots" "note-place" "note-strike" "synth/play" "audio/play")
+  :caveats ("Pitch must be valid music notation symbol." "Duration defaults to 'quarter; velocity defaults to 0.8.")
+  :drawbacks ("Rapid successive calls may overlap in host.")
+  :usecases ("Chord playback." "Arpeggios.")
+  :learn (:concept "Emit a scheduled note event." :prerequisites () :progression "Learn note-dots for duration calc.")
+  :+math (:algebra () :total #t :domain "pitch symbol" :codomain "undefined | error tuple")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/media.js" :impl-notes "Parses pitch, schedules event via audio subsystem."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises (bad-pitch) :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Emit a note." :long "Play a pitch for a duration at a given velocity." :for-ai "Emit note event." :for-kid "Play a musical note.")))
+
+(verb
+  :name "key?"
+  :library "game"
+  :signature "(key? symbol) -> boolean"
+  :summary "True if the named key is currently pressed; #f in headless REPL."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(key? 'ArrowRight)" :note "Not pressed. Returns #f.")
+    (:tier "apprentice" :code "(list (key? 'ArrowUp) (key? 'ArrowDown))" :note "Both. Returns (#f #f).")
+    (:tier "intermediate" :code "(if (key? 'Space) 'jump 'idle)" :note "Guard. Returns 'idle.")
+    (:tier "expert"    :code "(define (input-vector) (list (if (key? 'ArrowLeft) -1 0) (if (key? 'ArrowRight) 1 0))) (input-vector)" :note "Direction vector. Returns (0 0).")
+    (:tier "master"    :code "(define (check-any keys) (fold (lambda (acc k) (or acc (key? k))) #f keys)) (check-any (list 'w 'a 's 'd))" :note "Fold over keys. Returns #f."))
+  :related ("on-key" "input/pressed?" "input-may-i?" "on-frame")
+  :caveats ("Key name must match KeyboardEvent.key case-sensitively." "Snapshot at frame boundary; no press/release detection.")
+  :drawbacks ("Headless REPL always returns #f.")
+  :usecases ("Input polling." "Movement handlers.")
+  :learn (:concept "Snapshot input predicate." :prerequisites () :progression "Learn on-key for event-driven input.")
+  :+math (:algebra () :total #t :domain "key symbol" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Returns #f in headless; host overrides."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified: #f." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Is this key pressed?" :long "True if the named key is pressed; #f in headless REPL." :for-ai "Poll." :for-kid "Is the arrow key pressed right now?")))
+
+(verb
+  :name "input-may-i?"
+  :library "input"
+  :signature "(input-may-i?) -> boolean"
+  :summary "Legacy alias for input/may-i?: returns whether the host permits input reads."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"    :code "(input-may-i?)" :note "No live input. Returns #f.")
+    (:tier "apprentice" :code "(if (input-may-i?) 'allowed 'denied)" :note "Branch. Returns 'denied.")
+    (:tier "intermediate" :code "(define (safe-read) (if (input-may-i?) 'read-ok 'read-blocked)) (safe-read)" :note "Wrapped. Returns 'read-blocked.")
+    (:tier "expert"    :code "(define (poll-buttons btns) (if (input-may-i?) (map (lambda (b) (list b 'pressed)) btns) 'blocked)) (poll-buttons (list 'a 'b))" :note "Guarded poll. Returns 'blocked.")
+    (:tier "master"    :code "(define (init-input) (if (input-may-i?) 'input-ready 'input-denied-init-fallback)) (init-input)" :note "Init check. Returns 'input-denied-init-fallback."))
+  :related ("input/may-i?" "key?")
+  :caveats ("Legacy alias; prefer input/may-i? in new code.")
+  :drawbacks ("Coarse-grained.")
+  :usecases ("Legacy code.")
+  :learn (:concept "Legacy input permission gate." :prerequisites () :progression "Use input/may-i? instead.")
+  :+math (:algebra () :total #t :domain "()" :codomain "boolean")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Returns #f in headless."
+         :permission "read-only" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #f :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Legacy input permission check." :long "Alias for input/may-i?." :for-ai "Read." :for-kid "Ask if you're allowed to read the buttons.")))
+
+(verb
+  :name "on-canvas-trace"
+  :library "game"
+  :signature "(on-canvas-trace handler) -> descriptor"
+  :summary "Register a handler for canvas stroke events (pen moves)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(on-canvas-trace (lambda (pt) 'stroke))" :note "Descriptor. Returns (\"on-canvas-trace\" ...).")
+    (:tier "apprentice" :code "(on-canvas-trace (lambda (pt) (display pt)))" :note "Log points.")
+    (:tier "intermediate" :code "(define (record-stroke pt) (list 'stroke pt)) (on-canvas-trace record-stroke)" :note "Structured record.")
+    (:tier "expert"    :code "(define points (list)) (on-canvas-trace (lambda (pt) (set! points (cons pt points))))" :note "Collect points.")
+    (:tier "master"    :code "(define (draw-listener) (lambda (pt) (list 'x (car pt) 'y (cadr pt)))) (on-canvas-trace (draw-listener))" :note "Structured listener."))
+  :related ("on-frame" "on-key" "paint-cell")
+  :caveats ("Requires host with canvas subsystem.")
+  :drawbacks ("Headless REPL emits descriptor only.")
+  :usecases ("Drawing tools." "Gesture recognition.")
+  :learn (:concept "Canvas stroke event hook." :prerequisites () :progression "Learn paint-* for drawing side.")
+  :+math (:algebra () :total #t :domain "procedure" :codomain "descriptor")
+  :+cs (:complexity "O(1) registration" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality void :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Register canvas stroke handler." :long "Register a handler for pen-move events." :for-ai "Register." :for-kid "Watch for someone drawing on the screen.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; note-* CLUSTER (4 more)
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "note-strike"
+  :library "music"
+  :signature "(note-strike pitch [velocity]) -> descriptor"
+  :summary "Strike (start) a note; use with note-release for held notes."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-strike 'C4)" :note "Strike middle C. Returns descriptor.")
+    (:tier "apprentice" :code "(note-strike 'C4 0.9)" :note "Louder strike. Returns descriptor.")
+    (:tier "intermediate" :code "(map note-strike (list 'C4 'E4 'G4))" :note "Chord onset. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (chord-on notes vel) (map (lambda (n) (note-strike n vel)) notes)) (chord-on (list 'C4 'E4 'G4) 0.8)" :note "Wrapped. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (glissando start end vel) (map (lambda (n) (note-strike n vel)) (list start (+ start 1) (+ start 2) end))) (glissando 'C4 'F4 0.7)" :note "Structured. Returns 4 descriptors."))
+  :related ("note-release" "note-place" "note")
+  :caveats ("Requires note-release to close.")
+  :drawbacks ("Host must manage note lifecycle.")
+  :usecases ("Sustained notes." "Attack-decay envelopes.")
+  :learn (:concept "Note onset." :prerequisites () :progression "Learn note-release.")
+  :+math (:algebra () :total #t :domain "pitch" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Strike a note." :long "Start a note; use note-release to end." :for-ai "Note onset." :for-kid "Start playing a musical note.")))
+
+(verb
+  :name "note-release"
+  :library "music"
+  :signature "(note-release pitch) -> descriptor"
+  :summary "Release a struck note."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-release 'C4)" :note "Release. Returns descriptor.")
+    (:tier "apprentice" :code "(begin (note-strike 'C4) (note-release 'C4))" :note "Full note.")
+    (:tier "intermediate" :code "(map note-release (list 'C4 'E4 'G4))" :note "Chord off. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (chord-off notes) (map note-release notes)) (chord-off (list 'C4 'E4 'G4))" :note "Wrapped.")
+    (:tier "master"    :code "(define (play-hold notes hold-frames) (list (map note-strike notes) 'hold hold-frames (map note-release notes))) (play-hold (list 'C4 'E4) 60)" :note "Held chord."))
+  :related ("note-strike" "note")
+  :caveats ("Match a prior note-strike for the same pitch.")
+  :drawbacks ("Silent no-op if no matching strike.")
+  :usecases ("Note lifecycle end.")
+  :learn (:concept "Note offset." :prerequisites ("note-strike") :progression "Learn strike mirror.")
+  :+math (:algebra () :total #t :domain "pitch" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Release a note." :long "End a struck note." :for-ai "Note offset." :for-kid "Stop playing a note.")))
+
+(verb
+  :name "note-place"
+  :library "music"
+  :signature "(note-place pitch position) -> descriptor"
+  :summary "Place a note at a beat position in the current pattern."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-place 'C4 0)" :note "Place at start. Returns descriptor.")
+    (:tier "apprentice" :code "(note-place 'E4 2)" :note "Beat 2. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (p) (note-place 'C4 p)) (list 0 1 2 3))" :note "Beat sequence. Returns 4 descriptors.")
+    (:tier "expert"    :code "(define (pattern notes) (map (lambda (i) (note-place (list-ref notes (modulo i (length notes))) i)) (range 0 4))) (pattern (list 'C4 'E4 'G4))" :note "Repeating.")
+    (:tier "master"    :code "(define (write-melody notes bar) (map (lambda (i) (note-place (list-ref notes i) (* i (/ 1 bar)))) (range 0 (length notes)))) (write-melody (list 'C4 'D4 'E4) 8)" :note "Fractional beats."))
+  :related ("note-place-at" "note-strike" "note")
+  :caveats ("Position is beat-relative.")
+  :drawbacks ("No pitch validation.")
+  :usecases ("Pattern-based composition.")
+  :learn (:concept "Pattern-relative note placement." :prerequisites () :progression "Learn note-place-at for absolute time.")
+  :+math (:algebra () :total #t :domain "pitch + position" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Place a note in a pattern." :long "Add a note at a beat position." :for-ai "Pattern step." :for-kid "Put a note in the song at a beat.")))
+
+(verb
+  :name "note-place-at"
+  :library "music"
+  :signature "(note-place-at pitch time-position) -> descriptor"
+  :summary "Place a note at an absolute time position."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(note-place-at 'C4 0.5)" :note "At 0.5 seconds. Returns descriptor.")
+    (:tier "apprentice" :code "(note-place-at 'A4 1.0)" :note "At 1 second. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (t) (note-place-at 'C4 t)) (list 0 0.5 1.0 1.5))" :note "4-tick sequence. Returns 4 descriptors.")
+    (:tier "expert"    :code "(define (drum-pattern beat-times) (map (lambda (t) (note-place-at 'C2 t)) beat-times)) (drum-pattern (list 0 0.5 1.0 1.5))" :note "Kick drum pattern.")
+    (:tier "master"    :code "(define (schedule-melody notes-and-times) (map (lambda (nt) (note-place-at (car nt) (cadr nt))) notes-and-times)) (schedule-melody (list (list 'C4 0) (list 'E4 0.25) (list 'G4 0.5)))" :note "Melody schedule."))
+  :related ("note-place" "note")
+  :caveats ("Time in seconds relative to song start.")
+  :drawbacks ("No pitch bend.")
+  :usecases ("Absolute-time composition." "Wall-clock sync.")
+  :learn (:concept "Absolute time placement." :prerequisites () :progression "Learn note-place for beat-relative.")
+  :+math (:algebra () :total #t :domain "pitch + time-seconds" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Place a note at absolute time." :long "Add a note at a specific time in the song." :for-ai "Absolute schedule." :for-kid "Put a note at exactly this moment.")))
+
+;; ═══════════════════════════════════════════════════════════════════
+;; misc no-namespace verbs (6)
+;; ═══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "imagine"
+  :library "media"
+  :signature "(imagine word-or-symbol [:seconds N]) -> descriptor"
+  :summary "Generate a dream / visualization for a concept; optional duration."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(imagine \"forest\")" :note "Dream of a forest. Returns descriptor.")
+    (:tier "apprentice" :code "(imagine 'ocean)" :note "Symbol input. Returns descriptor.")
+    (:tier "intermediate" :code "(map imagine (list 'sun 'moon 'stars))" :note "Multiple. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (dream-cycle topics) (map imagine topics)) (dream-cycle (list 'city 'ocean 'desert))" :note "Cycle. Returns 3 descriptors.")
+    (:tier "master"    :code "(define (bedtime-dream topic) (list 'dream (imagine topic))) (bedtime-dream 'mountain)" :note "Structured. Returns (dream (\"imagine\" mountain))."))
+  :related ("scene/imagine" "surface/spotlight" "with-seed")
+  :caveats ("Requires host with visualization subsystem." "Duration semantics host-defined.")
+  :drawbacks ("Opaque result — cannot inspect the dream.")
+  :usecases ("Dream sequences." "Title cards.")
+  :learn (:concept "Visualization emit." :prerequisites () :progression "Learn scene/imagine for structured version.")
+  :+math (:algebra () :total #t :domain "word or symbol" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "async-quick" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Imagine a scene." :long "Generate a visualization of a concept." :for-ai "Descriptor." :for-kid "Have the computer dream of something.")))
+
+(verb
+  :name "layout-bricklay!"
+  :library "layout"
+  :signature "(layout-bricklay! id) -> descriptor"
+  :summary "Layout a card using the bricklay algorithm; caches result."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(layout-bricklay! 'my-card)" :note "Bricklay a card. Returns descriptor.")
+    (:tier "apprentice" :code "(layout-bricklay! 'gallery)" :note "Layout a gallery. Returns descriptor.")
+    (:tier "intermediate" :code "(map layout-bricklay! (list 'a 'b 'c))" :note "Bulk. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (relayout ids) (map layout-bricklay! ids)) (relayout (list 'p1 'p2))" :note "Wrapped.")
+    (:tier "master"    :code "(define (rebuild-all page-ids) (list 'layouts (map layout-bricklay! page-ids))) (rebuild-all (list 'home 'about 'contact))" :note "Batch rebuild."))
+  :related ("measure-content" "layout")
+  :caveats ("Requires live card renderer.")
+  :drawbacks ("Cache invalidation host-managed.")
+  :usecases ("Responsive layout." "Gallery / grid.")
+  :learn (:concept "Bricklay layout emit." :prerequisites () :progression "Learn measure-content.")
+  :+math (:algebra () :total #t :domain "card id" :codomain "descriptor")
+  :+cs (:complexity "O(n) in card children" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-slow" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Bricklay layout." :long "Layout a card with the bricklay algorithm." :for-ai "Layout." :for-kid "Arrange the items on a card like bricks.")))
+
+(verb
+  :name "make-character"
+  :library "character"
+  :signature "(make-character source [opts]) -> descriptor"
+  :summary "Promote a visual source (sprite / note / prop) to a first-class character."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(make-character 'hero-sprite)" :note "Descriptor. Returns (\"make-character\" hero-sprite).")
+    (:tier "apprentice" :code "(make-character 'villain-sprite)" :note "Second character. Returns descriptor.")
+    (:tier "intermediate" :code "(map make-character (list 'a 'b 'c))" :note "Bulk. Returns 3 descriptors.")
+    (:tier "expert"    :code "(define (spawn-party members) (map make-character members)) (spawn-party (list 'leader 'member1 'member2))" :note "Party.")
+    (:tier "master"    :code "(define (populate-scene sprites) (list 'scene (map make-character sprites))) (populate-scene (list 's1 's2 's3))" :note "Structured populate."))
+  :related ("motion-anchor-to-input" "motion-move-to" "make-character")
+  :caveats ("Character id host-allocated.")
+  :drawbacks ("No inspection.")
+  :usecases ("Character-driven games.")
+  :learn (:concept "Character promotion emit." :prerequisites () :progression "Learn motion-* verbs.")
+  :+math (:algebra () :total #t :domain "source [opts]" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Make a character." :long "Promote a sprite / note / prop into a character." :for-ai "Promote." :for-kid "Turn a sprite into a character in the story.")))
+
+(verb
+  :name "move-card"
+  :library "card"
+  :signature "(move-card id dx dy) -> descriptor"
+  :summary "Move a card by (dx, dy) pixels."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(move-card 'my-card 10 0)" :note "Move right 10. Returns descriptor.")
+    (:tier "apprentice" :code "(move-card 'photo 0 -20)" :note "Move up 20. Returns descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (move-card c 5 0)) (list 'a 'b))" :note "Bulk shift. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (shift-row cards dx) (map (lambda (c) (move-card c dx 0)) cards)) (shift-row (list 'p1 'p2 'p3) 10)" :note "Wrapped.")
+    (:tier "master"    :code "(define (parallax layers speed) (map (lambda (i) (move-card (list-ref layers i) (* speed (+ i 1)) 0)) (range 0 (length layers)))) (parallax (list 'far 'mid 'near) 2)" :note "Parallax scroll."))
+  :related ("orient-card" "layout-bricklay!" "make-character")
+  :caveats ("Relative motion; use absolute methods for exact positioning.")
+  :drawbacks ("Host-side animation may differ.")
+  :usecases ("Card animation." "Parallax.")
+  :learn (:concept "Relative card motion." :prerequisites () :progression "Learn orient-card.")
+  :+math (:algebra () :total #t :domain "id + deltas" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Move a card." :long "Move a card by (dx, dy) pixels." :for-ai "Move." :for-kid "Move a card around.")))
+
+(verb
+  :name "nav-map"
+  :library "layout"
+  :signature "(nav-map id) -> descriptor"
+  :summary "Show a navigation map for the given card."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(nav-map 'home)" :note "Descriptor. Returns (\"nav-map\" home).")
+    (:tier "apprentice" :code "(nav-map 'gallery)" :note "Descriptor.")
+    (:tier "intermediate" :code "(map nav-map (list 'p1 'p2))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (open-nav) (list 'nav (nav-map 'root))) (open-nav)" :note "Wrapped.")
+    (:tier "master"    :code "(define (breadcrumb path) (map nav-map path)) (breadcrumb (list 'home 'products 'item))" :note "Breadcrumb."))
+  :related ("move-card" "layout-bricklay!")
+  :caveats ("Host renders the map.")
+  :drawbacks ("No structural query.")
+  :usecases ("Navigation UI.")
+  :learn (:concept "Nav map emit." :prerequisites () :progression "Learn layout-bricklay!.")
+  :+math (:algebra () :total #t :domain "card id" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (io) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Show a nav map." :long "Show a navigation map for the given card." :for-ai "Nav." :for-kid "Show the map to move around cards.")))
+
+(verb
+  :name "orient-card"
+  :library "card"
+  :signature "(orient-card id direction) -> descriptor"
+  :summary "Orient a card to a compass direction (north/south/east/west)."
+  :impl-status "deferred"
+  :examples (
+    (:tier "novice"    :code "(orient-card 'my-card 'north)" :note "Descriptor. Returns (\"orient-card\" my-card north).")
+    (:tier "apprentice" :code "(orient-card 'gallery 'east)" :note "Descriptor.")
+    (:tier "intermediate" :code "(map (lambda (c) (orient-card c 'north)) (list 'a 'b))" :note "Bulk. Returns 2 descriptors.")
+    (:tier "expert"    :code "(define (all-north cards) (map (lambda (c) (orient-card c 'north)) cards)) (all-north (list 'p1 'p2 'p3))" :note "Wrapped.")
+    (:tier "master"    :code "(define (compass cards) (map (lambda (i c) (orient-card c (list-ref (list 'north 'east 'south 'west) (modulo i 4)))) (range 0 (length cards)) cards)) (compass (list 'a 'b 'c 'd))" :note "Compass rotation."))
+  :related ("move-card" "layout-bricklay!")
+  :caveats ("Direction symbol semantics host-defined.")
+  :drawbacks ("No arbitrary angle.")
+  :usecases ("Card rotation for game boards.")
+  :learn (:concept "Orient by cardinal direction." :prerequisites () :progression "Learn move-card.")
+  :+math (:algebra () :total #t :domain "id + direction" :codomain "descriptor")
+  :+cs (:complexity "O(1)" :effects (state) :pure #f)
+  :+eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor factory."
+         :permission "state-change" :latency-class "sync-fast" :tests "REPL-verified." :since "1.0")
+  :+ai (:raises () :cardinality one :deterministic #t :cacheable #f)
+  :+meta (:spec-version "1.0" :schema-version "1.0" :required-fields-present #t :entry-provenance "authored"
+          :entry-summary (:short "Orient a card." :long "Point a card at a compass direction." :for-ai "Orient." :for-kid "Point a card in a direction.")))

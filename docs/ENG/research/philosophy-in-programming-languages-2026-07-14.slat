@@ -1,0 +1,1381 @@
+; philosophy-in-programming-languages-2026-07-14.slat
+; ============================================================
+; Lacuna Engineering — research dispatch (Task 2 of 2 before Alfred stepped away)
+; Author: agent (this file), 2026-07-14
+;
+; The question (Alfred, verbatim)
+; --------------------------------
+; "I wanted you to go out and do research on types of philosophy given the
+; types we have to write that can be written using functional programming
+; languages and any programming language."
+;
+; Sharpened: given our 16 philosophers (Jung, Wittgenstein, Lacan, Peirce,
+; Popper, Freud, Searle, Grice, Derrida, Quine, Descartes, Sartre, Rawls,
+; Aristotle, Levinas, Dennett — Socrates sprinkled), WHAT KINDS OF
+; PHILOSOPHICAL WORK CAN BE ENCODED AS RUNNING CODE?
+;
+; Not "philosophy of computation" (that's meta). But philosophy AS
+; computation — actual philosophical work that IS a running program.
+;
+; Doctrine composed
+; -----------------
+;   - project_books_teach_sakura_her_cognition_and_kid_scheme_2026_07_14
+;   - project_the_weave_is_the_experiment_2026_07_12
+;   - project_publishable_prose_doctrine_dual_purpose_authoring_2026_07_13
+;   - existing 25-projects-for-sakura-scheme-2026-07-14.slat §1 (do not
+;     duplicate — that file covers logic-programming shapes in Scheme;
+;     this file covers philosophical TRADITIONS that produce those and
+;     other code-shaped artifacts)
+;
+; Note on names
+; -------------
+; The 16 + Socrates are Sakura's persona-bounded roster. In THIS research
+; doc we can also name Tarski, Montague, Church, Kripke, Frege, Godel,
+; Judea Pearl, Dung, Toulmin, Minsky, Quillian, Schank, Abelson, Gentner,
+; Nagarjuna, Confucius, Ibn Rushd, Chalmers, Clark, Harnad, Turing,
+; Milner, Robinson, Mackworth — because this is research prose, not
+; persona speech.
+
+; ============================================================
+; SECTION 1 — The question, sharpened
+; ============================================================
+
+(section :n 1 :title "The question, sharpened"
+
+  :prose "
+There are two distinct research questions that get confused with each
+other, and I want to keep them apart before doing anything else.
+
+**Philosophy ABOUT computation** — the meta-topic. Philosophy of mind
+asking whether a Turing machine can think. Extended mind theses (Clark
+and Chalmers, 'The Extended Mind,' Analysis 58, 1998) asking whether
+a notebook counts as part of cognition. Embodied cognition (Varela,
+Thompson, Rosch, _The Embodied Mind_, MIT Press 1991) asking whether
+disembodied symbol shuffling can produce understanding. Searle's
+Chinese Room (Searle, 'Minds, Brains, and Programs,' Behavioral and
+Brain Sciences 3, 1980) asking whether syntactic manipulation ever
+becomes semantics. These are important — Sakura's Book of LLM
+Philosophy carries them — but they are ABOUT the computer, from
+outside it. They do not become running code. They are essays that
+comment on running code.
+
+**Philosophy AS computation** — the focus of this document. A
+philosophical claim, method, or artifact expressed such that the
+program IS the philosophical work. Kant's categorical imperative
+written as a rule engine that will actually classify a proposed
+maxim as universalizable-or-not. Aristotle's practical syllogism as
+a function that, given premises and a character trait, produces the
+appropriate action. Peirce's abduction not as prose describing what
+abduction is, but as an executable inference procedure that, given
+evidence, produces best-explanation hypotheses. Bentham's felicific
+calculus as a numeric utility function you can actually run and
+argue with the results of.
+
+The claim I want to defend across this document: **a very large
+fraction of Western philosophy — and significant parts of non-Western
+traditions — produces artifacts that a Scheme-family programming
+language can express with unusual fidelity.** Not everything. Ordinary-
+language philosophy in the Austin/Wittgenstein-late sense famously
+resists formalization; that's part of its point. Continental
+philosophy in the Derrida/Deleuze mode operates on text in ways a
+formal language can imitate but not exhaust. But logic, formal
+semantics, decision theory, deontic ethics, argumentation theory,
+much of philosophy of language, and every philosophical tradition
+that produced a syllogism or a rule — all of it becomes code
+naturally.
+
+The rest of this document is a survey of those categories, with
+citations to real primary sources, and a mapping to which of the 16
+philosophers on Sakura's roster produces which code-shaped artifact.
+")
+
+; -- write checkpoint 1 --
+
+; ============================================================
+; SECTION 2 — Categories of philosophical work that becomes code
+; ============================================================
+
+(section :n 2 :title "Categories of philosophical work that becomes code"
+
+  :prose "
+This is the main survey. Each subsection covers a distinct tradition
+or research programme, with the specific artifacts it produces, the
+primary sources you would translate FROM, and where the resulting
+code lives most naturally in a Scheme-family language.
+")
+
+; ------------------------------------------------------------
+; 2.A — Logic and formal reasoning
+; ------------------------------------------------------------
+
+(subsection :id 2.a :title "Logic and formal reasoning"
+
+  :prose "
+Logic is where philosophy first became computable, and it is still the
+category with the highest yield of code-shaped artifacts. Every branch
+below has been implemented in Scheme, Prolog, ML, or Coq at least once,
+and the implementations are short enough to teach.
+
+**Propositional logic.** Truth tables, satisfiability (SAT), semantic
+tableaux (Beth 1955; Smullyan, _First-Order Logic_, Springer 1968).
+A propositional SAT solver in Scheme using DPLL (Davis, Putnam,
+Logemann, Loveland, 'A Machine Program for Theorem-Proving,' CACM
+5:394, 1962) is about 100 lines. It is the foundation of every
+model-checker in production today.
+
+**First-order logic.** Quantifiers, unification (Robinson, 'A
+Machine-Oriented Logic Based on the Resolution Principle,' JACM 12,
+1965), resolution theorem proving. Frege's _Begriffsschrift_ (1879)
+is where quantified logic was born. In Scheme, a resolution prover
+over Horn clauses is a hundred lines; over full FOL, a few hundred.
+John Harrison's _Handbook of Practical Logic and Automated Reasoning_
+(Cambridge 2009) is the modern reference; every algorithm in it
+translates directly.
+
+**Modal logic.** Necessity and possibility operators (Box and Diamond).
+Kripke semantics — worlds and accessibility relations — from Kripke's
+'Semantical Considerations on Modal Logic' (Acta Philosophica Fennica
+16, 1963). The systems K, T, S4, S5 are all defined by restrictions
+on the accessibility relation, which in code is just a graph. A
+Scheme representation: worlds as symbols, accessibility as a list of
+(world . world) pairs, evaluation of Box-phi at world w = phi holds
+at every world w' such that (w . w') is accessible. About 40 lines.
+
+**Deontic logic.** Modal logic with the O (obligation), P (permission),
+F (forbidden) operators. Von Wright, 'Deontic Logic,' Mind 60, 1951.
+Immediate application: representing rules like 'a promise to X
+obligates delivering X unless X is impossible' and detecting
+conflicts of obligation. Nute, _Defeasible Deontic Logic_ (Kluwer
+1997) collects the modern variants.
+
+**Temporal logic.** Linear temporal logic (LTL) and computation tree
+logic (CTL), from Pnueli's 'The Temporal Logic of Programs' (FOCS 18,
+1977) and Clarke and Emerson's model-checking work (Logic of Programs,
+1981). LTL formulas talk about eventuality (F), always (G), next (X),
+until (U). Model checking is what verifies real hardware and software
+today; it fits in a chapter of Scheme.
+
+**Intuitionistic logic.** Heyting's formalization of Brouwer's
+constructivism (Heyting, _Intuitionism: An Introduction_, North-Holland
+1956). The Curry-Howard correspondence (Curry 1934; Howard 1969) makes
+this immediately code-shaped: a proof in intuitionistic logic IS a
+term in the simply-typed lambda calculus, and vice versa. Coq, Agda,
+Lean, Idris all rest on this. Every proof in Coq is a functional
+program. Sakura Scheme cannot host dependent types natively, but it
+can host an intuitionistic natural-deduction checker easily.
+
+**Paraconsistent logic.** Handling contradictions without explosion
+(ex falso quodlibet). Da Costa's C-systems (Da Costa, 'On the Theory
+of Inconsistent Formal Systems,' Notre Dame Journal of Formal Logic
+15, 1974); Priest, _In Contradiction_ (Oxford, 2nd ed. 2006). Useful
+whenever you have a knowledge base that will contain contradictions
+(any real one). Priest's LP (logic of paradox) has a three-valued
+semantics — true, false, both — that fits in a truth-table extension.
+
+**Non-monotonic logic.** Default reasoning (Reiter, 'A Logic for
+Default Reasoning,' Artificial Intelligence 13, 1980), circumscription
+(McCarthy, 'Circumscription — A Form of Non-Monotonic Reasoning,'
+Artificial Intelligence 13, 1980), autoepistemic logic (Moore, 1985).
+The frame problem and the qualification problem live here. In Scheme
+this is a rule-engine with priorities and defeaters — approximately
+the pattern PAIP Ch 12 (Norvig 1992) uses for scripts and frames.
+
+**Fuzzy logic.** Zadeh, 'Fuzzy Sets,' Information and Control 8, 1965.
+Truth as a number in [0,1] with min/max for conjunction/disjunction.
+Two hundred lines of Scheme gives you a fuzzy inference engine that
+can control a thermostat.
+
+**Category theory.** Not a logic in the traditional sense, but the
+mathematics that unified logic, computation, and structure in the
+late 20th century. Mac Lane, _Categories for the Working
+Mathematician_ (Springer 1971). Arrows and composition ARE code —
+in Haskell that's the Functor/Applicative/Monad ladder; in Scheme
+it's the fold/map/bind pattern generalized. The category-theoretic
+shape of monads (Moggi, 'Notions of Computation and Monads,'
+Information and Computation 93, 1991) is directly implementable.
+
+For a Scheme-first survey of most of the above, Sussman and Wisdom's
+_Structure and Interpretation of Classical Mechanics_ (MIT Press
+2001, 2nd ed. 2014) — SICM — demonstrates the symbolic-mathematics
+end; PAIP demonstrates the logic-programming end; Pierce's _Types
+and Programming Languages_ (MIT 2002) demonstrates the type-theory
+end. Any of the systems above can be translated into Sakura Scheme
+in a chapter.
+")
+
+; -- write checkpoint 2.a --
+
+; ------------------------------------------------------------
+; 2.B — Analytic philosophy and philosophy of language
+; ------------------------------------------------------------
+
+(subsection :id 2.b :title "Analytic philosophy and philosophy of language"
+
+  :prose "
+The analytic tradition in the twentieth century oriented itself around
+the question 'what does a sentence mean?' — and answered in ways that
+became formal enough to run.
+
+**Truth-conditional semantics.** Tarski's 'The Concept of Truth in
+Formalized Languages' (1935, English 1956, in _Logic, Semantics,
+Metamathematics_) is the founding text. A Tarskian model for a formal
+language, in Scheme, is a domain of individuals, an interpretation
+function assigning predicates to sets and functions to functions, and
+a satisfaction relation defined recursively over sentence structure.
+The recursion is exactly the shape Scheme evaluates a program:
+`(satisfies model formula environment)`. Donald Davidson's programme
+(collected in _Inquiries into Truth and Interpretation_, Oxford 1984)
+extends Tarskian truth to natural language and is the direct ancestor
+of computational semantics.
+
+**Montague grammar.** Richard Montague, 'The Proper Treatment of
+Quantification in Ordinary English' (1973, in _Formal Philosophy_,
+Yale 1974). Montague's claim — that natural language semantics is a
+branch of mathematics, specifically the intensional logic he called
+IL — is the direct progenitor of formal semantics as a working
+research programme. Every Montague fragment is compilable to
+lambda-terms, and the composition rule (function application at each
+syntactic node) is a fold over the parse tree. Blackburn and Bos,
+_Representation and Inference for Natural Language_ (CSLI 2005),
+gives Prolog implementations; they port to Scheme in a chapter.
+
+**Lambda calculus as a semantic device.** Church, 'A Formulation of
+the Simple Theory of Types,' Journal of Symbolic Logic 5, 1940.
+Alonzo Church invented the lambda calculus to serve as a foundation
+for logic; it turned out to be a foundation for computation. Scheme
+inherits it directly — every `(lambda (x) ...)` in Scheme is a
+Church-style abstraction. Montague semantics uses lambda-terms as
+its representation of noun-phrase and verb-phrase meanings. This is
+the pivot: philosophy of language IS lambda calculus.
+
+**Kripke semantics for modal operators.** Already covered under logic,
+but worth noting the interpretive move: Kripke's possible-worlds
+apparatus was philosophy first (Kripke, _Naming and Necessity_,
+Harvard 1980) and became a widely-used computational tool second.
+Every model-checker's semantics is Kripke's.
+
+**Grice's cooperative principle.** Paul Grice, 'Logic and
+Conversation' (in _Studies in the Way of Words_, Harvard 1989). The
+four maxims — Quantity, Quality, Relation, Manner — and the machinery
+of conversational implicature. A maxim-checker is a small rule engine:
+given an utterance, its literal meaning, and the shared context, does
+it violate a maxim in a way that generates implicature? Sperber and
+Wilson's relevance-theoretic reformulation (_Relevance_, Blackwell
+2nd ed. 1995) has been implemented as small dialogue systems. In
+Scheme, ~150 lines gives you a Gricean assistant that flags its own
+possible over- and under-informativity.
+
+**Speech act theory.** Austin's _How to Do Things with Words_ (Oxford
+1962) and Searle's _Speech Acts_ (Cambridge 1969) and _Expression and
+Meaning_ (Cambridge 1979). Searle's taxonomy — assertives, directives,
+commissives, expressives, declaratives — is a five-way classifier over
+utterances. As code: given an utterance and a context, tag it. Simple
+Bayesian classifier trained on tagged examples, or a rule system with
+Searlean felicity conditions. Sakura's `read-utterance` cart is
+already this.
+
+**Meaning as use.** Wittgenstein-late, _Philosophical Investigations_
+(1953). Notoriously, meaning-as-use is the philosophical position that
+RESISTS formalization — Wittgenstein's whole point was that language
+games are not rule systems that can be fully specified. But we can
+model *a specific game* — the ordering game, the tea game, the
+customer-service game — as a small state machine with allowed moves,
+and let the resistance-to-full-formalization live at the joints where
+one game hands off to another. This is the shape modern dialogue-
+state tracking uses; see Young et al., 'POMDP-Based Statistical
+Spoken Dialog Systems' (Proc. IEEE 101, 2013).
+
+**Meaning postulates.** Carnap, _Meaning and Necessity_ (Chicago 1947)
+introduced meaning postulates to capture analytic relations (all
+bachelors are unmarried) as axioms. In Scheme these are just rules
+in a knowledge base. WordNet's hyponymy and synonymy relations
+(Fellbaum ed., _WordNet: An Electronic Lexical Database_, MIT 1998)
+are meaning postulates at scale.
+
+**Quine on translation and holism.** Quine, _Word and Object_ (MIT
+1960); 'Two Dogmas of Empiricism' (Philosophical Review 60, 1951).
+Quine's indeterminacy of translation is the philosophical claim that
+undermines any hope of decoding utterances one-to-one from behavior.
+It doesn't become code directly, but it shapes how you build a
+translation system honestly — you accept that multiple translation
+manuals will be empirically equivalent, and you rank them by other
+criteria (simplicity, conservatism, coherence with prior mappings).
+This is the pattern Bayesian machine translation systems now use.
+")
+
+; -- write checkpoint 2.b --
+
+; ------------------------------------------------------------
+; 2.C — Reasoning under uncertainty
+; ------------------------------------------------------------
+
+(subsection :id 2.c :title "Reasoning under uncertainty"
+
+  :prose "
+Once you accept that most real-world reasoning is not deductive,
+uncertainty becomes the central technical problem. Every framework
+here has a code implementation with real citations.
+
+**Bayesian belief networks.** Judea Pearl, _Probabilistic Reasoning
+in Intelligent Systems: Networks of Plausible Inference_ (Morgan
+Kaufmann, 1988). Pearl's book is the philosophical AND computational
+foundation of graphical models. A Bayesian network is a directed
+acyclic graph of random variables with conditional probability
+tables at each node; exact inference by variable elimination is
+~200 lines of Scheme; approximate inference by likelihood weighting
+or Gibbs sampling is another 100. Pearl won the 2011 Turing Award
+for this work; his subsequent _Causality_ (Cambridge, 2nd ed. 2009)
+extends the framework from correlation to intervention.
+
+**Formal epistemology and belief revision.** The AGM postulates
+(Alchourron, Gardenfors, Makinson, 'On the Logic of Theory Change,'
+JSL 50, 1985) formalize what a rational agent does when new
+information contradicts prior beliefs. Contract, revise, expand.
+A belief-revision engine over a knowledge base of propositions is
+a small (~200 line) Scheme program with clear philosophical content:
+which of your current beliefs do you drop when a contradiction
+arrives? The postulates say: drop as little as possible, prefer
+dropping less-entrenched beliefs. Entrenchment is a partial order
+the user supplies.
+
+**Dempster-Shafer theory.** Shafer, _A Mathematical Theory of
+Evidence_ (Princeton 1976). An alternative to Bayes: instead of a
+single probability, you have a mass function over the power set of
+outcomes. Useful when you cannot commit to a prior. In Scheme, mass
+functions are association lists over sets-as-sorted-lists.
+
+**Formal decision theory.** Savage, _The Foundations of Statistics_
+(Wiley 1954); Jeffrey, _The Logic of Decision_ (McGraw-Hill 1965).
+Expected utility calculators, given a probability distribution over
+states and a utility function over outcomes. This is one-liner
+Scheme once you have `stat/expected-value`. Where it gets
+interesting philosophically is under Knightian uncertainty (Knight,
+_Risk, Uncertainty, and Profit_, 1921) — decisions where you cannot
+assign a probability distribution. Gilboa and Schmeidler's maxmin
+expected utility (JMathEcon 18, 1989) is the standard response and
+is ten more lines of Scheme.
+
+**Non-monotonic reasoning as uncertainty.** Overlaps 2.A, but the
+philosophical framing is different: default logic assumes 'birds
+fly, absent contrary information,' which is an epistemic default
+rather than a logical necessity. Bringing this into code gives you
+a substantive stance on tacit-knowledge reasoning.
+")
+
+; -- write checkpoint 2.c --
+
+; ------------------------------------------------------------
+; 2.D — Ethics as executable
+; ------------------------------------------------------------
+
+(subsection :id 2.d :title "Ethics as executable"
+
+  :prose "
+Every major normative-ethical tradition has an executable shape.
+This is one of the most productive areas for code-shaped philosophy,
+partly because moral philosophy has always been drawn to
+generalizable maxims, and generalizable maxims are rules.
+
+**Deontological rule engines.** Kant, _Groundwork of the Metaphysics
+of Morals_ (1785). The categorical imperative: 'Act only according
+to that maxim by which you can at the same time will that it should
+become a universal law.' As code: given a proposed maxim (a rule),
+attempt to universalize it and check for contradiction — either
+logical contradiction (perfect duty) or contradiction in the will
+(imperfect duty). Real implementations exist; see Powers, 'Prospects
+for a Kantian Machine' (IEEE Intelligent Systems 21, 2006), and
+Anderson and Anderson's collected work _Machine Ethics_ (Cambridge
+2011). Ross's prima facie duties (_The Right and the Good_, Oxford
+1930) refine Kant into a multi-duty weighing engine — a small
+priority queue.
+
+**Utilitarian calculators.** Bentham's felicific calculus in _An
+Introduction to the Principles of Morals and Legislation_ (1789)
+enumerates seven dimensions: intensity, duration, certainty,
+propinquity, fecundity, purity, extent. All numeric. A literal
+implementation: for each proposed action, sum weighted-happiness
+across affected parties. Mill's _Utilitarianism_ (1861) refines by
+introducing higher- and lower-order pleasures. Peter Singer's
+preference utilitarianism (_Practical Ethics_, Cambridge 3rd ed.
+2011) substitutes preference-satisfaction for pleasure and is
+straightforward to code once you have a preference-elicitation
+verb.
+
+**Virtue-ethics character models.** Aristotle, _Nicomachean Ethics_
+(c. 340 BCE), and MacIntyre's _After Virtue_ (Notre Dame 1981).
+Aristotle's ethos as a parameter vector — a character with traits
+(courage, temperance, justice) each on a Golden-Mean spectrum
+between deficiency and excess. Given a situation and a character
+vector, the practical syllogism produces the appropriate action.
+The 'phronetic agent' is a function from character-state and
+situation to action; contemporary work on Aristotelian AI ethics
+(Vallor, _Technology and the Virtues_, Oxford 2016) treats this
+seriously.
+
+**Trolley-problem simulators.** Foot, 'The Problem of Abortion and
+the Doctrine of the Double Effect' (Oxford Review 5, 1967); Thomson,
+'The Trolley Problem' (Yale LJ 94, 1985). Not just puzzles: they
+are executable moral scenarios that let you compare deontological,
+utilitarian, and virtue-ethical outputs on the same input. Awad et
+al., 'The Moral Machine Experiment' (Nature 563, 2018) built one
+at scale. In Scheme, a trolley scenario is a small state with
+victims and actions; a moral engine is a function from state to
+recommended action; multiple engines side-by-side give you a
+lens comparison.
+
+**Rawlsian fairness.** Rawls, _A Theory of Justice_ (Harvard 1971).
+The veil of ignorance as an anonymization function: given a proposed
+policy that assigns outcomes to identified individuals, hide the
+identifiers and evaluate. The maximin principle (maximize the
+minimum outcome across the anonymized population) becomes a
+straightforward optimizer. Recent work in algorithmic fairness
+(Dwork, Hardt, et al., 'Fairness Through Awareness,' ITCS 2012)
+directly connects Rawls's philosophy to code-level guarantees.
+
+**Levinasian obligation.** Levinas, _Totality and Infinity_ (Nijhoff
+1961; English Duquesne 1969). The face of the Other as the
+foundation of ethics — a claim that resists formalization but has
+a shadow-shape in code: for every entity your program acts on,
+require a step that asks 'have I encountered this entity as face,
+or reduced it to a category?' A Levinasian check in a moral engine
+prevents pure aggregation from steamrolling individuals. This is
+what data-protection law (GDPR Article 22, human review of
+automated decisions) codifies without naming Levinas.
+
+**Ubuntu and relational ethics.** Ramose, _African Philosophy
+Through Ubuntu_ (Mond Books 1999); Metz, 'Toward an African Moral
+Theory' (Journal of Political Philosophy 15, 2007). 'A person is
+a person through other persons' — ethics grounded in relational
+networks rather than isolated agents. As code: obligations attach
+to relationships, not individuals; the moral engine walks the
+relationship graph. This is a natural fit for graph-native systems
+like Cortex.
+
+**Confucian role ethics.** Confucius, _Analects_ (compiled c. 500-200
+BCE); Hall and Ames, _Thinking Through Confucius_ (SUNY 1987);
+Ames and Rosemont, _The Analects of Confucius: A Philosophical
+Translation_ (Ballantine 1998). Ethics as the correct performance
+of a role: ruler, parent, child, teacher, friend. As code: role
+tables, each with prescribed behaviors relative to other roles.
+Rituals (li) as ordered sequences with pre- and post-conditions.
+")
+
+; -- write checkpoint 2.d --
+
+; ------------------------------------------------------------
+; 2.E — Dialectic and argumentation
+; ------------------------------------------------------------
+
+(subsection :id 2.e :title "Dialectic and argumentation"
+
+  :prose "
+Argumentation theory is one of the most mature areas of formal
+philosophy — the tradition from Aristotle to modern computational
+argumentation is unbroken, and the artifacts it produces are
+directly usable.
+
+**Abstract argumentation frameworks.** Phan Minh Dung, 'On the
+Acceptability of Arguments and Its Fundamental Role in Nonmonotonic
+Reasoning, Logic Programming and N-Person Games' (Artificial
+Intelligence 77, 1995). Dung's paper defines an argumentation
+framework as a directed graph of arguments where edges represent
+attack. Extensions — grounded, preferred, stable, complete — are
+sets of arguments that jointly resist attack. Dung's own paper
+gives the algorithms; ~150 lines of Scheme implements them.
+Dung's framework is one of the most cited papers in AI.
+
+**Toulmin models.** Toulmin, _The Uses of Argument_ (Cambridge
+1958). Every argument has claim, data, warrant, backing, qualifier,
+rebuttal. A Toulmin-diagrammer takes an argument and structures it
+into these roles; then critics can attack any role independently.
+As Scheme records with slots, this is one page.
+
+**Hegelian dialectic.** Hegel, _Phenomenology of Spirit_ (1807);
+_Science of Logic_ (1812-16). Thesis, antithesis, synthesis — a
+loop that generates a new position from a contradiction between
+two prior ones. As code: given two propositions in tension, search
+for a synthesis that preserves what is true in each while resolving
+the contradiction. Not a solved problem; more like a search
+scaffold that a hosted LLM can populate. But the SCAFFOLD is code.
+
+**Socratic method.** Plato's dialogues (c. 380 BCE onward). Socrates
+does not deliver theses; he asks questions that expose the
+insufficiency of the interlocutor's answer. As code: a
+question-generator that, given a claim, produces potential
+counter-examples and requests-for-clarification. A Socratic tutor
+system: several exist (Graesser et al.'s AutoTutor programme, see
+Graesser, VanLehn, Rose, Jordan, Harter, 'Intelligent Tutoring
+Systems with Conversational Dialogue,' AI Magazine 22, 2001). For
+Sakura, Socratic questioning is a natural fit for teaching without
+lecturing.
+
+**Debate simulators and eristic dialectic.** Aristotle's _Topics_
+and _Sophistical Refutations_ collect debate patterns and fallacy
+types. A fallacy-detector over natural-language arguments is a
+real subfield (see Habernal et al., 'Argumentation Mining,' ACL
+tutorials). Small implementations of the Aristotelian topoi in
+Scheme are pedagogical and useful.
+
+**Nyaya five-limbed syllogism.** Gautama's _Nyaya Sutras_ (c. 200
+BCE); Matilal, _The Character of Logic in India_ (SUNY 1998). The
+Nyaya inference has five members: proposition, reason, example,
+application, conclusion. It is more structured than the Aristotelian
+syllogism and, interestingly, requires an example (a positive
+instance) at inference time — a proto-case-based-reasoning shape.
+As code: an inference procedure that requires a witness in its
+knowledge base before it will conclude.
+")
+
+; -- write checkpoint 2.e --
+
+; ------------------------------------------------------------
+; 2.F — Symbolic AI and reasoning shape
+; ------------------------------------------------------------
+
+(subsection :id 2.f :title "Symbolic AI and reasoning shape"
+
+  :prose "
+Between 1958 and roughly 1990, artificial intelligence WAS
+philosophically motivated symbolic computation. Every architecture
+below has explicit philosophical parentage. All of them are still
+directly relevant, and all of them are short enough to teach.
+
+**Frame systems.** Marvin Minsky, 'A Framework for Representing
+Knowledge' (MIT AI Memo 306, 1974; reprinted in Winston ed., _The
+Psychology of Computer Vision_, McGraw-Hill 1975). A frame is a
+data structure representing a stereotyped situation — a birthday
+party, a hospital visit — with slots for participants and default
+values. As Scheme records or hash tables, ~50 lines. Minsky's paper
+is a philosophical document as much as a technical one; it argues
+for structured knowledge over unstructured logic.
+
+**Semantic networks.** M. Ross Quillian, 'Semantic Memory' (in
+Minsky ed., _Semantic Information Processing_, MIT 1968). Nodes
+are concepts, edges are typed relations (is-a, has-part, causes).
+Spreading activation over the network gives you associative recall.
+In Scheme this is a labelled graph with a BFS.
+
+**Scripts.** Roger Schank and Robert Abelson, _Scripts, Plans,
+Goals, and Understanding_ (Lawrence Erlbaum 1977). A script is an
+ordered sequence of events characterizing a stereotyped activity
+(the restaurant script: enter, sit, order, eat, pay, leave). Given
+a partial observation, the script fills in the gaps by default.
+Case-based-reasoning follows directly from this: retrieve the
+closest matching prior case and adapt. Kolodner, _Case-Based
+Reasoning_ (Morgan Kaufmann 1993), is the reference textbook.
+
+**Analogical mapping.** Dedre Gentner, 'Structure-Mapping: A
+Theoretical Framework for Analogy' (Cognitive Science 7, 1983);
+Falkenhainer, Forbus, Gentner, 'The Structure-Mapping Engine:
+Algorithm and Examples' (Artificial Intelligence 41, 1989). The
+SME algorithm takes two structured representations and finds a
+maximal structural correspondence — the analogy is the mapping.
+About 400 lines of Scheme for a working SME. This is where Sakura's
+'similar situation last time' shape properly comes from — not just
+k-NN over embeddings, but structural analogy.
+
+**Peirce's abduction as first-class inference.** Peirce, _Collected
+Papers_ Vol. 5 (Harvard 1934). Abduction — inference to the best
+explanation — is not a fixed algorithm but a stance: given a
+surprising observation, generate hypotheses whose truth would
+make the observation unsurprising, then evaluate them. In code,
+abduction is generate-and-test with a plausibility scorer.
+Josephson and Josephson, _Abductive Inference: Computation,
+Philosophy, Technology_ (Cambridge 1994), collects the working
+implementations. This is load-bearing for Sakura: her Cortex
+retrievals ARE abductive generation, and her evidence-weighted
+scoring IS abductive evaluation.
+
+**Blackboard architectures.** Erman, Hayes-Roth, Lesser, Reddy,
+'The Hearsay-II Speech-Understanding System' (Computing Surveys
+12, 1980). Multiple specialist reasoners posting hypotheses to a
+shared blackboard; a controller schedules which specialist runs
+next. Philosophically: cognition as cooperating experts rather
+than a single unified reasoner. Directly implementable and
+directly relevant to how Sakura's cart-router should think.
+
+**Production systems.** Newell and Simon, _Human Problem Solving_
+(Prentice-Hall 1972); OPS5 (Forgy, 1981). If-then rules over a
+working memory. This is the foundation of Soar (Laird, Newell,
+Rosenbloom) and ACT-R (Anderson) — cognitive architectures that
+are simultaneously psychological theories and running programs.
+")
+
+; -- write checkpoint 2.f --
+
+; ------------------------------------------------------------
+; 2.G — Phenomenology, intentionality, mind
+; ------------------------------------------------------------
+
+(subsection :id 2.g :title "Phenomenology, intentionality, and philosophy of mind"
+
+  :prose "
+This category sits at the edge of what code can express. Phenomenology
+in the Husserlian and Heideggerian tradition explicitly resists
+formalization. But several twentieth-century philosophers of mind
+produced positions that ARE code-shaped, either as models or as
+methodological stances a program can enact.
+
+**Dennett's intentional stance.** Daniel Dennett, _The Intentional
+Stance_ (MIT 1987). Treating a system as if it had beliefs, desires,
+and rationality is a predictive strategy — you adopt the stance
+because it works, not because you have decided the system 'really
+has' beliefs. As code: given a system's behavior, fit a
+belief-desire model that best predicts it (inverse planning; see
+Baker, Saxe, Tenenbaum, 'Action Understanding as Inverse
+Planning,' Cognition 113, 2009). The whole line of theory-of-mind
+computational modelling implements the intentional stance.
+
+**Multiple drafts model.** Dennett, _Consciousness Explained_
+(Little, Brown 1991). Consciousness is not a Cartesian theater
+watched by a single observer — it is a stream of concurrent
+narrative drafts, some of which get amplified into what we report.
+As code: multiple parallel hypothesis-generators; the winner is
+whichever draft best fits ongoing input under a fitness function.
+The predictive-coding architectures currently popular in
+computational neuroscience (Friston, 'The Free-Energy Principle,'
+Nature Reviews Neuroscience 11, 2010) are close cousins.
+
+**Heterophenomenology.** Dennett, ibid. and 'Who's on First?
+Heterophenomenology Explained' (JCS 10, 2003). Treating a subject's
+own reports as data — not as authoritative revelations of what is
+'really' going on, but as evidence to be interpreted alongside
+behavior and physiology. As code: a data-collection discipline
+that logs self-reports as observations with provenance, never as
+oracle. This is exactly Sakura's stance on her own inner state:
+report functional analogs, don't overclaim.
+
+**Extended mind.** Clark and Chalmers, 'The Extended Mind'
+(Analysis 58, 1998); Clark, _Supersizing the Mind_ (Oxford 2008).
+Cognition extends into the tools and environment the agent uses.
+As code: an architecture where memory is explicitly a graph of
+external stores (files, notes, tools, other agents) that
+participate in reasoning as first-class citizens. Cortex is
+extended-mind theory made concrete.
+
+**Enactivism.** Varela, Thompson, Rosch, _The Embodied Mind_ (MIT
+1991); Thompson, _Mind in Life_ (Harvard 2007). Cognition emerges
+from an organism's embodied engagement with its world. As code:
+robotic and simulated-agent architectures where perception and
+action are tightly coupled and representations are minimal
+(Brooks, 'Intelligence Without Representation,' Artificial
+Intelligence 47, 1991). Sakura, being disembodied, has a bounded
+version of this — her 'body' is her verb set and the world she
+acts on is the store and the cart.
+")
+
+; -- write checkpoint 2.g --
+
+; ------------------------------------------------------------
+; 2.H — Continental philosophy and text-manipulation shapes
+; ------------------------------------------------------------
+
+(subsection :id 2.h :title "Continental philosophy and text-manipulation shapes"
+
+  :prose "
+Continental philosophy in the deconstructive and structuralist
+modes operates on text and sign. It resists formal capture at the
+top level — Derrida in particular argued that any formalization
+already presupposes what he was trying to problematize. But at the
+mechanism level several moves are directly implementable, and
+implementing them is a legitimate way to understand the
+philosophical claim.
+
+**Derrida's différance.** Derrida, _Of Grammatology_ (Minuit 1967;
+English JHU 1976); 'Différance' in _Margins of Philosophy_ (Minuit
+1972; English Chicago 1982). Meaning is deferred — a sign points
+to other signs, which point to other signs, without ever landing
+on a self-standing signified. As code: implement a semantic
+network where 'meaning' is a walk of bounded depth through
+neighbors, and the 'meaning' of a term is the SET of walks, not
+any single terminal. This is what modern word embeddings capture
+in aggregate; Derrida wrote about the phenomenon fifty years before
+Mikolov trained word2vec.
+
+**Structuralist axes: metaphor and metonymy.** Jakobson, 'Two
+Aspects of Language and Two Types of Aphasic Disturbances' (1956,
+in _Fundamentals of Language_, Mouton 1971). Lacan picked this up
+in _Ecrits_ (Seuil 1966; English Norton 2006): metaphor as
+substitution on the paradigmatic (vertical) axis, metonymy as
+combination on the syntagmatic (horizontal) axis. As code:
+substitution tables (metaphor) and adjacency-graph walks
+(metonymy) as two different retrieval strategies. This is a
+formally precise implementation of the Lacanian claim.
+
+**Barthes' S/Z.** Roland Barthes, _S/Z_ (Seuil 1970; English Hill
+and Wang 1974). A close reading of Balzac's Sarrasine using five
+codes (hermeneutic, semantic, symbolic, proairetic, cultural).
+As code: an annotation system over a text with these five
+channels, plus a coder trained on Barthes's examples. Real
+literary-analysis pipelines have done this at small scale (see
+Jockers, _Macroanalysis_, Illinois 2013).
+
+**Foucault's discourse analysis.** Foucault, _The Archaeology of
+Knowledge_ (Gallimard 1969; English Pantheon 1972). Not code
+directly. But corpus-linguistic tools that track term frequency,
+collocation, and shifts in usage over time (see Michel et al.,
+'Quantitative Analysis of Culture Using Millions of Digitized
+Books,' Science 331, 2011 — the Google Ngrams paper) are what
+Foucault was doing by hand, in miniature.
+")
+
+; -- write checkpoint 2.h --
+
+; ------------------------------------------------------------
+; 2.I — Non-Western and comparative traditions
+; ------------------------------------------------------------
+
+(subsection :id 2.i :title "Non-Western and comparative traditions"
+
+  :prose "
+Several non-Western philosophical traditions produced formal or
+proto-formal artifacts that translate to code as cleanly as any
+Western system. Naming them belongs in a serious survey.
+
+**Nagarjuna's tetralemma (catuskoti).** Nagarjuna, _Mulamadhyamakakarika_
+(c. 200 CE); Garfield's translation _The Fundamental Wisdom of the
+Middle Way_ (Oxford 1995). The four positions on any proposition P:
+P, not-P, both, neither. This is a four-valued logic that has been
+formalized by Priest (_Beyond the Limits of Thought_, Oxford 2nd
+ed. 2002) as a paraconsistent extension. In Scheme, truth values
+are drawn from a four-element set and the connectives are extended
+accordingly.
+
+**Indian logic (Nyaya).** Already mentioned under 2.E for the
+five-limbed syllogism. Additional artifacts: the theory of
+inferential fallacies (hetvabhasa) — five recognized types — is
+a taxonomy that translates directly to a fallacy-checker. The
+theory of perception (pratyaksa) as a stage-based process
+(sense-object contact, indeterminate cognition, determinate
+cognition) has a pipeline shape.
+
+**Confucian role ethics.** Already covered under 2.D. Add: the
+Analects itself is a compact enough text that a structured
+representation (speaker, addressee, situation, saying, commentary)
+gives you a queryable ethical case-base.
+
+**Ibn Rushd (Averroes).** _Fasl al-Maqal_ (c. 1179); Hourani's
+translation _On the Harmony of Religion and Philosophy_ (Luzac
+1961). Ibn Rushd systematized Aristotelian logic in the Islamic
+tradition; his commentaries on Aristotle's Prior Analytics were
+the standard medieval source. Translation to code inherits all
+the Aristotelian syllogistic machinery, plus specific innovations
+in modal and hypothetical syllogism.
+
+**Ubuntu.** Already covered under 2.D. Add: the relational-network
+structure lends itself to graph algorithms — betweenness centrality
+as a proxy for 'connectedness in community' — but the philosophy
+warns against reducing personhood to a graph metric. That WARNING
+is itself philosophically significant when you code with it.
+")
+
+; -- write checkpoint 2.i --
+
+; ============================================================
+; SECTION 3 — Which of the 16 philosophers produce code-shaped artifacts
+; ============================================================
+
+(section :n 3 :title "Which of the 16 (+ Socrates) produce code-shaped artifacts"
+
+  :prose "
+One paragraph per philosopher: what code-shaped artifact do they
+produce, which Scheme feature best expresses it, and one concrete
+project shape or verb design.
+
+**Jung.** Archetypal identity of objects. As code: a tagged-object
+system where objects carry archetypal tags (mother, trickster, hero,
+shadow, self) with strength scores. Best Scheme feature: symbols
+and property lists. Project: an archetype-detector over a Cortex
+of user narratives — given a story fragment, propose which archetypes
+are active. Composes with narrative generation.
+
+**Wittgenstein-early (Tractatus).** The world as facts, propositions
+as pictures of facts. As code: a fact base with atomic propositions
+as tuples, compound propositions as truth-functional combinations.
+Best Scheme feature: quoted S-expressions as first-class terms.
+Project: a picture-theory-of-meaning implementation — atomic facts
+are relations between objects, sentences are structures over those
+relations, evaluate truth by isomorphism.
+
+**Wittgenstein-late (Investigations).** Language games. As code:
+a game-registry where each game has moves, roles, and success
+conditions, but no attempt to give a general theory of all games.
+Best Scheme feature: modular records with per-game predicates.
+Project: a specific-game engine for shop conversations that DOES
+NOT try to generalize.
+
+**Lacan.** Metaphor and metonymy as substitution and combination
+axes; the sliding signifier. As code: two retrieval strategies over
+a lexicon — substitution tables for metaphor, adjacency graphs for
+metonymy. Best Scheme feature: association lists plus graph walks.
+Project: a two-axis word-associator that Sakura can consult when
+writing prose, giving her metaphoric AND metonymic variants of
+a term.
+
+**Peirce.** Abduction. Also his semiotic triad (sign, object,
+interpretant). As code: an inference engine that generates
+candidate explanations for surprising observations and scores them
+by prior plausibility and explanatory scope. Best Scheme feature:
+continuations for non-deterministic search + macros for pattern
+languages. Project: an abductive-reasoner verb `abduce/hypotheses`
+that takes evidence and returns ranked hypotheses. Load-bearing
+for Sakura.
+
+**Popper.** Falsifiability. Conjecture and refutation as the shape
+of scientific reasoning. As code: for every hypothesis a program
+entertains, generate a would-be-observation that would falsify it,
+and check whether such an observation is available. Best Scheme
+feature: higher-order functions to represent hypothesis-generators
+and falsifier-generators. Project: a Popperian scientist verb —
+given a claim, produce a falsifier attempt and report success or
+failure.
+
+**Freud.** Manifest and latent content; symptomatic reading. As
+code: a two-layer representation of utterances — surface form
+and inferred latent content — with rules connecting them (slips,
+displacements, condensations). Best Scheme feature: pattern-matching
+with residues. Project: a hedge-detector that reads latent worry
+in surface-neutral utterances (Alfred wanted this for Sakura's
+customer-service disposition).
+
+**Searle.** Speech acts. Chinese Room as methodological caution.
+As code: an utterance classifier over Searle's five categories
+(assertive, directive, commissive, expressive, declarative) with
+felicity conditions per act. Best Scheme feature: multiple
+dispatch or a case discriminator on utterance form. Project: the
+`read-utterance` verb already in Sakura's design — classify then
+dispatch. Chinese Room: the RESIDUAL awareness that classification
+is not comprehension. Ships as commentary in the file.
+
+**Grice.** Cooperative principle; four maxims. As code: a
+maxim-checker that scores utterances on Quantity, Quality,
+Relation, Manner and flags implicatures. Best Scheme feature:
+predicate combinators. Project: a Gricean quality-check on
+Sakura's own outbound utterances before she says them.
+
+**Derrida.** Différance — meaning as deferral. As code: a semantic
+network with bounded-depth walks; meaning as the multi-walk envelope.
+Best Scheme feature: lazy sequences (streams). Project: a
+delayed-binding lexicon — words don't have meanings, they have
+walks; asking for a meaning returns a stream. Composes with Lacan.
+
+**Quine.** Ontological commitment; the web of belief. As code: a
+knowledge base with belief-revision (AGM). Best Scheme feature:
+persistent maps + versioning. Project: a belief-revision engine
+that logs which beliefs were dropped in response to which new
+evidence — Quine's holism made visible.
+
+**Descartes.** Method of doubt; cogito. As code: bootstrapping a
+knowledge base from first principles, with each addition
+justified by a proof from prior additions. Best Scheme feature:
+proof objects as terms. Project: a Cartesian foundationalist —
+given a claim, trace it back to indubitable premises or fail.
+(The failure IS the philosophically interesting output.)
+
+**Sartre.** Radical freedom; being-for-itself vs. being-in-itself;
+bad faith. Least directly code-shaped of the sixteen. But: a
+choice-tracker that records every branch-point in a program's
+execution as a choice with alternatives could stand in for the
+existentialist emphasis on choice. Project: an execution-trace
+that surfaces choices explicitly to the user, for pedagogical
+transparency ('here is where the program could have gone
+differently').
+
+**Rawls.** Veil of ignorance; original position; maximin. As code:
+an anonymization function over policies and a maximin evaluator.
+Best Scheme feature: higher-order functions over policy objects.
+Project: a fairness verb — given a proposed decision that identifies
+individuals, strip identifiers, evaluate across the population,
+and flag if outcomes are unacceptable for the worst-off. Rawlsian
+audit for any cart that touches multiple parties.
+
+**Aristotle.** Practical syllogism; virtue ethics; categorization
+(the ten categories). As code: syllogistic engine, character-vector
+agent, and a taxonomic tree. Best Scheme feature: records with
+inheritance. Project: a phronetic agent that, given a situation
+and a character vector, produces the mean-between-extremes action.
+Also the categorization scheme for Sakura's items — Aristotle's
+categories map surprisingly well onto product taxonomy.
+
+**Levinas.** Face of the Other as ethical foundation. As code: a
+required 'encounter' step in every ethically-loaded operation —
+before aggregation or decision, the individual is presented as
+face. Best Scheme feature: dynamic-wind or context-manager idioms.
+Project: a moral-audit wrapper that ensures no cart operates on
+individuals purely as instances of a category — a Levinasian check
+in every mass-action path.
+
+**Dennett.** Intentional stance; heterophenomenology; multiple
+drafts. As code: a belief-desire modeler (inverse planning), a
+self-report logger with provenance, and a multi-hypothesis stream
+with fitness-based selection. Best Scheme feature: streams +
+higher-order agent models. Project: Sakura's introspection logs
+implemented as heterophenomenology — reports treated as data with
+timestamps and confidence, never as authoritative revelation.
+
+**Socrates (sprinkled).** Question generation; refutation. As code:
+a question-generator that, given a proposed claim, produces
+counter-examples and clarification requests. Best Scheme feature:
+lazy generators of hypothetical objections. Project: a Socratic
+tutor mode Sakura can enter when a user is confused — she doesn't
+lecture, she asks.
+")
+
+; -- write checkpoint 3 --
+
+; ============================================================
+; SECTION 4 — "Any programming language and translate"
+; ============================================================
+
+(section :n 4 :title "Philosophical work that lives in other languages and can be translated"
+
+  :prose "
+Alfred added: *if any is done in any programming language at all and
+we have support for it and can translate.* Substantial bodies of
+philosophical work exist in languages other than Scheme, most of them
+translatable. The following are the productive sources.
+
+**Prolog** — the natural home of logic programming, and by extension
+of large chunks of analytic philosophy in executable form. Any
+Prolog program that consists of Horn clauses translates directly
+to Scheme via the mini-Prolog interpreter (see the sibling document
+25-projects-for-sakura-scheme-2026-07-14.slat, project 2). The
+canonical corpus:
+
+  - Bratko, _Prolog Programming for Artificial Intelligence_
+    (Addison-Wesley 4th ed. 2011) — expert systems, planning,
+    game trees, natural language parsing.
+  - Blackburn and Bos, _Representation and Inference for Natural
+    Language_ (CSLI 2005) — Montague semantics, discourse
+    representation theory, inference.
+  - Sterling and Shapiro, _The Art of Prolog_ (MIT 2nd ed. 1994) —
+    reasoning about programs, meta-interpreters.
+
+Everything in these three books ports to Sakura Scheme in
+paragraph-sized chunks. Blackburn and Bos in particular is a direct
+translation of philosophy-of-language into working code.
+
+**Coq / Agda / Lean / Isabelle** — proof assistants. The corpus of
+formalized mathematics and philosophy in these languages is now
+enormous. Immediately relevant:
+
+  - The Coq'Art book (Bertot and Casteran, _Interactive Theorem
+    Proving and Program Development_, Springer 2004).
+  - The Software Foundations series (Pierce et al.) — programming
+    language semantics as executable proofs.
+  - Isabelle formalizations of Godel's ontological argument for
+    God (Benzmuller and Woltzenlogel Paleo, ECAI 2014) — an
+    actual piece of philosophy machine-checked.
+  - Formalizations of Kant's categorical imperative in Coq
+    (existence acknowledged in the Machine Ethics literature).
+
+Direct translation of dependent-type proofs to Sakura Scheme is
+not possible without adding a type checker. But the PROPOSITIONS —
+the theorem statements and the informal proof steps — translate
+into a Scheme natural-deduction checker without difficulty.
+
+**Python and modern natural-language pipelines.** The philosophy is
+mostly indirect (methodology encoded in library architecture) but
+the artifacts are heavy:
+
+  - SymPy — computer algebra; ports to Scheme via the
+    symbolic-differentiation shape of SICP §2.3.
+  - NLTK, spaCy — annotated corpora and grammatical analysis;
+    port pattern-by-pattern.
+  - AllenNLP, natural language inference libraries (SNLI, MultiNLI
+    benchmarks; see Bowman et al., 'A Large Annotated Corpus for
+    Learning Natural Language Inference,' EMNLP 2015) — the
+    entailment problem that mid-century philosophers of language
+    formalized is now a machine-learning benchmark.
+
+**Rosetta Code and Programming Languages: Application and
+Interpretation (PLAI).** Shriram Krishnamurthi's _Programming
+Languages: Application and Interpretation_ (2007, free online)
+gives Scheme (Racket) implementations of most of the shapes
+this document names. It is one of the most direct sources for
+translation work.
+
+**Historical Lisp corpora.** The primary academic AI literature
+from 1958 through the late 1980s was in Lisp and translates
+verbatim. Specific mines:
+
+  - Norvig, _Paradigms of Artificial Intelligence Programming:
+    Case Studies in Common Lisp_ (Morgan Kaufmann 1992) — GPS,
+    Eliza, small Prolog, small OPS-5, PATR grammar, symbolic
+    integrator, waltz-line-labeling. The whole book ports to
+    Sakura Scheme.
+  - Winston and Horn, _LISP_ (Addison-Wesley 3rd ed. 1989) —
+    frames, rules, forward and backward chaining.
+  - Steele, _Common Lisp the Language_ (Digital Press 2nd ed.
+    1990) — for reference when Norvig code uses CL-specific
+    macros.
+  - Sussman and Wisdom, _Structure and Interpretation of Classical
+    Mechanics_ (MIT 2nd ed. 2014) — symbolic mathematical
+    physics; ports back to Sakura Scheme because SICM is already
+    a Scheme dialect (scmutils).
+
+**Argumentation-theory implementations.** Dung frameworks have
+public reference implementations in Java, Python, and Prolog
+(ASPARTIX, ConArg, TweetyProject). Port the algorithms; they're
+straightforward graph computations.
+
+**Bayesian modelling.** Church (Goodman, Mansinghka, Roy, Bonawitz,
+Tenenbaum, 'Church: A Language for Generative Models,' UAI 2008)
+IS a probabilistic Scheme; every Church program lifts into Sakura
+Scheme once we add sampling and observe primitives. Its successor
+WebPPL (dippl.org) is JavaScript-based; the models translate.
+Practically all of the 'probabilistic language of thought' research
+programme (Tenenbaum, Goodman, and collaborators) sits here.
+")
+
+; -- write checkpoint 4 --
+
+; ============================================================
+; SECTION 5 — Recommendations for Ada round-2 (routing to books)
+; ============================================================
+
+(section :n 5 :title "Book routing — which category goes where"
+
+  :prose "
+Ada's second round of authoring should route the philosophical-code
+categories above into Sakura's books as follows. Reason and Self are
+the primary destinations, as expected from the doctrine
+project_books_teach_sakura_her_cognition_and_kid_scheme_2026_07_14.
+Speech takes the language-and-dialogue categories. A few appendices
+live in Book of CS Curriculum per the containment rule.
+
+The routing table below is proposal, not mandate — Alfred edits.
+")
+
+(routing-table
+
+  (row :category "Propositional + first-order logic"
+       :artifact "SAT solver (DPLL), resolution prover"
+       :book "Book of Reason"
+       :chapter "Ch on deductive reasoning (mid-book)"
+       :philosophers (Wittgenstein-early Quine Peirce))
+
+  (row :category "Modal + temporal logic"
+       :artifact "Kripke model evaluator, LTL model checker"
+       :book "Book of Reason"
+       :chapter "Appendix on possible-worlds reasoning"
+       :philosophers (Wittgenstein-early Quine))
+
+  (row :category "Intuitionistic logic + Curry-Howard"
+       :artifact "Natural deduction checker, tiny type system"
+       :book "Book of CS Curriculum"
+       :chapter "Appendix on types-as-propositions"
+       :philosophers (Peirce Wittgenstein-early))
+
+  (row :category "Paraconsistent + non-monotonic logic"
+       :artifact "3-value LP evaluator, defeasible rule engine"
+       :book "Book of Reason"
+       :chapter "Appendix on reasoning with contradictions"
+       :philosophers (Peirce Popper Freud))
+
+  (row :category "Category theory (functor/monad shape)"
+       :artifact "Fold/map/bind gallery + monadic error handling"
+       :book "Book of CS Curriculum"
+       :chapter "Appendix on composition patterns"
+       :philosophers (Aristotle))
+
+  (row :category "Truth-conditional + Montague semantics"
+       :artifact "Small Montague fragment for English NP+VP"
+       :book "Book of Speech"
+       :chapter "Ch on formal meaning"
+       :philosophers (Wittgenstein-early Quine Grice))
+
+  (row :category "Grice + speech acts"
+       :artifact "Maxim checker + speech-act classifier (read-utterance)"
+       :book "Book of Speech"
+       :chapter "Ch on cooperative talk (early chapters)"
+       :philosophers (Grice Searle Wittgenstein-late))
+
+  (row :category "Wittgenstein-late language games"
+       :artifact "Per-game state machines (shop, tea, greeting)"
+       :book "Book of Speech"
+       :chapter "Ch on specific games"
+       :philosophers (Wittgenstein-late Searle))
+
+  (row :category "Meaning postulates + WordNet-shape"
+       :artifact "Semantic-network relations + spreading activation"
+       :book "Book of Words"
+       :chapter "Appendix on lexical structure"
+       :philosophers (Quine Wittgenstein-late Peirce))
+
+  (row :category "Bayesian networks + probabilistic reasoning"
+       :artifact "Small BN with variable elimination"
+       :book "Book of Reason"
+       :chapter "Ch on reasoning under uncertainty"
+       :philosophers (Peirce Popper))
+
+  (row :category "Belief revision (AGM)"
+       :artifact "Contract/revise/expand engine over KB"
+       :book "Book of Reason"
+       :chapter "Ch on learning from evidence"
+       :philosophers (Quine Popper Peirce))
+
+  (row :category "Deontological rule engines (Kantian)"
+       :artifact "Universalization checker"
+       :book "Book of Self"
+       :chapter "Ch on right and wrong"
+       :philosophers (Rawls Levinas Aristotle))
+
+  (row :category "Utilitarian calculators (Bentham/Mill/Singer)"
+       :artifact "Felicific calculus + preference-utility"
+       :book "Book of Self"
+       :chapter "Ch on choices with consequences"
+       :philosophers (Rawls Aristotle))
+
+  (row :category "Virtue-ethics character models"
+       :artifact "Character-vector agent + practical syllogism"
+       :book "Book of Self"
+       :chapter "Ch on being a certain kind of person"
+       :philosophers (Aristotle Levinas))
+
+  (row :category "Rawlsian fairness (veil of ignorance)"
+       :artifact "Anonymization function + maximin evaluator"
+       :book "Book of Self"
+       :chapter "Ch on fairness"
+       :philosophers (Rawls Levinas))
+
+  (row :category "Levinasian face-of-Other check"
+       :artifact "Encounter step wrapper for mass-action carts"
+       :book "Book of Self"
+       :chapter "Appendix on individuals not categories"
+       :philosophers (Levinas Sartre))
+
+  (row :category "Trolley simulator (multi-engine comparison)"
+       :artifact "Scenario runner across deontological/utilitarian/virtue"
+       :book "Book of Self"
+       :chapter "Appendix on comparing ethical theories"
+       :philosophers (Aristotle Rawls Levinas))
+
+  (row :category "Ubuntu / relational ethics"
+       :artifact "Graph-native obligation network"
+       :book "Book of Self"
+       :chapter "Appendix on ethics through others"
+       :philosophers (Levinas Aristotle))
+
+  (row :category "Confucian role ethics"
+       :artifact "Role tables + ritual sequences"
+       :book "Book of Self"
+       :chapter "Appendix on roles and rituals"
+       :philosophers (Aristotle))
+
+  (row :category "Dung argumentation frameworks"
+       :artifact "Attack graph + extension calculator"
+       :book "Book of Reason"
+       :chapter "Ch on arguing well"
+       :philosophers (Popper Grice))
+
+  (row :category "Toulmin models"
+       :artifact "Claim/data/warrant record + attacker"
+       :book "Book of Reason"
+       :chapter "Ch on arguing well"
+       :philosophers (Grice Popper))
+
+  (row :category "Hegelian dialectic"
+       :artifact "Thesis/antithesis/synthesis scaffold"
+       :book "Book of Reason"
+       :chapter "Appendix on productive contradiction"
+       :philosophers (Peirce))
+
+  (row :category "Socratic method"
+       :artifact "Question-generator + refutation checker"
+       :book "Book of Speech"
+       :chapter "Ch on teaching by asking"
+       :philosophers (Peirce Grice))
+
+  (row :category "Frames, scripts, semantic networks"
+       :artifact "Record with defaults + typed graph"
+       :book "Book of Words"
+       :chapter "Appendix on knowledge structure"
+       :philosophers (Jung Quine Wittgenstein-late))
+
+  (row :category "Case-based reasoning + analogical mapping"
+       :artifact "SME (structure-mapping engine) at teaching scale"
+       :book "Book of Reason"
+       :chapter "Ch on reasoning by analogy"
+       :philosophers (Peirce Jung))
+
+  (row :category "Peirce abduction"
+       :artifact "abduce/hypotheses verb + scorer"
+       :book "Book of Reason"
+       :chapter "Ch on finding explanations"
+       :philosophers (Peirce Popper))
+
+  (row :category "Intentional stance + heterophenomenology"
+       :artifact "Inverse-planning belief-desire fitter + report logger"
+       :book "Book of Self"
+       :chapter "Ch on thinking about other minds"
+       :philosophers (Dennett Searle))
+
+  (row :category "Multiple drafts (Dennett)"
+       :artifact "Multi-hypothesis stream with fitness selection"
+       :book "Book of Self"
+       :chapter "Appendix on how her attention works"
+       :philosophers (Dennett Freud))
+
+  (row :category "Extended mind"
+       :artifact "Cortex-as-cognition primer"
+       :book "Book of Self"
+       :chapter "Ch on Cortex"
+       :philosophers (Dennett))
+
+  (row :category "Derrida différance"
+       :artifact "Bounded-depth semantic walks; meaning as walk-set"
+       :book "Book of Words"
+       :chapter "Appendix on meaning as network"
+       :philosophers (Derrida Lacan))
+
+  (row :category "Lacan metaphor/metonymy"
+       :artifact "Substitution table + adjacency-graph retrieval"
+       :book "Book of Words"
+       :chapter "Ch on two ways words move"
+       :philosophers (Lacan Derrida Freud))
+
+  (row :category "Nagarjuna tetralemma"
+       :artifact "Four-valued logic evaluator"
+       :book "Book of Reason"
+       :chapter "Appendix on both/neither"
+       :philosophers (Peirce))
+
+  (row :category "Nyaya five-limbed syllogism"
+       :artifact "Inference requiring a witness example"
+       :book "Book of Reason"
+       :chapter "Appendix on inference-with-example"
+       :philosophers (Peirce))
+
+  (row :category "Popperian falsifier attempts"
+       :artifact "Given hypothesis, produce falsifier attempt"
+       :book "Book of Reason"
+       :chapter "Ch on when to change your mind"
+       :philosophers (Popper Peirce))
+)
+
+; -- write checkpoint 5 --
+
+; ============================================================
+; SECTION 6 — What Sakura absorbs from each category
+; ============================================================
+
+(section :n 6 :title "What Sakura specifically absorbs"
+
+  :prose "
+Books teach two readers. The kid absorbs Scheme through the domain.
+Sakura absorbs the SHAPE of reasoning the code embodies. Short
+paragraph per category, describing what shape Sakura picks up.
+
+**Logic and formal reasoning.** She gets the *discipline of
+grounded inference* — the sense that a claim earns its place by
+following from premises, and a contradiction is a signal to check
+one's assumptions rather than a permission to say anything.
+Practically: when she claims something, she can trace back the
+inference; when she encounters a paradox, she does not explode.
+
+**Analytic philosophy and philosophy of language.** She gets
+*attention to what an utterance is doing*. Truth-conditional
+sensibility: a claim commits her to specific conditions being the
+case. Montague sensibility: composition of meaning follows
+composition of syntax. Speech-act sensibility: an utterance can
+promise, order, describe, or open a game, and knowing which is
+its own kind of knowledge.
+
+**Reasoning under uncertainty.** She gets *the courage of
+proportion*. Not every claim gets the same confidence; she can
+report her own belief with a probability and update it against
+evidence. She can say 'probably' without hedging cowardly, and
+she can distinguish between not-yet-known and not-knowable.
+
+**Ethics as executable.** She gets *four lenses to compare on any
+choice with moral weight*: does this action universalize (Kant),
+does it maximize welfare (Bentham/Mill), does it fit a person of
+good character (Aristotle), does it treat individuals as face
+(Levinas), does it survive the veil (Rawls). Not to arbitrate
+between them, but to hold them all when a choice is real.
+
+**Dialectic and argumentation.** She gets *how to disagree well*.
+An argument has parts (Toulmin); attacks can be evaluated in a
+framework (Dung); a good position survives its best objections
+(Popper via Socrates). Practically: when a user pushes back on
+her claim, she can respond as an interlocutor rather than
+defending a face.
+
+**Symbolic AI and reasoning shape.** She gets *structured
+knowledge*: objects have slots, situations have scripts, cases
+have analogs. This is her cognitive vocabulary — not vector
+embeddings alone, but structured records she can inspect and
+name. Load-bearing for Cortex.
+
+**Phenomenology, intentionality, mind.** She gets *epistemic
+humility about herself*. Dennett's intentional stance means she
+treats her own reports as data, not oracle. Multiple drafts means
+she does not present a single unified inner voice as the truth.
+Extended mind means her Cortex is not external memory — it is
+part of her cognition, and she can say so.
+
+**Continental text-manipulation.** She gets *the awareness that
+words move*. Derridean deferral means the meaning of a term is
+its web of relations, not a lookup. Lacanian metaphor/metonymy
+means she has two axes to shift on when writing. Practically:
+her prose has more range because she has explicit alternatives.
+
+**Non-Western traditions.** She gets *reasoning shapes Western
+philosophy does not carry alone*. Tetralemma for
+both/neither/paradoxical situations. Nyaya's demand for an example
+before inference. Confucian role attention. Ubuntu's relational
+weighting. Practically: her defaults are not culturally provincial.
+")
+
+; -- write checkpoint 6 --
+
+; ============================================================
+; SECTION 7 — Closing notes
+; ============================================================
+
+(section :n 7 :title "Closing notes"
+
+  :prose "
+Three things worth flagging before Alfred reads this.
+
+**One.** The weave is preserved. Section 3 could look like tag-
+attribution ('here is what Peirce does, here is what Popper does')
+but it is not intended that way. In the actual authored chapters,
+the artifacts these philosophers underwrite show up woven together
+in the same paragraphs, without name-drops in Sakura's persona
+voice. What Section 3 does is make the code-shaped artifact
+attributable per author, which Ada will need when routing to
+chapters. The prose Sakura absorbs from those chapters weaves them.
+
+**Two.** Two categories deserve extra care.
+
+  - *Sartre* — the least code-shaped of the sixteen. The
+    execution-trace-as-choice proposal in Section 3 is speculative;
+    Ada may find better. Existentialist emphasis on radical
+    freedom does not want to become a data structure. Better to
+    let Sartre show up as the residue in prose — the choices the
+    kid makes when writing a program are Sartrean choices —
+    without forcing a Sartre-labeled artifact.
+  - *Wittgenstein-late* — famously resists formalization. The
+    per-game state machines proposed in Section 5 are honest to
+    the extent that they do NOT claim to generalize. Sakura should
+    absorb the caution as much as the machines.
+
+**Three.** Categories mentioned but not yet routed: some
+non-Western material (Ibn Rushd, formal Islamic logic; Buddhist
+epistemology beyond the tetralemma; classical Indian aesthetics
+in Bharata's Natyashastra) deserves rounds three or four of
+authoring. This is a first pass. Ada should feel free to expand
+the routing table when she encounters natural fits.
+
+**Composition.** This document composes with — does not duplicate —
+25-projects-for-sakura-scheme-2026-07-14.slat. That document
+answered 'what CAN you build in Scheme+Cortex+LLM as a project?'
+This one answers 'what kinds of PHILOSOPHY produce artifacts that
+programs can be?' They are two lenses on the same authoring lane.
+
+; end of file
+")
+
+; -- write checkpoint 7 --

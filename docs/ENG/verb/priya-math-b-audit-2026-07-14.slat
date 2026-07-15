@@ -1,0 +1,183 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; priya-math-b audit — Phase A
+;; Lane: no-namespace verbs, first letter i-p (77 verbs)
+;; Author: Priya (Lacuna Eng Lead — math-b / no-namespace i-p lane)
+;; Date: 2026-07-14
+;;
+;; Alfred's floor doctrine — every stamp MUST correspond to a REAL REPL
+;; run that succeeded. No auto-stubs. No hallucinated behavior. If a verb
+;; cannot be honestly wired + verified, its entry ships with
+;;   :entry-provenance "author-blocked"
+;; and a plain-English reason. We do not lie.
+;;
+;; Composition with kid-from-North-Georgia doctrine:
+;;   A kid opens the manual and types (paint-cell 'world 5 3 'red).
+;;   Something should visibly happen — a cell should paint. If we can't
+;;   deliver that in a bare REPL (no framebuffer surface, no audio hw)
+;;   then the ENTRY must say so honestly, not silently return an opaque
+;;   tagged list and claim success. Where the true semantics need a live
+;;   subsystem, we ship the shaped descriptor AND we ship the entry
+;;   marked :impl-status "deferred" with :impl-notes explaining what the
+;;   full host would do. Never a lie.
+;; ─────────────────────────────────────────────────────────────────────
+
+(audit
+  :lane "priya-math-b"
+  :scope "no-namespace verbs, name[0] ∈ [i,p]"
+  :author "priya"
+  :dated "2026-07-14"
+  :verbs-in-scope 77
+  :already-real 7
+  :shaped-descriptor-only 70
+  :true-stubs 0
+
+  :note "Every verb in scope resolves to SOMETHING in the current build. The 70 shaped-descriptor entries return a tagged list like (\"paint-cell\" world 5 3 red) — they do not throw, they do not error, but they also do not perform the true semantics documented in the reference. That is a form of the lie Alfred rejected. Priya's job is to (a) implement real behavior where possible in the REPL, (b) refactor the shaped-descriptor entries into honest wired impls, and (c) where a live subsystem (framebuffer surface, audio hw, card runtime, game host) is genuinely required, mark :impl-status \"deferred\" with :impl-notes that explain exactly what the full host does. Reference IS the language."
+
+  :install-order
+    (:file "src/sakuraEnv.js"
+     :order
+       ("makeBaseEnv"      "L0 core R7RS + primitives"
+        "installAi"        "L2 AI (cortex, llm)"
+        "installGame"      "L3 game (sprites, entities, physics, on-frame)"
+        "installCommercial""L4 commercial (etsy/ebay/shopify/meta/google)"
+        "installWiredVerbs""L4.5 wired — closes reference→env gap, ships shaped descriptors for long tail"
+        "registerReferenceVerbs" "L5 reference — stubs only names not yet bound"))
+
+  ;; ─── already-real (7) — verified via REPL smoke ─────────────────
+  ;; These have honest impls or the honest #f-returning shape a
+  ;; standalone REPL can offer. They still need the FULL-SCHEMA entry
+  ;; upgrade (5 tiers × :note + all disciplines slices).
+
+  (:tier "already-real"
+   :count 7
+   :verbs (
+     "note"              ; media.js — real note event emission
+     "on-frame"          ; game.js  — registers frame callback with media loop
+     "on-key"            ; media.js — registers key callback
+     "key?"              ; wired-verbs.js — honest #f in headless REPL
+     "input-may-i?"      ; wired-verbs.js — honest #f (no live input)
+     "podcast-is-subscribed?" ; wired-verbs.js — honest #f
+     "podcast-muted?"    ; wired-verbs.js — honest #f
+   )
+   :note "Impl work already done. Priya only authors the upgraded entry.")
+
+  ;; ─── implementable-cheap (14) — pure JS, no host required ───────
+  ;; These have real semantics that fit a standalone REPL. They deserve
+  ;; a real impl, not a shaped descriptor.
+
+  (:tier "cheap"
+   :count 14
+   :verbs (
+     "invariants"        ; declaration verb — returns null; documented as no-runtime-effect
+     "list-item-pluck"   ; list mutation — REPL-safe if we take a list and return the shorter list
+     "list-item-toss"    ; ditto — reorder immutable-return
+     "obj-get"           ; JS obj property access — documented, doable
+     "pixels-wide"       ; framebuffer.fb.w — accessor via getMediaState
+     "pixels-tall"       ; framebuffer.fb.h — accessor via getMediaState
+     "measure-content"   ; card-dependent; return honest (('w 0) ('h 0)) with a note about no live card runtime
+     "next"              ; reference-impls.js already ships descriptor — that IS the reference contract for state-machine transitions
+     "on-tick"           ; ditto — reference contract IS a descriptor / clause
+     "interrupted"       ; predicate; honest #f
+     "in-formation"      ; predicate; honest #f (no live formation state)
+     "input-may-i?"      ; already-real
+     "key?"              ; already-real
+     "note-dots"         ; parses a dotted-note symbol → duration; pure math
+   )
+   :note "One-file JS: closed-form or trivial. Verify in REPL immediately. Some overlap with already-real bucket.")
+
+  ;; ─── implementable-medium (10) — adapter or state-backed ────────
+  ;; These need a stub-adapter or a light in-memory model. Not free but
+  ;; not blocked either.
+
+  (:tier "medium"
+   :count 10
+   :verbs (
+     "imagine"           ; deterministic surmise from word; return honest tagged descriptor with note
+     "make-character"    ; character-id allocator; can maintain in-memory registry
+     "move-card"         ; card runtime — return descriptor honestly + entry says deferred
+     "orient-card"       ; ditto
+     "layout-bricklay!"  ; layout adapter — descriptor honest
+     "on-canvas-trace"   ; canvas-trace subsystem — descriptor
+     "note-strike" "note-release" "note-place" "note-place-at" ; music/note runtime hooks
+   )
+   :note "Real semantics need a running host. Some ship descriptor + entry marks :impl-status deferred with reasoning.")
+
+  ;; ─── paint-* (7) — deferred; needs framebuffer surface ──────────
+  ;; A real REPL doesn't have a live grid CA. paint-cell writing to a
+  ;; live surface is the true semantics; a shaped descriptor is the
+  ;; honest fallback. We author the entry with :impl-status "deferred"
+  ;; and :impl-notes explaining exactly the surface-lookup path a host
+  ;; would take.
+
+  (:tier "deferred"
+   :count 7
+   :verbs (
+     "paint-cell"           "paint-coin"          "paint-conway"
+     "paint-grid"           "paint-grid-3state"   "paint-grid-4state"
+     "paint-grid-with-age"
+   )
+   :note "Standalone REPL has no live grid CA / surface subsystem. Descriptor return preserves the shape of the call for consumers running under a real host; entry ships :impl-status \"deferred\" and honest :impl-notes.")
+
+  ;; ─── podcast-* (32) — deferred; needs podcast subsystem ─────────
+  ;; The podcast player is a browser-side subsystem. In a headless
+  ;; REPL none of it exists. All 32 podcast-* verbs are documented but
+  ;; deferred to the host that has the player. Two predicates already
+  ;; return honest #f (podcast-is-subscribed?, podcast-muted?).
+
+  (:tier "deferred"
+   :count 32
+   :verbs (
+     "podcast-active-constellations" "podcast-bookmark"
+     "podcast-clear-history"         "podcast-clips"
+     "podcast-current"               "podcast-delete-clip"
+     "podcast-dismiss-episode-actions" "podcast-episode-actions"
+     "podcast-follow-speaker"        "podcast-followed-speakers"
+     "podcast-load"                  "podcast-pause"
+     "podcast-play"                  "podcast-publish-insight"
+     "podcast-queue"                 "podcast-queue-add"
+     "podcast-queue-remove"          "podcast-rate"
+     "podcast-record-episode-actions" "podcast-record-mention"
+     "podcast-resolve-tier"          "podcast-resume"
+     "podcast-save-brief"            "podcast-save-clip"
+     "podcast-save-mini-pod"         "podcast-seek"
+     "podcast-set-show-tier"         "podcast-sleep"
+     "podcast-state"                 "podcast-subscribe"
+     "podcast-subscriptions"         "podcast-unfollow-speaker"
+     "podcast-unsubscribe"           "podcast-voice-overlay-enable"
+     "podcast-volume"
+   )
+   :note "Podcast subsystem is host-side. Priya ships an in-memory podcast state model in wired-verbs so that (a) predicates read state cleanly, (b) mutation verbs update the model + return descriptor for the host, (c) queries return the modeled state. That's real, honest, and the host overrides for actual audio. Entries mark :impl-status \"deferred\" with :impl-notes explaining the host integration.")
+
+  ;; ─── motion-* (4) — deferred; needs input runtime ───────────────
+
+  (:tier "deferred"
+   :count 4
+   :verbs (
+     "motion-anchor-to-input"
+     "motion-follow-input"
+     "motion-halt"
+     "motion-move-to"
+   )
+   :note "Motion verbs need a live input source. Shaped descriptor is the honest REPL return.")
+
+  ;; ─── nav-map (1) — descriptor of a navigation graph ─────────────
+
+  (:tier "deferred"
+   :count 1
+   :verbs ("nav-map")
+   :note "Nav-map is a card-runtime layout hint. Descriptor honest.")
+
+  ;; ─── land-on-downbeat (1) — music theory helper ─────────────────
+
+  (:tier "medium"
+   :count 1
+   :verbs ("land-on-downbeat")
+   :note "Real semantics = quantize a beat offset to the next downbeat. Pure math. Implementable in REPL.")
+
+  :spec-bugs-found (
+    ;; Priya will fill these in during Phase B as she reads each entry
+    ;; in detail. Empty at Phase A time.
+  )
+
+  :plan
+    "Phase B: for each of the 77 verbs, (1) read current entry in reference; (2) if in already-real set, only author the upgraded entry; (3) if shaped-descriptor and truly REPL-safe, write a real impl in src/wired-verbs.js or src/base.js and author the entry; (4) if deferred (host required), keep the shaped descriptor but ensure the entry marks :impl-status \"deferred\" with honest :impl-notes; (5) run all 5 tiers of each verb's :examples through ./bin/sakura-scheme eval — every one must produce a sensible value or a documented error, never an unbound-symbol crash. Author the entry in docs/staging/verbs-priya-math-b.slat. One commit per verb. No lies.")

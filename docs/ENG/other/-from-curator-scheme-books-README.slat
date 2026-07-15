@@ -1,0 +1,106 @@
+;; ═══════════════════════════════════════════════════════════════
+;; ALIAS MIRRORS — 2026-07-14
+;; recovery-012 archive per lost-material-recovery-schema-2026-07-14.slat
+;;
+;; These are "The Book of X" mirror entries preserved from an earlier
+;; consolidation round. Each was a shipped-MD SLAT record (single-line
+;; :kind :chapter shape) that mirrored the canonical book-of-<name>/
+;; 00-cover.book.slatl.
+;;
+;; NO DELETES doctrine — mirrors preserved here, canonical unchanged.
+;; ═══════════════════════════════════════════════════════════════
+
+(alias-archive
+  :date "2026-07-14"
+  :recovery-item "recovery-012"
+  :source-parent "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/"
+  :canonical-parent "/Users/alfred/code/curator/scheme-books/")
+
+;; ─── Identical aliases (prose sha256 matches canonical) ────────
+;; Mirror shape is (:kind :chapter ... :sha256 ... :content "...").
+;; Canonical shape is (chapter ... :sha256 ... :prose "...").
+;; Both carry the same prose bytes; only the SLAT wrapper differs.
+
+(alias
+  :name "book-of-the-money"
+  :status "identical-alias"
+  :mirror-file "book-of-the-money/00-cover.mirror.slat"
+  :canonical-file "/Users/alfred/code/curator/scheme-books/book-of-money/00-cover.book.slatl"
+  :prose-sha256 "9d39b460ba39e2ea"
+  :notes "Mirror and canonical carry identical prose. Wrapper shape differs only.")
+
+(alias
+  :name "book-of-the-music"
+  :status "identical-alias"
+  :mirror-file "book-of-the-music/00-cover.mirror.slat"
+  :canonical-file "/Users/alfred/code/curator/scheme-books/book-of-music/00-cover.book.slatl"
+  :prose-sha256 "220b6d7cf6053efa"
+  :notes "Mirror and canonical carry identical prose. Wrapper shape differs only.")
+
+(alias
+  :name "book-of-the-motion"
+  :status "identical-alias"
+  :mirror-file "book-of-the-motion/00-cover.mirror.slat"
+  :canonical-file "/Users/alfred/code/curator/scheme-books/book-of-motion/00-cover.book.slatl"
+  :prose-sha256 "8ad0950fcdca144c"
+  :notes "Mirror and canonical carry identical prose. Wrapper shape differs only.")
+
+(alias
+  :name "book-of-the-one-shot"
+  :status "identical-alias"
+  :mirror-file "book-of-the-one-shot/00-cover.mirror.slat"
+  :canonical-file "/Users/alfred/code/curator/scheme-books/book-of-one-shot/00-cover.book.slatl"
+  :prose-sha256 "b30312796bac3c6b"
+  :notes "Mirror and canonical carry identical prose. Wrapper shape differs only.")
+
+;; ─── Divergent aliases (both preserved side-by-side) ───────────
+;; Divergence is: mirror is an EARLIER DRAFT; canonical adds later
+;; cross-references (specifically to book-of-slat). No content loss.
+;; Alfred can review the deltas by diffing the two files.
+
+(alias
+  :name "book-of-the-instruments"
+  :status "divergent-earlier-draft"
+  :mirror-file "book-of-the-instruments/00-cover.mirror-3f31567c.slat"
+  :canonical-file "book-of-the-instruments/00-cover.canonical-263fcf7b.book.slatl"
+  :canonical-source "/Users/alfred/code/curator/scheme-books/book-of-instruments/00-cover.book.slatl"
+  :mirror-sha256 "a909ff3c03ee9fdc"
+  :canonical-sha256 "9d70f0a47a75a41f"
+  :divergence "Canonical adds a 'Persisting instrument state' section referencing book-of-slat Chapter 5 + Appendix C. Mirror predates that section."
+  :notes "No content in mirror is missing from canonical — canonical is superset."
+  :recovery-lane-5-verification
+    (:verified-at "2026-07-14"
+     :verified-by "recovery-lane-5"
+     :method "line-by-line sentence match between mirror :content and canonical :prose"
+     :result "confirmed-canonical-strict-superset"
+     :missing-from-mirror ("Persisting instrument state section (H2 + body)"
+                           "[[book-of-slat]] cross-reference bullet in Cross-references")
+     :missing-from-canonical ()
+     :merge-decision "no-merge-required (mirror content wholly present in canonical)"
+     :merge-not-throw-safeguard "mirror preserved in this alias-archive; canonical unchanged"))
+
+(alias
+  :name "book-of-the-miscellany"
+  :status "divergent-earlier-draft"
+  :mirror-file "book-of-the-miscellany/00-cover.mirror-5311c185.slat"
+  :canonical-file "book-of-the-miscellany/00-cover.canonical-ff11a78f.book.slatl"
+  :canonical-source "/Users/alfred/code/curator/scheme-books/book-of-miscellany/00-cover.book.slatl"
+  :mirror-sha256 "420f3c1be48281d6"
+  :canonical-sha256 "25441605dd07090b"
+  :divergence "Canonical adds a book-of-slat cross-reference bullet (record-type 11: spec). Mirror predates that bullet."
+  :notes "No content in mirror is missing from canonical — canonical is superset."
+  :recovery-lane-5-verification
+    (:verified-at "2026-07-14"
+     :verified-by "recovery-lane-5"
+     :method "line-by-line sentence match between mirror :content and canonical :prose"
+     :result "confirmed-canonical-strict-superset"
+     :missing-from-mirror ("[[book-of-slat]] bullet in Cross-links (record-type 11: spec)")
+     :missing-from-canonical ()
+     :merge-decision "no-merge-required (mirror content wholly present in canonical)"
+     :merge-not-throw-safeguard "mirror preserved in this alias-archive; canonical unchanged"))
+
+;; ─── Sources still preserved in-place ──────────────────────────
+;; Per NO-DELETES doctrine, the originals in
+;; .wrong-attribution-2026-07-13/ are also preserved. This archive
+;; is a copy with an audit-ready index. Nothing has been moved OUT
+;; of the wrong-attribution dir.

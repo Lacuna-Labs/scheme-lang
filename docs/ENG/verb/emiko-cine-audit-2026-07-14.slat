@@ -1,0 +1,146 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; emiko-cine audit — Phase A
+;; Lane: cine/*, scene/*, juggle/* — visuals over time + siteswap math
+;; Author: Emiko (Lacuna Eng Lead — cine+scene+juggle lane)
+;; Date: 2026-07-14
+;;
+;; Alfred's floor doctrine — every stamp MUST correspond to a REAL REPL
+;; run that succeeded. No auto-stubs. No hallucinated behavior. If a verb
+;; cannot be honestly wired + verified, its entry ships with
+;;   :entry-provenance "author-blocked"
+;; and a plain-English reason. We do not lie.
+;;
+;; Composition with kid-from-North-Georgia doctrine:
+;;   cine/, scene/, juggle/ together are "how to compose things that
+;;   MOVE over time." A kid pulling apart (cine/shot 'establishing) or
+;;   (juggle/simulate '(5 3 1)) should see a real camera plan or a real
+;;   throw schedule — data structures they can inspect and modify. Not a
+;;   descriptor. Same for the operator who animates their shop's flower
+;;   entities with a follow camera.
+;; ─────────────────────────────────────────────────────────────────────
+
+(audit
+  :lane "cine+scene+juggle"
+  :author "emiko"
+  :dated "2026-07-14"
+  :verbs-total 19
+  :verbs-stubbed 19
+  :verbs-wired 0
+  :note "All 19 verbs across cine/ scene/ juggle/ are currently descriptor stubs in src/wired-verbs.js (batches 26 and 27). No real behavior. The reference has 7 cine + 5 scene + 6 juggle = 18 (verb ...) records plus 1 (core-form ...) record for scene/conveyor, which is documented as wired against a curator-web module that does NOT live in this repo — scene/conveyor is presently unbound. This lane owns the 18 (verb ...) entries; scene/conveyor is flagged for architect."
+
+  :inventory (
+    ;; ── cine/* — 7 verbs, all descriptor stubs ─────────────────────
+    (:namespace "cine"
+     :count 7
+     :verbs (
+       "cine/comfort"       ; :rd — currently descriptor stub
+       "cine/follow"        ; :io — currently descriptor stub
+       "cine/following?"    ; :rd — currently returns #f (stub for ?-predicate)
+       "cine/frame"         ; :null — currently descriptor stub
+       "cine/shot"          ; :null — currently descriptor stub
+       "cine/shots"         ; :null — currently descriptor stub
+       "cine/stop"          ; :null — currently descriptor stub
+     )
+     :note "cine/* orchestrates a virtual camera against the entity table in game.js. In standalone REPL there is no live rendering surface, but the CAMERA STATE (position, target-id, tightness, easing plan, comfort envelope) is real data we can maintain and query. cine/frame + cine/shot return frame-data / shot-data records the reference documents as consumable by choreography — those records ARE the primary deliverable; a downstream host applies them to pixels. This is the honest wiring: real state, real records, no lie about rendering.")
+
+    ;; ── scene/* — 5 verbs, all descriptor stubs ────────────────────
+    (:namespace "scene"
+     :count 5
+     :verbs (
+       "scene/clear"        ; :mut — currently descriptor stub
+       "scene/grid"         ; :mut — currently descriptor stub
+       "scene/imagine"      ; :pure — currently descriptor stub
+       "scene/load"         ; :mut — currently descriptor stub
+       "scene/spawn-many"   ; :mut — currently descriptor stub
+     )
+     :note "scene/* is a level/entity orchestration layer over game.js's entity table. scene/clear wipes game.entities. scene/spawn-many + scene/grid + scene/load call (entity/make …) or (world/spawn …) under the hood and return the id list. scene/imagine is pure — returns an opaque spec record that scene/load consumes. Backing surface exists (game.entities Map), so these can be REAL, not descriptors.")
+
+    ;; ── juggle/* — 6 verbs, all descriptor stubs ───────────────────
+    (:namespace "juggle"
+     :count 6
+     :verbs (
+       "juggle/balls"       ; :meta — currently descriptor stub
+       "juggle/generate"    ; :meta — currently descriptor stub
+       "juggle/max-throw"   ; :meta — currently descriptor stub
+       "juggle/simulate"    ; :meta — currently descriptor stub
+       "juggle/state"       ; :meta — currently descriptor stub
+       "juggle/valid?"      ; :meta — currently returns #f (stub for ?-predicate)
+     )
+     :note "juggle/* is pure siteswap math — no rendering, no state, no I/O. The Average Theorem, the permutation-validity check, brute enumeration, schedule expansion, ground-state vector. All closed-form or trivial. This tier will REPL-verify to numeric equality against the canonical siteswap results (e.g. juggle/balls '(5 3 1) = 3; juggle/valid? '(5 3 1) = #t; juggle/state '(3) = #(1 0 0)).")
+  )
+
+  :out-of-scope (
+    "scene/conveyor — declared in reference as a (core-form ...) record, NOT a (verb ...) record. Backing file cited: curator-web/src/surface/scheme-host/sceneVerbs.js — that repo is NOT this repo. Currently unbound (bin/sakura-scheme eval '(scene/conveyor 'a 'b 12)' reports 'unbound symbol'). Flagged for architect: either bring the impl into scheme-lang or ship as :impl-status \"deferred\" with :entry-provenance \"host-provided\". NOT authored under this lane without direction."
+  )
+
+  :backing-plan (
+    "cine/* → new file src/cine.js. Owns a Cinematographer object (mutable module-level singleton): camera { x, y, zoom, tightness, easing-plan, following-target, comfort envelope }, plus a static shots vocabulary of ('establishing 'medium 'push-in 'pull-out 'settle). Installed AFTER game.js so cine can inspect game.entities for entity positions. installCine(env, game) called from sakuraEnv.js."
+    "scene/* → new file src/scene.js. Depends on game.entities from game.js. installScene(env, game) called from sakuraEnv.js AFTER installGame. scene/imagine returns a plain object { kind: 'scene-spec', options: {...}, actions: [...] }; scene/load reads it and dispatches to entity/make. Deterministic id assignment via a monotonic counter (aligned with world/spawn's __sakura_world_spawn_id__ convention)."
+    "juggle/* → new file src/juggle.js. Pure functions, no state, no env deps beyond registering verbs. installJuggle(env) called from sakuraEnv.js at any point after base env."
+    "OVERRIDE PATH: All three installers must run BEFORE installWiredVerbs (which currently stubs these names). Order in sakuraEnv.js: makeBaseEnv → installAi → installGame → installCine(env, game) → installScene(env, game) → installJuggle(env) → installCommercial → installWiredVerbs → registerReferenceVerbs. The def() in wired-verbs.js is guarded by preExisting so our new impls will be preserved."
+  )
+
+  :contract-notes (
+    "cine/comfort — returns a plain object { max-accel, max-vel, damping, ease-ms }. Reference calls obj-get on this; base.js's obj-get supports plain JS objects, so this Just Works. Values chosen from cinematography conventions: max-accel 0.15 (units/frame²), max-vel 2.5 (units/frame), damping 0.85, ease-ms 350."
+    "cine/follow — records target id + tightness in the Cinematographer. Returns #t if the target exists in game.entities OR is a symbolic card id (accept-all for cards since no card table lives in this repo); returns #f only when both target types absent AND the id is not a symbol/string at all. Follow does NOT tick — a host loop would do that; but state is queryable via cine/following?."
+    "cine/following? — reads the Cinematographer's follow flag. #t iff cine/follow set a target and cine/stop hasn't cleared it."
+    "cine/frame — computes a frame-data record: { kind: 'frame', subjects: [ids], center: [x, y], pad, ms, aabb: [x1, y1, x2, y2] }. Center + aabb computed from entity positions when subject ids resolve; when subject is a card-id or unknown, aabb defaults to (0 0 100 100) and note in :caveats. Pad clamped to [0.12, 0.35] per spec. ms defaults to comfort ease-ms."
+    "cine/shot — returns a shot-data record: { kind: 'shot', name, subject, phases: [...], ms }. 'establishing and 'pull-out ignore subject (frame the whole world extent); others expect a subject. Records the shot in the Cinematographer's active-shot slot so cine/stop can clear it."
+    "cine/shots — returns the fixed symbol list '(establishing medium push-in pull-out settle). Per spec: 'The list is static per session.'"
+    "cine/stop — clears active-shot AND follow-target. Returns 'stopped (symbol) — matches the spec: '(cine/stop) -> result'."
+    ""
+    "scene/clear — game.entities.clear() + optionally clear sprites accumulator. Returns #t."
+    "scene/grid — loops cols×rows, calls entity/make for each cell. Returns the id list. Prefab kind is passed through as the id-prefix and stored as a tag."
+    "scene/imagine — returns { kind: 'scene-spec', options: {...}, actions: [...] } from a variadic arg list where :keyword-symbols pair with values, and non-keyword args accumulate as actions. Pure."
+    "scene/load — accepts either (a) a scene-spec from scene/imagine, or (b) a list of [name x y] records; for records, calls entity/make on each and returns id list. For a scene-spec, calls entity/make on each action."
+    "scene/spawn-many — iterates a point-list, calls entity/make for each (name (car p) (cadr p)). Returns id list."
+    ""
+    "juggle/valid? — non-empty list of non-negative integers; check that ((i + s[i]) mod period) is a permutation of 0..period-1. Boolean."
+    "juggle/balls — sum(s) / period. If not divisible or invalid input, return Sym 'nan. Integer via math (permutation-valid → average is guaranteed integer)."
+    "juggle/max-throw — max of the list. Sym 'nan on invalid."
+    "juggle/generate — backtracking enumeration of all valid period-length sequences summing to (period × ball-count). Fuel budget check: if search space > FUEL_BUDGET_GENERATE (chosen 20000 nodes), return Sym 'fuel-budget. Returns a list of lists."
+    "juggle/simulate — for each beat i in 0..period-1, produce (i s[i] (i+s[i])%period hand) where hand alternates 'L 'R starting 'L on beat 0. Returns list of 4-tuples. Sym 'nan on invalid."
+    "juggle/state — vector of length period; slot k = 1 if any (i + s[i]) mod period = k, else 0. Sym 'nan on invalid."
+  )
+
+  :example-tiers-plan (
+    "Each verb gets 5 tiers: novice / apprentice / intermediate / expert / master. The reference currently ships 3 tiers (novice / intermediate / expert) for most. PRESERVE existing tier bodies when they REPL-verify against the new impl; upgrade them where a stub-descriptor sneaked into the example. ADD apprentice (small block, one concept per line) and master (a real short cine composition or juggler-training-loop or scene-load sequence)."
+    "MASTER tier for cine/* is a SHORT CINEMATIC COMPOSITION per Alfred's lane brief: e.g. (begin (cine/comfort) (cine/shot 'establishing) (cine/frame subject 0.20 400) (cine/shot 'push-in subject) (cine/stop)) — one screenful, real records flowing, chain of state changes visible."
+    "MASTER tier for scene/* is a level-load: (scene/clear) → (scene/grid 'wall 10 3 32 32 0 0) → (scene/spawn-many 'coin (list (list 100 200) (list 200 200) (list 300 200))) → (scene/load (scene/imagine :backdrop \"forest\" :gravity 0.4)) — a small level assembled and inspected via entity/count."
+    "MASTER tier for juggle/* is a training loop: enumerate 3-ball 5-period patterns, filter by max-throw ≤ 7, sort by simulate-length, print the first. Real siteswap math end-to-end."
+  )
+
+  :ai-slice-plan (
+    ":pipes-into for cine/frame → cine/shot (frame feeds shot's subject); cine/shot → cine/stop (chain terminator). Documented in each entry."
+    ":pipes-into for scene/imagine → scene/load; scene/clear → scene/grid / scene/spawn-many (clean-slate → populate)."
+    ":pipes-into for juggle/valid? → juggle/balls / juggle/max-throw / juggle/simulate / juggle/state (validity gates the derived queries); juggle/generate → juggle/max-throw (for difficulty sort)."
+    ":latency-class — cine/* is sync-fast (all state mutation + record creation); scene/* is sync-fast for small counts (< ~100 entities) and sync-slow beyond; juggle/* is sync-fast for period ≤ 6 and can hit fuel-budget for larger."
+  )
+
+  :risks (
+    "cine/frame's aabb computation needs entity positions. game.entities stores { x, y, w, h }; cine.js reads directly. If a subject id is not in game.entities, we fall back to a synthetic (0 0 100 100) aabb and note the fallback in the record — this is HONEST behavior, not a stub. Documented in :caveats."
+    "cine/shot for 'establishing / 'pull-out — reference says 'frame the whole grove.' We interpret 'the whole grove' as the AABB enclosing all entities in game.entities. Empty entity table → default aabb (0 0 400 300). Documented."
+    "scene/load's records format — reference explicitly says 'varies by backend.' We define the canonical format here: list of (name x y) triples OR a scene-spec from scene/imagine. Anything else is silently skipped per spec's :caveats (Alfred alignment: we document what we accept)."
+    "juggle/generate fuel-budget threshold — reference doesn't fix a number. We pick 20000 recursive nodes as the ceiling; document in :caveats. Alfred can retune."
+    "None of these verbs touch cortex, network, or hardware. :permission is 'read for the /? predicates and computes; 'state-change for the mutators (cine/follow, cine/stop, scene/clear, scene/grid, scene/spawn-many, scene/load). :cortex-touch 'none."
+  )
+
+  :plan (
+    "1. Wait for docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat — LANDED at HEAD. Cleared."
+    "2. Create src/juggle.js. Wire all 6 pure functions. REPL-verify each of the 5 tiers per verb. Commit + push."
+    "3. Create src/scene.js. Wire all 5 verbs. Depends on installGame having run first. REPL-verify. Commit + push."
+    "4. Create src/cine.js. Wire all 7 verbs. Depends on installGame for game.entities read access. REPL-verify. Commit + push."
+    "5. Wire installers into sakuraEnv.js in the order: installGame → installCine → installScene → installJuggle → installWiredVerbs."
+    "6. Author 5-tier examples in docs/staging/verbs-emiko-cine.slat per schema. Each example REPL-verified. Ship."
+    "7. Commit per verb (or per small verb-group where verbs share a file). Push per commit. Update Architect stamps file if convention dictates."
+  )
+
+  :permission-notes (
+    "cine/comfort, cine/following?, cine/shots — :permission 'read. Read-only."
+    "cine/follow, cine/stop, cine/frame, cine/shot — :permission 'state-change (they mutate the Cinematographer singleton or produce fresh records)."
+    "scene/imagine — :permission 'read (pure)."
+    "scene/clear, scene/grid, scene/load, scene/spawn-many — :permission 'state-change."
+    "juggle/* all six — :permission 'read (pure math)."
+    "No verb in this lane needs 'network, 'hardware, or 'personal-data."
+    "No verb in this lane is metered-billed."
+  ))

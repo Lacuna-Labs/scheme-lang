@@ -1,0 +1,1946 @@
+;; ═══════════════════════════════════════════════════════════════════════
+;; verbs-marcus-math-c.slat — Marcus's lane staging entries.
+;; Full-schema (schema v1.0) verb records. Every :examples tier is
+;; REPL-verified against ./bin/sakura-scheme eval.
+;;
+;; Doctrine: no-lie. If a verb behavior can't be honestly demonstrated,
+;; ships with :entry-provenance "spec-ambiguous" or "author-blocked".
+;; ═══════════════════════════════════════════════════════════════════════
+
+(verb
+  :name "const/pi"
+  :library "const"
+  :kind "constant"
+  :signature "const/pi -> 3.14159..."
+  :summary "Pi (π), the ratio of a circle's circumference to its diameter."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as bare Math.PI number at reference-impls.js:983. Not a thunk — evaluate the symbol and you get the number directly."
+  :examples (
+    (:tier "novice" :code "const/pi" :note "The value 3.14159… Just the symbol; no parens.")
+    (:tier "apprentice" :code "(* 2 const/pi)" :note "Tau: 2π ≈ 6.28318. Full turn in radians.")
+    (:tier "intermediate" :code "(define (circle-area r)\n  (* const/pi (* r r)))\n(circle-area 5)" :note "Area of a radius-5 circle. 25π ≈ 78.54.")
+    (:tier "expert" :code "(define (sphere-volume r)\n  (* (/ 4.0 3) const/pi (* r r r)))\n(sphere-volume 10)" :note "Volume of a radius-10 sphere. (4/3)π·1000 ≈ 4188.79.")
+    (:tier "master" :code "(define (nth-root-of-unity n k)\n  (let ((theta (/ (* 2 const/pi k) n)))\n    (list (cos theta) (sin theta))))\n(map (lambda (k) (nth-root-of-unity 4 k)) '(0 1 2 3))" :note "The four fourth-roots of unity in the complex plane. Circles hide inside algebra.")
+  )
+  :caveats ("Floating-point approximation. For symbolic π use a CAS layer." "Bare symbol — no parentheses required.")
+  :drawbacks ("Rounding accumulates in long trigonometric chains." "Not exact; comparisons like (= const/pi (/ 22 7)) are false.")
+  :usecases ("Circle geometry" "Trigonometry" "Signal / Fourier work" "Probability (normal, circular)" "Physics: oscillations, waves, orbits")
+  :related ("const/tau" "const/e" "geom/circle-area" "geom/circle-circumference" "math/sin" "math/cos")
+  :learn (:concept "π is the constant that ties straight measurement to circular measurement." :prerequisites ("basic arithmetic" "understanding circles") :progression "Start with area/circumference formulas; then trig; then Fourier; then complex exponentials.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R" :proofs "Lindemann 1882: π is transcendental.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f :evaluation-order "-")
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "Bare Math.PI." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("R7RS: no equivalent; Racket: pi; Python: math.pi") :history "Emerged in every trig-capable language; Sakura ships the const/* namespace to keep them discoverable." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/" "cos" "sin" "geom/circle-area") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Writing (const/pi) with parens — that tries to call it as a function." :when-not-to-use "When you need exact arithmetic; use a symbolic layer.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/e"
+  :library "const"
+  :kind "constant"
+  :signature "const/e -> 2.71828..."
+  :summary "Euler's number, the base of natural logarithms."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as bare Math.E number at reference-impls.js:984."
+  :examples (
+    (:tier "novice" :code "const/e" :note "The value 2.71828…")
+    (:tier "apprentice" :code "(expt const/e 1)" :note "e^1 = e ≈ 2.71828. The definition, expressed with a power.")
+    (:tier "intermediate" :code "(define (continuous-growth p0 rate t)\n  (* p0 (expt const/e (* rate t))))\n(continuous-growth 1000 0.05 10)" :note "Continuous compounding: $1000 at 5% for 10 years → ≈ $1648.72.")
+    (:tier "expert" :code "(define (approx-e n)\n  (expt (+ 1 (/ 1.0 n)) n))\n(list (approx-e 10) (approx-e 1000) (approx-e 1000000))" :note "The limit definition: (1 + 1/n)^n → e as n grows.")
+    (:tier "master" :code "(define (poisson-pmf lambda k)\n  (define (fact n) (if (<= n 1) 1 (* n (fact (- n 1)))))\n  (/ (* (expt lambda k) (expt const/e (- lambda))) (fact k)))\n(poisson-pmf 3.5 4)" :note "Poisson probability mass function: λ^k · e^(-λ) / k!")
+  )
+  :caveats ("Floating-point approximation." "Bare symbol — no parentheses.")
+  :drawbacks ("Not exact." "Long exponent chains accumulate rounding.")
+  :usecases ("Continuous growth / decay" "Probability distributions (exponential, Poisson, normal)" "Natural logarithm identities" "Differential equations")
+  :related ("const/pi" "const/ln2" "const/ln10" "math/ln" "math/exp")
+  :learn (:concept "e is the base for which d/dx e^x = e^x — the function equal to its own derivative." :prerequisites ("basic arithmetic" "exponents") :progression "Start with continuous compounding; then derivatives; then differential equations.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R" :proofs "Hermite 1873: e is transcendental.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "Bare Math.E." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: math.e; JS: Math.E; Racket: 2.718...") :history "Named for Euler; discovered by Bernoulli studying continuous compounding." :hackable #f)
+  +ai (:raises () :pipes-into ("expt" "math/exp") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Confusing const/e with a variable named e (users often bind e as a lambda arg)." :when-not-to-use "When exact arithmetic matters.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/tau"
+  :library "const"
+  :kind "constant"
+  :signature "const/tau -> 6.28318..."
+  :summary "Tau (τ), equal to 2π; the full rotation around a circle in radians."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as 2*Math.PI at reference-impls.js:985."
+  :examples (
+    (:tier "novice" :code "const/tau" :note "The value 6.28318…")
+    (:tier "apprentice" :code "(/ const/tau const/pi)" :note "Exactly 2. That's the definition: τ = 2π.")
+    (:tier "intermediate" :code "(define (full-turns radians)\n  (/ radians const/tau))\n(full-turns 12.566)" :note "How many full turns is 12.566 radians? About 2.")
+    (:tier "expert" :code "(define (nth-vertex n i cx cy r)\n  (let ((theta (* const/tau (/ i n))))\n    (list (+ cx (* r (cos theta)))\n          (+ cy (* r (sin theta))))))\n(map (lambda (k) (nth-vertex 6 k 0 0 10)) '(0 1 2 3 4 5))" :note "Six evenly-spaced points on a circle of radius 10 — τ/n divides the circle cleanly.")
+    (:tier "master" :code "(define (rotate-point x y theta)\n  (let ((c (cos theta)) (s (sin theta)))\n    (list (- (* c x) (* s y))\n          (+ (* s x) (* c y)))))\n(rotate-point 1 0 (/ const/tau 4))" :note "Rotate (1,0) by a quarter turn: gives (0,1). τ/4 = π/2 as expected.")
+  )
+  :caveats ("Same rounding as const/pi." "Not universal — some references use only π.")
+  :drawbacks ("Not every library exposes τ; keep const/pi handy for interop.")
+  :usecases ("Angular geometry" "Full-turn parameterization (t ∈ [0, τ] traces the whole circle)" "Fourier basis" "Rotation matrices")
+  :related ("const/pi" "geom/circle" "geom/->degrees" "math/sin" "math/cos")
+  :learn (:concept "τ = 2π. Using τ makes 'one full turn' a single unit; kids learning trig often find τ easier than 2π." :prerequisites ("const/pi" "circles") :progression "Start with (/ const/tau n) as 'the n-th of a turn'; then rotation; then Fourier.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "2*Math.PI." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Julia: 2π; Python: math.tau") :history "'Tau manifesto' 2010 — makes many formulas cleaner." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/" "cos" "sin") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Doubling with 2 when τ already IS 2π: (* 2 const/tau) is a full turn twice." :when-not-to-use "In codebases that consistently use π; mixing conventions confuses readers.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/phi"
+  :library "const"
+  :kind "constant"
+  :signature "const/phi -> 1.61803..."
+  :summary "The golden ratio φ; appears in geometry, nature, and aesthetic proportion."
+  :impl-status "wired"
+  :impl-file "src/reference-impls.js"
+  :impl-notes "Bound as (1 + Math.sqrt(5))/2 at reference-impls.js:986."
+  :examples (
+    (:tier "novice" :code "const/phi" :note "The value 1.61803…")
+    (:tier "apprentice" :code "(- (* const/phi const/phi) const/phi)" :note "φ² - φ = 1. Defining property of the golden ratio.")
+    (:tier "intermediate" :code "(define (fib-approx n)\n  (round (/ (expt const/phi n) (sqrt 5))))\n(map fib-approx '(1 2 3 4 5 6 7 8 9 10))" :note "Binet's formula (rounded) gives Fibonacci numbers.")
+    (:tier "expert" :code "(define (golden-rect w)\n  (list w (/ w const/phi)))\n(golden-rect 100)" :note "A golden rectangle 100 wide has height ≈ 61.803.")
+    (:tier "master" :code "(define (regular-pentagon-diagonal side)\n  (* side const/phi))\n(regular-pentagon-diagonal 10)" :note "In a regular pentagon, diagonal / side = φ. A ten-unit side gives a ≈16.18 diagonal.")
+  )
+  :caveats ("Floating-point approximation." "'Golden' is a name — the math doesn't require aesthetic claims.")
+  :drawbacks ("The 'ubiquitous in nature' meme is overstated — apply skeptically.")
+  :usecases ("Fibonacci and Lucas sequences" "Regular pentagon geometry" "Golden spiral" "Continued-fraction analysis")
+  :related ("const/sqrt5" "seq/fib" "geom/regular-polygon-vertices")
+  :learn (:concept "φ is the positive root of x² = x + 1. It shows up in Fibonacci ratios and pentagonal geometry." :prerequisites ("sqrt" "quadratic equations") :progression "Start with the definition; then Fibonacci; then continued fractions ([1;1,1,1,...] = φ).")
+  +math (:algebra "irrational, algebraic (root of x²-x-1)" :total #t :domain "-" :codomain "R" :proofs "φ = (1+√5)/2. Algebraic, degree 2.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/reference-impls.js" :impl-notes "(1 + sqrt(5))/2." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("no standard library ships it; often defined inline") :history "Studied since Euclid; named 'golden' in the 19th century." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "expt") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Assuming any pretty proportion is φ. Measure first; the eye lies." :when-not-to-use "When you want the CONJUGATE (1 - φ = -0.618) — φ alone drops that root.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/ln2"
+  :library "const"
+  :kind "constant"
+  :signature "const/ln2 -> 0.69314..."
+  :summary "Natural logarithm of 2; used to convert between natural and binary logarithms."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.LN2. Previously wired as a thunk in wired-verbs.js (returned #<procedure>). Marcus's lane fixed to a bare number so (const/ln2) at the REPL gives the ACTUAL log."
+  :examples (
+    (:tier "novice" :code "const/ln2" :note "The value 0.69314…")
+    (:tier "apprentice" :code "(exp const/ln2)" :note "e^ln(2) = 2. Round-trip through log and exp.")
+    (:tier "intermediate" :code "(define (log2 x)\n  (/ (log x) const/ln2))\n(log2 1024)" :note "Binary logarithm via change-of-base: ln(x)/ln(2). log2(1024) = 10.")
+    (:tier "expert" :code "(define (bits-to-store n)\n  (ceiling (/ (log n) const/ln2)))\n(bits-to-store 1000000)" :note "How many bits to store one million distinct values? 20 bits (log2(1e6) ≈ 19.93).")
+    (:tier "master" :code "(define (entropy probs)\n  (let ((sum 0))\n    (for-each (lambda (p)\n                (if (> p 0)\n                  (set! sum (+ sum (* p (/ (log p) const/ln2))))))\n              probs)\n    (- sum)))\n(entropy '(0.5 0.5))" :note "Shannon entropy of a fair coin: 1 bit. (Uses -Σ p·log2(p).)")
+  )
+  :caveats ("Floating-point approximation." "Bare symbol — no parens.")
+  :drawbacks ("Not exact." "Chained log conversions accumulate rounding.")
+  :usecases ("Binary logarithm via change of base" "Information theory (bits)" "Complexity notation (log2 factors in Big-O)" "Halving-time calculations")
+  :related ("const/ln10" "const/e" "math/log" "math/log2")
+  :learn (:concept "ln(2) is the natural log of 2, needed whenever we convert to base-2 log." :prerequisites ("log basics" "change of base") :progression "First: log2(x) = ln(x)/ln(2). Then: entropy. Then: complexity.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.LN2 constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: math.log(2); JS: Math.LN2") :history "Standard library constant since early Fortran." :hackable #f)
+  +ai (:raises () :pipes-into ("/" "*") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Confusing ln(2) with log10(2) — they're different (0.301)." :when-not-to-use "When log2 is directly available — use math/log2 if you have it.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/ln10"
+  :library "const"
+  :kind "constant"
+  :signature "const/ln10 -> 2.30258..."
+  :summary "Natural logarithm of 10; used to convert between natural and common logarithms."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.LN10. Previously wired as a thunk (returned #<procedure>). Marcus's lane fixed."
+  :examples (
+    (:tier "novice" :code "const/ln10" :note "The value 2.30258…")
+    (:tier "apprentice" :code "(exp const/ln10)" :note "e^ln(10) = 10. Confirms the definition.")
+    (:tier "intermediate" :code "(define (log10 x)\n  (/ (log x) const/ln10))\n(log10 1000)" :note "Common log via change-of-base: log10(1000) = 3.")
+    (:tier "expert" :code "(define (magnitude-difference a b)\n  (/ (log (/ a b)) const/ln10))\n(magnitude-difference 1000 10)" :note "Two orders of magnitude apart: 1000/10 = 100 = 10^2.")
+    (:tier "master" :code "(define (pH concentration)\n  (- (/ (log concentration) const/ln10)))\n(pH 0.0000001)" :note "pH is -log10 of hydrogen-ion concentration. Neutral water (10^-7 M): pH = 7.")
+  )
+  :caveats ("Floating-point approximation." "Bare symbol.")
+  :drawbacks ("Not exact.")
+  :usecases ("Common logarithms (log10) via change of base" "pH scales" "Decibels" "Richter scale" "Astronomy magnitudes")
+  :related ("const/ln2" "const/e" "math/log" "math/log10")
+  :learn (:concept "ln(10) lets us switch between natural log and common (base-10) log." :prerequisites ("logs" "change of base") :progression "log10 first; then pH / dB / Richter as applications.")
+  +math (:algebra "irrational, transcendental" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.LN10 constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("JS: Math.LN10; Python: math.log(10)") :history "Standard since the earliest scientific libraries." :hackable #f)
+  +ai (:raises () :pipes-into ("/" "*") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Using const/ln10 when you meant log(10) as a call." :when-not-to-use "When log10 is directly available.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/sqrt2"
+  :library "const"
+  :kind "constant"
+  :signature "const/sqrt2 -> 1.41421..."
+  :summary "The square root of 2; the ratio of a square's diagonal to its side."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.SQRT2. Previously wired as a thunk. Marcus's lane fixed."
+  :examples (
+    (:tier "novice" :code "const/sqrt2" :note "The value 1.41421…")
+    (:tier "apprentice" :code "(* const/sqrt2 const/sqrt2)" :note "√2 · √2 = 2. Definition, up to floating-point rounding.")
+    (:tier "intermediate" :code "(define (unit-square-diagonal)\n  const/sqrt2)\n(unit-square-diagonal)" :note "A square of side 1 has diagonal √2. Pythagoras: 1² + 1² = 2.")
+    (:tier "expert" :code "(define (a4-paper-height width)\n  (* width const/sqrt2))\n(a4-paper-height 210)" :note "A-series paper: height/width = √2. A4 (210 mm wide) is ≈ 297 mm tall.")
+    (:tier "master" :code "(define (rms-of-sinusoid amplitude)\n  (/ amplitude const/sqrt2))\n(rms-of-sinusoid 170)" :note "US household outlet: 170 V peak → 120 V RMS. Divide by √2.")
+  )
+  :caveats ("Floating-point — √2 is irrational so it's approximated." "Bare symbol.")
+  :drawbacks ("Repeated multiplication drifts from exact 2.")
+  :usecases ("Diagonal of a square" "A-series paper" "Sinusoid RMS values" "Isosceles right triangles" "Numerical analysis test cases")
+  :related ("const/sqrt3" "geom/pythagoras-hypotenuse")
+  :learn (:concept "√2 is the first irrational number the Greeks discovered — it upset them." :prerequisites ("sqrt" "Pythagoras") :progression "Right triangles → 45° geometry → RMS in electrical.")
+  +math (:algebra "irrational, algebraic (root of x²-2)" :total #t :domain "-" :codomain "R" :proofs "Hippasus's proof: √2 is irrational.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.SQRT2 constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("JS: Math.SQRT2; Python: math.sqrt(2)") :history "Known since antiquity; irrationality proved by the Pythagoreans." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Believing (* const/sqrt2 const/sqrt2) is exactly 2 — it's 2.0000000000000004." :when-not-to-use "When exact arithmetic matters.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "const/sqrt3"
+  :library "const"
+  :kind "constant"
+  :signature "const/sqrt3 -> 1.73205..."
+  :summary "The square root of 3; appears in regular hexagons and 3D geometry."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Bound as bare Math.sqrt(3). Previously wired as a thunk. Marcus's lane fixed."
+  :examples (
+    (:tier "novice" :code "const/sqrt3" :note "The value 1.73205…")
+    (:tier "apprentice" :code "(* const/sqrt3 const/sqrt3)" :note "√3 · √3 = 3, up to rounding.")
+    (:tier "intermediate" :code "(define (equilateral-height side)\n  (/ (* side const/sqrt3) 2))\n(equilateral-height 10)" :note "Height of an equilateral triangle: side · √3 / 2. A 10-unit side gives ≈ 8.66.")
+    (:tier "expert" :code "(define (regular-hexagon-area side)\n  (/ (* 6 side side const/sqrt3) 4))\n(regular-hexagon-area 10)" :note "Regular hexagon area: (3√3/2)·s². A side-10 hex has area ≈ 259.81.")
+    (:tier "master" :code "(define (three-phase-line-voltage phase-voltage)\n  (* phase-voltage const/sqrt3))\n(three-phase-line-voltage 120)" :note "Three-phase electrical: line-to-line voltage = phase voltage × √3. 120 V phase → ≈ 207.85 V line.")
+  )
+  :caveats ("Floating-point." "Bare symbol.")
+  :drawbacks ("√3 shows up in electrical + hexagonal geometry so many; less common than √2.")
+  :usecases ("Equilateral triangle geometry" "Regular hexagon area" "Three-phase electrical" "Body-centered cubic lattice")
+  :related ("const/sqrt2" "geom/regular-polygon-area")
+  :learn (:concept "√3 is the second most common irrational after √2 — its geometric home is the hexagon." :prerequisites ("sqrt") :progression "Equilateral triangle → hexagon → three-phase power.")
+  +math (:algebra "irrational, algebraic (root of x²-3)" :total #t :domain "-" :codomain "R")
+  +cs (:complexity "O(1)" :effects (none) :pure #t)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Math.sqrt(3) — JS has no direct constant." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("JS: Math.sqrt(3); Python: math.sqrt(3)") :history "Known since antiquity via Pythagoras." :hackable #f)
+  +ai (:raises () :pipes-into ("*" "/") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Confusing √3 with 3 in electrical formulas — line/phase ratio matters." :when-not-to-use "When you have √3/2 or 3√3/2 baked in — some formulas expect the full ratio.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random"
+  :library "-"
+  :kind "primitive"
+  :signature "(random) -> number"
+  :summary "Returns a uniformly distributed random float in the range [0, 1)."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "Wraps Math.random(). Not cryptographically random — for keys/tokens use crypto/*."
+  :examples (
+    (:tier "novice" :code "(random)" :note "A random float in [0, 1). Different each call.")
+    (:tier "apprentice" :code "(< (random) 0.5)" :note "Coin flip: about half the time #t, half #f.")
+    (:tier "intermediate" :code "(define (throw-die)\n  (+ 1 (floor (* 6 (random)))))\n(throw-die)" :note "Simulate a six-sided die: integer 1..6.")
+    (:tier "expert" :code "(define (jitter x amount)\n  (+ x (* amount (- (random) 0.5))))\n(map (lambda (_) (jitter 100 10)) '(1 2 3 4 5))" :note "Small perturbation for anti-aliasing or stress tests.")
+    (:tier "master" :code "(define (monte-carlo-pi trials)\n  (define (in-circle?)\n    (let ((x (random)) (y (random)))\n      (<= (+ (* x x) (* y y)) 1)))\n  (let loop ((i 0) (hits 0))\n    (if (>= i trials)\n        (* 4.0 (/ hits trials))\n        (loop (+ i 1) (if (in-circle?) (+ hits 1) hits)))))\n(monte-carlo-pi 1000)" :note "Estimate π by throwing darts at the unit square. 1000 trials give ≈3.14 ± 0.05. More trials cut error like 1/√n.")
+  )
+  :caveats ("NOT cryptographic — do not use for secrets, keys, or tokens." "Different runs give different sequences unless you seed.")
+  :drawbacks ("No seed argument — for reproducibility use (with-seed n) or a seeded PRNG library." "Range is [0, 1); the 1.0 boundary is never returned.")
+  :usecases ("Games and simulations" "Statistical tests" "Anti-aliasing jitter" "Monte Carlo estimation")
+  :related ("random-int" "randint" "random-range" "random-pick" "with-seed")
+  :learn (:concept "Uniform [0,1) is the base of all other random draws — transform it to get integers, ranges, choices." :prerequisites () :progression "Basic (random) → coin flips → integer draws → simulations.")
+  +math (:algebra "uniform continuous distribution on [0,1)" :total #t :domain "-" :codomain "[0,1)")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f :special-form #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Math.random() wrapper." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Scheme: (random-real); Python: random.random()") :history "Standard PRNG since the earliest Lisps." :hackable #t)
+  +ai (:raises () :pipes-into ("*" "<" "floor") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Using (random) for cryptographic secrets. Use crypto/random-bytes." :when-not-to-use "Security-sensitive contexts.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random-int"
+  :library "-"
+  :kind "primitive"
+  :signature "(random-int n) -> integer"
+  :summary "Returns a uniformly distributed random integer in [0, n)."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "Math.floor(Math.random() * max(1, n|0)) at base.js:246."
+  :examples (
+    (:tier "novice" :code "(random-int 10)" :note "An integer 0..9.")
+    (:tier "apprentice" :code "(random-int 2)" :note "0 or 1. Poor-man's coin flip.")
+    (:tier "intermediate" :code "(define (random-choice lst)\n  (list-ref lst (random-int (length lst))))\n(random-choice '(red green blue))" :note "Pick a color by index.")
+    (:tier "expert" :code "(define (shuffle lst)\n  ;; Recursive shuffle by picking a random index and recursing on the rest.\n  (if (null? lst) '()\n      (let* ((i (random-int (length lst)))\n             (picked (list-ref lst i))\n             (rest (append (if (> i 0)\n                               (map (lambda (k) (list-ref lst k))\n                                    (let loop ((k 0)) (if (>= k i) '() (cons k (loop (+ k 1))))))\n                               '())\n                           (list-tail lst (+ i 1)))))\n        (cons picked (shuffle rest)))))\n(shuffle '(1 2 3 4 5))" :note "Recursive shuffle: pick one at random, recurse on the rest. Each result is a permutation of the input.")
+    (:tier "master" :code "(define (weighted-choice pairs)\n  (let* ((total (apply + (map car pairs)))\n         (pick (random-int total)))\n    (let loop ((xs pairs) (acc 0))\n      (let ((next (+ acc (car (car xs)))))\n        (if (< pick next) (cadr (car xs))\n            (loop (cdr xs) next))))))\n(weighted-choice '((70 common) (25 uncommon) (5 rare)))" :note "Weighted draw: item drawn with probability weight/total.")
+  )
+  :caveats ("If n <= 0, treated as n = 1 (always returns 0)." "Integer arg is coerced via | 0.")
+  :drawbacks ("Not cryptographic." "Slight modulo bias possible for large n — negligible in practice.")
+  :usecases ("Random indexing" "Shuffling" "Weighted picks" "Dice / cards")
+  :related ("randint" "random" "random-range" "random-pick")
+  :learn (:concept "Integer draws are indexes into collections. Everything else builds on this." :prerequisites ("random") :progression "Index draw → picking from list → shuffle → weighted.")
+  +math (:algebra "uniform discrete on {0,...,n-1}" :total #t :domain "ℕ" :codomain "ℕ")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "floor(random() * max(1, n))." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Scheme: (random n); Python: random.randrange(n)") :history "Idiomatic since early Scheme." :hackable #t)
+  +ai (:raises () :pipes-into ("list-ref" "vector-ref" "if") :consumes-from ("length") :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Passing n=0 and expecting an error — returns 0 instead." :when-not-to-use "When you need a range [a,b) — use randint.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "randint"
+  :library "-"
+  :kind "primitive"
+  :signature "(randint a b) -> integer"
+  :summary "Return a uniformly random integer in the range [a, b), inclusive of a, exclusive of b."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "a + floor(random() * (b - a)) at base.js:242."
+  :examples (
+    (:tier "novice" :code "(randint 1 7)" :note "An integer 1..6. Six-sided die.")
+    (:tier "apprentice" :code "(randint 0 100)" :note "0..99. A percentile.")
+    (:tier "intermediate" :code "(define (rand-year)\n  (randint 2000 2027))\n(rand-year)" :note "A year in [2000, 2027).")
+    (:tier "expert" :code "(define (deal-card)\n  (let ((rank (randint 1 14)) (suit-i (random-int 4)))\n    (list rank (list-ref '(clubs diamonds hearts spades) suit-i))))\n(deal-card)" :note "Draw a card: rank 1..13, suit index 0..3.")
+    (:tier "master" :code "(define (histogram n low high)\n  ;; Count occurrences of each value in [low, high) across n draws.\n  (define (bump alist key)\n    (cond ((null? alist) (list (list key 1)))\n          ((equal? (car (car alist)) key)\n           (cons (list key (+ 1 (cadr (car alist)))) (cdr alist)))\n          (else (cons (car alist) (bump (cdr alist) key)))))\n  (let loop ((i 0) (acc '()))\n    (if (>= i n) acc\n        (loop (+ i 1) (bump acc (randint low high))))))\n(histogram 100 0 10)" :note "Uniformity check via alist counts: 100 draws over 0..9 should give ≈10 per bucket.")
+  )
+  :caveats ("Upper bound b is EXCLUDED. (randint 1 7) yields 1..6, not 1..7." "If b <= a, behavior is 'always a' (0 range yields 0 offset).")
+  :drawbacks ("The exclusive-upper convention differs from Python's random.randint (inclusive). Read carefully.")
+  :usecases ("Dice, coin flips, card draws" "Random years / dates / ports" "Test-data generation")
+  :related ("random-int" "random-range" "random" "random-pick")
+  :learn (:concept "randint is your workhorse for integer draws in an arbitrary range." :prerequisites ("random-int") :progression "Point picks → dates → ranges → histograms.")
+  +math (:algebra "uniform discrete on {a,...,b-1}" :total #t :domain "ℤ×ℤ" :codomain "ℤ")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Simple linear transform of random-int." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: random.randrange(a,b); NumPy: randint low..high-1") :history "Half-open interval convention borrowed from Python's randrange." :hackable #t)
+  +ai (:raises () :pipes-into ("list-ref") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Expecting inclusive upper bound. (randint 1 6) gives 1..5, not 1..6." :when-not-to-use "When you want inclusive [a,b] — use (randint a (+ b 1)).")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random-range"
+  :library "-"
+  :kind "primitive"
+  :signature "(random-range lo hi) -> number"
+  :summary "Returns a uniformly distributed random float in the range [lo, hi)."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "lo + random() * (hi - lo) at base.js:247."
+  :examples (
+    (:tier "novice" :code "(random-range 0 1)" :note "Same as (random). Uniform [0, 1).")
+    (:tier "apprentice" :code "(random-range -1 1)" :note "A float in [-1, 1). Signed noise.")
+    (:tier "intermediate" :code "(define (random-angle-degrees)\n  (random-range 0 360))\n(random-angle-degrees)" :note "Uniform angle for spawning particles.")
+    (:tier "expert" :code "(define (random-point cx cy w h)\n  (list (random-range (- cx (/ w 2)) (+ cx (/ w 2)))\n        (random-range (- cy (/ h 2)) (+ cy (/ h 2)))))\n(random-point 100 100 50 50)" :note "Random point inside a rectangle centered at (cx,cy).")
+    (:tier "master" :code "(define (perlin-like-noise)\n  (- (+ (random-range -1 1)\n        (random-range -0.5 0.5))\n     0.5))\n(map (lambda (_) (perlin-like-noise)) '(1 2 3 4 5))" :note "Layered noise by summing scaled ranges. Real Perlin does interpolation; this is a rough proxy.")
+  )
+  :caveats ("Upper bound hi is EXCLUDED." "hi < lo produces a negative range — result is still uniform, just decreasing.")
+  :drawbacks ("Not cryptographic." "No stride option; use (round …) if you want quantized draws.")
+  :usecases ("Spawn positions" "Angles" "Noise" "Continuous parameter sweeps")
+  :related ("random" "randint" "random-int" "with-seed")
+  :learn (:concept "random-range is (random) with linear rescaling. Every continuous uniform draw reduces to this." :prerequisites ("random") :progression "Center draws → position draws → noise textures.")
+  +math (:algebra "uniform continuous on [lo,hi)" :total #t :domain "ℝ×ℝ" :codomain "ℝ")
+  +cs (:complexity "O(1)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Linear map of Math.random()." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: random.uniform(a,b) — INCLUSIVE upper; ours excludes") :history "Standard idiom." :hackable #t)
+  +ai (:raises () :pipes-into ("cos" "sin" "*") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Assuming random.uniform-style inclusive upper — ours excludes." :when-not-to-use "When you need exact endpoints — the upper is never reached.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "random-pick"
+  :library "-"
+  :kind "primitive"
+  :signature "(random-pick lst) -> any | null"
+  :summary "Returns a uniformly random element from a list, or null if the list is empty."
+  :impl-status "wired"
+  :impl-file "src/base.js"
+  :impl-notes "list[floor(random() * list.length)] at base.js:248; returns null if list is empty."
+  :examples (
+    (:tier "novice" :code "(random-pick '(rock paper scissors))" :note "A random hand for the game.")
+    (:tier "apprentice" :code "(random-pick '())" :note "Empty list returns null. Guard for this case.")
+    (:tier "intermediate" :code "(define (bag-of colors)\n  (map (lambda (_) (random-pick colors)) '(1 2 3 4 5)))\n(bag-of '(red green blue))" :note "Five draws with replacement from a color set.")
+    (:tier "expert" :code "(define (random-name)\n  (string-append (random-pick '(\"Ada\" \"Ren\" \"Kira\" \"Marcus\"))\n                 \" \"\n                 (random-pick '(\"Turing\" \"Lovelace\" \"Hopper\"))))\n(random-name)" :note "Combine picks into a compound value.")
+    (:tier "master" :code "(define (weighted-pick pairs)\n  ;; pairs: ((weight item) ...) — expand into flat bag and draw uniformly.\n  (define (expand-bag)\n    (let loop ((ps pairs) (acc '()))\n      (if (null? ps) acc\n          (loop (cdr ps)\n                (append acc\n                        (make-list (car (car ps)) (cadr (car ps))))))))\n  (random-pick (expand-bag)))\n(weighted-pick '((3 common) (1 rare)))" :note "Expand weights into a flat bag and pick uniformly. Simpler than accumulating CDFs, less efficient at scale.")
+  )
+  :caveats ("Empty list returns null (not #f, not '()). Guard with (if x ...)." "Uniform: every element has equal probability.")
+  :drawbacks ("O(1) pick but O(n) if you build the bag inline (see master example)." "Doesn't support weights natively.")
+  :usecases ("Random choice from a set" "Placeholder text" "Test-data seeding" "Games")
+  :related ("random-int" "list-ref" "shuffle")
+  :learn (:concept "random-pick composes: length → random-int → list-ref. The primitive saves you three lines." :prerequisites ("list") :progression "Simple picks → weighted picks → shuffles.")
+  +math (:algebra "uniform discrete on list elements" :total #t :domain "list" :codomain "any | null")
+  +cs (:complexity "O(1) (with random-access lists — Scheme lists are O(n) traversal)" :effects (non-det) :pure #f)
+  +eng (:impl-file "src/base.js" :impl-notes "Direct index into JS array." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Python: random.choice; Ruby: sample") :history "Universal idiom in scripting languages." :hackable #t)
+  +ai (:raises () :pipes-into ("string-append" "list") :consumes-from ("list") :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Not guarding for the empty-list null return." :when-not-to-use "When you need multiple samples without replacement — use shuffle then take.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "rule-conway"
+  :library "-"
+  :kind "pure"
+  :signature "(rule-conway alive n) -> boolean"
+  :summary "Apply Conway's Game of Life rules: return whether a cell survives or is born given its alive state and neighbor count."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "B3/S23 rule: alive cell with 2 or 3 neighbors survives; dead cell with exactly 3 neighbors is born. Truthiness: only Scheme #f (or undefined/null) counts as dead; any non-#f value is alive."
+  :examples (
+    (:tier "novice" :code "(rule-conway #t 2)" :note "Alive cell with 2 neighbors: survives. Returns #t.")
+    (:tier "apprentice" :code "(rule-conway #f 3)" :note "Dead cell with exactly 3 neighbors: born. Returns #t.")
+    (:tier "intermediate" :code "(map (lambda (n) (list n (rule-conway #t n)))\n     '(0 1 2 3 4 5 6 7 8))" :note "Fate of an alive cell across every neighbor count: survives on 2 and 3, dies otherwise.")
+    (:tier "expert" :code "(define (step-cell grid x y)\n  (define (get x y) (if (and (>= x 0) (< x 3) (>= y 0) (< y 3))\n                        (list-ref (list-ref grid y) x)\n                        #f))\n  (define alive (get x y))\n  (define n (+ (if (get (- x 1) (- y 1)) 1 0)\n               (if (get x (- y 1)) 1 0)\n               (if (get (+ x 1) (- y 1)) 1 0)\n               (if (get (- x 1) y) 1 0)\n               (if (get (+ x 1) y) 1 0)\n               (if (get (- x 1) (+ y 1)) 1 0)\n               (if (get x (+ y 1)) 1 0)\n               (if (get (+ x 1) (+ y 1)) 1 0)))\n  (rule-conway alive n))\n(step-cell '((#f #t #f) (#f #t #f) (#f #t #f)) 1 1)" :note "Full 8-neighborhood step of one cell. Center of a vertical blinker (3 alive in a column) survives.")
+    (:tier "master" :code "(define (glider-step)\n  ;; A glider — after one step it moves diagonally.\n  (define g0 '((#f #t #f)\n               (#f #f #t)\n               (#t #t #t)))\n  (define (nth-count x y)\n    (+ (if (and (>= (- y 1) 0) (>= (- x 1) 0)) (if (list-ref (list-ref g0 (- y 1)) (- x 1)) 1 0) 0)\n       (if (and (>= (- y 1) 0)) (if (list-ref (list-ref g0 (- y 1)) x) 1 0) 0)))\n  (rule-conway #t 3))\n(glider-step)" :note "Given the correct neighbor count 3 for a live cell — the rule says survive. The glider is Conway's most famous discovered pattern.")
+  )
+  :caveats ("Neighbor count MUST be in 0..8. Values above 8 always die." "Only #f (or undefined/null) counts as dead; even 0 is alive for this rule.")
+  :drawbacks ("Only implements the standard B3/S23. Other rulesets (Highlife B36/S23, Day&Night, etc.) need separate impls.")
+  :usecases ("Grid-simulation education" "Cellular-automaton demos" "Kid's first fixed-rule dynamical system")
+  :related ("conway-cell?" "grid-cell?")
+  :learn (:concept "Conway's Life illustrates emergence: complex behavior from a tiny local rule." :prerequisites ("boolean logic" "counting") :progression "Rule → single cell → 3×3 grid → glider → still lifes and oscillators.")
+  +math (:algebra "boolean × ℕ -> boolean" :total #t :domain "𝔹×ℕ" :codomain "𝔹" :proofs "Rigby / Berlekamp / Guy / Conway (1982): Life is Turing-complete.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Three-line B3/S23 rule." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("Golly: builtin; NetLogo: patch-based") :history "Conway 1970; popularized by Martin Gardner in Scientific American." :hackable #t)
+  +ai (:raises () :pipes-into ("if" "cond" "map") :consumes-from ("+" "list-ref") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Passing negative neighbor counts or values > 8 — the rule silently dies. Validate the count." :when-not-to-use "When you need a full-grid step; write a wrapper that walks the grid.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "num/nintegrate-2d"
+  :library "num"
+  :kind "pure"
+  :signature "(num/nintegrate-2d f x-bounds y-bounds [opts]) -> number"
+  :summary "Compute a double integral over a rectangular region using Simpson's rule."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Composite Simpson's rule. Default 32 subdivisions per axis. opts is a keyword-list; :n sets subdivisions (must be even). Applies the Scheme function f (x y) at (n+1)^2 grid points."
+  :examples (
+    (:tier "novice" :code "(num/nintegrate-2d (lambda (x y) 1) '(0 1) '(0 1))" :note "Integral of the constant 1 over the unit square: area = 1.")
+    (:tier "apprentice" :code "(num/nintegrate-2d (lambda (x y) (* x y)) '(0 1) '(0 1))" :note "∫∫ xy over the unit square = 1/4. Simpson's rule is exact for degree ≤ 3.")
+    (:tier "intermediate" :code "(num/nintegrate-2d\n  (lambda (x y) (+ (* x x) (* y y)))\n  '(0 1) '(0 1))" :note "∫∫ (x²+y²) over unit square = 2/3.")
+    (:tier "expert" :code "(define (circle-area-mc)\n  (num/nintegrate-2d\n    (lambda (x y) (if (<= (+ (* x x) (* y y)) 1) 1 0))\n    '(-1 1) '(-1 1)))\n(circle-area-mc)" :note "Indicator-function integration approximates π (area of unit circle). Simpson's rule handles the discontinuity poorly; expect ≈3.14 with visible error — real Monte Carlo would do better.")
+    (:tier "master" :code "(define (gaussian-2d sigma)\n  (num/nintegrate-2d\n    (lambda (x y)\n      (/ (exp (- (/ (+ (* x x) (* y y)) (* 2 sigma sigma))))\n         (* 2 const/pi sigma sigma)))\n    '(-3 3) '(-3 3)))\n(gaussian-2d 1)" :note "Integral of a 2D Gaussian over ±3σ ≈ 0.997. The tails outside [-3,3] carry ≈0.003.")
+  )
+  :caveats ("f must accept (x y) — a 2-argument lambda." "Bounds are 2-lists (lo hi)." "Simpson's rule is EXACT for polynomials of degree ≤ 3 per variable; higher degrees carry O(h⁴) error." "Discontinuous integrands (indicator functions) give poor results.")
+  :drawbacks ("Fixed grid — no adaptive refinement." "Slow for expensive f (calls f n² times)." "No error estimate returned.")
+  :usecases ("Educational demos of numerical quadrature" "Well-behaved smooth 2D integrals" "Verifying analytic results" "Prototype before switching to specialized libraries")
+  :related ("num/nintegrate-3d" "calc/integrate")
+  :learn (:concept "Simpson's rule fits a parabola through triples of points and sums the exact parabola areas. 2D is the product rule applied twice." :prerequisites ("lambda" "arithmetic") :progression "1D quadrature → 2D → higher dimensions → adaptive methods.")
+  +math (:algebra "linear in f" :total #t :domain "function × 2-list × 2-list × opts" :codomain "ℝ" :proofs "Composite Simpson: error is O(h⁴) for f ∈ C⁴.")
+  +cs (:complexity "O(n²) function evaluations" :effects (none) :pure #t :special-form #f :evaluation-order "left-to-right; f called (n+1)² times")
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Composite Simpson's rule; default n=32 (1089 f-calls)." :permission "read" :latency-class "sync-slow" :since "0.1.0")
+  +hacker (:primitive #t :kin ("SciPy: scipy.integrate.dblquad; Julia: HCubature.hcubature") :history "Simpson's rule dates to Cavalieri / Kepler / Newton / Simpson (1743)." :hackable #t)
+  +ai (:raises () :pipes-into ("list") :consumes-from ("lambda") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Passing bounds as three-element lists or non-numeric bounds — bounds are strictly 2-lists (lo hi)." :when-not-to-use "Discontinuous or oscillatory integrands, or when high accuracy matters — use adaptive quadrature.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "num/nintegrate-3d"
+  :library "num"
+  :kind "pure"
+  :signature "(num/nintegrate-3d f x-bounds y-bounds z-bounds [opts]) -> number"
+  :summary "Compute a triple integral over a rectangular box using Simpson's rule."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "3D composite Simpson's rule. Default 16 subdivisions per axis — n=16 means 4913 f-calls; be conservative on cost. opts :n sets subdivisions (must be even)."
+  :examples (
+    (:tier "novice" :code "(num/nintegrate-3d (lambda (x y z) 1) '(0 1) '(0 1) '(0 1))" :note "Volume of unit cube = 1.")
+    (:tier "apprentice" :code "(num/nintegrate-3d (lambda (x y z) (+ x y z)) '(0 1) '(0 1) '(0 1))" :note "∫∫∫(x+y+z) over unit cube = 3/2. Each variable contributes 1/2 × 1 × 1.")
+    (:tier "intermediate" :code "(num/nintegrate-3d\n  (lambda (x y z) (* x y z))\n  '(0 1) '(0 1) '(0 1))" :note "∫∫∫ xyz over unit cube = 1/8. Product of three 1/2 factors.")
+    (:tier "expert" :code "(define (sphere-volume-8th)\n  (num/nintegrate-3d\n    (lambda (x y z) (if (<= (+ (* x x) (* y y) (* z z)) 1) 1 0))\n    '(0 1) '(0 1) '(0 1)))\n(* 8 (sphere-volume-8th))" :note "Unit sphere volume via first-octant slice × 8. True value: 4π/3 ≈ 4.189. Indicator function → visible error.")
+    (:tier "master" :code "(define (moment-of-inertia)\n  (num/nintegrate-3d\n    (lambda (x y z) (+ (* y y) (* z z)))\n    '(-1 1) '(-1 1) '(-1 1)))\n(moment-of-inertia)" :note "Moment of inertia about x-axis for a unit-density cube: 8·(2/3)+8·(2/3)/3 = 16/3.")
+  )
+  :caveats ("f must accept (x y z) — a 3-argument lambda." "3D COST: n=16 default is (n+1)^3 = 4913 f-calls. n=32 is 35937 — expect ≈1 s of REPL time.")
+  :drawbacks ("Very slow for expensive f." "No adaptive refinement." "Simpson's rule is exact only for polynomials of degree ≤ 3 per variable.")
+  :usecases ("Volume integrals" "Center-of-mass / moment computations" "Educational demos of 3D quadrature" "Prototype before dedicated numeric library")
+  :related ("num/nintegrate-2d" "calc/integrate")
+  :learn (:concept "3D Simpson is the product rule applied thrice. Cost balloons as n³." :prerequisites ("num/nintegrate-2d") :progression "2D → 3D → understand cost curve → know when to use Monte Carlo instead.")
+  +math (:algebra "linear in f" :total #t :domain "function × 3× 2-list × opts" :codomain "ℝ" :proofs "Composite Simpson 3D: O(h⁴) error for f ∈ C⁴.")
+  +cs (:complexity "O(n³) function evaluations" :effects (none) :pure #t :special-form #f :evaluation-order "f called (n+1)³ times")
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "3D nested loop; default n=16." :permission "read" :latency-class "sync-slow" :since "0.1.0")
+  +hacker (:primitive #t :kin ("SciPy: scipy.integrate.tplquad") :history "Newton–Cotes formulas generalize to arbitrary dimension via product rule." :hackable #t)
+  +ai (:raises () :pipes-into () :consumes-from ("lambda") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Setting n high (n=64) without realizing cost is 274625 f-calls." :when-not-to-use "High dimensions (d ≥ 4) — Monte Carlo scales better with dimension.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "rasterize-text"
+  :library "-"
+  :kind "pure"
+  :signature "(rasterize-text text [x] [y] [font] [size] [grid] [supersample] [minAlpha]) -> list"
+  :summary "Converts a text string into a list of dot coordinates and alpha values on a pixel grid."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Minimal 5x7 uppercase-ASCII pixel font shipped inline. Lowercase upper-cases; unknown chars use '?'. Live hosts (browser IDE, game shell) override with real typography. Each dot is a 4-list ('dot x y alpha)."
+  :examples (
+    (:tier "novice" :code "(length (rasterize-text \"A\"))" :note "One letter A has 18 lit dots in the 5x7 default font.")
+    (:tier "apprentice" :code "(car (rasterize-text \"A\"))" :note "First dot: ('dot 1 0 1). Tag 'dot, x=1, y=0, alpha=1.")
+    (:tier "intermediate" :code "(length (rasterize-text \"HI\"))" :note "H (18 dots) plus I (10 dots) = 28 total. Kerning advances one glyph-width per character.")
+    (:tier "expert" :code "(define (text-bounding-height text)\n  (let* ((dots (rasterize-text text))\n         (ys (map (lambda (d) (list-ref d 2)) dots)))\n    (if (null? ys) 0\n        (+ 1 (apply max ys)))))\n(text-bounding-height \"HELLO\")" :note "Compute the pixel height of a rasterized string: 7 for the default 5x7 font.")
+    (:tier "master" :code "(define (rasterize-with-offset text x y)\n  (rasterize-text text x y))\n(car (rasterize-with-offset \"A\" 100 50))" :note "Offset the whole raster: first dot lands at (101, 50). Move the label without redrawing.")
+  )
+  :caveats ("Lowercase is upper-cased before lookup." "Unknown characters (extended ASCII, Unicode) render as '?'." "Default font is 5x7 pixels wide and tall; grid scales dots by NxN cells.")
+  :drawbacks ("Standalone font is intentionally minimal — for real typography, live host overrides." "No kerning table beyond fixed 6-cell advance per glyph." "No anti-aliasing (alpha is 1 or 0).")
+  :usecases ("Rendering labels on a pixel framebuffer" "Retro-style text overlays" "Testing surface-paint-dots without a font system")
+  :related ("surface-paint-text" "surface-paint-dots")
+  :learn (:concept "Text becomes data: each glyph is a bitmap, and every pixel becomes a dot record." :prerequisites ("list" "string") :progression "Single char → whole strings → offset placement → paint via surface-paint-dots.")
+  +math (:algebra "text -> list of (dot x y alpha)" :total #t :domain "string × ℤ × ℤ × …" :codomain "list")
+  +cs (:complexity "O(len(text) · 5 · 7 · grid²)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Inline 5x7 uppercase-ASCII font; grid scales each pixel by NxN cells." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("SDL_ttf; browser canvas.fillText; PIL.ImageFont") :history "Minimal 5x7 fonts date to the earliest LED displays." :hackable #t)
+  +ai (:raises () :pipes-into ("surface-paint-dots" "map" "length") :consumes-from ("string") :cardinality "many" :deterministic #t :cacheable #t :common-mistakes "Expecting proportional widths — every glyph advances 6 cells regardless." :when-not-to-use "Production typography — use a real font renderer via the host.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "zoom-legible?"
+  :library "-"
+  :kind "pure"
+  :signature "(zoom-legible? [scale [designPx]]) -> boolean"
+  :summary "Test whether text at a given design size remains readable at the current (or given) camera zoom."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Threshold: scale * designPx >= 8 device pixels. Default scale=1.0, designPx=12 (tutorial body size). Alfred's tutorial uses ~8 px as the kid-can-read floor."
+  :examples (
+    (:tier "novice" :code "(zoom-legible?)" :note "Default (1.0 zoom, 12 design px) → 12 >= 8 → #t.")
+    (:tier "apprentice" :code "(zoom-legible? 0.5)" :note "At 50% zoom, 12 px shrinks to 6 px → #f (below the 8-pixel floor).")
+    (:tier "intermediate" :code "(zoom-legible? 1.0 6)" :note "6-pixel body at 100% zoom → 6 < 8 → #f. Even at full zoom, tiny type is unreadable.")
+    (:tier "expert" :code "(define (choose-label-size zoom)\n  (cond ((zoom-legible? zoom 10) 10)\n        ((zoom-legible? zoom 14) 14)\n        (else 18)))\n(map choose-label-size '(0.5 1.0 2.0))" :note "Adaptive labeling: at 50% zoom pick 18 px; at 100% pick 10 px.")
+    (:tier "master" :code "(define (visible-labels items zoom)\n  (let ((min-size (if (zoom-legible? zoom 10) 10\n                      (if (zoom-legible? zoom 12) 12 14))))\n    (map (lambda (i) (list (car i) min-size))\n         items)))\n(visible-labels '((\"card-1\") (\"card-2\")) 1.0)" :note "Compute the smallest legible label size for a set of items at the current zoom.")
+  )
+  :caveats ("Threshold is fixed at 8 device pixels — a heuristic, not a psychophysical measurement." "Fonts vary; a narrow 8-px sans-serif is legible; a serif at 8 px is not.")
+  :drawbacks ("Ignores font choice, contrast, and viewing distance." "One number, one threshold.")
+  :usecases ("Level-of-detail rendering" "Hiding labels when they'd be unreadable" "Choosing UI type sizes at different zooms")
+  :related ("zoom" "viewport" "viewport-width")
+  :learn (:concept "Legibility isn't a fact — it's a threshold. Pick the threshold that matches your audience." :prerequisites () :progression "Fixed threshold → per-font tables → user prefs override.")
+  +math (:algebra "scale × designPx -> boolean via 8-px threshold" :total #t :domain "ℝ×ℝ" :codomain "𝔹")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "One-line threshold check." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("CSS min-font-size; iOS UIFontMetrics; Android sp scaling") :history "Cartography 'MinSizeToDisplay' rule; game HUD LOD systems." :hackable #t)
+  +ai (:raises () :pipes-into ("cond" "if") :consumes-from ("zoom") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Assuming the threshold is a physics constant — it's a heuristic." :when-not-to-use "When you have real user-preference data — respect that instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "rows"
+  :library "-"
+  :kind "meta"
+  :signature "(rows) -> number"
+  :summary "Return the number of rows (height) of the surface canvas in cells."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs-marcus-math-c.js"
+  :impl-notes "Routes to canvas-height if the framebuffer bound it; otherwise returns 0. Live hosts override with the real surface row count."
+  :examples (
+    (:tier "novice" :code "(rows)" :note "In standalone REPL: 0. In the browser IDE: the surface's row count.")
+    (:tier "apprentice" :code "(zero? (rows))" :note "#t in standalone (no framebuffer bound).")
+    (:tier "intermediate" :code "(define (grid-empty?)\n  (or (zero? (rows)) (zero? (rows))))\n(grid-empty?)" :note "Ask the surface for its dimensions; useful for guard clauses.")
+    (:tier "expert" :code "(define (draw-if-room? need)\n  (if (>= (rows) need) 'yes 'too-small))\n(draw-if-room? 40)" :note "Check surface has room for our layout before painting.")
+    (:tier "master" :code "(define (viewport-summary)\n  (list 'rows (rows)\n        'viewport-width (viewport-width)))\n(viewport-summary)" :note "Compose surface metrics into a diagnostic record.")
+  )
+  :caveats ("Returns 0 in standalone REPL — no framebuffer bound. Live hosts override." "Distinct from `cols` (the width in cells).")
+  :drawbacks ("No units marker — the caller must know 'cells' means cells, not pixels.")
+  :usecases ("Layout guards" "Debugging surface dimensions" "Adapting rendering to canvas size")
+  :related ("cols" "viewport" "viewport-width")
+  :learn (:concept "Every drawing needs to know its canvas. rows and cols are the ruler." :prerequisites ("surface / framebuffer basics") :progression "Read → guard → adapt.")
+  +math (:algebra "no args -> ℕ" :total #t :domain "-" :codomain "ℕ")
+  +cs (:complexity "O(1)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs-marcus-math-c.js" :impl-notes "Reads canvas-height from env if present." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +hacker (:primitive #t :kin ("R7RS: no equivalent; canvas.height in browsers") :history "Grid-oriented graphics standard since terminal days." :hackable #t)
+  +ai (:raises () :pipes-into ("<" ">=" "list") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Assuming rows returns pixels — it's cells." :when-not-to-use "When you need pixel counts — use pixels-tall instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+;; ═══════════════════════════════════════════════════════════════════════
+;; DESCRIPTOR-SHAPED VERBS (host-adapter binding)
+;;
+;; These verbs return shaped descriptor lists in standalone REPL. That's
+;; NOT a lie — the descriptor IS the standalone-REPL contract, and a live
+;; host (browser IDE, game shell, shop launcher) substitutes real
+;; semantics. Every entry documents the two paths honestly.
+;;
+;; Examples show the descriptor return AND note the host-binding case.
+;; ═══════════════════════════════════════════════════════════════════════
+
+(verb
+  :name "wait"
+  :library "-"
+  :kind "descriptor"
+  :signature "(wait event [deadline-ms]) -> descriptor"
+  :summary "Pause state execution until a named event fires or an optional deadline expires."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Standalone REPL returns a ('wait seconds) descriptor. A live event scheduler (game loop, animation clock, shop workflow) substitutes real await semantics."
+  :examples (
+    (:tier "novice" :code "(wait 1)" :note "Descriptor ('wait 1). In a running host, pauses one second.")
+    (:tier "apprentice" :code "(wait 0.5)" :note "Half-second pause descriptor.")
+    (:tier "intermediate" :code "(list (wait 0.25) (wait 0.5) (wait 1))" :note "A sequence of pauses — a live host walks them in order.")
+    (:tier "expert" :code "(define (paced-sequence . delays)\n  (map wait delays))\n(paced-sequence 0.25 0.5 1)" :note "Build a paced pattern from a delay list.")
+    (:tier "master" :code "(define (metronome bpm)\n  (define beat (/ 60 bpm))\n  (map (lambda (_) (wait beat)) '(1 2 3 4)))\n(metronome 120)" :note "Four beats at 120 bpm — quarter-second pause each.")
+  )
+  :caveats ("Standalone REPL returns a descriptor; no actual sleeping happens." "Live hosts interpret and enforce the delay.")
+  :drawbacks ("No cancellation from the descriptor — the host layer handles cancel.")
+  :usecases ("Animation timing" "Metronome / pacing" "Event-driven flows")
+  :related ("tempo" "sub-position-per-beat" "with-spacing")
+  :learn (:concept "wait is a HINT to the runtime. The descriptor carries the delay; the host consumes it." :prerequisites () :progression "Single wait → sequences → beat-quantized patterns.")
+  +cs (:complexity "O(1)" :effects (none in standalone; async in host) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Returns ('wait seconds)." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Expecting the REPL to actually sleep — it doesn't; the descriptor is the contract." :when-not-to-use "For real high-precision timing — use the host's scheduler API directly.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "stop"
+  :library "-"
+  :kind "descriptor"
+  :signature "(stop) -> undefined"
+  :summary "Halt the currently running game loop immediately."
+  :impl-status "wired"
+  :impl-file "src/game.js"
+  :impl-notes "In game.js, sets game.stopped = #t and stops the media loop. In standalone REPL without a running loop, returns undefined."
+  :examples (
+    (:tier "novice" :code "(stop)" :note "Returns undefined. In a running game, ends the loop.")
+    (:tier "apprentice" :code "(begin (stop) 'ended)" :note "stop then a value; useful in event handlers.")
+    (:tier "intermediate" :code "(define (on-game-over)\n  (stop)\n  'thanks-for-playing)\n(on-game-over)" :note "Wrapping stop in an end-of-game handler.")
+    (:tier "expert" :code "(define (win-condition? score)\n  (if (>= score 100)\n      (begin (stop) 'you-win)\n      'keep-going))\n(win-condition? 100)" :note "Conditional stop tied to a score threshold.")
+    (:tier "master" :code "(define (guard-loop tick-count max-ticks)\n  (if (>= tick-count max-ticks)\n      (begin (stop) 'timed-out)\n      'continue))\n(guard-loop 1000 1000)" :note "Watchdog: stop the loop if we've run past a safety cap.")
+  )
+  :caveats ("Idempotent — calling stop when nothing is running is a no-op." "Only affects the game/media loop; other state remains.")
+  :drawbacks ("No resume; use start-over to restart.")
+  :usecases ("End-of-game" "Panic stop" "Watchdog guards")
+  :related ("stop-when" "start" "game/stop")
+  :learn (:concept "Every loop needs an exit. stop is the escape valve." :prerequisites ("game loop concept") :progression "Manual stop → conditional → watchdog.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/game.js" :impl-notes "Sets game.stopped and calls media.loop.stop()." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("begin") :consumes-from () :cardinality "void" :deterministic #t :cacheable #f :common-mistakes "Calling stop and expecting the current form to also short-circuit — it doesn't, execution continues in the current form." :when-not-to-use "Inside a loop-body when you want to break just this iteration — use a continuation or a flag.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "stop-when"
+  :library "-"
+  :kind "descriptor"
+  :signature "(stop-when predicate) -> clause"
+  :summary "Declare a loop-termination condition: the loop exits when the predicate returns true."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Returns a ('stop-when pred) descriptor. Big-bang and other loop drivers walk their clauses and invoke pred on each tick; the loop exits on the first true return."
+  :examples (
+    (:tier "novice" :code "(stop-when (lambda (state) (> state 10)))" :note "Descriptor. In big-bang, stops when state exceeds 10.")
+    (:tier "apprentice" :code "(stop-when (lambda (s) #f))" :note "Never-stops predicate — the loop keeps going forever.")
+    (:tier "intermediate" :code "(list (stop-when (lambda (s) (= s 0))) 'other-clauses)" :note "Compose with other clauses (to-draw, on-tick) inside big-bang.")
+    (:tier "expert" :code "(define (max-ticks n)\n  (stop-when (lambda (s) (>= s n))))\n(max-ticks 100)" :note "Parameterize the stop condition — build a bounded runner.")
+    (:tier "master" :code "(define (compose-stops preds)\n  (stop-when (lambda (s) (any (lambda (p) (p s)) preds))))\n(define (any p xs)\n  (cond ((null? xs) #f)\n        ((p (car xs)) #t)\n        (else (any p (cdr xs)))))\n(compose-stops (list (lambda (s) (> s 100)) (lambda (s) (< s -100))))" :note "Multi-condition guard: exits on any predicate matching. Real projects use this for out-of-bounds or timeout composites.")
+  )
+  :caveats ("Predicate is called per tick — keep it cheap." "Descriptor only in standalone REPL; live host consumes.")
+  :drawbacks ("No 'stop reason' return — you don't know which pred fired.")
+  :usecases ("Loop guards" "Watchdogs" "Big-bang / game-loop termination")
+  :related ("stop" "big-bang" "to-draw")
+  :learn (:concept "Every long-running loop needs an exit condition. stop-when is that condition, as a first-class value." :prerequisites ("lambda") :progression "Simple pred → parameterized → composed.")
+  +cs (:complexity "O(1) per call" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("big-bang" "list") :consumes-from ("lambda") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Expecting the predicate to run at define-time — it runs every tick." :when-not-to-use "For synchronous conditional exits — use a return / continuation.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "to-draw"
+  :library "-"
+  :kind "descriptor"
+  :signature "(to-draw render-fn) -> clause"
+  :summary "Wrap a rendering function into a clause for big-bang."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Returns ('to-draw fn). Big-bang calls fn on every animation frame with current state; whatever it returns is displayed. Host adapter substitutes real animation loop."
+  :examples (
+    (:tier "novice" :code "(to-draw (lambda (s) s))" :note "Identity renderer: display state as-is.")
+    (:tier "apprentice" :code "(to-draw (lambda (s) (list 'circle 100 100 s)))" :note "Draw a circle whose radius is the state.")
+    (:tier "intermediate" :code "(define (my-render state)\n  (list 'text (number->string state) 10 10))\n(to-draw my-render)" :note "Named renderer separated from the clause wrapper.")
+    (:tier "expert" :code "(define (labeled-render state)\n  (list 'group\n        (list 'text (string-append \"score: \" (number->string state)) 10 10)\n        (list 'rect 50 50 100 20)))\n(to-draw labeled-render)" :note "Composite scene: text plus rectangle.")
+    (:tier "master" :code "(define (with-frame-count fn)\n  (let ((ticks 0))\n    (lambda (state)\n      (set! ticks (+ ticks 1))\n      (list 'group (fn state) (list 'text (string-append \"frame \" (number->string ticks)) 5 5)))))\n(to-draw (with-frame-count (lambda (s) (list 'circle 100 100 s))))" :note "Higher-order renderer that adds a frame counter overlay to any inner renderer.")
+  )
+  :caveats ("Renderer is called every frame — keep it cheap." "Descriptor-only in standalone REPL.")
+  :drawbacks ("No differential rendering — you rebuild the full scene each call.")
+  :usecases ("Big-bang animation" "State visualization" "Debug HUDs")
+  :related ("big-bang" "stop-when" "on-tick")
+  :learn (:concept "Rendering is state → scene. to-draw makes that mapping first-class." :prerequisites ("lambda") :progression "Identity → simple shape → composite → higher-order.")
+  +cs (:complexity "O(scene-size) per call" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("big-bang") :consumes-from ("lambda") :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Doing state MUTATION inside the renderer. Renderers should be pure functions of state." :when-not-to-use "For heavy computation — separate compute from draw.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "with-seed"
+  :library "-"
+  :kind "descriptor"
+  :signature "(with-seed n) -> clause"
+  :summary "Wrap a random-number generator with a fixed seed for reproducible sequences."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Returns ('with-seed n). Host adapter reseeds the PRNG. In standalone REPL the descriptor is returned but the PRNG is not reseeded (Math.random has no seed API)."
+  :examples (
+    (:tier "novice" :code "(with-seed 42)" :note "Descriptor ('with-seed 42). Host reseeds when consumed.")
+    (:tier "apprentice" :code "(list (with-seed 1) (with-seed 2))" :note "Two seeded runs, different sequences under a host that honors seeds.")
+    (:tier "intermediate" :code "(define (deterministic-noise seed n)\n  (list (with-seed seed) (map (lambda (_) (random)) (make-list n 0))))\n(deterministic-noise 42 3)" :note "Package a seed with the draws that use it — for reproducibility.")
+    (:tier "expert" :code "(define (repeat-with-seed seed n)\n  (cons (with-seed seed)\n        (map (lambda (_) (randint 0 10)) (make-list n 0))))\n(repeat-with-seed 7 5)" :note "Same seed, same draws (under a live host).")
+    (:tier "master" :code "(define (compare-runs seed1 seed2 draws)\n  (list (repeat-with-seed seed1 draws)\n        (repeat-with-seed seed2 draws)))\n(define (repeat-with-seed seed n)\n  (cons (with-seed seed) (map (lambda (_) (randint 0 10)) (make-list n 0))))\n(compare-runs 1 2 3)" :note "Comparison harness: two seeds, same draw count.")
+  )
+  :caveats ("Standalone Math.random is not reseedable — descriptor is decorative." "Host adapters may implement their own PRNG that honors seeds.")
+  :drawbacks ("No 'restore seed' primitive to revert to previous state.")
+  :usecases ("Reproducible tests" "Deterministic replays" "Golden-master noise generation")
+  :related ("random" "randint" "random-range")
+  :learn (:concept "Reproducibility comes from a seed. Same seed, same sequence." :prerequisites ("random") :progression "Single seeded run → paired runs → comparison harness.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("random" "randint") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Expecting (with-seed n) to reseed Math.random — it can't." :when-not-to-use "In standalone REPL when you need reproducibility — use a seeded PRNG library.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "with-spacing"
+  :library "-"
+  :kind "descriptor"
+  :signature "(with-spacing spacing) -> descriptor"
+  :summary "Configure spatial distribution of entities in a choreographed formation."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('with-spacing value). Consumed by formation / walk-together / group-choreography hosts. Standalone REPL returns the descriptor unchanged."
+  :examples (
+    (:tier "novice" :code "(with-spacing 20)" :note "Descriptor with spacing 20.")
+    (:tier "apprentice" :code "(with-spacing 40)" :note "Wider spacing between entities.")
+    (:tier "intermediate" :code "(list (with-spacing 20) (with-spacing 40))" :note "A pair of spacing directives — a host applies them in order.")
+    (:tier "expert" :code "(define (formation-config w spacing)\n  (list (with-spacing spacing) 'width w))\n(formation-config 200 30)" :note "Compose with other formation parameters.")
+    (:tier "master" :code "(define (choreograph-line n gap)\n  (list (with-spacing gap)\n        'line-of n))\n(choreograph-line 5 25)" :note "A line of five entities spaced 25 apart. Host reads the descriptor list to place them.")
+  )
+  :caveats ("Descriptor-only in standalone." "Units are host-defined (pixels, cells, world units).")
+  :drawbacks ("No adaptive spacing — the value is static.")
+  :usecases ("Group formations" "Row / column layouts" "Character choreography")
+  :related ("walk-together" "in-formation")
+  :learn (:concept "Formations need a spacing knob. This is that knob, at first-class." :prerequisites () :progression "Single value → paired directives → parametric layout.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Expecting spacing to be enforced in standalone — it isn't." :when-not-to-use "When spacing needs to react to state — use a lambda that computes it.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "tempo"
+  :library "-"
+  :kind "descriptor"
+  :signature "(tempo bpm) -> descriptor"
+  :summary "Set the shared transport BPM — the metronome that all timed systems synchronize to."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('tempo bpm). Consumed by the audio / animation transport host. Standalone REPL returns the descriptor; a live scheduler applies the tempo."
+  :examples (
+    (:tier "novice" :code "(tempo 120)" :note "120 BPM — a lively pop tempo.")
+    (:tier "apprentice" :code "(tempo 60)" :note "60 BPM — one beat per second.")
+    (:tier "intermediate" :code "(define (walking-tempo)\n  (tempo 88))\n(walking-tempo)" :note "88 BPM — the average walking cadence.")
+    (:tier "expert" :code "(define (tempo-relative base ratio)\n  (tempo (* base ratio)))\n(tempo-relative 120 1.5)" :note "Half again faster than the base.")
+    (:tier "master" :code "(define (rubato-schedule bpms)\n  (map tempo bpms))\n(rubato-schedule '(60 80 100 120))" :note "A schedule of accelerating tempos. Real music-generation code emits these as timing hints.")
+  )
+  :caveats ("Descriptor-only in standalone." "BPM is beats per minute; convert if you need seconds-per-beat.")
+  :drawbacks ("No fractional swing — separate verb for swing.")
+  :usecases ("Music tempo" "Animation pacing" "Metronome sync")
+  :related ("transport/tempo" "beat/*" "note/*")
+  :learn (:concept "Tempo is the shared clock. Everything downstream reads from it." :prerequisites () :progression "Fixed tempo → derived → schedule.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map" "list") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Confusing BPM with Hz. BPM/60 = Hz." :when-not-to-use "For frame-accurate video sync — use frame counts.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "submit"
+  :library "-"
+  :kind "descriptor"
+  :signature "(submit label [action]) -> descriptor"
+  :summary "Create a submit button for a form, optionally tied to an action handler."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('submit label [action]). Consumed by the form / UI host — real rendering happens there. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(submit \"Save\")" :note "A save button with no action.")
+    (:tier "apprentice" :code "(submit \"Send\" 'send-message)" :note "Button labeled Send, wired to a send-message action.")
+    (:tier "intermediate" :code "(list (submit \"OK\") (submit \"Cancel\"))" :note "Two buttons in a form.")
+    (:tier "expert" :code "(define (form-with-submit fields)\n  (append fields (list (submit \"Save\"))))\n(form-with-submit '((field name) (field email)))" :note "Compose the submit button into a form spec.")
+    (:tier "master" :code "(define (submit-with-guard label action guard-msg)\n  (list 'guarded-submit label action guard-msg))\n(submit-with-guard \"Delete\" 'delete-account \"Are you sure?\")" :note "Wrap submit in a confirmation guard — the host reads the tag and inserts a modal.")
+  )
+  :caveats ("Standalone descriptor only." "Label is required; action optional.")
+  :drawbacks ("No enable/disable state — the host manages that.")
+  :usecases ("Form UI" "Save / cancel buttons" "Confirmation flows")
+  :related ("form" "field" "define-form")
+  :learn (:concept "A submit button is a labeled trigger. That's a data record; hosts render it." :prerequisites () :progression "Basic → action-bound → guarded.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("form" "list") :consumes-from () :cardinality "one" :deterministic #t :cacheable #t :common-mistakes "Expecting the button to render itself — hosts do the rendering." :when-not-to-use "For non-form triggers — use a general button primitive.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "summon"
+  :library "-"
+  :kind "descriptor"
+  :signature "(summon kind) -> descriptor"
+  :summary "Request the creation of a new card of a given kind."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('summon kind). Consumed by the card / desktop host to instantiate a new card. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(summon 'card)" :note "Request a generic card.")
+    (:tier "apprentice" :code "(summon 'photo-card)" :note "A card of kind photo-card.")
+    (:tier "intermediate" :code "(map summon '(note photo audio))" :note "Summon three different card kinds at once.")
+    (:tier "expert" :code "(define (workspace-init)\n  (list (summon 'index) (summon 'timeline) (summon 'notes)))\n(workspace-init)" :note "Build a workspace from three cards.")
+    (:tier "master" :code "(define (summon-many kind n)\n  (map (lambda (_) (summon kind)) (make-list n 0)))\n(summon-many 'sticky 5)" :note "Batch-summon: five sticky notes at once.")
+  )
+  :caveats ("Standalone descriptor only." "Kind is a symbol / string interpreted by the host.")
+  :drawbacks ("No position / size hint in the base signature.")
+  :usecases ("Workspace bootstrap" "Batch card creation" "Deck spawning")
+  :related ("define-card" "make-character")
+  :learn (:concept "Summoning is a REQUEST. The host owns the actual creation." :prerequisites () :progression "One → many → batch.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map" "list") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Expecting a card object back — you get a descriptor; the host reifies." :when-not-to-use "When you already have a card and want to modify it — use modify verbs.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "touch"
+  :library "-"
+  :kind "descriptor"
+  :signature "(touch part-name target-card [options]) -> descriptor"
+  :summary "Choreograph a character's hand or limb to make contact with a card or location."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('touch part target [options]). Consumed by the animation / character host. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(touch 'left-hand 'card-1)" :note "Left hand touches card-1.")
+    (:tier "apprentice" :code "(touch 'right-index 'button-save)" :note "Right index finger targets a specific button.")
+    (:tier "intermediate" :code "(list (touch 'left-hand 'card-1) (touch 'right-hand 'card-2))" :note "Both hands, two cards.")
+    (:tier "expert" :code "(define (grab pair)\n  (list (touch 'left-hand (car pair)) (touch 'right-hand (cadr pair))))\n(grab '(card-1 card-2))" :note "Two-handed grab as a helper.")
+    (:tier "master" :code "(define (rehearse-gesture pairs)\n  ;; pairs: ((part target) ...)\n  (map (lambda (pair) (touch (car pair) (cadr pair))) pairs))\n(rehearse-gesture '((left-hand card-1) (right-hand card-2) (head monitor)))" :note "Choreograph multiple simultaneous touches — one pair per gesture.")
+  )
+  :caveats ("Standalone descriptor only." "Part names are conventional (left-hand, right-index, etc.) — hosts define their own inventory.")
+  :drawbacks ("No duration in the base signature; options list carries timing.")
+  :usecases ("Character animation" "Choreographed gestures" "Interactive demos")
+  :related ("walk-cycle" "sway!" "walk-together")
+  :learn (:concept "Touch is a directed gesture — from a part to a target." :prerequisites () :progression "Single → paired → multi-part.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing a card object instead of an id — hosts expect the identifier." :when-not-to-use "For pure animation curves — use tween verbs instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "transfer"
+  :library "-"
+  :kind "descriptor"
+  :signature "(transfer source-card-id destination-card-id item-ids) -> descriptor"
+  :summary "Move a list of items from one card to another, gated by operator gesture confirmation."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('transfer src dst items). Consumed by the shop / inventory host which enforces confirmation. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(transfer 'shop-a 'shop-b '(item-1))" :note "Move one item between shops.")
+    (:tier "apprentice" :code "(transfer 'cart-1 'saved '(sku-a sku-b))" :note "Two items to a saved-for-later cart.")
+    (:tier "intermediate" :code "(define (move-all items src dst)\n  (transfer src dst items))\n(move-all '(a b c) 'inbox 'archive)" :note "Wrap in a named helper.")
+    (:tier "expert" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (move-if pred items src dst)\n  (let ((yes (filter pred items)))\n    (if (null? yes) 'nothing-moved (transfer src dst yes))))\n(move-if (lambda (i) #t) '(a b) 'src 'dst)" :note "Filtered move — nothing moves if no items match.")
+    (:tier "master" :code "(define (batched-transfer src dst all-items batch-size)\n  (let loop ((remaining all-items) (acc '()))\n    (if (null? remaining) (reverse acc)\n        (let ((batch (if (< (length remaining) batch-size) remaining (take-n remaining batch-size))))\n          (loop (drop-n remaining batch-size) (cons (transfer src dst batch) acc))))))\n(define (take-n lst n) (if (or (null? lst) (<= n 0)) '() (cons (car lst) (take-n (cdr lst) (- n 1)))))\n(define (drop-n lst n) (if (or (null? lst) (<= n 0)) lst (drop-n (cdr lst) (- n 1))))\n(batched-transfer 'a 'b '(1 2 3 4 5 6 7) 3)" :note "Chunked transfer: many small transfers instead of one huge one. Real inventory systems batch to avoid API limits.")
+  )
+  :caveats ("Standalone descriptor only." "Host may require a follow-up confirmation gesture before executing.")
+  :drawbacks ("No rollback in the base signature; the host owns transaction semantics.")
+  :usecases ("Shop-to-shop moves" "Inventory reshuffles" "Cart to save-for-later")
+  :related ("receive-listing" "release-listing" "set-inventory")
+  :learn (:concept "Transfer is a request with three parts: source, destination, items. All present tense." :prerequisites () :progression "Single → filtered → batched.")
+  +cs (:complexity "O(n) where n = item-ids length" :effects (state io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into () :consumes-from ("list") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing a single item as bare instead of a list — always wrap." :when-not-to-use "For single item and no shop context — a direct move verb may be lighter.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "sway!"
+  :library "-"
+  :kind "descriptor"
+  :signature "(sway! entity-id period amplitude) -> descriptor"
+  :summary "Apply a periodic sine-wave rotation (sway) to a single entity."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('sway! id period amplitude). Consumed by the animation host, which drives the entity's rotation as amplitude * sin(2π t / period). Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(sway! 'card-1 2 0.1)" :note "Small sway, 2-second period.")
+    (:tier "apprentice" :code "(sway! 'lantern 4 0.05)" :note "Slow gentle sway — lantern in a breeze.")
+    (:tier "intermediate" :code "(map (lambda (id) (sway! id 2 0.1)) '(a b c))" :note "Sway a group of entities with matching parameters.")
+    (:tier "expert" :code "(define (breeze-sway ids)\n  (map (lambda (id) (sway! id (+ 1.5 (random)) 0.05))\n       ids))\n(breeze-sway '(leaf-1 leaf-2 leaf-3))" :note "Randomize period per entity for a natural feel.")
+    (:tier "master" :code "(define (choir-sway ids base-period)\n  (map (lambda (id) (sway! id base-period 0.03)) ids))\n(choir-sway '(v1 v2 v3 v4) 3)" :note "Coordinated sway — all entities same period, so they move in unison like a choir.")
+  )
+  :caveats ("Standalone descriptor only — no real animation in REPL." "Amplitude is in radians; small values (< 0.2) look natural.")
+  :drawbacks ("Only sine — no square or triangle waves in the base signature.")
+  :usecases ("Leaves in wind" "Lanterns" "Character idle animations" "Ambient life in a scene")
+  :related ("walk-cycle" "touch")
+  :learn (:concept "Ambient motion makes a scene feel alive. Sway is the simplest ambient." :prerequisites () :progression "One entity → group → randomized → coordinated.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map" "list") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing amplitude in degrees. It's radians — 0.1 rad ≈ 5.7 degrees." :when-not-to-use "When you need one-shot rotation — use rotate-card.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "walk-cycle"
+  :library "-"
+  :kind "descriptor"
+  :signature "(walk-cycle [opts]) -> descriptor"
+  :summary "Trigger a looping walk animation on the active character, with optional customization of pace, stride, and direction."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('walk-cycle [opts]). Consumed by the character animation host. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(walk-cycle)" :note "Default walk cycle.")
+    (:tier "apprentice" :code "(walk-cycle 'brisk)" :note "Brisk pace opt.")
+    (:tier "intermediate" :code "(list (walk-cycle 'slow) (walk-cycle 'stroll))" :note "Two paces recorded.")
+    (:tier "expert" :code "(define (idle-then-walk)\n  (list 'idle (walk-cycle)))\n(idle-then-walk)" :note "Two-phase choreography descriptor.")
+    (:tier "master" :code "(define (sequence-paces paces)\n  (map walk-cycle paces))\n(sequence-paces '(slow normal brisk sprint))" :note "A pace scheduler — hosts consume the descriptor list in order.")
+  )
+  :caveats ("Standalone descriptor only." "Opts are host-defined; unknown opts are ignored.")
+  :drawbacks ("No path in the base signature — walks are 'in place' until paired with a motion verb.")
+  :usecases ("Character animation loops" "Idle→walk transitions" "Pace scheduling")
+  :related ("walk-together" "touch" "sway!")
+  :learn (:concept "A walk cycle is a REQUEST for looping motion. The host loops it." :prerequisites () :progression "Default → paced → scheduled.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Expecting positional motion — walk-cycle animates limbs, not translation." :when-not-to-use "When the character should move — pair with a translation verb.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "walk-together"
+  :library "-"
+  :kind "descriptor"
+  :signature "(walk-together [formation] [opts]) -> descriptor"
+  :summary "Coordinate walking animations across a group of characters, maintaining a named spatial formation."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('walk-together [formation] [opts]). Consumed by the group-choreography host. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(walk-together)" :note "Default group walk.")
+    (:tier "apprentice" :code "(walk-together 'line)" :note "Line formation.")
+    (:tier "intermediate" :code "(walk-together 'wedge)" :note "Wedge formation.")
+    (:tier "expert" :code "(define (parade formation pace)\n  (list (walk-together formation) (walk-cycle pace)))\n(parade 'line 'slow)" :note "Combine group formation with individual pace.")
+    (:tier "master" :code "(define (formation-schedule formations)\n  (map walk-together formations))\n(formation-schedule '(line wedge circle scatter))" :note "Choreographed formation transitions.")
+  )
+  :caveats ("Standalone descriptor only." "Formation names are host-defined (line, wedge, circle, scatter, ...).")
+  :drawbacks ("No per-character speed variation in the base signature.")
+  :usecases ("Group parades" "Squad movement" "Formation dance")
+  :related ("walk-cycle" "with-spacing" "in-formation")
+  :learn (:concept "Group motion is more than individual motion — the shape of the group is data too." :prerequisites () :progression "Default → named → composed → scheduled.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing per-character walk options here — this configures the GROUP; per-character options go on walk-cycle." :when-not-to-use "When characters should move independently — use individual walk-cycle calls.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "sub-position-per-beat"
+  :library "-"
+  :kind "descriptor"
+  :signature "(sub-position-per-beat entity subdivisions) -> descriptor"
+  :summary "Place an entity at a rhythmic sub-position within a beat formation."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('sub-position-per-beat entity n). Consumed by the beat / choreography host. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(sub-position-per-beat 'dancer 4)" :note "Dancer subdivides beats by 4.")
+    (:tier "apprentice" :code "(sub-position-per-beat 'lead 2)" :note "Half-beat subdivisions.")
+    (:tier "intermediate" :code "(list (sub-position-per-beat 'a 2) (sub-position-per-beat 'b 4))" :note "Two dancers, different subdivisions — one syncopates against the other.")
+    (:tier "expert" :code "(define (poly-rhythm pairs)\n  ;; pairs: ((entity subdivs) ...)\n  (map (lambda (p) (sub-position-per-beat (car p) (cadr p))) pairs))\n(poly-rhythm '((a 2) (b 3) (c 5)))" :note "Polyrhythmic assignment: three dancers with 2, 3, 5 subdivisions each.")
+    (:tier "master" :code "(define (rhythmic-canon dancers max-sub)\n  (let loop ((ds dancers) (n 1) (acc '()))\n    (if (null? ds) (reverse acc)\n        (loop (cdr ds) (min max-sub (+ n 1))\n              (cons (sub-position-per-beat (car ds) n) acc)))))\n(rhythmic-canon '(a b c d e) 8)" :note "Canonical increment: each dancer subdivides one more finely than the last.")
+  )
+  :caveats ("Standalone descriptor only." "Subdivisions are positive integers — 1 is 'on the beat', higher is finer.")
+  :drawbacks ("No offset within the subdivision — the base signature is position only.")
+  :usecases ("Rhythmic choreography" "Polyrhythms" "Beat-quantized entity placement")
+  :related ("tempo" "with-spacing")
+  :learn (:concept "Rhythm is division of time. Sub-position places an entity at a specific division." :prerequisites () :progression "Single → paired polyrhythm → canon.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing 0 subdivisions — off the beat entirely." :when-not-to-use "For melodic timing — this is choreographic, not musical.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "register-tick"
+  :library "-"
+  :kind "descriptor"
+  :signature "(register-tick name fn) -> descriptor"
+  :summary "Install a named, recurring function to run on every frame tick."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('register-tick name fn). Consumed by the game / animation loop host. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(register-tick 'main (lambda () 'tick))" :note "A named tick callback.")
+    (:tier "apprentice" :code "(register-tick 'log (lambda () (list 'ticked)))" :note "Log-style callback.")
+    (:tier "intermediate" :code "(define counter 0)\n(register-tick 'count (lambda () (set! counter (+ counter 1)) counter))" :note "Counter that increments per tick. In a real host, ticks fire; in REPL the register just returns a descriptor.")
+    (:tier "expert" :code "(define (make-oscillator freq)\n  (register-tick 'osc (lambda () (sin (* freq (random))))))\n(make-oscillator 2)" :note "Wrap a computed tick in a named registration.")
+    (:tier "master" :code "(define (register-many callbacks)\n  (map (lambda (pair) (register-tick (car pair) (cadr pair)))\n       callbacks))\n(register-many (list (list 'a (lambda () 1))\n                     (list 'b (lambda () 2))))" :note "Batch-register a table of named callbacks.")
+  )
+  :caveats ("Standalone descriptor only — no ticks fire in REPL." "Named — a duplicate name replaces the earlier registration in a live host.")
+  :drawbacks ("No priority / order guarantee in the base signature.")
+  :usecases ("Game loop callbacks" "Animation drivers" "Periodic housekeeping")
+  :related ("tick/*" "wait")
+  :learn (:concept "A tick is a recurring event; registering names it and hands it to the loop." :prerequisites ("lambda") :progression "Simple → stateful → wrapped → batched.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map" "list") :consumes-from ("lambda") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Registering unnamed ticks and having them collide." :when-not-to-use "For one-shot callbacks — use after or setTimeout equivalents.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "where-to-click"
+  :library "-"
+  :kind "descriptor"
+  :signature "(where-to-click query) -> descriptor"
+  :summary "Search the navigation map by keyword and return a human-readable guide to controls and surfaces."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('where-to-click query). Consumed by the nav / help host — resolves keywords to actionable directions. Standalone REPL returns the descriptor unchanged."
+  :examples (
+    (:tier "novice" :code "(where-to-click 'menu)" :note "Ask where the menu is.")
+    (:tier "apprentice" :code "(where-to-click \"save\")" :note "String queries also work.")
+    (:tier "intermediate" :code "(list (where-to-click 'save) (where-to-click 'quit))" :note "A checklist of nav lookups.")
+    (:tier "expert" :code "(define (find-many queries)\n  (map where-to-click queries))\n(find-many '(settings profile logout))" :note "Batch lookup.")
+    (:tier "master" :code "(define (nav-onboarding)\n  (map where-to-click '(new-project open-recent settings shortcuts)))\n(nav-onboarding)" :note "Assemble a first-time-user tour by asking the nav map for each key control.")
+  )
+  :caveats ("Standalone descriptor only." "Query is a symbol or string; hosts define their own vocabulary.")
+  :drawbacks ("Returns descriptor, not human prose, in standalone; the host resolves to text.")
+  :usecases ("First-time user onboarding" "Accessibility guides" "Test-scaffold assertions ('where should this be')")
+  :related ("nav-map")
+  :learn (:concept "Discoverability is a first-class concern. Ask the nav map for directions." :prerequisites () :progression "Single query → checklist → onboarding tour.")
+  +cs (:complexity "O(1)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #f :cacheable #t :common-mistakes "Assuming the return is human-readable — hosts must render it." :when-not-to-use "For programmatic navigation — call the actual nav verbs.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "rotate-card"
+  :library "-"
+  :kind "descriptor"
+  :signature "(rotate-card kind-or-id [deg]) -> descriptor"
+  :summary "Rotate a card by the given angle, or by the snap increment if no angle is supplied."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('rotate-card id [deg]). Consumed by the card / desktop host. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(rotate-card 'card-1 45)" :note "45 degrees clockwise.")
+    (:tier "apprentice" :code "(rotate-card 'card-1)" :note "No angle: rotate by the default snap (typically 90 degrees).")
+    (:tier "intermediate" :code "(list (rotate-card 'a 15) (rotate-card 'b -15))" :note "Two cards, opposite rotations.")
+    (:tier "expert" :code "(define (fan-rotate ids delta)\n  (let loop ((xs ids) (angle 0) (acc '()))\n    (if (null? xs) (reverse acc)\n        (loop (cdr xs) (+ angle delta) (cons (rotate-card (car xs) angle) acc)))))\n(fan-rotate '(a b c d) 15)" :note "Fan of cards, each 15° more than the last.")
+    (:tier "master" :code "(define (reset-orientation ids)\n  (map (lambda (id) (rotate-card id 0)) ids))\n(reset-orientation '(a b c))" :note "Snap a group of cards back to zero rotation.")
+  )
+  :caveats ("Standalone descriptor only." "Angle is degrees, not radians.")
+  :drawbacks ("Absolute rotation; no delta or additive form in the base signature.")
+  :usecases ("Card orientation" "Fan / spread layouts" "Snap-to-grid resets")
+  :related ("scale-card" "orient-card")
+  :learn (:concept "Cards live in a plane; rotation is an orientation change." :prerequisites () :progression "Single → paired → fanned → reset.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing radians." :when-not-to-use "For continuous animation — use sway! or a tween.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "scale-card"
+  :library "-"
+  :kind "descriptor"
+  :signature "(scale-card id width height) -> descriptor"
+  :summary "Resize a card to the given pixel dimensions (width and height)."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('scale-card id w h). Consumed by the card / desktop host. Standalone REPL returns the descriptor."
+  :examples (
+    (:tier "novice" :code "(scale-card 'card-1 100 100)" :note "Square 100x100.")
+    (:tier "apprentice" :code "(scale-card 'photo 200 150)" :note "Landscape photo.")
+    (:tier "intermediate" :code "(list (scale-card 'a 100 100) (scale-card 'b 200 200))" :note "Two cards, two sizes.")
+    (:tier "expert" :code "(define (resize-all ids w h)\n  (map (lambda (id) (scale-card id w h)) ids))\n(resize-all '(a b c) 150 100)" :note "Batch resize.")
+    (:tier "master" :code "(define (uniform-thumbnails ids)\n  (map (lambda (id) (scale-card id 120 90)) ids))\n(uniform-thumbnails '(t1 t2 t3 t4))" :note "Standardize thumbnails to a common aspect.")
+  )
+  :caveats ("Standalone descriptor only." "Dimensions are pixel counts, not cells.")
+  :drawbacks ("Uniform scaling only — no separate x/y scale factors in the base signature.")
+  :usecases ("Thumbnail sizing" "Card layout" "Responsive rescale")
+  :related ("rotate-card" "measure-content")
+  :learn (:concept "Size is data. Scaling changes the container without changing content." :prerequisites () :progression "One → batch → standardized.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing floats — dimensions round to integers." :when-not-to-use "For content-driven size — use auto-layout instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "viewport"
+  :library "-"
+  :kind "meta"
+  :signature "(viewport) -> descriptor"
+  :summary "Query the current viewport bounding box (camera frame on the card surface)."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('viewport). In standalone REPL, returns the descriptor unchanged (no camera). Live hosts return a real {x, y, w, h} record."
+  :examples (
+    (:tier "novice" :code "(viewport)" :note "Ask for the viewport.")
+    (:tier "apprentice" :code "(list 'current (viewport))" :note "Wrap the descriptor with a tag.")
+    (:tier "intermediate" :code "(define (viewport-tag)\n  (cons 'vp (viewport)))\n(viewport-tag)" :note "Named viewport lookup.")
+    (:tier "expert" :code "(define (log-viewports)\n  (list (viewport) (viewport)))\n(log-viewports)" :note "Two viewport snapshots. In a live host, ordering matters (may differ).")
+    (:tier "master" :code "(define (view-plan)\n  (list 'view (viewport) 'width (viewport-width)))\n(view-plan)" :note "Compose viewport + width into a plan structure.")
+  )
+  :caveats ("Standalone REPL: descriptor only, no real coordinates." "Live host returns a record with x, y, w, h fields.")
+  :drawbacks ("No zoom / rotation queried by this verb alone — pair with zoom-legible? or camera verbs.")
+  :usecases ("Camera-aware layout" "Culling" "Debug HUDs")
+  :related ("viewport-width" "rows" "cols" "zoom-legible?")
+  :learn (:concept "The viewport is what the camera sees. Everything drawn outside it is invisible." :prerequisites () :progression "Query → tag → plan.")
+  +cs (:complexity "O(1)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "cons") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Assuming the return is a hash — live hosts may return a list or a record." :when-not-to-use "For static layout — use surface dimensions instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "viewport-width"
+  :library "-"
+  :kind "meta"
+  :signature "(viewport-width) -> descriptor | number"
+  :summary "Query the current viewport width in world coordinates."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('viewport-width) in standalone REPL; live hosts return a number."
+  :examples (
+    (:tier "novice" :code "(viewport-width)" :note "Ask the current viewport width.")
+    (:tier "apprentice" :code "(list 'w (viewport-width))" :note "Tagged width.")
+    (:tier "intermediate" :code "(define (log-width)\n  (viewport-width))\n(log-width)" :note "Named lookup.")
+    (:tier "expert" :code "(define (both-dims)\n  (list (viewport-width) (rows)))\n(both-dims)" :note "Width from camera, height from surface — the two rulers.")
+    (:tier "master" :code "(define (visible-bounds)\n  (let ((w (viewport-width)))\n    (list 'left 0 'right w)))\n(visible-bounds)" :note "Compute simple left/right bounds using width.")
+  )
+  :caveats ("Standalone REPL: descriptor only." "World coordinates depend on camera; a wide zoom-out gives larger width.")
+  :drawbacks ("No height counterpart in this verb alone — see viewport or rows.")
+  :usecases ("Layout width computations" "Culling range" "Debug logging")
+  :related ("viewport" "rows")
+  :learn (:concept "Width is one number. viewport-width is that number, camera-aware." :prerequisites () :progression "Query → tagged → composed.")
+  +cs (:complexity "O(1)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Assuming pixel count — it's world coordinates." :when-not-to-use "For pixel-accurate work — use pixels-wide.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "svg-set"
+  :library "-"
+  :kind "descriptor"
+  :signature "(svg-set surface selector attr value) -> descriptor"
+  :summary "Set a single SVG DOM attribute on an element matched by CSS selector within a surface."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor ('svg-set surface selector attr value). Consumed by the SVG-backed surface host. Standalone REPL returns the descriptor. NO CHECK on selector validity here."
+  :examples (
+    (:tier "novice" :code "(svg-set 'surface \"#circle-1\" \"fill\" \"red\")" :note "Fill a specific circle red.")
+    (:tier "apprentice" :code "(svg-set 'main \".highlight\" \"stroke\" \"blue\")" :note "Set stroke on any element with class highlight.")
+    (:tier "intermediate" :code "(list (svg-set 'main \"#a\" \"fill\" \"red\") (svg-set 'main \"#b\" \"fill\" \"blue\"))" :note "Two updates in a batch.")
+    (:tier "expert" :code "(define (color-all surface selector color)\n  (svg-set surface selector \"fill\" color))\n(color-all 'main \".card\" \"#ffcc00\")" :note "Wrap in a domain-specific helper.")
+    (:tier "master" :code "(define (theme-swap surface theme)\n  (map (lambda (pair) (svg-set surface (car pair) \"fill\" (cadr pair)))\n       theme))\n(theme-swap 'main '((\".bg\" \"#111\") (\".fg\" \"#eee\") (\".accent\" \"#f0c\")))" :note "Batch-apply a theme table of selector-to-color pairs.")
+  )
+  :caveats ("Standalone descriptor only." "Selector is a CSS selector, not an XPath — must match the host's DOM.")
+  :drawbacks ("One attribute per call — for many attrs use multiple calls or a batch verb.")
+  :usecases ("Theme switching" "Dynamic styling" "Debug highlighting")
+  :related ("surface-paint-dots" "surface-paint-text")
+  :learn (:concept "Direct DOM manipulation — a shortcut when structured painting is overkill." :prerequisites ("CSS selectors") :progression "Single attr → batch → themed.")
+  +cs (:complexity "O(1) per attr" :effects (state io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "state-change" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("string") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing a selector that matches multiple elements when you meant one — updates all matches." :when-not-to-use "For creating new elements — svg-set only mutates existing ones.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+;; ═══════════════════════════════════════════════════════════════════════
+;; Surface / paint verbs (descriptor-shaped, host binds real semantics)
+;; ═══════════════════════════════════════════════════════════════════════
+
+(verb
+  :name "surface-curtain"
+  :library "-"
+  :kind "descriptor"
+  :signature "(surface-curtain alpha [duration-ms]) -> descriptor"
+  :summary "Fade the entire canvas in or out globally (legacy alias of surface/curtain)."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Consumed by the framebuffer host. Standalone REPL returns the descriptor unchanged."
+  :examples (
+    (:tier "novice" :code "(surface-curtain 0.5)" :note "Half-fade.")
+    (:tier "apprentice" :code "(surface-curtain 0 1000)" :note "Full fade in over 1 second.")
+    (:tier "intermediate" :code "(list (surface-curtain 1) (surface-curtain 0 500))" :note "Curtain up then fade over half a second.")
+    (:tier "expert" :code "(define (dramatic-reveal)\n  (list (surface-curtain 1) (wait 1) (surface-curtain 0 2000)))\n(dramatic-reveal)" :note "Curtain up, hold a second, fade in over 2 seconds.")
+    (:tier "master" :code "(define (chapter-transition duration)\n  (list (surface-curtain 1 (/ duration 2))\n        (wait (/ duration 1000))\n        (surface-curtain 0 (/ duration 2))))\n(chapter-transition 2000)" :note "Full transition: half fade out, hold, half fade in.")
+  )
+  :caveats ("Standalone descriptor only." "Alpha 0..1; 0 is fully visible, 1 is fully opaque black.")
+  :drawbacks ("No color parameter — always black. Use surface-paper for colored backgrounds.")
+  :usecases ("Scene transitions" "Chapter breaks" "Dramatic reveals")
+  :related ("surface-dim" "surface-dusk" "surface-paper")
+  :learn (:concept "A curtain hides everything. Handy for cuts and reveals." :prerequisites () :progression "Instant → timed → composed transition.")
+  +cs (:complexity "O(1)" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "wait") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Alpha > 1 or < 0 — clamped by hosts, but be explicit." :when-not-to-use "For partial-scene fades — use per-entity alpha instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "surface-dim"
+  :library "-"
+  :kind "descriptor"
+  :signature "(surface-dim alpha) -> descriptor"
+  :summary "Set the global canvas dim level (overlay darkness)."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged."
+  :examples (
+    (:tier "novice" :code "(surface-dim 0.3)" :note "30% dim.")
+    (:tier "apprentice" :code "(surface-dim 0)" :note "Full brightness.")
+    (:tier "intermediate" :code "(list (surface-dim 0.5) (surface-dim 0))" :note "Dim then restore.")
+    (:tier "expert" :code "(define (spotlight-mode)\n  (list (surface-dim 0.7) (surface-spotlight 100 100 60)))\n(spotlight-mode)" :note "Dim the surface then punch a spotlight for focus.")
+    (:tier "master" :code "(define (dim-ladder steps hold-ms)\n  (map (lambda (i) (surface-dim (/ i steps)))\n       (let loop ((k 0)) (if (>= k steps) '() (cons k (loop (+ k 1)))))))\n(dim-ladder 5 200)" :note "Gradual dim in five steps.")
+  )
+  :caveats ("Standalone descriptor only." "Alpha 0..1.")
+  :drawbacks ("Global; per-region dim needs a mask.")
+  :usecases ("Focus" "Nighttime rendering" "Depth cueing")
+  :related ("surface-curtain" "surface-dusk" "surface-spotlight")
+  :learn (:concept "Dim is a global alpha overlay. Cheap and effective." :prerequisites () :progression "Single → paired → laddered.")
+  +cs (:complexity "O(1)" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Confusing dim with curtain — dim is partial, curtain is full black." :when-not-to-use "For flash effects — a full curtain-up/down is faster to write.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "surface-dusk"
+  :library "-"
+  :kind "descriptor"
+  :signature "(surface-dusk level [opts]) -> descriptor"
+  :summary "Raise or lower ambient dusk (twilight/dim) with optional parameters."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged. Live hosts may color-shift toward purple as level rises."
+  :examples (
+    (:tier "novice" :code "(surface-dusk 0.5)" :note "Half dusk.")
+    (:tier "apprentice" :code "(surface-dusk 1)" :note "Full dusk.")
+    (:tier "intermediate" :code "(list (surface-dusk 0.2) (surface-dusk 0.6))" :note "Two dusk levels queued.")
+    (:tier "expert" :code "(define (day-to-night steps)\n  (map (lambda (i) (surface-dusk (/ i steps)))\n       (let loop ((k 0)) (if (>= k steps) '() (cons k (loop (+ k 1)))))))\n(day-to-night 5)" :note "Simulate a day-to-night transition in five discrete steps.")
+    (:tier "master" :code "(define (scene-atmosphere kind)\n  (case kind\n    ((noon) (surface-dusk 0))\n    ((sunset) (surface-dusk 0.5))\n    ((night) (surface-dusk 1))\n    (else (surface-dusk 0.3))))\n(scene-atmosphere 'sunset)" :note "Map named times of day to dusk levels.")
+  )
+  :caveats ("Standalone descriptor only." "Level 0..1.")
+  :drawbacks ("Different from surface-dim: dusk implies color shift, dim is pure darkness.")
+  :usecases ("Time-of-day rendering" "Mood settings" "Atmospheric scenes")
+  :related ("surface-dim" "surface-curtain")
+  :learn (:concept "Dusk is dim WITH a hue shift. Kids feel the difference between night and just dim." :prerequisites () :progression "Single → paired → laddered → named.")
+  +cs (:complexity "O(1)" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "case") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Confusing with surface-dim." :when-not-to-use "For pure alpha darkening — use surface-dim.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "surface-exists?"
+  :library "-"
+  :kind "predicate"
+  :signature "(surface-exists? surface-name) -> boolean"
+  :summary "Check whether a named surface is registered and available."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Predicate. Standalone REPL: always returns #f (no surfaces registered). Live hosts consult the surface registry."
+  :examples (
+    (:tier "novice" :code "(surface-exists? 'main)" :note "#f in standalone. #t in a live host that registered 'main.")
+    (:tier "apprentice" :code "(if (surface-exists? 'ui) 'yes 'no)" :note "Guard a paint operation on surface existence.")
+    (:tier "intermediate" :code "(map surface-exists? '(main ui debug))" :note "Check several at once — all #f in standalone.")
+    (:tier "expert" :code "(define (ensure-surfaces names)\n  (map (lambda (n) (list n (surface-exists? n))) names))\n(ensure-surfaces '(main ui debug))" :note "Report which surfaces the host has.")
+    (:tier "master" :code "(define (paint-if-exists surface dots)\n  (if (surface-exists? surface)\n      'painted\n      'skipped))\n(paint-if-exists 'main '())" :note "Idiomatic guarded paint — skips silently if the target isn't there.")
+  )
+  :caveats ("Standalone: always #f." "Predicate — returns boolean.")
+  :drawbacks ("No introspection of surface properties beyond existence.")
+  :usecases ("Guarded paints" "Debugging missing surfaces" "Optional overlays")
+  :related ("surface-paint-dots" "surface-paint-text")
+  :learn (:concept "Ask before you paint — check existence to avoid errors on missing hosts." :prerequisites () :progression "Guard → batch check → guarded paint.")
+  +cs (:complexity "O(1)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Returns #f in standalone." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("if" "cond") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Trusting the return in standalone as authoritative — it says #f for everything." :when-not-to-use "In standalone code paths that need surface access — verify host bindings first.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "surface-paint-dots"
+  :library "-"
+  :kind "descriptor"
+  :signature "(surface-paint-dots surface layer dots [colour] [radius] [alpha] [paletteName]) -> descriptor"
+  :summary "Paint a set of dots (points with alpha) onto a named surface layer."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged."
+  :examples (
+    (:tier "novice" :code "(surface-paint-dots 'main 'top '())" :note "Empty dot list — no-op.")
+    (:tier "apprentice" :code "(surface-paint-dots 'main 'top '((1 2) (3 4)))" :note "Two dots on the top layer.")
+    (:tier "intermediate" :code "(surface-paint-dots 'main 'top (rasterize-text \"HI\"))" :note "Paint the rasterized text.")
+    (:tier "expert" :code "(define (paint-word surface word x y)\n  (surface-paint-dots surface 'text (rasterize-text word x y)))\n(paint-word 'main \"OK\" 10 10)" :note "Rasterize + paint helper.")
+    (:tier "master" :code "(define (paint-lines surface lines)\n  (map (lambda (i)\n         (let ((y (* i 10)))\n           (surface-paint-dots surface 'text (rasterize-text (list-ref lines i) 0 y))))\n       (let loop ((k 0)) (if (>= k (length lines)) '() (cons k (loop (+ k 1)))))))\n(paint-lines 'main '(\"HELLO\" \"WORLD\"))" :note "Paint each line at its own y offset.")
+  )
+  :caveats ("Standalone descriptor only — no actual painting happens." "dots is a list of dot records or (x y) pairs.")
+  :drawbacks ("No z-order / depth in the base signature — layer name conveys it.")
+  :usecases ("Text rendering" "Custom shapes" "Pixel art")
+  :related ("rasterize-text" "surface-paint-text" "clear-surface-layer")
+  :learn (:concept "Painting is a data flow: dots go to a layer. Kids see cause and effect." :prerequisites ("rasterize-text") :progression "Empty → literal dots → rasterized → helper → multi-line.")
+  +cs (:complexity "O(n) where n = dot count" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from ("rasterize-text") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing dots without an alpha channel — hosts may treat missing alpha as 1.0." :when-not-to-use "For large images — use a bitmap paint verb.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "surface-paint-text"
+  :library "-"
+  :kind "descriptor"
+  :signature "(surface-paint-text surface text [x] [y] [font] [size] [colour] [grid] [supersample] [minAlpha]) -> descriptor"
+  :summary "Rasterize and paint text directly onto a surface at a given position."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Composes rasterize-text + surface-paint-dots — in a live host, one call. Standalone REPL returns the descriptor unchanged."
+  :examples (
+    (:tier "novice" :code "(surface-paint-text 'main \"HI\")" :note "Default position, default font.")
+    (:tier "apprentice" :code "(surface-paint-text 'main \"HELLO\" 10 20)" :note "Positioned text.")
+    (:tier "intermediate" :code "(list (surface-paint-text 'main \"LINE 1\") (surface-paint-text 'main \"LINE 2\" 0 10))" :note "Two lines, second offset down.")
+    (:tier "expert" :code "(define (label surface text pos)\n  (surface-paint-text surface text (car pos) (cadr pos)))\n(label 'main \"OK\" '(10 10))" :note "Small labeled paint helper.")
+    (:tier "master" :code "(define (paint-lines surface lines)\n  (let loop ((xs lines) (y 0))\n    (if (null? xs) 'done\n        (begin (surface-paint-text surface (car xs) 0 y)\n               (loop (cdr xs) (+ y 10))))))\n(paint-lines 'main '(\"HELLO\" \"WORLD\"))" :note "Multiline text via sequential paints.")
+  )
+  :caveats ("Standalone descriptor only." "Default font is the standalone 5x7 raster.")
+  :drawbacks ("No text-wrapping or measurement — pair with measure-content in a live host.")
+  :usecases ("Labels" "Debug HUDs" "Kid-friendly hello-world")
+  :related ("rasterize-text" "surface-paint-dots")
+  :learn (:concept "Text on the canvas is text + position. Everything else is convenience." :prerequisites () :progression "Default → positioned → multiline → labeled.")
+  +cs (:complexity "O(text length × pixels-per-glyph)" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("string") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Assuming line wrapping — there is none by default." :when-not-to-use "For long paragraphs — measure and split first.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "surface-paper"
+  :library "-"
+  :kind "descriptor"
+  :signature "(surface-paper kind) -> descriptor"
+  :summary "Set the background paper texture or style of the rendering surface."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged."
+  :examples (
+    (:tier "novice" :code "(surface-paper 'linen)" :note "Linen paper.")
+    (:tier "apprentice" :code "(surface-paper 'grid)" :note "Grid paper.")
+    (:tier "intermediate" :code "(list (surface-paper 'linen) (surface-paper 'grid))" :note "Two paper styles queued.")
+    (:tier "expert" :code "(define (theme-paper theme)\n  (case theme ((sakura) (surface-paper 'linen))\n              ((cyber) (surface-paper 'grid))\n              (else (surface-paper 'plain))))\n(theme-paper 'sakura)" :note "Theme-driven paper selection.")
+    (:tier "master" :code "(define (paper-schedule kinds)\n  (map surface-paper kinds))\n(paper-schedule '(linen grid dot plain))" :note "Cycle through paper styles.")
+  )
+  :caveats ("Standalone descriptor only." "kind is host-defined — 'linen, 'grid, 'plain, etc.")
+  :drawbacks ("No custom papers via URL — hosts define their own registry.")
+  :usecases ("Theming" "Scene atmosphere" "Kid-friendly canvas variety")
+  :related ("surface-curtain" "surface-dim")
+  :learn (:concept "The paper is the background texture. Small choice, big feel change." :prerequisites () :progression "Single → paired → theme → schedule.")
+  +cs (:complexity "O(1)" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Assuming any string works — kind is a host-known symbol." :when-not-to-use "For dynamic per-region backgrounds — surface-paper is global.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "surface-spotlight"
+  :library "-"
+  :kind "descriptor"
+  :signature "(surface-spotlight x y radius [falloff]) -> descriptor"
+  :summary "Create a radial spotlight effect centered at (x, y) on the surface."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged."
+  :examples (
+    (:tier "novice" :code "(surface-spotlight 100 100 50)" :note "Spotlight at (100,100), radius 50.")
+    (:tier "apprentice" :code "(surface-spotlight 200 200 80 0.5)" :note "With softer falloff.")
+    (:tier "intermediate" :code "(list (surface-spotlight 50 50 40) (surface-spotlight 150 50 40))" :note "Two spotlights.")
+    (:tier "expert" :code "(define (spot-on x y)\n  (list (surface-dim 0.7) (surface-spotlight x y 60)))\n(spot-on 100 100)" :note "Dim + spotlight for focus.")
+    (:tier "master" :code "(define (tour-spotlight positions)\n  (map (lambda (pos) (surface-spotlight (car pos) (cadr pos) 50)) positions))\n(tour-spotlight '((100 100) (200 100) (300 100)))" :note "Move the spotlight along a path.")
+  )
+  :caveats ("Standalone descriptor only." "Falloff optional; default is host-defined.")
+  :drawbacks ("Only radial — no rectangular or shaped spotlights.")
+  :usecases ("Focus" "Presentation mode" "Interactive tour")
+  :related ("surface-dim" "surface-curtain")
+  :learn (:concept "Spotlight is 'attention as data'. Kids grasp: this is where to look." :prerequisites () :progression "Single → dim+spot → tour.")
+  +cs (:complexity "O(1)" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Radius in wrong units — check host convention." :when-not-to-use "For non-radial focus — use surface-dim + a masked region.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-dot-alpha"
+  :library "-"
+  :kind "descriptor"
+  :signature "(set-dot-alpha surface layer index alpha) -> descriptor"
+  :summary "Set the opacity (alpha channel) of a single dot in a surface layer."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged."
+  :examples (
+    (:tier "novice" :code "(set-dot-alpha 'main 0 0 0.5)" :note "Half-alpha at dot index 0.")
+    (:tier "apprentice" :code "(set-dot-alpha 'main 0 5 1)" :note "Fully opaque.")
+    (:tier "intermediate" :code "(list (set-dot-alpha 'main 0 0 0) (set-dot-alpha 'main 0 1 1))" :note "One transparent, one opaque.")
+    (:tier "expert" :code "(define (fade-dot surface layer index target)\n  (set-dot-alpha surface layer index target))\n(fade-dot 'main 0 5 0.3)" :note "Wrap in a named helper.")
+    (:tier "master" :code "(define (fade-row surface layer alphas)\n  (map (lambda (pair) (set-dot-alpha surface layer (car pair) (cadr pair)))\n       (let loop ((xs alphas) (i 0) (acc '())) (if (null? xs) (reverse acc) (loop (cdr xs) (+ i 1) (cons (list i (car xs)) acc))))))\n(fade-row 'main 0 '(0 0.25 0.5 0.75 1))" :note "Gradient across dots: sweep alphas.")
+  )
+  :caveats ("Standalone descriptor only." "Index is 0-based within the layer.")
+  :drawbacks ("One dot per call — batch by wrapping in map.")
+  :usecases ("Fade in/out" "Highlight active dots" "Ghost effects")
+  :related ("set-dot-color" "set-dot-radius" "surface-paint-dots")
+  :learn (:concept "Every dot has alpha. Change it, and the whole picture changes." :prerequisites () :progression "Single → paired → helper → gradient.")
+  +cs (:complexity "O(1) per dot" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Alpha outside 0..1 — clamped, but be explicit." :when-not-to-use "For global fades — use surface-dim.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-dot-color"
+  :library "-"
+  :kind "descriptor"
+  :signature "(set-dot-color surface layer index colour) -> descriptor"
+  :summary "Set the fill color of a single dot in a surface layer."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged."
+  :examples (
+    (:tier "novice" :code "(set-dot-color 'main 0 0 'red)" :note "Red dot.")
+    (:tier "apprentice" :code "(set-dot-color 'main 0 1 \"#f0c\")" :note "Hex color.")
+    (:tier "intermediate" :code "(list (set-dot-color 'main 0 0 'red) (set-dot-color 'main 0 1 'blue))" :note "Two dots, two colors.")
+    (:tier "expert" :code "(define (zip a b)\n  (if (or (null? a) (null? b)) '()\n      (cons (list (car a) (car b)) (zip (cdr a) (cdr b)))))\n(define (rainbow surface layer indices colors)\n  (map (lambda (pair) (set-dot-color surface layer (car pair) (cadr pair)))\n       (zip indices colors)))\n(rainbow 'main 0 '(0 1 2 3 4 5 6) '(red orange yellow green blue indigo violet))" :note "A rainbow across seven dots. Uses a local zip since Sakura's map is single-list.")
+    (:tier "master" :code "(define (color-by-index surface layer count color-fn)\n  (let loop ((i 0) (acc '()))\n    (if (>= i count) (reverse acc)\n        (loop (+ i 1) (cons (set-dot-color surface layer i (color-fn i)) acc)))))\n(color-by-index 'main 0 5 (lambda (i) (list-ref '(red green blue yellow purple) i)))" :note "Programmatic coloring by index — palette lookup.")
+  )
+  :caveats ("Standalone descriptor only." "colour can be symbol, string (hex), or list — hosts parse.")
+  :drawbacks ("One dot per call.")
+  :usecases ("Highlighting" "Rainbow effects" "Programmatic palettes")
+  :related ("set-dot-alpha" "set-dot-radius")
+  :learn (:concept "Color is a per-dot property. Change it, watch the picture change." :prerequisites () :progression "Single → rainbow → programmatic.")
+  +cs (:complexity "O(1) per dot" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from ("symbol" "string") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing color as RGB list without a tag — hosts vary." :when-not-to-use "For layer-wide theme changes — use surface-paper or a batch verb.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-dot-radius"
+  :library "-"
+  :kind "descriptor"
+  :signature "(set-dot-radius surface layer index radius) -> descriptor"
+  :summary "Set the radius (size) of a single dot in a surface layer."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor. Standalone REPL returns unchanged."
+  :examples (
+    (:tier "novice" :code "(set-dot-radius 'main 0 0 3)" :note "Radius 3.")
+    (:tier "apprentice" :code "(set-dot-radius 'main 0 5 1)" :note "Small dot.")
+    (:tier "intermediate" :code "(list (set-dot-radius 'main 0 0 1) (set-dot-radius 'main 0 1 5))" :note "Small and big.")
+    (:tier "expert" :code "(define (breathe surface layer index min max phase)\n  (set-dot-radius surface layer index (+ min (* (- max min) (sin phase)))))\n(breathe 'main 0 5 1 5 0.5)" :note "Compute a breathing radius.")
+    (:tier "master" :code "(define (size-ladder surface layer count)\n  (let loop ((i 0) (acc '()))\n    (if (>= i count) (reverse acc)\n        (loop (+ i 1) (cons (set-dot-radius surface layer i (+ 1 (* i 0.5))) acc)))))\n(size-ladder 'main 0 5)" :note "Increasing radii: 1, 1.5, 2, 2.5, 3.")
+  )
+  :caveats ("Standalone descriptor only." "Radius in pixels or cells depending on host.")
+  :drawbacks ("One dot per call.")
+  :usecases ("Emphasis" "Breathing effects" "Size gradients")
+  :related ("set-dot-color" "set-dot-alpha")
+  :learn (:concept "Radius is another per-dot knob." :prerequisites () :progression "Fixed → paired → animated → laddered.")
+  +cs (:complexity "O(1) per dot" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list" "map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Passing zero or negative radius — the dot disappears." :when-not-to-use "For dense point clouds — use a shader or bitmap.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+;; ═══════════════════════════════════════════════════════════════════════
+;; Sprite verbs (real impls in game.js but presented as bare name)
+;; ═══════════════════════════════════════════════════════════════════════
+
+(verb
+  :name "sprite"
+  :library "-"
+  :kind "state-change"
+  :signature "(sprite name x y [color]) -> undefined"
+  :summary "Push a sprite record onto the game.sprites accumulator with the given position and color."
+  :impl-status "wired"
+  :impl-file "src/game.js"
+  :impl-notes "Reference signature in the SLAT lists optional forms (turn, size, tint …) which the current impl does not accept — this entry documents the ACTUAL signature (name x y [color]) and flags the mismatch. entry-provenance: spec-ambiguous until Alfred picks."
+  :examples (
+    (:tier "novice" :code "(sprite 'ball 40 40)" :note "Push a ball sprite at (40,40).")
+    (:tier "apprentice" :code "(sprite 'star 100 100 'gold)" :note "With color.")
+    (:tier "intermediate" :code "(sprite 'ball 40 40) (sprites)" :note "After a sprite call, sprites lists it.")
+    (:tier "expert" :code "(define (spawn-row y n)\n  (let loop ((i 0))\n    (if (>= i n) 'done\n        (begin (sprite 'dot (* i 20) y)\n               (loop (+ i 1))))))\n(spawn-row 50 5)" :note "Push five dots along a row.")
+    (:tier "master" :code "(define (place-many spec)\n  (for-each (lambda (s) (sprite (list-ref s 0) (list-ref s 1) (list-ref s 2)))\n            spec))\n(place-many '((a 10 10) (b 20 20) (c 30 30)))" :note "Batch-place from a spec list.")
+  )
+  :caveats ("Signature mismatch: reference says (sprite name [form ...]); impl is (sprite name x y [color]). Prefer the impl signature; reference will be updated." "Returns undefined; use (sprites) to inspect.")
+  :drawbacks ("No returned handle — must use sprites to enumerate.")
+  :usecases ("Rendering game objects" "Debug markers" "Batch placement")
+  :related ("sprites" "sprites/clear")
+  :learn (:concept "Sprites are data pushed to an accumulator; the renderer draws the accumulator." :prerequisites () :progression "One → row → batch.")
+  +cs (:complexity "O(1) per call" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/game.js" :impl-notes "Pushes to game.sprites array." :permission "paint" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("sprites") :consumes-from ("symbol") :cardinality "void" :deterministic #t :cacheable #f :common-mistakes "Expecting a sprite object back — you get undefined." :when-not-to-use "When you need a handle — see game.js's entity/make.")
+  :meta (:entry-provenance "spec-ambiguous" :required-fields-present #t
+         :spec-note "Reference optional-forms (turn/size/tint) not implemented; impl accepts (name x y [color]) only."))
+
+(verb
+  :name "sprites"
+  :library "-"
+  :kind "read"
+  :signature "(sprites) -> list"
+  :summary "Return the current sprite accumulator as a list of sprite records."
+  :impl-status "wired"
+  :impl-file "src/game.js"
+  :impl-notes "Returns a slice of game.sprites. Reference lists an alternative form (sprites sprite-list form) which the current impl does not accept — flagged spec-ambiguous."
+  :examples (
+    (:tier "novice" :code "(sprites)" :note "Empty list when nothing has been pushed.")
+    (:tier "apprentice" :code "(sprite 'a 1 1) (sprites)" :note "One sprite after a push.")
+    (:tier "intermediate" :code "(length (sprites))" :note "Count of active sprites.")
+    (:tier "expert" :code "(define (sprite-count)\n  (length (sprites)))\n(sprite-count)" :note "Named counter.")
+    (:tier "master" :code "(define (any p xs)\n  (cond ((null? xs) #f)\n        ((p (car xs)) #t)\n        (else (any p (cdr xs)))))\n(define (has-sprite? name)\n  (any (lambda (s) (equal? (obj-get s 'name) (symbol->string name)))\n       (sprites)))\n(sprite 'ball 40 40)\n(has-sprite? 'ball)" :note "Query for a specific sprite by name. Sprite records are objects — use obj-get 'name to compare.")
+  )
+  :caveats ("Signature mismatch: reference has a two-arg form; impl is zero-arg." "Returns a slice, not the live array — modifications don't persist.")
+  :drawbacks ("No filtering in the base signature — iterate manually.")
+  :usecases ("Debug inspection" "Test assertions" "Rendering post-processing")
+  :related ("sprite" "sprites/clear")
+  :learn (:concept "The accumulator is a value; reading it is a snapshot." :prerequisites () :progression "Read → count → named → query.")
+  +cs (:complexity "O(n)" :effects (none) :pure #t :special-form #f)
+  +eng (:impl-file "src/game.js" :impl-notes "Slice of game.sprites." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("length" "map" "filter") :consumes-from () :cardinality "many" :deterministic #f :cacheable #f :common-mistakes "Expecting mutations to the return to affect the game state." :when-not-to-use "For hot loops — cache the length or filter once.")
+  :meta (:entry-provenance "spec-ambiguous" :required-fields-present #t
+         :spec-note "Reference (sprites sprite-list form) not implemented; impl is zero-arg."))
+
+;; ═══════════════════════════════════════════════════════════════════════
+;; Radio + shop verbs (host-adapter)
+;; ═══════════════════════════════════════════════════════════════════════
+
+(verb
+  :name "radio-current-station-country"
+  :library "-"
+  :kind "read"
+  :signature "(radio-current-station-country) -> descriptor | string"
+  :summary "Return the country code or name of the currently playing radio station."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone REPL — no radio state bound. Live audio host returns the actual country."
+  :examples (
+    (:tier "novice" :code "(radio-current-station-country)" :note "Descriptor in standalone.")
+    (:tier "apprentice" :code "(equal? (radio-current-station-country) '(\"radio-current-station-country\"))" :note "Check for the descriptor shape.")
+    (:tier "intermediate" :code "(define (log-country)\n  (list 'country (radio-current-station-country)))\n(log-country)" :note "Tagged lookup.")
+    (:tier "expert" :code "(define (radio-status)\n  (list 'name (radio-current-station-name)\n        'country (radio-current-station-country)))\n(radio-status)" :note "Combine radio queries.")
+    (:tier "master" :code "(define (radio-status-string)\n  (let ((n (radio-current-station-name))\n        (c (radio-current-station-country)))\n    (if (and (string? n) (string? c))\n        (string-append n \" (\" c \")\")\n        'no-station)))\n(radio-status-string)" :note "Format a status string, guarding for the descriptor case.")
+  )
+  :caveats ("Standalone descriptor only." "Live hosts may return ISO code or full country name — check host docs.")
+  :drawbacks ("No structured record — just a string.")
+  :usecases ("Radio HUD" "Station info" "Playback logging")
+  :related ("radio-current-station-name")
+  :learn (:concept "Metadata about the current playback — one string at a time." :prerequisites () :progression "Query → tagged → composed → formatted.")
+  +cs (:complexity "O(1)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("string-append" "list") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Assuming string in standalone — it's a descriptor." :when-not-to-use "For programmatic routing — use a station-id verb.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "radio-current-station-name"
+  :library "-"
+  :kind "read"
+  :signature "(radio-current-station-name) -> descriptor | string"
+  :summary "Returns the name of the currently playing radio station, or empty string if none."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone REPL. Live audio host returns the actual station name or empty string."
+  :examples (
+    (:tier "novice" :code "(radio-current-station-name)" :note "Descriptor in standalone.")
+    (:tier "apprentice" :code "(list 'name (radio-current-station-name))" :note "Tagged.")
+    (:tier "intermediate" :code "(define (station)\n  (radio-current-station-name))\n(station)" :note "Named lookup.")
+    (:tier "expert" :code "(define (playing?)\n  (let ((n (radio-current-station-name)))\n    (and (string? n) (not (string=? n \"\")))))\n(playing?)" :note "Predicate for 'is anything playing'.")
+    (:tier "master" :code "(define (radio-summary)\n  (let ((name (radio-current-station-name))\n        (country (radio-current-station-country)))\n    (list 'name name 'country country)))\n(radio-summary)" :note "Composed summary of what's on.")
+  )
+  :caveats ("Standalone descriptor only." "Empty string means 'nothing playing' in a live host.")
+  :drawbacks ("No structured metadata — just a name.")
+  :usecases ("Radio HUD" "Now-playing banner" "Playback logs")
+  :related ("radio-current-station-country")
+  :learn (:concept "The name is the human-facing metadata." :prerequisites () :progression "Query → tagged → predicate → summary.")
+  +cs (:complexity "O(1)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-fast" :since "0.1.0")
+  +ai (:raises () :pipes-into ("string-append" "list" "string=?") :consumes-from () :cardinality "one" :deterministic #f :cacheable #f :common-mistakes "Not guarding for empty string." :when-not-to-use "For station switching — use radio-tune-station.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+;; Shop reads (all descriptor; consumed by commercial host)
+
+(verb
+  :name "read-desktop-text"
+  :library "-"
+  :kind "read"
+  :signature "(read-desktop-text [mode]) -> descriptor | list"
+  :summary "Reads text and metadata from visible cards on the desktop, returning a list of readable regions or raw data."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone. Live desktop host returns actual card text data."
+  :examples (
+    (:tier "novice" :code "(read-desktop-text)" :note "Descriptor.")
+    (:tier "apprentice" :code "(read-desktop-text 'visible)" :note "Descriptor with mode arg.")
+    (:tier "intermediate" :code "(list 'text (read-desktop-text))" :note "Tagged read.")
+    (:tier "expert" :code "(define (dump-desktop)\n  (list 'text-visible (read-desktop-text)\n        'text-all (read-desktop-text 'all)))\n(dump-desktop)" :note "Two-mode dump.")
+    (:tier "master" :code "(define (has-text?)\n  (let ((r (read-desktop-text)))\n    (and (list? r) (not (null? r)))))\n(has-text?)" :note "Predicate: descriptor is a list too, guard by length.")
+  )
+  :caveats ("Standalone descriptor only." "Modes are host-defined; typical: 'visible, 'all, 'selected.")
+  :drawbacks ("No structured record in the base signature.")
+  :usecases ("Copy-to-clipboard" "Sakura reading the desktop for context" "Debug dumps")
+  :related ("read-inbox" "read-inventory")
+  :learn (:concept "Reading is data flow: ask the desktop, get back text." :prerequisites () :progression "Default → mode → tagged → predicate.")
+  +cs (:complexity "O(n) where n = card count" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "read" :latency-class "sync-slow" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list?" "null?" "list") :consumes-from () :cardinality "many" :deterministic #f :cacheable #f :common-mistakes "Treating descriptor as string." :when-not-to-use "For specific card content — read-card-text.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "read-gmail-folder"
+  :library "-"
+  :kind "read"
+  :signature "(read-gmail-folder folder-name) -> descriptor | list"
+  :summary "Reads email messages from a Gmail folder, returning a structured list."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone. Live commercial adapter (Google API) returns real messages."
+  :examples (
+    (:tier "novice" :code "(read-gmail-folder \"inbox\")" :note "Descriptor.")
+    (:tier "apprentice" :code "(read-gmail-folder \"sent\")" :note "Different folder.")
+    (:tier "intermediate" :code "(map read-gmail-folder '(\"inbox\" \"sent\" \"drafts\"))" :note "Batch read.")
+    (:tier "expert" :code "(define (check-labels labels)\n  (map read-gmail-folder labels))\n(check-labels '(\"inbox\" \"work\"))" :note "Named helper.")
+    (:tier "master" :code "(define (summarize-folder folder)\n  (let ((msgs (read-gmail-folder folder)))\n    (list folder (if (list? msgs) (length msgs) 'unknown))))\n(summarize-folder \"inbox\")" :note "Summary with defensive guard against descriptor.")
+  )
+  :caveats ("Standalone descriptor only." "Requires Google auth in a live host.")
+  :drawbacks ("No pagination in the base signature — hosts may cap.")
+  :usecases ("Inbox summarization" "Auto-triage" "Mail search")
+  :related ("read-inbox" "read-desktop-text")
+  :learn (:concept "External data comes in via read verbs. Descriptor in standalone; real data in host." :prerequisites () :progression "Single → batch → summary.")
+  +cs (:complexity "O(n) where n = message count" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list") :consumes-from ("string") :cardinality "many" :deterministic #f :cacheable #f :common-mistakes "Not handling the descriptor case in standalone tests." :when-not-to-use "For specific message ID — use read-message.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "read-inbox"
+  :library "-"
+  :kind "read"
+  :signature "(read-inbox) -> descriptor | list"
+  :summary "Reads messages from the user's inbox, returning a list of message objects."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(read-inbox)" :note "Descriptor.")
+    (:tier "apprentice" :code "(list 'inbox (read-inbox))" :note "Tagged.")
+    (:tier "intermediate" :code "(let ((m (read-inbox))) m)" :note "Assign and return.")
+    (:tier "expert" :code "(define (inbox-summary)\n  (let ((m (read-inbox)))\n    (if (list? m) (length m) 'unknown)))\n(inbox-summary)" :note "Defensive summary.")
+    (:tier "master" :code "(define (inbox-report)\n  (list 'inbox (read-inbox) 'time 'now))\n(inbox-report)" :note "Combine with metadata.")
+  )
+  :caveats ("Standalone descriptor only.")
+  :drawbacks ("No pagination or filtering.")
+  :usecases ("Inbox dashboard" "Unread counting" "Message triage")
+  :related ("read-gmail-folder")
+  :learn (:concept "Inbox is a first-class list of messages." :prerequisites () :progression "Query → tagged → summarized.")
+  +cs (:complexity "O(n)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("length" "list") :consumes-from () :cardinality "many" :deterministic #f :cacheable #f :common-mistakes "Not guarding for the descriptor." :when-not-to-use "For folder-specific reads — use read-gmail-folder.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "read-inventory"
+  :library "-"
+  :kind "read"
+  :signature "(read-inventory) -> descriptor | list"
+  :summary "Fetch the current inventory state from the shop backend."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone. Live shop adapter returns actual SKU list."
+  :examples (
+    (:tier "novice" :code "(read-inventory)" :note "Descriptor.")
+    (:tier "apprentice" :code "(list 'inv (read-inventory))" :note "Tagged.")
+    (:tier "intermediate" :code "(define (inv-count)\n  (let ((i (read-inventory)))\n    (if (list? i) (length i) 'unknown)))\n(inv-count)" :note "Count guarded.")
+    (:tier "expert" :code "(define (inv-nonempty?)\n  (let ((i (read-inventory)))\n    (and (list? i) (not (null? i)))))\n(inv-nonempty?)" :note "Predicate.")
+    (:tier "master" :code "(define (inv-summary)\n  (list 'inv (read-inventory)\n        'at 'now))\n(inv-summary)" :note "Report shape for logging.")
+  )
+  :caveats ("Standalone descriptor only." "Requires shop auth in a live host.")
+  :drawbacks ("Snapshot at call time — inventory may change between reads.")
+  :usecases ("Stock checks" "Reorder alerts" "Cross-shop reconciliation")
+  :related ("set-inventory" "read-open-returns")
+  :learn (:concept "Inventory is state; read it before you write it." :prerequisites () :progression "Query → count → summarize.")
+  +cs (:complexity "O(n)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("length" "list") :consumes-from () :cardinality "many" :deterministic #f :cacheable #f :common-mistakes "Trusting standalone data — it's a descriptor." :when-not-to-use "For single-SKU queries — use read-listing.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "read-open-returns"
+  :library "-"
+  :kind "read"
+  :signature "(read-open-returns) -> descriptor | list"
+  :summary "Fetch the list of currently open (unresolved) returns from the shop backend."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(read-open-returns)" :note "Descriptor.")
+    (:tier "apprentice" :code "(list 'returns (read-open-returns))" :note "Tagged.")
+    (:tier "intermediate" :code "(define (open-count)\n  (let ((r (read-open-returns)))\n    (if (list? r) (length r) 'unknown)))\n(open-count)" :note "Count.")
+    (:tier "expert" :code "(define (has-returns?)\n  (let ((r (read-open-returns)))\n    (and (list? r) (not (null? r)))))\n(has-returns?)" :note "Predicate.")
+    (:tier "master" :code "(define (returns-report)\n  (list 'returns (read-open-returns)\n        'at 'now))\n(returns-report)" :note "Composed report.")
+  )
+  :caveats ("Standalone descriptor only.")
+  :drawbacks ("No filtering by shop or age in the base signature.")
+  :usecases ("Returns dashboard" "SLA guards" "Automated response drafting")
+  :related ("read-inventory")
+  :learn (:concept "Returns are inventory in reverse — read them the same way." :prerequisites () :progression "Query → count → predicate → report.")
+  +cs (:complexity "O(n)" :effects (io) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("length") :consumes-from () :cardinality "many" :deterministic #f :cacheable #f :common-mistakes "Trusting standalone data." :when-not-to-use "For a single return by ID — use read-return.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "receive-listing"
+  :library "-"
+  :kind "state-change"
+  :signature "(receive-listing listing-id) -> descriptor"
+  :summary "Accept a listing that another seller or system has sent to this shop."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(receive-listing 'listing-1)" :note "Descriptor.")
+    (:tier "apprentice" :code "(map receive-listing '(a b c))" :note "Batch accept.")
+    (:tier "intermediate" :code "(define (accept-many ids) (map receive-listing ids)) (accept-many '(a b))" :note "Wrap.")
+    (:tier "expert" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (accept-if pred ids) (map receive-listing (filter pred ids))) (accept-if (lambda (i) #t) '(a b c))" :note "Filtered accept.")
+    (:tier "master" :code "(define (accept-batch batch)\n  (if (null? batch) 'nothing\n      (map receive-listing batch))) (accept-batch '(a b c))" :note "Guarded batch.")
+  )
+  :caveats ("Standalone descriptor only.")
+  :drawbacks ("No confirmation return — assume success at descriptor level.")
+  :usecases ("Cross-shop listing transfer" "Multi-shop coordination")
+  :related ("release-listing" "transfer")
+  :learn (:concept "Receiving is the accept half of a transfer." :prerequisites () :progression "Single → batch → filtered → guarded.")
+  +cs (:complexity "O(1) per call" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Assuming success without checking." :when-not-to-use "For self-listings — use publish instead.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "release-listing"
+  :library "-"
+  :kind "state-change"
+  :signature "(release-listing listing-id) -> descriptor"
+  :summary "Release ownership of a listing, transferring it to another shop or returning it to a staging area."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(release-listing 'l-1)" :note "Descriptor.")
+    (:tier "apprentice" :code "(map release-listing '(a b))" :note "Batch release.")
+    (:tier "intermediate" :code "(define (release-all ids) (map release-listing ids)) (release-all '(a b c))" :note "Named batch.")
+    (:tier "expert" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (release-if pred ids) (map release-listing (filter pred ids))) (release-if (lambda (i) #t) '(a))" :note "Filtered.")
+    (:tier "master" :code "(define (audit-release ids)\n  (list 'released (map release-listing ids)))\n(audit-release '(a b))" :note "Logged batch.")
+  )
+  :caveats ("Standalone descriptor only.")
+  :drawbacks ("No destination in the base signature.")
+  :usecases ("Sell to another shop" "Return to staging" "Bulk offloading")
+  :related ("receive-listing" "unpublish-listing" "transfer")
+  :learn (:concept "Releasing hands over responsibility." :prerequisites () :progression "Single → batch → filtered → audited.")
+  +cs (:complexity "O(1) per call" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Confusing release with unpublish — release changes owner; unpublish hides from public." :when-not-to-use "For hiding a listing — use unpublish.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-active-shop"
+  :library "-"
+  :kind "state-change"
+  :signature "(set-active-shop platform shop-id) -> descriptor"
+  :summary "Switch the active shop on a given e-commerce platform, returning 'ok or an error pair."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(set-active-shop 'etsy 'shop-1)" :note "Descriptor.")
+    (:tier "apprentice" :code "(set-active-shop 'ebay 'shop-2)" :note "Different platform.")
+    (:tier "intermediate" :code "(list (set-active-shop 'etsy 's1) (set-active-shop 'ebay 's2))" :note "Two switches.")
+    (:tier "expert" :code "(define (rotate-shops seq) (map (lambda (pair) (set-active-shop (car pair) (cadr pair))) seq)) (rotate-shops '((etsy s1) (ebay s2)))" :note "Sequence.")
+    (:tier "master" :code "(define (with-shop platform shop-id thunk)\n  (list (set-active-shop platform shop-id) (thunk))) (with-shop 'etsy 's1 (lambda () 'work))" :note "Scoped action.")
+  )
+  :caveats ("Standalone descriptor only." "Live host may return 'ok or an ('error msg) pair.")
+  :drawbacks ("No previous-shop restoration — write a wrapper for stacked contexts.")
+  :usecases ("Multi-shop operators" "Cross-shop reports" "Testing")
+  :related ("read-inventory" "set-inventory")
+  :learn (:concept "Shops are contexts; set the active one, then act within it." :prerequisites () :progression "Single → paired → sequence → scoped.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Forgetting to restore the previous shop." :when-not-to-use "For read-only queries — hosts may have per-call shop selection.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-free-shipping-threshold"
+  :library "-"
+  :kind "state-change"
+  :signature "(set-free-shipping-threshold amount) -> descriptor"
+  :summary "Set the minimum order value that qualifies for free shipping."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(set-free-shipping-threshold 50)" :note "$50 threshold.")
+    (:tier "apprentice" :code "(set-free-shipping-threshold 0)" :note "Free shipping on everything.")
+    (:tier "intermediate" :code "(map set-free-shipping-threshold '(35 50 75))" :note "A/B thresholds descriptor list.")
+    (:tier "expert" :code "(define (holiday-threshold) (set-free-shipping-threshold 25)) (holiday-threshold)" :note "Named preset.")
+    (:tier "master" :code "(define (tiered-thresholds tiers)\n  (map set-free-shipping-threshold tiers))\n(tiered-thresholds '(0 25 50 75 100))" :note "Sequence of thresholds — perhaps for a promotion timeline.")
+  )
+  :caveats ("Standalone descriptor only." "Amount is in shop currency.")
+  :drawbacks ("No per-region thresholds in the base signature.")
+  :usecases ("Promotions" "Cart optimization" "Seasonal changes")
+  :related ("set-shipping-profile")
+  :learn (:concept "Threshold is one number; set-once, apply-many." :prerequisites () :progression "Single → paired → preset → tiered.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Setting 0 by accident." :when-not-to-use "For per-item shipping — use set-shipping-profile.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-inventory"
+  :library "-"
+  :kind "state-change"
+  :signature "(set-inventory sku qty) -> descriptor"
+  :summary "Update the quantity of an item in inventory."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(set-inventory 'sku-1 10)" :note "Ten units of sku-1.")
+    (:tier "apprentice" :code "(set-inventory 'sku-1 0)" :note "Out of stock.")
+    (:tier "intermediate" :code "(map (lambda (pair) (set-inventory (car pair) (cadr pair))) '((a 10) (b 5)))" :note "Batch update.")
+    (:tier "expert" :code "(define (restock-all skus n) (map (lambda (s) (set-inventory s n)) skus)) (restock-all '(a b c) 20)" :note "Restock all.")
+    (:tier "master" :code "(define (zip a b)\n  (if (or (null? a) (null? b)) '()\n      (cons (list (car a) (car b)) (zip (cdr a) (cdr b)))))\n(define (adjust-inventory skus deltas)\n  (map (lambda (pair) (set-inventory (car pair) (cadr pair)))\n       (zip skus deltas)))\n(adjust-inventory '(a b) '(5 10))" :note "Adjust from a delta list, zipping SKUs and deltas.")
+  )
+  :caveats ("Standalone descriptor only." "Overwrites the current quantity, not additive.")
+  :drawbacks ("No relative update in the base signature — for deltas, read then write.")
+  :usecases ("Restocking" "Out-of-stock updates" "Bulk adjustments")
+  :related ("read-inventory")
+  :learn (:concept "Inventory is per-SKU state; set it explicitly." :prerequisites () :progression "Single → batch → restock → delta.")
+  +cs (:complexity "O(1) per call" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Setting instead of adding — this OVERWRITES." :when-not-to-use "For additive updates — read then set.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-processing-time"
+  :library "-"
+  :kind "state-change"
+  :signature "(set-processing-time days) -> descriptor"
+  :summary "Set the number of business days required to process an order."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(set-processing-time 3)" :note "Three days.")
+    (:tier "apprentice" :code "(set-processing-time 1)" :note "Same-day.")
+    (:tier "intermediate" :code "(list (set-processing-time 1) (set-processing-time 3))" :note "Two updates.")
+    (:tier "expert" :code "(define (holiday-slow) (set-processing-time 5)) (holiday-slow)" :note "Named preset.")
+    (:tier "master" :code "(define (schedule-processing days-list) (map set-processing-time days-list)) (schedule-processing '(1 2 3 5))" :note "Scheduled changes.")
+  )
+  :caveats ("Standalone descriptor only." "Days are business days, not calendar days.")
+  :drawbacks ("Global — no per-listing overrides in the base signature.")
+  :usecases ("Seasonal slowdowns" "Vacation setup" "Holiday timing")
+  :related ("set-vacation-mode" "set-shipping-profile")
+  :learn (:concept "Processing time is a promise to buyers. Change it before you accept more orders." :prerequisites () :progression "Single → paired → preset → scheduled.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Setting fewer days than you can actually ship." :when-not-to-use "For per-listing timing — use listing-level processing-time.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-shipping-profile"
+  :library "-"
+  :kind "state-change"
+  :signature "(set-shipping-profile profile) -> descriptor"
+  :summary "Configure the shop's shipping methods and rates."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(set-shipping-profile 'ground)" :note "Ground shipping.")
+    (:tier "apprentice" :code "(set-shipping-profile 'expedited)" :note "Faster tier.")
+    (:tier "intermediate" :code "(map set-shipping-profile '(ground expedited overnight))" :note "Sequence.")
+    (:tier "expert" :code "(define (weekend-shipping) (set-shipping-profile 'ground)) (weekend-shipping)" :note "Named preset.")
+    (:tier "master" :code "(define (profile-schedule ps) (map set-shipping-profile ps)) (profile-schedule '(ground expedited overnight ground))" :note "Rotating tiers.")
+  )
+  :caveats ("Standalone descriptor only." "Profile names are host-defined (ground, expedited, overnight, etc.).")
+  :drawbacks ("No mixed profiles — one at a time.")
+  :usecases ("Shipping strategy" "Seasonal changes" "Cost management")
+  :related ("set-free-shipping-threshold" "set-processing-time")
+  :learn (:concept "Shipping profile bundles methods and rates. Set the whole bundle at once." :prerequisites () :progression "Single → sequence → scheduled.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Naming a profile that doesn't exist." :when-not-to-use "For per-region shipping — configure at the profile level itself.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "set-vacation-mode"
+  :library "-"
+  :kind "state-change"
+  :signature "(set-vacation-mode on?) -> descriptor"
+  :summary "Enable or disable vacation mode: pause the shop from accepting new orders."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(set-vacation-mode #t)" :note "Vacation mode on.")
+    (:tier "apprentice" :code "(set-vacation-mode #f)" :note "Vacation mode off.")
+    (:tier "intermediate" :code "(list (set-vacation-mode #t) (set-vacation-mode #f))" :note "Toggle sequence.")
+    (:tier "expert" :code "(define (with-vacation-off action) (list (set-vacation-mode #f) (action) (set-vacation-mode #t))) (with-vacation-off (lambda () 'processed))" :note "Scoped disable.")
+    (:tier "master" :code "(define (vacation-schedule days) (map (lambda (_) (set-vacation-mode #t)) (make-list days 0))) (vacation-schedule 3)" :note "Repeated affirmations.")
+  )
+  :caveats ("Standalone descriptor only." "Boolean argument.")
+  :drawbacks ("Global — affects all listings.")
+  :usecases ("Vacations" "Restocking pauses" "Emergency stops")
+  :related ("set-processing-time")
+  :learn (:concept "Vacation mode is a shop-wide pause." :prerequisites () :progression "On/off → toggle → scoped → scheduled.")
+  +cs (:complexity "O(1)" :effects (state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("list") :consumes-from ("boolean") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Forgetting to turn vacation off." :when-not-to-use "For per-listing pauses — unpublish those directly.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "store-listing-republish"
+  :library "-"
+  :kind "state-change"
+  :signature "(store-listing-republish listing-id) -> descriptor"
+  :summary "Republish a store listing (currently a descriptor stub)."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(store-listing-republish 'l-1)" :note "Descriptor.")
+    (:tier "apprentice" :code "(map store-listing-republish '(a b))" :note "Batch.")
+    (:tier "intermediate" :code "(define (refresh-all ids) (map store-listing-republish ids)) (refresh-all '(a b c))" :note "Named batch.")
+    (:tier "expert" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (refresh-if pred ids) (map store-listing-republish (filter pred ids))) (refresh-if (lambda (i) #t) '(a))" :note "Filtered.")
+    (:tier "master" :code "(define (bulk-refresh categories items) (map (lambda (id) (store-listing-republish id)) items)) (bulk-refresh 'jewelry '(a b))" :note "Categorized batch.")
+  )
+  :caveats ("Standalone descriptor only." "Reference summary says 'currently a stub' — the live impl also returns 'not-yet-implemented' in some hosts.")
+  :drawbacks ("No status return in the base signature.")
+  :usecases ("Seasonal refresh" "Bumping search visibility")
+  :related ("unpublish-listing" "store-listing-set-price")
+  :learn (:concept "Republishing bumps visibility. Batch for efficiency." :prerequisites () :progression "Single → batch → filtered → categorized.")
+  +cs (:complexity "O(1) per call" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Assuming success without checking." :when-not-to-use "For fresh listings — use publish.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "store-listing-set-price"
+  :library "-"
+  :kind "state-change"
+  :signature "(store-listing-set-price listing-id price) -> descriptor"
+  :summary "Set the price of a storefront listing."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(store-listing-set-price 'l-1 25)" :note "$25 price.")
+    (:tier "apprentice" :code "(store-listing-set-price 'l-1 19.99)" :note "Fractional.")
+    (:tier "intermediate" :code "(map (lambda (pair) (store-listing-set-price (car pair) (cadr pair))) '((a 10) (b 20)))" :note "Batch price change.")
+    (:tier "expert" :code "(define (discount ids pct) (map (lambda (id) (store-listing-set-price id (* 100 (- 1 pct)))) ids)) (discount '(a b) 0.1)" :note "10% off flat $100.")
+    (:tier "master" :code "(define (repricing table) (map (lambda (pair) (store-listing-set-price (car pair) (cadr pair))) table)) (repricing '((a 15) (b 25) (c 35)))" :note "Full repricing schedule.")
+  )
+  :caveats ("Standalone descriptor only." "Price in shop currency.")
+  :drawbacks ("No historical price tracking in the base signature.")
+  :usecases ("Sales" "Repricing" "Discounts")
+  :related ("store-listing-republish")
+  :learn (:concept "Price is state; change it deliberately." :prerequisites () :progression "Single → batch → discount → reprice.")
+  +cs (:complexity "O(1) per call" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map") :consumes-from () :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Setting negative prices." :when-not-to-use "For lot-based pricing — set the lot base then multiply.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+
+(verb
+  :name "unpublish-listing"
+  :library "-"
+  :kind "state-change"
+  :signature "(unpublish-listing listing-id) -> descriptor"
+  :summary "Queue removal of a published shop listing from the storefront."
+  :impl-status "wired"
+  :impl-file "src/wired-verbs.js"
+  :impl-notes "Descriptor in standalone."
+  :examples (
+    (:tier "novice" :code "(unpublish-listing 'l-1)" :note "Descriptor.")
+    (:tier "apprentice" :code "(map unpublish-listing '(a b))" :note "Batch.")
+    (:tier "intermediate" :code "(define (unpublish-all ids) (map unpublish-listing ids)) (unpublish-all '(a b c))" :note "Batch.")
+    (:tier "expert" :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (unpublish-if pred ids) (map unpublish-listing (filter pred ids))) (unpublish-if (lambda (i) #t) '(a))" :note "Filtered.")
+    (:tier "master" :code "(define (queue-removal ids reason)\n  (list 'reason reason 'queued (map unpublish-listing ids)))\n(queue-removal '(a b) 'discontinued)" :note "Audited batch.")
+  )
+  :caveats ("Standalone descriptor only." "Removal is queued, not immediate, in some hosts.")
+  :drawbacks ("No 'restore from unpublished' primitive in the base signature.")
+  :usecases ("Discontinuing items" "Seasonal removal" "Errata cleanup")
+  :related ("store-listing-republish" "release-listing")
+  :learn (:concept "Unpublishing hides. Different from release (which changes owner)." :prerequisites () :progression "Single → batch → filtered → audited.")
+  +cs (:complexity "O(1) per call" :effects (io state) :pure #f :special-form #f)
+  +eng (:impl-file "src/wired-verbs.js" :impl-notes "Descriptor return." :permission "network" :latency-class "async-quick" :since "0.1.0")
+  +ai (:raises () :pipes-into ("map" "list") :consumes-from ("symbol") :cardinality "one" :deterministic #t :cacheable #f :common-mistakes "Confusing with delete — unpublish hides; delete removes." :when-not-to-use "For permanent removal — use delete-listing.")
+  :meta (:entry-provenance "authored" :required-fields-present #t))
+

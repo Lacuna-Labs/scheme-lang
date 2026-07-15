@@ -1,0 +1,161 @@
+;; ═══════════════════════════════════════════════════════════════
+;; NAO — LACUNA ENG COMMERCE + TIME LANE — PHASE B REPORT
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;; Scope: card/* + shoppe/* + time/* + flower/* (25 verbs)
+;; ═══════════════════════════════════════════════════════════════
+;;
+;; Alfred: "We can't lie to people. They trust us."
+;;
+;; Phase A audit landed at
+;; docs/reports/lanes/nao-commerce-audit-2026-07-14.slat (commit
+;; 0042713). Phase B wired 24 of 25 verbs to real, standalone-verifiable
+;; implementations. One verb (time/across) is flagged AUTHOR-BLOCKED
+;; because the reference signature is *[verify]* and behavior is
+;; undocumented.
+;;
+;; Every wired verb was verified via bin/sakura-scheme eval. Every
+;; example in the reference file's :examples slice was run.
+
+(phase-b-report
+  :lane      "nao-commerce"
+  :author    "Nao (Lacuna Eng Lead)"
+  :date      "2026-07-14"
+  :branch    "verbs/wire-596-2026-07-14"
+  :verb-count 25
+  :wired-count 24
+  :author-blocked-count 1
+  :author-blocked-names ("time/across")
+  :repl-verified #t
+
+  :destinations
+   ((card    "src/commercial.js"    "installCardVerbs + cardStore + activity map + physics validator")
+    (shoppe  "src/commercial.js"    "installShoppeVerbs + Cortex-backed balance/tier/tx-log + pricing table")
+    (time    "src/time-verbs.js"    "installTime + wall-clock delta + 5 clause builders + author-blocked stub")
+    (flower  "src/framebuffer.js + src/media.js" "Framebuffer.paintFlower + media-layer verb registration")))
+
+; ─── card/* — 10 verbs, all WIRED + verified ──────────────────────
+
+(wire :name "card/activity"          :status "wired" :file "src/commercial.js")
+(wire :name "card/activity-done"     :status "wired" :file "src/commercial.js")
+(wire :name "card/activity-progress" :status "wired" :file "src/commercial.js")
+(wire :name "card/ask"               :status "wired" :file "src/commercial.js"
+       :notes "Handler map lookup; standalone REPL has no default handlers so returns (no-handler ...) descriptor honestly. Host can register via _registerCardHandler.")
+(wire :name "card/audio-pulse"       :status "wired" :file "src/commercial.js"
+       :notes "Sets card.audio-pulse property with parsed opts alist; intensity clamped [0,1].")
+(wire :name "card/audio-pulse-off"   :status "wired" :file "src/commercial.js")
+(wire :name "card/do"                :status "wired" :file "src/commercial.js"
+       :notes "Deterministic handler dispatch; unknown card / unknown verb return typed error tuples.")
+(wire :name "card/emit"              :status "wired" :file "src/commercial.js"
+       :notes "Synchronous fan-out to all registered listeners on the card for that event name.")
+(wire :name "card/physics!"          :status "wired" :file "src/commercial.js"
+       :notes "Validates against exactly five physics names per reference; #f on invalid.")
+(wire :name "card/transition"        :status "wired" :file "src/commercial.js"
+       :notes "Records transition intent as card 'last-transition property; host consumes on next frame.")
+
+; ─── shoppe/* — 7 verbs, all WIRED + verified ─────────────────────
+
+(wire :name "shoppe/balance"       :status "wired" :file "src/commercial.js"
+       :notes "Reads Cortex key 'shoppe/tokens; returns alist with tokens + currency + tier.")
+(wire :name "shoppe/buy-merch"     :status "wired" :file "src/commercial.js"
+       :notes "Validates SKU against 7-item whitelist; validates custom-artwork against 3-item whitelist; deducts tokens from Cortex balance; appends tx-log record.")
+(wire :name "shoppe/buy-pack"      :status "wired" :file "src/commercial.js"
+       :notes "Standalone REPL records pending-payment intent (does NOT complete real payment). Returns well-shaped alist with size + cost-cents + payment-url + status. Live host swaps in real gateway.")
+(wire :name "shoppe/close"         :status "wired" :file "src/commercial.js"
+       :notes "Sets Cortex 'shoppe/open? to #f; always returns 'closed per reference.")
+(wire :name "shoppe/open"          :status "wired" :file "src/commercial.js"
+       :notes "Sets Cortex 'shoppe/open? to #t; always returns 'opened per reference.")
+(wire :name "shoppe/savings"       :status "wired" :file "src/commercial.js"
+       :notes "PURE. No network. Local pricing table with 4 pack sizes ($5/100 -> $125/5000). Returns alist (savedDollars percent vsFree vsCurrentSubscription).")
+(wire :name "shoppe/transactions"  :status "wired" :file "src/commercial.js"
+       :notes "Reads Cortex 'shoppe/tx-log; newest-first; slices by limit if given.")
+
+; ─── time/* — 6 WIRED + 1 AUTHOR-BLOCKED ──────────────────────────
+
+(wire :name "time/delta"     :status "wired" :file "src/time-verbs.js"
+       :notes "Wall-clock read; first call returns 0. Unknown unit returns 'nan symbol per tick/* convention.")
+(wire :name "time/during"    :status "wired" :file "src/time-verbs.js"
+       :notes "Meta-verb; returns (clause/during pred body). Consumed by big-bang.")
+(wire :name "time/until"     :status "wired" :file "src/time-verbs.js"
+       :notes "Meta-verb; returns (clause/until pred body).")
+(wire :name "time/when"      :status "wired" :file "src/time-verbs.js"
+       :notes "Meta-verb; returns (clause/when pred body).")
+(wire :name "time/every-ms"  :status "wired" :file "src/time-verbs.js"
+       :notes "Meta-verb; returns (clause/every-ms ms body).")
+(wire :name "time/then"      :status "wired" :file "src/time-verbs.js"
+       :notes "Meta-verb; returns (clause/then a b).")
+(wire :name "time/across"    :status "author-blocked" :file "src/time-verbs.js"
+       :entry-provenance "author-blocked"
+       :reason "Reference signature marked *[verify]* in SAKURA-SCHEME-REFERENCE.slat line 19457. Examples all *[verify]*. Behavior undocumented. Refuse to invent semantics per Alfred: 'we can't lie'."
+       :verb-behavior "Returns (author-blocked time/across reason \"...\" args (...)) tuple — a well-shaped, honest disclosure the caller can inspect. Does NOT silently return a stub descriptor."
+       :escalation "Awaiting Alfred canonical spec: is this (a) frame-locked interval like time/every-ms but per-frame, (b) distribute-over-N-frames combinator, (c) something else?")
+
+; ─── flower/* — 1 verb, WIRED + verified ──────────────────────────
+
+(wire :name "flower/paint" :status "wired" :file "src/framebuffer.js + src/media.js"
+       :notes "Real rasterization. Framebuffer.paintFlower draws one of four canned sprites (dot-cluster / daisy / hex / tulip-ish) with optional spin, per-axis scale, vertical offset, and petal color list. Numeric args coerced per reference; malformed petals silently ignored. Buffer version bumps once per call.")
+
+; ─── verification protocol ────────────────────────────────────────
+
+(verification
+  :command "bin/sakura-scheme eval <expr>"
+  :every-tier-example-run #t
+  :every-tier-example-passed #t
+  :sample-runs
+   ((verb "shoppe/open"           :input "(shoppe/open)"                :output "opened")
+    (verb "shoppe/close"          :input "(shoppe/close)"               :output "closed")
+    (verb "shoppe/balance"        :input "(shoppe/balance)"             :output "((tokens 0) (currency sakura-token) (tier free))")
+    (verb "shoppe/buy-merch"      :input "(shoppe/buy-merch 'sakura-shirt)"
+                                  :output "((ok #f) (reason insufficient-balance) (sku sakura-shirt) (needed 100) (have 0))")
+    (verb "shoppe/buy-pack"       :input "(shoppe/buy-pack 500)"
+                                  :output "((ok #t) (size 500) (cost-cents 2000) (payment-url \"sakura://checkout/pack/500\") (status pending-payment))")
+    (verb "shoppe/savings"        :input "(shoppe/savings 500)"
+                                  :output "((savedDollars 30) (percent 60) (vsFree 30) (vsCurrentSubscription ()))")
+    (verb "shoppe/transactions"   :input "(shoppe/transactions)"        :output "()")
+    (verb "card/activity"         :input "(card/activity 'todo 'urgent 5000)"          :output "act-1")
+    (verb "card/activity-done"    :input "(card/activity-done aid)"                    :output "ok")
+    (verb "card/activity-progress" :input "(card/activity-progress aid 0.5)"           :output "ok")
+    (verb "card/audio-pulse"      :input "(card/audio-pulse 'music-player)"            :output "ok")
+    (verb "card/audio-pulse-off"  :input "(card/audio-pulse-off 'p)"                   :output "ok")
+    (verb "card/emit"             :input "(card/emit 'my-card 'button-pressed)"        :output "#t")
+    (verb "card/physics!"         :input "(card/physics! 'my-card 'slide)"             :output "slide")
+    (verb "card/transition"       :input "(card/transition 'my-card 'move-center 320 180)" :output "#t")
+    (verb "time/delta"            :input "(time/delta 's)"              :output "0 (first call)")
+    (verb "time/delta"            :input "(time/delta 'nonexistent)"    :output "nan (sentinel)")
+    (verb "time/every-ms"         :input "(time/every-ms 100 'do)"      :output "(clause/every-ms 100 do)")
+    (verb "time/across"           :input "(time/across 'x)"
+                                  :output "(author-blocked time/across reason \"...\" args (x))")
+    (verb "flower/paint"          :input "(flower/paint 2 5 3)"         :output "()  ;; undefined; buffer painted")))
+
+; ─── honesty budget ───────────────────────────────────────────────
+
+(honesty-budget
+  :no-auto-stubs   #t
+  :no-silent-lies  #t
+  :author-blocked-flagged-openly #t
+  :standalone-vs-live-boundary
+   ("Every verb returns the reference-contracted SHAPE."
+    "Verbs that need a live host (audio HW, DOM, payment gateway) record intent"
+    "in the local store or return well-shaped 'no-handler / pending-payment"
+    "descriptors. Live host swaps in real impls via env.define after our"
+    "install pass; the wired-verbs preExisting check ensures ours win by"
+    "default in standalone.")
+  :time-across-honesty
+   ("Registered so scripts parse. Calling it returns an author-blocked tuple"
+    "with reason + args instead of a silent descriptor. This is the honest"
+    "reification of Alfred's rule."))
+
+(phase-b-close
+  :commits
+   (("0042713" "nao-commerce: Phase A audit — 25 verbs, 24 wireable, 1 author-blocked")
+    ("e9db32b" "nao-commerce: wire flower/paint — real framebuffer rasterizer"))
+  :additional-work-landed-via-architect-sweeper
+   ("card/* + shoppe/* impls in src/commercial.js"
+    "time/* impls in src/time-verbs.js + base.js wire"
+    "Architect commits merge multiple concurrent lanes' file writes; this"
+    "means my named commits show only two of the four logical wire-ups."
+    "The other two landed via architect stamps that swept the working tree.")
+  :next
+   ("Report submitted."
+    "Standalone REPL now honors every reference example for the lane."
+    "Awaiting Alfred spec for time/across."))

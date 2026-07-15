@@ -1,0 +1,46 @@
+{
+  "name": "sakura-scheme",
+  "version": "1.5.0",
+  "description": "A small Scheme for humans and AI to program together. Base language + REPL + reference manual + tooling, dialect-neutral, community-forkable.",
+  "type": "module",
+  "bin": {
+    "sakura-scheme": "./bin/sakura-scheme",
+    "scheme-lang": "./bin/scheme-lang"
+  },
+  "scripts": {
+    "test": "node --test tests/**/*.test.mjs tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "docs/",
+    "dialect.json",
+    "scheme-lang.config.slat",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "scheme",
+    "lisp",
+    "repl",
+    "interpreter",
+    "sakura",
+    "sakura-scheme",
+    "s-expressions",
+    "slat"
+  ],
+  "homepage": "https://github.com/Lacuna-Labs/scheme-lang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lacuna-Labs/scheme-lang.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Lacuna-Labs/scheme-lang/issues"
+  },
+  "author": "Lacuna Labs",
+  "license": "SEE LICENSE IN LICENSE"
+}

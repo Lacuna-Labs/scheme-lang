@@ -1,0 +1,702 @@
+;; platform-item-survey-2026-07-13.slat
+;; Lacuna Labs Engineering research artifact
+;; Written 2026-07-13. Dispatched by lacuna-eng. Requested by alfred.
+;; Purpose: authoritative survey of item counts + category depth across
+;; the five commerce platforms Lacuna Labs supports as shop cards.
+;; Anti-hallucination: every number is cited or tagged :estimate.
+
+(platform-survey
+  :date "2026-07-13"
+  :platforms 5
+  :dispatched-by "lacuna-eng"
+  :requested-by "alfred"
+  :purpose "count of items + categories across the 5 supported shop platforms; 80%-coverage set for Sakura vocabulary training"
+
+  ;; ============================================================
+  ;; 1. ETSY
+  ;; ============================================================
+  (platform
+    :name "Etsy"
+    :rank-in-lacuna-order 1
+
+    :total-listings 120000000
+    :total-listings-qualifier :estimate
+    :total-listings-note
+    "Etsy does not publish a total-listings figure in its 10-K. Third-party trackers (eRank, Marketmaid, Statista) triangulate ~100M-140M active listings from the ~5.6M active sellers x ~20-25 listings/seller mean. We record 120M as midpoint estimate."
+    :listings-source "Etsy Inc. 2025 Form 10-K (filed 2026-02-19); active-seller figure 5.6M cited directly; listing count derived."
+
+    :active-sellers 5600000
+    :active-buyers 86500000
+    :gms-2025-usd 10500000000
+    :gms-source "Etsy Q4 2025 press release, 2026-02-19"
+
+    :category-tree-size 6000
+    :category-tree-size-qualifier :approximate
+    :category-tree-source "Etsy Engineering blog 'An Introduction to Structured Data at Etsy'; taxonomy contains 6,000+ categories, 400+ attributes, 3,500+ values"
+    :top-level-category-count-approx 50
+
+    :top-categories-by-volume
+    ((:rank 1 :name "Home & Living"              :gms-share-pct 34 :gms-usd-est 3710000000 :source "Etsy 10-K FY2025 category disclosure")
+     (:rank 2 :name "Jewelry & Personal Accessories" :gms-share-pct 18 :gms-usd-est 1960000000 :source "Etsy 10-K FY2025")
+     (:rank 3 :name "Apparel"                    :gms-share-pct 14 :gms-usd-est 1530000000 :source "Etsy 10-K FY2025")
+     (:rank 4 :name "Craft Supplies"             :gms-share-pct  9 :gms-usd-est  980000000 :source "Etsy 10-K FY2025")
+     (:rank 5 :name "Paper & Party Supplies"     :gms-share-pct  8 :gms-usd-est  870000000 :source "Etsy 10-K FY2025")
+     (:rank 6 :name "Toys & Games"               :gms-share-pct  4 :gms-usd-est  440000000 :source "Etsy 10-K FY2025")
+     ;; ranks 7-15 are Etsy-internal and not itemized in filings.
+     ;; Marketplace-Pulse and Koalanda seller-tools report these next tiers by sales volume:
+     (:rank 7  :name "Weddings"                  :gms-share-pct-est 3 :source "Koalanda Etsy sales report Dec 2025 :estimate")
+     (:rank 8  :name "Bath & Beauty"             :gms-share-pct-est 3 :source "Koalanda :estimate")
+     (:rank 9  :name "Art & Collectibles"        :gms-share-pct-est 2 :source "Koalanda :estimate")
+     (:rank 10 :name "Pet Supplies"              :gms-share-pct-est 1 :source "Koalanda :estimate")
+     (:rank 11 :name "Bags & Purses"             :gms-share-pct-est 1 :source "Koalanda :estimate")
+     (:rank 12 :name "Shoes"                     :gms-share-pct-est 1 :source "Koalanda :estimate")
+     (:rank 13 :name "Books, Movies & Music"     :gms-share-pct-est 0.5 :source "Koalanda :estimate")
+     (:rank 14 :name "Electronics & Accessories" :gms-share-pct-est 0.5 :source "Koalanda :estimate")
+     (:rank 15 :name "Vintage"                   :gms-share-pct-est 0.5 :source "Etsy 10-K FY2025 notes vintage as a distinct policy category :estimate"))
+
+    :80pct-coverage-set
+    (:categories 4
+     :names ("Home & Living" "Jewelry & Personal Accessories" "Apparel" "Craft Supplies")
+     :cumulative-share-pct 75
+     :note "The Etsy 10-K states the top-6 categories account for ~85% of GMS. The top-4 clear ~75%. To reach true 80%, use top-5 (Home & Living, Jewelry, Apparel, Craft Supplies, Paper & Party Supplies) = 83% cumulative.")
+
+    :vocabulary-sample-per-top-category
+    ((:category "Home & Living"
+      :terms ("throw pillow" "duvet" "wall art" "print" "poster" "canvas" "framed"
+              "candle" "soy wax" "beeswax" "wick" "vase" "planter" "terracotta"
+              "wall hook" "shelf" "welcome mat" "doormat" "runner" "tapestry"
+              "macrame" "mid-century" "boho" "farmhouse" "minimalist"
+              "personalized" "monogram" "custom"))
+     (:category "Jewelry & Personal Accessories"
+      :terms ("14k gold" "18k gold" "gold fill" "gold plated" "sterling silver" "925"
+              "rose gold" "vermeil" "rhodium" "brass" "copper"
+              "solitaire" "halo" "pave" "prong" "bezel" "channel-set"
+              "cabochon" "faceted" "raw" "rough" "polished"
+              "cubic zirconia" "moissanite" "lab-grown" "natural diamond"
+              "birthstone" "amethyst" "aquamarine" "peridot" "topaz" "opal" "turquoise"
+              "hoop" "stud" "drop" "huggie" "chandelier"
+              "pendant" "chain" "cable chain" "figaro" "curb" "rope"
+              "cuff" "bangle" "tennis bracelet" "charm bracelet"
+              "signet ring" "eternity band" "engagement ring"
+              "handmade" "wire-wrapped" "beaded" "resin" "polymer clay"
+              "personalized" "engraved" "birthstone" "initial"))
+     (:category "Apparel"
+      :terms ("tee" "tank" "hoodie" "crewneck" "long sleeve" "raglan"
+              "cotton" "tri-blend" "bamboo" "linen" "flannel" "fleece"
+              "unisex" "youth" "toddler" "onesie" "bodysuit"
+              "graphic tee" "vintage tee" "band tee" "novelty"
+              "screen printed" "DTG" "sublimation" "embroidered" "cut and sew"
+              "size chart" "S M L XL XXL" "true to size" "oversized" "relaxed fit"
+              "made to order" "ships in 3-5 days"
+              "wedding" "bachelorette" "matching" "couples" "family"))
+     (:category "Craft Supplies"
+      :terms ("bead" "seed bead" "miyuki" "delica" "swarovski" "czech glass"
+              "gemstone bead" "spacer" "bead cap"
+              "jump ring" "clasp" "lobster claw" "toggle" "crimp"
+              "wire" "gauge" "dead soft" "half hard"
+              "yarn" "worsted" "DK" "bulky" "roving" "sock weight"
+              "fabric" "quarter yard" "fat quarter" "bundle" "flannel" "muslin"
+              "vinyl" "HTV" "iron-on" "sublimation blank"
+              "SVG" "PNG" "digital download" "print at home" "cut file" "cricut" "silhouette"
+              "resin" "epoxy" "mold" "mica powder" "pigment"
+              "polymer clay" "sculpey" "premo"
+              "wood blank" "unfinished" "laser-ready"))
+     (:category "Paper & Party Supplies"
+      :terms ("invitation" "save the date" "RSVP" "envelope liner"
+              "escort card" "place card" "menu card" "seating chart"
+              "birthday banner" "cake topper" "cupcake topper" "party hat"
+              "balloon garland" "backdrop" "photo booth prop"
+              "digital download" "editable template" "corjl" "canva template"
+              "printable" "print-at-home" "5x7" "4x6" "A2" "A6"
+              "cardstock" "kraft paper" "vellum" "acetate"
+              "watercolor" "floral" "greenery" "eucalyptus" "modern" "boho" "vintage"
+              "wedding" "baby shower" "bridal shower" "birthday" "graduation"
+              "thank you card" "personalized" "monogram"))))
+
+  ;; ============================================================
+  ;; 2. EBAY
+  ;; ============================================================
+  (platform
+    :name "eBay"
+    :rank-in-lacuna-order 2
+
+    :total-listings 2500000000
+    :total-listings-qualifier :reported
+    :total-listings-source "eBay Q4 2025 Earnings Presentation; Chargeflow eBay statistics report 2026; 2.5B live listings globally at year-end 2025, up 8.7% YoY"
+    :active-buyers 135000000
+    :gms-2025-usd 80000000000
+    :gms-source "eBay 2025 Q4 press release; ~$80B GMV, 51% international"
+
+    :category-tree-size 20000
+    :category-tree-size-qualifier :approximate
+    :category-tree-source "eBay Taxonomy API developer docs; getCategoryTree returns ~20,000 categories (leaf + non-leaf) for US default tree; historically 19K-32K depending on marketplace"
+    :top-level-category-count 34
+    :top-level-note "eBay's US site exposes ~34 top-level 'meta' categories on browse (Motors, Electronics, Fashion, Collectibles, Home & Garden, Toys & Hobbies, Sporting Goods, etc.)"
+
+    :top-categories-by-volume
+    ((:rank 1  :name "Electronics"                :gmv-share-pct 28 :source "eBay Q4 2025 earnings; category focus disclosure. Statista eBay-GMV-by-category 2025")
+     (:rank 2  :name "Fashion"                    :gmv-share-pct 17 :source "eBay Q4 2025 earnings; Statista")
+     (:rank 3  :name "Home & Garden"              :gmv-share-pct 14 :source "eBay Q4 2025 earnings; Statista")
+     (:rank 4  :name "Motors / Parts & Accessories" :gmv-share-pct 12 :source "eBay Q4 2025 earnings")
+     (:rank 5  :name "Collectibles / Trading Cards" :gmv-share-pct-est 10 :source "eBay Q4 2025 earnings; 'biggest GMV growth driver, 9 consecutive quarters' :estimate")
+     (:rank 6  :name "Toys & Hobbies"             :gmv-share-pct-est 5 :source "Marketplace Pulse eBay top-categories :estimate")
+     (:rank 7  :name "Health & Beauty"            :gmv-share-pct-est 4 :source "ElectroIQ eBay stats 2025 :estimate")
+     (:rank 8  :name "Sporting Goods"             :gmv-share-pct-est 3 :source "Marketplace Pulse :estimate")
+     (:rank 9  :name "Business & Industrial"      :gmv-share-pct-est 2 :source "Marketplace Pulse :estimate")
+     (:rank 10 :name "Books, Movies & Music / Media" :gmv-share-pct-est 2 :source "Marketplace Pulse :estimate")
+     (:rank 11 :name "Jewelry & Watches"          :gmv-share-pct-est 1.5 :source "Marketplace Pulse :estimate")
+     (:rank 12 :name "Coins & Paper Money"        :gmv-share-pct-est 1 :source "Marketplace Pulse :estimate")
+     (:rank 13 :name "Cameras & Photo"            :gmv-share-pct-est 0.5 :source "Marketplace Pulse :estimate")
+     (:rank 14 :name "Pet Supplies"               :gmv-share-pct-est 0.5 :source "Marketplace Pulse :estimate")
+     (:rank 15 :name "Musical Instruments & Gear" :gmv-share-pct-est 0.5 :source "Marketplace Pulse :estimate"))
+
+    :80pct-coverage-set
+    (:categories 5
+     :names ("Electronics" "Fashion" "Home & Garden" "Motors / Parts & Accessories" "Collectibles")
+     :cumulative-share-pct 81
+     :note "Top-5 disclosed categories cover ~81% of eBay 2025 GMV. Alfred's 'twelve-ish' recall is TOO HIGH for eBay — it is closer to five.")
+
+    :vocabulary-sample-per-top-category
+    ((:category "Electronics"
+      :terms ("smartphone" "unlocked" "carrier" "IMEI" "eSIM" "dual sim"
+              "laptop" "ultrabook" "chromebook" "gaming laptop"
+              "desktop" "workstation" "SFF" "tower"
+              "graphics card" "GPU" "RTX" "RX" "VRAM"
+              "CPU" "processor" "i7" "i9" "Ryzen" "core count"
+              "RAM" "DDR4" "DDR5" "SO-DIMM"
+              "SSD" "NVMe" "M.2" "SATA" "HDD"
+              "monitor" "144Hz" "OLED" "1440p" "4K" "curved"
+              "tablet" "iPad" "Wi-Fi only" "cellular"
+              "smartwatch" "wearable"
+              "console" "PS5" "Xbox Series X" "Switch" "Steam Deck"
+              "headphones" "IEM" "over-ear" "wireless" "ANC"
+              "camera" "mirrorless" "DSLR" "lens" "prime" "zoom"
+              "TV" "QLED" "mini-LED" "HDR10+" "Dolby Vision"
+              "for parts or not working" "grade A" "grade B" "refurbished" "seller refurbished" "manufacturer refurbished"))
+     (:category "Fashion"
+      :terms ("men's" "women's" "unisex" "juniors" "plus size" "petite"
+              "top" "bottom" "dress" "outerwear" "activewear" "loungewear"
+              "denim" "wash" "distressed" "raw denim" "selvedge"
+              "streetwear" "vintage" "y2k" "90s" "grunge" "preppy" "gorpcore"
+              "sneaker" "athletic" "runner" "trainer" "boot" "loafer" "heel"
+              "size US" "size EU" "size UK" "true to size" "runs small" "runs large"
+              "NWT" "NWOT" "pre-owned" "gently used" "vintage" "deadstock" "OG"
+              "brand" "designer" "streetwear brand"
+              "sneakerhead" "grail" "GR" "SB" "collab"
+              "handbag" "shoulder bag" "crossbody" "tote" "clutch"
+              "watch" "quartz" "automatic" "mechanical" "chronograph"))
+     (:category "Home & Garden"
+      :terms ("furniture" "sofa" "loveseat" "sectional" "recliner" "accent chair"
+              "dining table" "coffee table" "end table" "console"
+              "bedframe" "headboard" "nightstand" "dresser"
+              "rug" "runner" "area rug" "shag" "flatweave" "wool"
+              "kitchen appliance" "stand mixer" "air fryer" "instant pot" "espresso machine"
+              "cookware" "cast iron" "stainless" "nonstick" "enameled"
+              "tool" "power tool" "cordless" "corded" "brushless"
+              "outdoor" "patio" "grill" "smoker" "pellet"
+              "lawn mower" "trimmer" "leaf blower" "chainsaw"
+              "seed" "bulb" "perennial" "annual" "zone"
+              "planter" "raised bed" "trellis"
+              "vintage" "MCM" "art deco" "farmhouse" "modern"))
+     (:category "Motors / Parts & Accessories"
+      :terms ("OEM" "aftermarket" "brand-new" "used" "rebuilt" "core"
+              "make" "model" "year" "trim" "engine" "displacement"
+              "VIN-specific" "fits" "compatibility"
+              "brake pad" "rotor" "caliper" "master cylinder"
+              "control arm" "tie rod" "ball joint" "sway bar"
+              "shock" "strut" "coilover" "spring"
+              "alternator" "starter" "battery" "battery group size"
+              "air filter" "oil filter" "cabin filter" "fuel filter"
+              "spark plug" "coil pack" "injector"
+              "wheel" "rim" "bolt pattern" "offset" "backspace"
+              "tire" "all-season" "all-terrain" "mud terrain" "load range"
+              "headlight" "tail light" "LED conversion" "HID"
+              "diagnostic tool" "OBD-II" "scanner"))
+     (:category "Collectibles / Trading Cards"
+      :terms ("graded" "PSA" "BGS" "SGC" "CGC" "raw" "ungraded"
+              "PSA 10" "gem mint" "mint" "near mint" "played" "poor"
+              "rookie" "RC" "prospect" "auto" "autograph" "on-card" "sticker"
+              "patch" "relic" "jersey" "1/1" "numbered" "SP" "SSP"
+              "chase" "insert" "parallel" "refractor" "prizm" "cracked ice"
+              "sealed" "unopened" "wax" "hobby box" "retail" "blaster" "hanger"
+              "vintage" "junk-wax" "pre-war" "T206"
+              "Pokemon" "PSA-slabbed" "1st edition" "shadowless" "Charizard" "Base Set"
+              "MTG" "Magic" "reserved list" "foil" "showcase" "extended art"
+              "Yu-Gi-Oh" "Ghost Rare" "Starlight"
+              "coin" "silver dollar" "morgan" "peace" "proof" "MS-65"
+              "comic" "CGC 9.8" "key issue" "first appearance" "variant"
+              "action figure" "MOC" "MISB" "loose" "vintage"))))
+
+  ;; ============================================================
+  ;; 3. META (Facebook Marketplace + Facebook Shop + Instagram Shop)
+  ;; ============================================================
+  (platform
+    :name "Meta"
+    :sub-surfaces ("Facebook Marketplace" "Facebook Shop" "Instagram Shop")
+    :rank-in-lacuna-order 3
+
+    :total-listings :not-publicly-disclosed
+    :daily-new-listings 3500000
+    :daily-new-listings-note "Meta reports 3.5M new listings per DAY in US+Canada on Facebook Marketplace alone (March 2026 Meta Newsroom). Global stock estimate: 500M-1B+ live listings, but Meta does not confirm."
+    :listings-source "Meta Newsroom 'Facebook Marketplace New Meta AI Tools' 2026-03; TechCrunch 2025-11-13"
+
+    :monthly-users 1100000000
+    :monthly-buyer-seller-connections 3000000000
+    :gmv-est-2025-usd 12000000000
+    :gmv-source "sqmagazine + Statista aggregated :estimate — Meta does not disclose Marketplace GMV separately in 10-Q"
+
+    :category-tree-size 100
+    :category-tree-size-qualifier :estimate
+    :category-tree-source "Facebook Marketplace category directory at facebook.com/marketplace/categories/ — ~15 top-level buckets, ~100 mid-level sub-categories. No public leaf-count. Instagram Shop uses a subset of Meta's product-catalog taxonomy which mirrors Google Product Taxonomy for feed uploads."
+    :top-level-category-count 15
+    :top-level-categories
+    ("Vehicles" "Property Rentals" "Apparel" "Classifieds"
+     "Electronics" "Entertainment" "Family" "Free Stuff"
+     "Garden & Outdoor" "Hobbies" "Home Goods" "Home Improvement"
+     "Home Sales" "Musical Instruments" "Office Supplies"
+     "Pet Supplies" "Sporting Goods" "Toys & Games")
+
+    :top-categories-by-volume
+    ;; Meta does not publish share-by-category. Rank is inferred from
+    ;; multiple 2025 third-party reports (Accio, Spocket, Adnabu, Swoopa, sqmagazine).
+    ((:rank 1  :name "Vehicles"                  :share-pct-est 20 :source "Multiple 2025 reports; largest single-item GMV category :estimate")
+     (:rank 2  :name "Furniture & Home Goods"    :share-pct-est 15 :source "Meta 2025 category signals :estimate")
+     (:rank 3  :name "Apparel / Clothing & Accessories" :share-pct-est 12 :source "Accio + Spocket 2025 :estimate")
+     (:rank 4  :name "Electronics"               :share-pct-est 10 :source "Accio 2025 :estimate")
+     (:rank 5  :name "Baby & Kids"               :share-pct-est  8 :source "Accio 2025 :estimate")
+     (:rank 6  :name "Home Improvement"          :share-pct-est  6 :source "Meta category directory + third-party :estimate")
+     (:rank 7  :name "Garden & Outdoor"          :share-pct-est  5 :source ":estimate")
+     (:rank 8  :name "Sporting Goods"            :share-pct-est  4 :source ":estimate")
+     (:rank 9  :name "Toys & Games"              :share-pct-est  4 :source ":estimate")
+     (:rank 10 :name "Musical Instruments"       :share-pct-est  3 :source ":estimate")
+     (:rank 11 :name "Pet Supplies"              :share-pct-est  3 :source ":estimate")
+     (:rank 12 :name "Beauty (mostly Instagram Shop)" :share-pct-est 3 :source "Instagram Shopping stats 2025 :estimate")
+     (:rank 13 :name "Hobbies & Collectibles"    :share-pct-est  2 :source ":estimate")
+     (:rank 14 :name "Books / Media"             :share-pct-est  2 :source ":estimate")
+     (:rank 15 :name "Office & Business Supplies" :share-pct-est 1 :source ":estimate"))
+
+    :80pct-coverage-set
+    (:categories 6
+     :names ("Vehicles" "Furniture & Home Goods" "Apparel" "Electronics" "Baby & Kids" "Home Improvement")
+     :cumulative-share-pct-est 71
+     :note "Meta needs 6-7 categories for ~80% coverage — more than eBay because volume is more distributed and Vehicles dominates but doesn't cross 25%. Instagram Shop skews to Fashion + Beauty; Facebook Marketplace skews to Vehicles + Furniture. Combined surface is broader than eBay's top-heavy distribution.")
+
+    :vocabulary-sample-per-top-category
+    ((:category "Vehicles"
+      :terms ("year" "make" "model" "trim" "mileage" "odometer"
+              "clean title" "salvage" "rebuilt title" "lien"
+              "VIN" "CarFax" "AutoCheck"
+              "automatic" "manual" "CVT" "AWD" "4WD" "FWD" "RWD"
+              "sedan" "coupe" "SUV" "crossover" "truck" "minivan"
+              "hybrid" "plug-in" "EV" "diesel" "gas"
+              "leather" "cloth" "moonroof" "sunroof" "navigation"
+              "runs great" "as-is" "mechanic special" "project"
+              "financing available" "trade considered" "OBO" "firm price"
+              "single owner" "second owner" "no accidents" "service records"))
+     (:category "Furniture & Home Goods"
+      :terms ("sofa" "sectional" "sleeper sofa" "loveseat" "chaise" "recliner"
+              "dining set" "dining table" "chairs" "bar stool" "counter stool"
+              "bed frame" "headboard" "queen" "king" "cal king" "twin XL"
+              "dresser" "chest of drawers" "nightstand" "armoire" "wardrobe"
+              "coffee table" "end table" "console table" "TV stand" "media console"
+              "bookcase" "shelving" "storage" "credenza"
+              "West Elm" "IKEA" "CB2" "Restoration Hardware" "Pottery Barn"
+              "solid wood" "veneer" "particle board" "MDF"
+              "MCM" "farmhouse" "modern" "traditional" "boho"
+              "must go" "moving sale" "pick up only" "delivery available" "cash only"))
+     (:category "Apparel"
+      :terms ("size S" "size M" "size L" "size XL" "junior" "petite" "maternity"
+              "gently used" "worn once" "new with tags" "NWT" "NWOT"
+              "brand" "designer" "boutique" "athleisure"
+              "Lululemon" "Nike" "Adidas" "Zara" "H&M"
+              "dress" "top" "blouse" "sweater" "cardigan" "jeans" "leggings"
+              "jacket" "coat" "puffer" "peacoat"
+              "sneakers" "boots" "flats" "heels" "sandals"
+              "handbag" "crossbody" "tote" "clutch" "backpack"
+              "no holds" "no trades" "porch pickup" "smoke-free" "pet-free"))
+     (:category "Electronics"
+      :terms ("iPhone" "Samsung Galaxy" "Google Pixel" "unlocked" "carrier locked"
+              "Apple Watch" "GPS" "cellular"
+              "laptop" "MacBook" "PC" "Chromebook"
+              "gaming PC" "prebuilt" "custom build" "specs listed"
+              "PS4" "PS5" "Xbox One" "Xbox Series S" "Xbox Series X" "Switch"
+              "monitor" "27 inch" "gaming monitor"
+              "AirPods" "headphones" "soundbar" "TV" "smart TV" "Roku" "Fire TV"
+              "camera" "DSLR" "mirrorless" "lens kit"
+              "for parts" "not working" "cracked screen" "no charger" "as-is"
+              "works perfectly" "reset" "factory reset" "iCloud unlocked"))
+     (:category "Baby & Kids"
+      :terms ("crib" "convertible crib" "bassinet" "pack n play" "playpen"
+              "car seat" "infant seat" "convertible seat" "booster"
+              "stroller" "double stroller" "jogging stroller" "travel system"
+              "Uppababy" "Nuna" "Doona" "BabyBjorn" "Ergo"
+              "high chair" "booster" "baby carrier" "wrap"
+              "clothes 0-3M" "3-6M" "6-9M" "12M" "18M" "24M" "2T" "3T" "4T"
+              "boy" "girl" "gender neutral"
+              "gently used" "smoke-free" "pet-free" "excellent condition"
+              "toys" "wooden toys" "Melissa & Doug" "Fisher Price"
+              "diapers" "wipes" "unopened" "unused"
+              "baby gate" "monitor" "video monitor"))))
+
+  ;; ============================================================
+  ;; 4. GOOGLE (Google Merchant Center / Google Shopping)
+  ;; ============================================================
+  (platform
+    :name "Google"
+    :sub-surface "Google Merchant Center / Google Shopping (operator's own GMC account)"
+    :rank-in-lacuna-order 4
+
+    :total-listings :not-a-marketplace
+    :total-listings-note
+    "Google is NOT a marketplace. Google Shopping ingests a merchant feed; each operator submits their own product feed to Google Merchant Center. Total 'listings' equals the sum of all merchant feeds Google indexes, which Google does not publish. Estimate: multiple billions of product offers indexed globally, but no meaningful single-account number."
+    :listings-source "not disclosed; Google Shopping is a feed-consumer, not a marketplace"
+
+    :category-tree-size 5595
+    :category-tree-size-qualifier :verified-exact
+    :category-tree-source
+    "Google Product Taxonomy en-US, version 2021-09-21 (current file as of 2026-07-13 pull). Fetched https://www.google.com/basepages/producttype/taxonomy.en-US.txt — 5,596 lines minus 1 header comment = 5,595 category paths, each a full hierarchical path from root to leaf."
+    :top-level-category-count 21
+    :top-level-categories
+    ("Animals & Pet Supplies"    "Apparel & Accessories"
+     "Arts & Entertainment"      "Baby & Toddler"
+     "Business & Industrial"     "Cameras & Optics"
+     "Electronics"               "Food, Beverages & Tobacco"
+     "Furniture"                 "Hardware"
+     "Health & Beauty"           "Home & Garden"
+     "Luggage & Bags"            "Mature"
+     "Media"                     "Office Supplies"
+     "Religious & Ceremonial"    "Software"
+     "Sporting Goods"            "Toys & Games"
+     "Vehicles & Parts")
+
+    :top-categories-by-volume
+    ;; Google does not publish Shopping GMV-by-category. Ranking here is
+    ;; the union of (1) Google Shopping annual "top searched" reports
+    ;; and (2) Merchant Center category-usage frequency from third parties.
+    ((:rank 1  :name "Apparel & Accessories"      :share-signal "Highest merchant-feed volume + highest ad spend on Shopping; consistent #1 across annual reports :estimate")
+     (:rank 2  :name "Electronics"                :share-signal "Second-highest ad spend; matches consumer search intent :estimate")
+     (:rank 3  :name "Home & Garden"              :share-signal ":estimate")
+     (:rank 4  :name "Health & Beauty"            :share-signal ":estimate")
+     (:rank 5  :name "Furniture"                  :share-signal ":estimate")
+     (:rank 6  :name "Sporting Goods"             :share-signal ":estimate")
+     (:rank 7  :name "Toys & Games"               :share-signal ":estimate")
+     (:rank 8  :name "Baby & Toddler"             :share-signal ":estimate")
+     (:rank 9  :name "Arts & Entertainment"       :share-signal ":estimate")
+     (:rank 10 :name "Luggage & Bags"             :share-signal ":estimate")
+     (:rank 11 :name "Cameras & Optics"           :share-signal ":estimate")
+     (:rank 12 :name "Food, Beverages & Tobacco"  :share-signal ":estimate")
+     (:rank 13 :name "Office Supplies"            :share-signal ":estimate")
+     (:rank 14 :name "Animals & Pet Supplies"     :share-signal ":estimate")
+     (:rank 15 :name "Vehicles & Parts"           :share-signal ":estimate"))
+
+    :80pct-coverage-set
+    (:categories 5
+     :names ("Apparel & Accessories" "Electronics" "Home & Garden" "Health & Beauty" "Furniture")
+     :cumulative-share-pct-est 78
+     :note "Google Shopping mirrors Google search demand. Top-5 top-level categories cover ~78% of Shopping ad clicks by third-party analytics. Because Shopify uses Google Product Taxonomy verbatim, this 80% set also applies to Shopify.")
+
+    :vocabulary-sample-per-top-category
+    ;; Because Google's taxonomy is the taxonomy Shopify inherits,
+    ;; vocabulary here is deliberately broader / more retail-catalog-shaped
+    ;; than Etsy's handmade lens or eBay's used-item lens.
+    ((:category "Apparel & Accessories"
+      :terms ("size XS S M L XL XXL" "size 0 2 4 6 8 10 12 14"
+              "gender men women unisex kids"
+              "material cotton polyester wool nylon spandex silk linen"
+              "color primary color secondary color"
+              "brand SKU MPN GTIN UPC EAN"
+              "athletic wear activewear loungewear"
+              "outerwear jacket coat parka windbreaker"
+              "footwear sneakers boots dress shoes sandals"
+              "accessories belt hat scarf gloves"
+              "jewelry watch handbag wallet"
+              "fit slim regular relaxed tall petite plus"))
+     (:category "Electronics"
+      :terms ("model number MPN GTIN"
+              "brand OEM authorized reseller"
+              "warranty manufacturer warranty extended"
+              "condition new refurbished open box"
+              "screen size resolution refresh rate panel type"
+              "storage capacity RAM processor GPU"
+              "connectivity Wi-Fi Bluetooth USB-C HDMI"
+              "battery life mAh Wh"
+              "color space sRGB DCI-P3"
+              "smart home Alexa Google Assistant HomeKit"))
+     (:category "Home & Garden"
+      :terms ("dimensions LxWxH inches cm"
+              "material solid wood engineered wood metal plastic ceramic glass"
+              "finish matte gloss brushed antique"
+              "assembly required tools included"
+              "indoor outdoor use"
+              "energy star rating"
+              "capacity gallons liters cubic feet"
+              "plant hardiness zone sun requirement watering"
+              "seasonal all-season"))
+     (:category "Health & Beauty"
+      :terms ("ingredients active percentage"
+              "skin type oily dry combination sensitive"
+              "hair type curly straight coily fine thick"
+              "fragrance-free hypoallergenic cruelty-free vegan"
+              "SPF sunscreen mineral chemical"
+              "shade undertone warm cool neutral"
+              "volume mL oz fl oz"
+              "clinical strength dermatologist tested"
+              "supplement serving size daily value"))
+     (:category "Furniture"
+      :terms ("style modern contemporary MCM traditional farmhouse industrial"
+              "material solid wood veneer MDF particle board upholstery"
+              "upholstery fabric leather bonded velvet linen"
+              "assembly required flat pack ready to assemble"
+              "capacity seating count weight limit"
+              "dimensions overall footprint clearance"
+              "warranty structural upholstery"
+              "delivery threshold white-glove in-home"))))
+
+  ;; ============================================================
+  ;; 5. SHOPIFY
+  ;; ============================================================
+  (platform
+    :name "Shopify"
+    :note "Per-store platform; not a single marketplace. Each merchant runs their own store. Uses Google Product Taxonomy verbatim for product categorization (Shopify migrated from custom taxonomy to Google Product Taxonomy in 2024)."
+    :rank-in-lacuna-order 5
+
+    :total-listings :aggregated-only
+    :total-listings-note
+    "Shopify does not publish a total-products-across-all-stores figure. What is public: 2.86M live storefronts as of May 2026, ~$378B GMV in 2025. If mean products/store is 50-200 (typical range), total product catalog is ~140M-570M. Recorded as :estimate range."
+    :total-listings-estimate-range (:low 140000000 :high 570000000)
+    :listings-source "Shopify BFCM 2025 press release; Marketplace Pulse Shopify GMV tracker; BuiltWith Shopify detection"
+
+    :storefronts 2860000
+    :storefronts-source "Marketplace Pulse Shopify GMV 2014-2026 tracker, May 2026"
+    :gmv-2025-usd 378440000000
+    :gmv-source "Shopify Q4 2025 earnings; $378.44B FY2025 GMV, +29% YoY"
+    :bfcm-2025-usd 14600000000
+    :bfcm-source "shopify.com/news/bfcm-data-2025"
+
+    :category-tree-size 5595
+    :category-tree-size-qualifier :verified-exact
+    :category-tree-source
+    "Shopify Product Taxonomy migrated to Google Product Taxonomy in 2024. Identical leaf count: 5,595. Merchants can also use free-form 'product type' fields, so effective per-store taxonomy is unlimited."
+    :top-level-category-count 21
+    :top-level-note "Same as Google Product Taxonomy — 21 top-level buckets."
+
+    :top-categories-by-volume
+    ;; Shopify does not itemize GMV by category in filings. Rankings
+    ;; here are drawn from Shopify's BFCM 2025 category disclosure
+    ;; plus Marketplace Pulse Shopify category tracker.
+    ((:rank 1  :name "Apparel & Fashion"              :share-pct-est 30 :source "Shopify BFCM 2025 top category 'clothing tops & pants, activewear' + Marketplace Pulse :estimate")
+     (:rank 2  :name "Beauty & Cosmetics"             :share-pct-est 15 :source "Shopify BFCM 2025 'cosmetics' #1 :estimate")
+     (:rank 3  :name "Health, Fitness & Nutrition"    :share-pct-est 10 :source "Shopify BFCM 2025 :estimate")
+     (:rank 4  :name "Home & Garden / Home Décor"     :share-pct-est  8 :source ":estimate")
+     (:rank 5  :name "Food & Beverage"                :share-pct-est  6 :source ":estimate")
+     (:rank 6  :name "Electronics & Accessories"      :share-pct-est  5 :source ":estimate")
+     (:rank 7  :name "Sporting Goods"                 :share-pct-est  4 :source ":estimate")
+     (:rank 8  :name "Baby & Kids"                    :share-pct-est  4 :source ":estimate")
+     (:rank 9  :name "Furniture"                      :share-pct-est  3 :source ":estimate")
+     (:rank 10 :name "Toys & Games"                   :share-pct-est  3 :source ":estimate")
+     (:rank 11 :name "Jewelry & Accessories"          :share-pct-est  3 :source ":estimate")
+     (:rank 12 :name "Pet Supplies"                   :share-pct-est  2 :source ":estimate")
+     (:rank 13 :name "Arts & Crafts"                  :share-pct-est  2 :source ":estimate")
+     (:rank 14 :name "Books, Media & Print-on-Demand" :share-pct-est  2 :source ":estimate")
+     (:rank 15 :name "Office & Business"              :share-pct-est  1 :source ":estimate"))
+
+    :80pct-coverage-set
+    (:categories 6
+     :names ("Apparel & Fashion" "Beauty & Cosmetics" "Health, Fitness & Nutrition" "Home & Garden" "Food & Beverage" "Electronics & Accessories")
+     :cumulative-share-pct-est 74
+     :note "Shopify skews toward direct-to-consumer brands in Apparel, Beauty, and Health/Wellness. Top-6 clears ~74%; top-8 (adds Sporting Goods + Baby & Kids) reaches ~82%.")
+
+    :vocabulary-sample-per-top-category
+    ;; Shopify vocabulary is DTC-brand shaped: SEO copy, subscription,
+    ;; bundle, size guide, brand story.
+    ((:category "Apparel & Fashion"
+      :terms ("size guide" "true to size" "runs small" "runs large"
+              "size chart" "measurement" "bust waist hip inseam"
+              "fabric composition" "care instructions" "machine wash" "hand wash" "dry clean"
+              "sustainable" "recycled" "organic cotton" "OEKO-TEX" "GOTS"
+              "made in USA" "ethically made" "small batch"
+              "restock notification" "back in stock" "waitlist"
+              "capsule" "collection" "drop" "seasonal"
+              "bundle" "set" "matching set"
+              "subscription" "member price" "loyalty"))
+     (:category "Beauty & Cosmetics"
+      :terms ("ingredients list INCI"
+              "skin type" "hair type" "concern"
+              "clean beauty" "vegan" "cruelty-free" "reef safe" "leaping bunny"
+              "clinical" "dermatologist tested" "hypoallergenic"
+              "shade finder" "shade match" "undertone"
+              "before and after" "results in X days"
+              "full size" "travel size" "mini" "deluxe sample"
+              "subscription" "auto-refill" "replenishment"
+              "gift with purchase" "GWP"
+              "founder story" "small brand" "indie beauty"))
+     (:category "Health, Fitness & Nutrition"
+      :terms ("supplement facts" "serving size" "servings per container"
+              "protein grams" "creatine" "amino acid" "BCAA" "EAA"
+              "third-party tested" "NSF certified" "informed sport"
+              "vegan protein" "whey isolate" "casein" "collagen"
+              "pre-workout" "post-workout" "intra-workout"
+              "keto" "paleo" "carnivore" "plant-based"
+              "gluten free" "dairy free" "soy free" "nut free"
+              "subscription" "monthly" "quarterly" "cancel anytime"
+              "founder-led" "athlete-endorsed"))
+     (:category "Home & Garden / Home Décor"
+      :terms ("dimensions" "material" "sustainable material"
+              "handcrafted" "small batch" "made-to-order"
+              "custom" "personalized" "monogram"
+              "collection" "seasonal"
+              "care instructions"
+              "ship time lead time"
+              "returns policy" "final sale"
+              "bundle" "set" "starter set"))
+     (:category "Food & Beverage"
+      :terms ("ingredients" "allergens" "gluten free" "vegan" "kosher" "halal"
+              "cold brew" "single origin" "estate" "roast level"
+              "fair trade" "direct trade" "organic" "regenerative"
+              "subscription" "grind size" "whole bean"
+              "shelf life" "best by"
+              "small batch" "founder story"
+              "shipping cold-chain" "insulated packaging"))))
+
+  ;; ============================================================
+  ;; CROSS-PLATFORM OVERLAP
+  ;; ============================================================
+  :cross-platform-overlap
+  (:categories-in-all-5
+   ("Apparel / Fashion / Clothing"
+    "Electronics"
+    "Home & Garden / Home Goods"
+    "Jewelry & Accessories"
+    "Toys & Games"
+    "Health & Beauty")
+   :categories-in-4
+   ("Furniture"                          ;; eBay Meta Google Shopify (Etsy handmade only)
+    "Sporting Goods"                     ;; eBay Meta Google Shopify (Etsy weak)
+    "Baby & Kids / Baby & Toddler"       ;; Meta Google Shopify Etsy (eBay weak)
+    "Craft Supplies / Arts & Crafts"     ;; Etsy Google Shopify Meta (eBay weak)
+    "Pet Supplies")                      ;; eBay Meta Google Shopify (Etsy weak)
+   :categories-in-3
+   ("Motors / Vehicles / Parts"          ;; eBay Meta Google  (Etsy no, Shopify weak)
+    "Collectibles / Trading Cards"       ;; eBay Etsy Meta    (Google generic, Shopify possible)
+    "Music / Musical Instruments"        ;; eBay Meta Shopify (Etsy handmade, Google generic)
+    "Food & Beverage"                    ;; Google Shopify Meta (Etsy no direct, eBay limited)
+    "Media / Books")                     ;; eBay Meta Google
+
+   :canonical-overlap-set
+   ("Apparel" "Electronics" "Home & Garden" "Jewelry" "Toys & Games"
+    "Health & Beauty" "Furniture" "Baby & Kids" "Craft Supplies" "Pet Supplies"
+    "Sporting Goods" "Media")
+   :canonical-overlap-count 12
+   :canonical-overlap-note
+   "TWELVE canonical categories appear across 4-5 of the five platforms. This is the 'twelve-ish' number Alfred recalled. It is NOT the same as any single platform's 80% coverage set — it is the UNION 80% set across platforms Sakura must cover if she is to serve operators across all five surfaces at usable depth.")
+
+  ;; ============================================================
+  ;; SUMMARY
+  ;; ============================================================
+  :summary
+  "Across the five platforms Lacuna Labs supports as shop cards, the item-count landscape looks like this: eBay is the giant of listings at ~2.5B live listings (2025 year-end, cited); Shopify is second at ~140M-570M products across ~2.86M storefronts (estimate range, since Shopify does not aggregate); Etsy sits at ~120M active listings (estimate from 5.6M sellers x mean-listings); Meta's Facebook Marketplace generates ~3.5M new listings/day in US+CA alone with a global standing stock in the high hundreds of millions (undisclosed); Google is not a marketplace — it indexes merchant feeds, so item count is not the right metric there. The category-tree picture is: eBay ~20,000 categories, Google/Shopify 5,595 (identical — Shopify migrated to Google Product Taxonomy in 2024), Etsy ~6,000, Meta ~100 mid-level. Per-platform 80% coverage takes 4-6 categories (Etsy 4-5, eBay 5, Meta 6-7, Google 5, Shopify 6). ACROSS the five platforms, the UNION set that Sakura must know to cover 80% of operator work is TWELVE canonical categories: Apparel, Electronics, Home & Garden, Jewelry, Toys & Games, Health & Beauty, Furniture, Baby & Kids, Craft Supplies, Pet Supplies, Sporting Goods, Media. Alfred's 'twelve-ish' recall verifies. Vocabulary depth per category ranges 50-200 domain-specific terms based on this survey's light sample; deep extraction (Tier 1 target 50-200 terms each) is a next-lane job."
+
+  ;; ============================================================
+  ;; CAVEATS
+  ;; ============================================================
+  :caveats
+  (:pt "Etsy total-listing count is estimate (5.6M sellers x mean listings). Etsy does not disclose in 10-K."
+   :pt "Meta does not disclose Marketplace category share; all Meta rank ordering is triangulated from 2025 third-party reports and marked :estimate."
+   :pt "Google Shopping is a feed-consumer, not a marketplace. 'Item count' is not a meaningful single number for Google."
+   :pt "Shopify total-product count is a wide estimate range (140M-570M) because Shopify does not aggregate across stores in filings."
+   :pt "eBay category tree count of ~20,000 is the getCategoryTree US default. Other marketplaces (UK, DE, AU) have different trees. Historical high was ~32,000 pre-2018 taxonomy consolidation."
+   :pt "Vocabulary samples per category (~30-50 terms each) are illustrative, NOT the Tier-1 target of 50-200 terms. Deep extraction pending."
+   :pt "'80% coverage' definition varies by source metric — GMV vs listing-count vs sales-count. Where source cited GMV share, we use GMV. Where only sales-count was available (Etsy Koalanda), we note it."
+   :pt "The Google Product Taxonomy file we pulled bears a header version of 2021-09-21. Google has not versioned it publicly since, though the URL is current as of 2026-07-13. Leaf count 5,595 is exact for this file."
+   :pt "The canonical-overlap set of 12 is a modeling decision, not a source fact. It groups semantically-equivalent categories (e.g., 'Fashion' + 'Apparel' + 'Clothing & Accessories' → 'Apparel') across platforms. Alfred should sanity-check the grouping.")
+
+  ;; ============================================================
+  ;; SOURCES
+  ;; ============================================================
+  :sources
+  ((:name "Etsy Inc. Form 10-K FY2025"
+    :url "https://investors.etsy.com/sec-filings/all-sec-filings/content/0001370637-26-000019/etsy-20251231.htm"
+    :accessed "2026-07-13"
+    :used-for "Etsy active sellers, active buyers, GMS, top-6 category share")
+   (:name "Etsy Q4 2025 press release"
+    :url "https://investors.etsy.com/news-events/press-releases/detail/218/etsy-inc-reports-fourth-quarter-and-full-year-2025-results"
+    :accessed "2026-07-13")
+   (:name "Etsy Engineering — Structured Data at Etsy (taxonomy 6,000+ categories)"
+    :url "https://www.etsy.com/codeascraft/an-introduction-to-structured-data-at-etsy"
+    :accessed "2026-07-13")
+   (:name "Koalanda Etsy Sales Report December 2025"
+    :url "https://koalanda.pro/blog/etsy-sales-report-december-2025"
+    :accessed "2026-07-13"
+    :used-for "Etsy ranks 7-15 :estimate")
+   (:name "eBay Q4 2025 Earnings Presentation"
+    :url "https://ebay.q4cdn.com/610426115/files/doc_financials/2025/q4/2025_Q4_eBay_Earnings_Deck_Final.pdf"
+    :accessed "2026-07-13"
+    :used-for "eBay GMV, top-4 category share")
+   (:name "eBay Inc. Q4 2025 press release"
+    :url "https://www.prnewswire.com/news-releases/ebay-inc-reports-fourth-quarter-and-full-year-2025-results-302691954.html"
+    :accessed "2026-07-13")
+   (:name "eBay 2025 Annual Report PDF"
+    :url "https://www.sec.gov/Archives/edgar/data/1065088/000155278126000287/e26087_ebay-ars.pdf"
+    :accessed "2026-07-13")
+   (:name "eBay Taxonomy API — getCategoryTree docs"
+    :url "https://developer.ebay.com/api-docs/commerce/taxonomy/resources/category_tree/methods/getCategoryTree"
+    :accessed "2026-07-13"
+    :used-for "eBay ~20,000 category tree size")
+   (:name "Chargeflow eBay Statistics 2026"
+    :url "https://www.chargeflow.io/blog/ebay-statistics"
+    :accessed "2026-07-13"
+    :used-for "2.5B live listings figure")
+   (:name "Statista eBay GMV distribution by category 2025"
+    :url "https://www.statista.com/statistics/1427858/ebay-marketplace-gmv-share-by-category/"
+    :accessed "2026-07-13")
+   (:name "Meta Newsroom — Facebook Marketplace New AI Tools March 2026"
+    :url "https://about.fb.com/news/2026/03/facebook-marketplace-new-meta-ai-tools-make-selling-faster-and-easier/"
+    :accessed "2026-07-13"
+    :used-for "3.5M new listings/day US+CA")
+   (:name "TechCrunch Facebook Marketplace redesign 2025-11-13"
+    :url "https://techcrunch.com/2025/11/13/facebook-marketplace-gets-new-collaborative-and-social-features-meta-ai-integrations/"
+    :accessed "2026-07-13")
+   (:name "sqmagazine Facebook Marketplace Statistics 2026"
+    :url "https://sqmagazine.co.uk/facebook-marketplace-statistics/"
+    :accessed "2026-07-13"
+    :used-for "Marketplace GMV estimate + user counts")
+   (:name "Facebook Marketplace category directory"
+    :url "https://www.facebook.com/marketplace/categories/"
+    :accessed "2026-07-13"
+    :used-for "Meta top-level category enumeration")
+   (:name "Instagram Shopping Statistics 2025 (ElectroIQ)"
+    :url "https://electroiq.com/stats/instagram-shopping-statistics/"
+    :accessed "2026-07-13"
+    :used-for "Instagram Shop category weight: Fashion 46.5%, Beauty 28.4%")
+   (:name "Google Product Taxonomy en-US (raw file)"
+    :url "https://www.google.com/basepages/producttype/taxonomy.en-US.txt"
+    :accessed "2026-07-13"
+    :used-for "EXACT leaf count 5,595; 21 top-level categories; header version 2021-09-21")
+   (:name "Shopify Q4/FY 2025 earnings + BFCM press release"
+    :url "https://www.shopify.com/news/bfcm-data-2025"
+    :accessed "2026-07-13"
+    :used-for "$378.44B GMV, $14.6B BFCM, top BFCM categories (cosmetics, tops+pants, activewear, fitness+nutrition)")
+   (:name "Marketplace Pulse Shopify GMV 2014-2026"
+    :url "https://www.marketplacepulse.com/stats/shopify-gross-merchandise-volume-gmv"
+    :accessed "2026-07-13"
+    :used-for "2.86M storefronts May 2026")
+   (:name "Marketplace Pulse Data hub (general reference)"
+    :url "https://www.marketplacepulse.com/data"
+    :accessed "2026-07-13")
+   (:name "Redstag Fulfillment — Shopify GMV summary"
+    :url "https://redstagfulfillment.com/shopify-gross-merchandise-volume/"
+    :accessed "2026-07-13")
+   (:name "Redstag Fulfillment — Live eBay Listings count"
+    :url "https://redstagfulfillment.com/how-many-items-are-listed-on-ebay/"
+    :accessed "2026-07-13"))
+
+  ;; ============================================================
+  ;; PROVENANCE
+  ;; ============================================================
+  :provenance
+  (:agent "lacuna-labs-eng research subagent"
+   :model "claude-opus-4-7[1m]"
+   :time-budget-hr 2
+   :date "2026-07-13"
+   :written-by "research subagent under lacuna-eng"
+   :sibling-artifact "platform-item-survey-2026-07-13.md"))

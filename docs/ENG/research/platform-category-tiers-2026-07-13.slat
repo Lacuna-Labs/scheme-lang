@@ -1,0 +1,146 @@
+; Platform Category Tiers — Sakura's teaching priority across the 5 shop cards
+; Written 2026-07-13
+; Source: platform-item-survey-2026-07-13.slat (this file derives from that survey)
+; Authorized by: Alfred
+;
+; The 12 (Tier 1) is the union 80% coverage set — categories appearing in 4-5
+; of Lacuna Labs' 5 supported shop platforms (Etsy · eBay · Meta · Google · Shopify).
+;
+; Tier 2 covers categories appearing in 3 platforms — worth pursuing after Tier 1.
+;
+; Tier 3 is the platform-specific long-tail, grouped by shape.
+
+(category-tiers
+  :date "2026-07-13"
+  :derives-from "platform-item-survey-2026-07-13.slat"
+  :purpose "Sakura teaching priority for Book of Words + shop-domain reasoning"
+
+  ; ─────────────────────────────────────────────────────────────
+  ; TIER 1 — must know DEEPLY (Book of Words Tier-1 vocabulary depth)
+  ; 12 canonical categories, 4-5 of 5 platforms
+  ; Target: 50-200 domain terms each
+  ; ─────────────────────────────────────────────────────────────
+
+  (tier
+    :n 1
+    :label "must-know-deeply"
+    :vocabulary-depth "50-200 domain terms per category"
+    :coverage "union 80% across all 5 platforms"
+
+    (group :name "Wearable & Personal"
+      (category :name "Apparel / Fashion / Clothing"        :platforms-present 5)
+      (category :name "Jewelry & Accessories"               :platforms-present 5)
+      (category :name "Health & Beauty"                     :platforms-present 5))
+
+    (group :name "Domestic"
+      (category :name "Home & Garden / Home Goods"          :platforms-present 5)
+      (category :name "Furniture"                            :platforms-present 4 :weak-on "Etsy handmade only")
+      (category :name "Baby & Kids / Baby & Toddler"        :platforms-present 4 :weak-on "eBay")
+      (category :name "Pet Supplies"                         :platforms-present 4 :weak-on "Etsy"))
+
+    (group :name "Interest & Play"
+      (category :name "Electronics"                          :platforms-present 5)
+      (category :name "Toys & Games"                         :platforms-present 5)
+      (category :name "Sporting Goods"                       :platforms-present 4 :weak-on "Etsy")
+      (category :name "Craft Supplies / Arts & Crafts"       :platforms-present 4 :weak-on "eBay")
+      (category :name "Media / Books"                        :platforms-present 3 :on "eBay,Meta,Google")))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; TIER 2 — should know well (Book of Words Tier-2)
+  ; 4 categories appearing in 3 platforms
+  ; Target: 30-100 domain terms each
+  ; Pursue after Tier 1 is done
+  ; ─────────────────────────────────────────────────────────────
+
+  (tier
+    :n 2
+    :label "should-know-well"
+    :vocabulary-depth "30-100 domain terms per category"
+
+    (category :name "Motors / Vehicles / Auto Parts"
+              :platforms "eBay heavy, Meta secondary, Shopify tertiary")
+    (category :name "Collectibles / Trading Cards / Memorabilia"
+              :platforms "eBay dominant, Meta, marginal Etsy-vintage")
+    (category :name "Musical Instruments"
+              :platforms "eBay, Shopify, marginal Etsy-handmade")
+    (category :name "Food & Beverage"
+              :platforms "Shopify major, Meta secondary"))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; TIER 3 — aware of, thin coverage (Book of Words Tier-3)
+  ; Platform-specific long-tail
+  ; Target: 5-15 domain terms each
+  ; Grouped by shape
+  ; ─────────────────────────────────────────────────────────────
+
+  (tier
+    :n 3
+    :label "aware-of"
+    :vocabulary-depth "5-15 domain terms per category"
+
+    (group :name "Craft / Vintage / Handmade specific"
+           :platforms "Etsy-heavy"
+      (category :name "Paper & Party Supplies")
+      (category :name "Vintage (as its own top-level)")
+      (category :name "Weddings")
+      (category :name "Antiques"))
+
+    (group :name "Media adjacencies"
+      (category :name "Digital Products / Downloads")
+      (category :name "Music / Audio (physical + digital)")
+      (category :name "Video Games")
+      (category :name "Movies / DVDs"))
+
+    (group :name "Home-adjacent long-tail"
+      (category :name "Tools & Hardware")
+      (category :name "Home Improvement" :note "Meta separates this")
+      (category :name "Office & Stationery")
+      (category :name "Photography / Cameras & Equipment")
+      (category :name "Lawn & Garden equipment")
+      (category :name "Appliances"))
+
+    (group :name "Marketplace-specific"
+           :platforms "Meta almost exclusively"
+      (category :name "Real Estate / Property")
+      (category :name "Vehicles (as marketplace listings, not parts)")
+      (category :name "Services / Local Services")
+      (category :name "Rentals"))
+
+    (group :name "Numismatics / stamp-collecting sub-tail"
+           :platforms "eBay-heavy"
+      (category :name "Coins & Currency")
+      (category :name "Stamps")
+      (category :name "Militaria"))
+
+    (group :name "Business & Industrial"
+           :platforms "eBay's B2B corner"
+      (category :name "Business & Industrial equipment")
+      (category :name "Restaurant & Food Service equipment")
+      (category :name "Test & Measurement"))
+
+    (group :name "Health & Fitness"
+           :platforms "Shopify separates from Beauty"
+      (category :name "Health, Fitness & Nutrition"))
+
+    (group :name "Adult / Specialty"
+           :platforms "across, policy-gated"
+      (category :name "Adult / Everything Else / Not Elsewhere Classified")))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; ROLLUP
+  ; ─────────────────────────────────────────────────────────────
+
+  :rollup
+  (:tier-1-count 12
+   :tier-2-count 4
+   :tier-3-count-approx 30
+   :total-taught 46
+   :domain-terms-target-tier-1 "600-2,400 total (50-200 × 12)"
+   :domain-terms-target-tier-2 "120-400 total (30-100 × 4)"
+   :domain-terms-target-tier-3 "150-450 total (5-15 × 30)"
+   :grand-total-vocabulary-target "870-3,250 domain-specific terms in Book of Words Tier 1-3")
+
+  :teaching-order
+  (:1 "Deep on the 12"
+   :2 "Add Motors/Collectibles/Instruments/Food when Tier 1 solid"
+   :3 "Sprinkle Tier 3 as she encounters platform-specific operator needs"))

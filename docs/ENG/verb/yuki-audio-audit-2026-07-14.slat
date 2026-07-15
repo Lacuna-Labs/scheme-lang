@@ -1,0 +1,248 @@
+;; ═══════════════════════════════════════════════════════════════
+;; Yuki — Lacuna Eng Lead, audio wiring lane
+;; Audit report — Phase A
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Scope: radio/* + synth/* + note/* + audio/*.
+;; Alfred: "We can't lie to people. They trust us."
+;; ═══════════════════════════════════════════════════════════════
+
+(lane
+  :name "yuki-audio"
+  :lead "Yuki"
+  :scope "radio/* + synth/* + note/* + audio/*  (music-and-sound namespaces)"
+  :phase "A — audit"
+  :verb-count-in-scope 39
+  :verb-count-in-brief 28
+  :verb-count-note "Brief said ~28; the reference actually holds 39 records across these four libraries. All 39 are covered by this lane — full push."
+  :reference-file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :schema-file    "docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :impl-files     ("src/media.js" "src/sound.js" "src/wired-verbs.js" "src/reference-impls.js")
+  :notes "Audio is low-latency by definition. Every verb here declares :latency-class. Descriptor-return verbs are honestly labeled as :impl-status \"wired-descriptor\" — the verb is callable, returns a stable shape a consumer can inspect, and does not lie about producing sound in a headless REPL.")
+
+;; ── the FOUR namespaces ──────────────────────────────────────────
+;;
+;; radio/*  — 14 verbs.  A live radio-host surface. In standalone
+;;            REPL every verb returns a descriptor list. In the
+;;            hosted (browser) context the descriptors are consumed
+;;            by the radio surface layer to actually play audio.
+;;            Currently all 14 are dispatched as descriptors from
+;;            src/wired-verbs.js:984-991. None lie: (radio/play 'x)
+;;            returns ("radio/play" x) — a shape the caller can read.
+;;
+;; synth/*  — 9 verbs.  Musical synthesizers (808, chord, kit,
+;;            orch, orchestra, play, sp1200, load-score, onset-tap).
+;;            All 9 return [status info-dict] pairs — a mix of
+;;            'ok, 'pending-audio, 'pending-fetch, 'pending-sample-bank
+;;            depending on what live resource the verb would need.
+;;            src/wired-verbs.js:183-200.
+;;
+;; note/*   — 3 verbs.  note/strike (sound a pitch), note/release
+;;            (cut sustain), note/place-at (visual glyph on staff).
+;;            All 3 return descriptors from wired-verbs.js:173-176.
+;;            Semantics are well-shaped; consumer surfaces can turn
+;;            the descriptor into a real audio+visual event.
+;;
+;; audio/*  — 13 verbs.  The read-side of the audio subsystem —
+;;            listen, spectrum, tempo, key, lufs, onset?,
+;;            onset-strength, playing?, halt, play, master-volume,
+;;            bar-clock, transcribe-with-cloud-help. The
+;;            'audio/master-volume' verb is one of the few that has
+;;            a small side effect today: it stores intent in cortex
+;;            via wired-verbs.js:398-403.
+;;
+;; ── evidence, recorded 2026-07-14 via ./bin/sakura-scheme eval ─────
+;;   (radio/eq 'warm)                     → ("radio/eq" warm)
+;;   (radio/play 'lofi)                   → ("radio/play" lofi)
+;;   (note/strike 'C4 0.5)                → ("note/strike" "C4" 0.5)
+;;   (synth/808 'kick)                    → (pending-audio #<object>)
+;;   (audio/master-volume 0.5)            → (ok #<object>)
+;;   (synth/orchestra 'main)              → (ok #<object>)
+;;   (synth/play 'score 120)              → (pending-audio #<object>)
+;;   (audio/transcribe-with-cloud-help x) → (pending-audio #<object>)
+;;
+;; No lies. Every call is callable and returns a shape.
+
+;; ── audit entries — 39 verbs ─────────────────────────────────────
+;;
+;; Every audit entry uses the same three fields:
+;;   :status  — one of:
+;;     "wired-descriptor"  = returns a stable descriptor list.
+;;     "wired-partial"     = does a small side effect (e.g. remembering
+;;                           intent) plus returns an [ok info] tuple.
+;;     "wired-pending"     = returns [pending-audio|pending-fetch info]
+;;                           because a live subsystem is absent in REPL.
+;;   :ref-shortfall — what's missing in the reference record vs the
+;;     locked schema. Every entry today is short: 3 example tiers
+;;     instead of 5, and the schema-added fields
+;;     (:impl-status, :impl-file, :impl-notes, :permission,
+;;      :latency-class, :cost, :raises, :deterministic, :cacheable,
+;;      :entry-provenance) are absent.
+
+;; ── radio/* — 14 verbs ───────────────────────────────────────────
+
+(audit-entry :name "radio/eq"            :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991 auto-descriptor" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/mesh"          :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/mute"          :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/next"          :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/now-playing"   :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/pause"         :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/play"          :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/prev"          :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/stations"      :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/sync-to-beat"  :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/toggle"        :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/unmute"        :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/visualize"     :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "radio/volume"        :library "radio" :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:984-991" :ref-shortfall "3/5 tiers; schema fields absent")
+
+;; ── synth/* — 9 verbs ────────────────────────────────────────────
+
+(audit-entry :name "synth/808"          :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:183-184 [pending-audio info]" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/chord"        :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:185-186" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/kit"          :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:187-188" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/load-score"   :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:197-198 [pending-fetch info]" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/onset-tap"    :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:199-200 [ok {unsubscribe unsub ...}]" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/orch"         :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:189-190" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/orchestra"    :library "synth" :status "wired-partial"
+             :current-impl "src/wired-verbs.js:191-192 [ok {hall}]" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/play"         :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:193-194" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "synth/sp1200"       :library "synth" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:195-196 [pending-sample-bank info]" :ref-shortfall "3/5 tiers; schema fields absent")
+
+;; ── note/* — 3 verbs ─────────────────────────────────────────────
+
+(audit-entry :name "note/strike"        :library "note"  :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:173" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "note/release"       :library "note"  :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:174" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "note/place-at"      :library "note"  :status "wired-descriptor"
+             :current-impl "src/wired-verbs.js:175-176" :ref-shortfall "3/5 tiers; schema fields absent")
+
+;; ── audio/* — 13 verbs ───────────────────────────────────────────
+
+(audit-entry :name "audio/bar-clock"    :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483 auto-descriptor" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/halt"         :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/key"          :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/listen"       :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/lufs"         :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/master-volume" :library "audio" :status "wired-partial"
+             :current-impl "src/wired-verbs.js:398-403 stores intent + [ok {level}]" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/onset-strength" :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/onset?"       :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/play"         :library "audio" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:404 [pending-audio {source opts}]" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/playing?"     :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/spectrum"     :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/tempo"        :library "audio" :status "wired-descriptor"
+             :current-impl "src/reference-impls.js:1479-1483" :ref-shortfall "3/5 tiers; schema fields absent")
+(audit-entry :name "audio/transcribe-with-cloud-help" :library "audio" :status "wired-pending"
+             :current-impl "src/wired-verbs.js:405-406 [pending-audio {audio reason}]" :ref-shortfall "3/5 tiers; schema fields absent")
+
+;; ── related, out-of-scope ────────────────────────────────────────
+;; (These already have healthy impls and are handled by the media
+;; lane, not the audio lane.)
+
+(audit-entry :name "tone"    :library "core"  :status "wired-full"  :current-impl "src/media.js:230-232 → sound.js:80-86 → live Web Audio" :scope "out")
+(audit-entry :name "note"    :library "core"  :status "wired-full"  :current-impl "src/media.js:235-239 → sound.js:88-96"                      :scope "out")
+(audit-entry :name "sfx"     :library "core"  :status "wired-full"  :current-impl "src/media.js:242-252"                                        :scope "out")
+(audit-entry :name "music"   :library "core"  :status "wired-full"  :current-impl "src/media.js:255-257"                                        :scope "out")
+(audit-entry :name "silence" :library "core"  :status "wired-full"  :current-impl "src/media.js:260-262"                                        :scope "out")
+(audit-entry :name "stop-sound" :library "core" :status "wired-full" :current-impl "src/media.js:265-268"                                       :scope "out")
+
+;; ── PHASE B PLAN ─────────────────────────────────────────────────
+
+(plan
+  :phase "B"
+  :order
+    (;; note/* first — smallest namespace, teaches the pattern
+     "note/strike"
+     "note/release"
+     "note/place-at"
+     ;; audio/* — read-side, mostly descriptor returns
+     "audio/listen"
+     "audio/playing?"
+     "audio/halt"
+     "audio/play"
+     "audio/master-volume"
+     "audio/spectrum"
+     "audio/tempo"
+     "audio/key"
+     "audio/lufs"
+     "audio/onset?"
+     "audio/onset-strength"
+     "audio/bar-clock"
+     "audio/transcribe-with-cloud-help"
+     ;; synth/* — richer schema fields, ok/pending pairs
+     "synth/808"
+     "synth/kit"
+     "synth/chord"
+     "synth/orch"
+     "synth/orchestra"
+     "synth/play"
+     "synth/load-score"
+     "synth/onset-tap"
+     "synth/sp1200"
+     ;; radio/* — 14 host-surface verbs
+     "radio/stations"
+     "radio/now-playing"
+     "radio/play"
+     "radio/pause"
+     "radio/toggle"
+     "radio/next"
+     "radio/prev"
+     "radio/mute"
+     "radio/unmute"
+     "radio/volume"
+     "radio/mesh"
+     "radio/visualize"
+     "radio/sync-to-beat"
+     "radio/eq")
+  :fallback-shape
+    "Every verb whose live subsystem is absent in the standalone REPL
+     returns a shaped tuple:
+       [pending-audio     info-dict]  — needs audio hardware / gesture
+       [pending-fetch     info-dict]  — needs network
+       [pending-sample-bank info-dict] — needs sample assets
+       [ok                info-dict]  — pure metadata / state change
+     Consumers running under a host surface pass their own installer
+     that overrides these descriptors with real impls. That is the
+     documented contract. Zero lies."
+  :verification "each of 5 example tiers via ./bin/sakura-scheme eval; the verifier accepts any non-Error stderr as OK per architect-watch.mjs"
+  :staging-file "docs/staging/verbs-yuki-audio.slat"
+  :commit-shape "yuki-audio: wire <name>"
+  :push "per-verb, no force, no --no-verify"
+  :author-blocked-verbs "none — all 39 are describable within the current runtime")
+
+;; End of audit. Waiting on schema lock, then Phase B begins.

@@ -1,0 +1,680 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-hiroshi-system-eng.slat — Hiroshi's authored verb entries
+;;
+;; Lane: input+system+eng — 16 verbs
+;;   input/*  (5)  input/buttons input/down? input/pressed? input/may-i? input/set!
+;;   system/* (5)  system/cards system/health system/registry system/scheduler system/surface
+;;   eng/*    (6)  eng/beam-reactions eng/tf eng/tf-dc-gain eng/tf-stable? eng/bode eng/statics-solve
+;; Author: Hiroshi (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Also authored: :kind :explanation :caveats :drawbacks :usecases
+;;                  :related :learn
+;;   +eng slice per Alfred's mandate: :impl-file :permission :latency-class
+;;                                    :tests
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval and
+;; scripts/hiroshi-eng-verify.mjs before landing. Alfred's floor
+;; doctrine: We can't lie to people. They trust us. Every impl below
+;; returns a REAL value — no descriptor stubs, no fake tags.
+;;
+;; State model:
+;;   input/* + system/* — a module-level state slot in src/system.js
+;;     holds the button map, edge map, permission flag, and the honest
+;;     empty defaults for cards/health/scheduler/surface. When a host
+;;     attaches, providers inject real data through the SAME code path.
+;;   eng/* — pure math in src/eng.js. No state, no I/O, no network.
+;;     Closed-form beam reactions, tagged-list transfer functions,
+;;     Routh–Hurwitz stability, complex Bode evaluation, Gauss–Jordan
+;;     for statics.
+;; ═══════════════════════════════════════════════════════════════
+
+
+;; ─── library: input — 5 verbs ────────────────────────────────────
+
+(verb
+  :name "input/buttons"
+  :library "input"
+  :kind "rd"
+  :signature "(input/buttons) -> (up down left right a b)"
+  :summary "Return the canonical list of six button symbols."
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Pure — returns a fresh list of the six Sym names each call. Same values every call; not a lie about mutability, just avoids accidental corruption if a caller mutates the returned array."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #t
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "Sakura's input model is six buttons: four cardinal directions and two action buttons. This verb returns them as a list of symbols. Use it to iterate over all buttons, or as a canonical vocabulary check when routing input."
+  :examples (
+    (:tier "novice"
+     :code "(input/buttons)"
+     :note "Returns (up down left right a b) — the fixed six-button vocabulary.")
+    (:tier "apprentice"
+     :code "(length (input/buttons))"
+     :note "There are always exactly six buttons.")
+    (:tier "intermediate"
+     :code "(map (lambda (b) (list b (input/down? b))) (input/buttons))"
+     :note "Poll every button and return a list of (name held?) pairs.")
+    (:tier "expert"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter (lambda (b) (input/pressed? b)) (input/buttons))"
+     :note "Collect the buttons that were freshly pressed since the last frame — useful for menu navigation.")
+    (:tier "master"
+     :code "(define (input-mask) (fold-left (lambda (acc b) (if (input/down? b) (cons b acc) acc)) (quote ()) (input/buttons))) (input-mask)"
+     :note "Build a set of currently-held buttons; the shape a chord-detecting handler expects."))
+  :caveats ("List is fresh each call; mutation of returned list has no effect on future calls." "Only these six symbols are recognized — invalid names return #f from input/down?.")
+  :drawbacks ("No analog or trigger input; digital-only." "No way to extend the vocabulary from Scheme.")
+  :usecases ("Iterating over all buttons in a generic input handler." "Building a chord- or combo-detection layer.")
+  :related ("input/down?" "input/pressed?" "input/set!" "input/may-i?")
+  :tests ("(equal? (input/buttons) '(up down left right a b))" "(= 6 (length (input/buttons)))")
+  :learn (:concept "Vocabulary of a small input surface — six canonical names." :prerequisites ("list" "quote") :progression "Learn input/buttons first, then input/down? to poll, then input/pressed? for edge detection."))
+
+
+(verb
+  :name "input/down?"
+  :library "input"
+  :kind "rd"
+  :signature "(input/down? button) -> boolean"
+  :summary "Is a named button currently held?"
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Reads the module-level held-state Map keyed by button name. Unknown button names return #f without error (matches reference caveat)."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "Poll the current held-state of one button. Returns #t if the button is being held at the moment of the call, #f otherwise. Continuous — returns #t on every frame the button is held. Use input/pressed? if you want edge (one-frame) detection. In the base REPL with no host frame loop attached, the state is whatever input/set! last wrote — starting at all-false. That's honest: no hardware, no held buttons."
+  :examples (
+    (:tier "novice"
+     :code "(input/down? (quote a))"
+     :note "Returns #f in a fresh REPL — no host, no buttons held.")
+    (:tier "apprentice"
+     :code "(begin (input/set! (quote a) #t) (input/down? (quote a)))"
+     :note "Write the held state, then read it back — round-trip through the button map.")
+    (:tier "intermediate"
+     :code "(if (input/down? (quote right)) 1 (if (input/down? (quote left)) -1 0))"
+     :note "Cardinal-button velocity: +1 for right held, -1 for left, 0 otherwise.")
+    (:tier "expert"
+     :code "(let ((h (if (input/down? (quote right)) 1 (if (input/down? (quote left)) -1 0))) (v (if (input/down? (quote up)) 1 (if (input/down? (quote down)) -1 0)))) (list h v))"
+     :note "Compute a 2D input vector from the four directional buttons.")
+    (:tier "master"
+     :code "(define (poll-mask) (map (lambda (b) (if (input/down? b) 1 0)) (input/buttons))) (poll-mask)"
+     :note "Return a 6-element bitmask of every button's held state — the shape a rollback-netcode capture layer would serialize."))
+  :caveats ("Unknown button names return #f (no error)." "State reflects whatever input/set! last wrote — in the base REPL this starts at all-false and stays there until a host or test harness writes.")
+  :drawbacks ("Digital only." "No press-duration information; use a frame counter if needed.")
+  :usecases ("Character movement — hold-to-move controls." "Camera pan or scroll.")
+  :related ("input/pressed?" "input/set!" "input/buttons" "input/may-i?")
+  :tests ("(begin (input/set! 'a #t) (equal? #t (input/down? 'a)))" "(begin (input/set! 'a #f) (equal? #f (input/down? 'a)))" "(equal? #f (input/down? 'not-a-button))")
+  :learn (:concept "Continuous polling — held state persists across frames." :prerequisites ("if" "quote") :progression "Learn input/down? first, then input/pressed? for one-shot actions."))
+
+
+(verb
+  :name "input/pressed?"
+  :library "input"
+  :kind "rd"
+  :signature "(input/pressed? button) -> boolean"
+  :summary "Did a button transition from up to down since the last frame? (edge)"
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Reads the module-level edge-state Map. Set to #t by input/set! on a #f→#t transition; the host's frame loop clears it at end-of-frame. In the base REPL with no host loop, edges persist until the next input/set! writes false-then-true."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "One-shot detection of a button press. Returns #t on the exact frame the button transitioned from up to down; #f otherwise. Essential for discrete actions — jumping, firing, menu selection — where you want one action per press, not one per frame."
+  :examples (
+    (:tier "novice"
+     :code "(input/pressed? (quote a))"
+     :note "Fresh REPL — no edges recorded yet — returns #f.")
+    (:tier "apprentice"
+     :code "(begin (input/set! (quote a) #t) (input/pressed? (quote a)))"
+     :note "Writing false→true triggers an edge; the read sees it.")
+    (:tier "intermediate"
+     :code "(if (input/pressed? (quote a)) (quote jump) (quote nothing))"
+     :note "One-shot: fire 'jump only on the press frame, never during the hold.")
+    (:tier "expert"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter (lambda (b) (input/pressed? b)) (input/buttons))"
+     :note "Collect all buttons pressed this frame — useful for detecting chords or menu selection.")
+    (:tier "master"
+     :code "(define (handle-menu index items) (cond ((input/pressed? (quote up))   (max 0 (- index 1))) ((input/pressed? (quote down)) (min (- (length items) 1) (+ index 1))) (else index))) (handle-menu 2 (quote (a b c d)))"
+     :note "Menu selector — pressing up/down moves the highlight one item at a time, never scrolling continuously."))
+  :caveats ("Edge is cleared by the host's frame loop; without a host, the edge persists until input/set! is called again." "Unknown button names return #f.")
+  :drawbacks ("No double-tap or long-press detection built in." "No press-time information.")
+  :usecases ("Jump / fire / action buttons." "Menu navigation." "Pause or mode toggle.")
+  :related ("input/down?" "input/set!" "input/buttons" "input/may-i?")
+  :tests ("(begin (input/set! 'b #f) (input/set! 'b #t) (equal? #t (input/pressed? 'b)))")
+  :learn (:concept "Edge detection — pressing ≠ holding." :prerequisites ("if" "input/down?") :progression "Master input/down? for holds, then input/pressed? for one-shots, then compose both for responsive controls."))
+
+
+(verb
+  :name "input/may-i?"
+  :library "input"
+  :kind "rd"
+  :signature "(input/may-i?) -> boolean"
+  :summary "Is input permitted right now?"
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Reads the module-level permission flag. Defaults to #t (permission granted) — the base runtime imposes no privacy constraint."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "Ask the host whether input polling is permitted. Returns #t when input is allowed, #f when a host has explicitly withdrawn permission (privacy mode, accessibility overrides). Program cannot request or revoke — this is a read-only gate. Base runtime always returns #t; no permission constraint imposed."
+  :examples (
+    (:tier "novice"
+     :code "(input/may-i?)"
+     :note "Base runtime returns #t — input is permitted by default.")
+    (:tier "apprentice"
+     :code "(if (input/may-i?) (quote polling) (quote blocked))"
+     :note "Guard pattern — decide whether to poll based on the permission flag.")
+    (:tier "intermediate"
+     :code "(and (input/may-i?) (input/down? (quote a)))"
+     :note "Poll only if permitted; short-circuits when input is blocked.")
+    (:tier "expert"
+     :code "(define (safe-vector) (if (input/may-i?) (list (if (input/down? (quote right)) 1 -1) (if (input/down? (quote up)) 1 -1)) (list 0 0))) (safe-vector)"
+     :note "Full input vector, with a graceful fallback to zero when permission is denied.")
+    (:tier "master"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (build-input-mask) (if (input/may-i?) (filter (lambda (b) (input/down? b)) (input/buttons)) (quote ()))) (build-input-mask)"
+     :note "Enumerate held buttons — but only when permitted. Composes with input/buttons and input/down? into one honest read."))
+  :caveats ("Base runtime returns #t; only a host with a permission subsystem returns #f." "Not granular — a coarse allow/deny bit.")
+  :drawbacks ("Can't be flipped from Scheme.")
+  :usecases ("Guarding input polling in privacy-aware programs." "Graceful degradation.")
+  :related ("input/down?" "input/pressed?" "input/set!" "input/buttons")
+  :tests ("(equal? #t (input/may-i?))")
+  :learn (:concept "Permission as a runtime gate." :prerequisites ("if") :progression "Wrap input reads in (if (input/may-i?) …) when writing sensitive code."))
+
+
+(verb
+  :name "input/set!"
+  :library "input"
+  :kind "mut"
+  :signature "(input/set! button held) -> undefined"
+  :summary "Write the held state of a button; setting #f→#t triggers a press edge."
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Mutates the module-level held-state Map. On a #f→#t transition, also sets the edge flag so input/pressed? returns #t on the next read. Unknown button names are silently ignored (matches reference caveat)."
+  :permission "state-change"
+  :latency-class "sync-fast"
+  :pure #f
+  :effects "state"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "Host hook — mutate the held-state of a button. Intended for host runtimes, testing frameworks, and input adapters — user game code should read via input/down? / input/pressed? instead. Setting #f→#t triggers a press edge for input/pressed?; setting #t→#t or #t→#f does not."
+  :examples (
+    (:tier "novice"
+     :code "(input/set! (quote a) #t)"
+     :note "Write held=true for button 'a. Return value is unspecified.")
+    (:tier "apprentice"
+     :code "(begin (input/set! (quote a) #t) (input/down? (quote a)))"
+     :note "Round-trip: write then read.")
+    (:tier "intermediate"
+     :code "(begin (input/set! (quote up) #t) (input/set! (quote right) #t) (list (input/down? (quote up)) (input/down? (quote right))))"
+     :note "Simulate a diagonal-input frame by writing two buttons.")
+    (:tier "expert"
+     :code "(define (simulate-tap b) (begin (input/set! b #t) (let ((was-pressed (input/pressed? b))) (input/set! b #f) was-pressed))) (simulate-tap (quote a))"
+     :note "Simulate a tap and observe the edge — the shape a headless test would use.")
+    (:tier "master"
+     :code "(define (replay-frame frame) (for-each (lambda (b) (input/set! b #t)) (car frame)) (for-each (lambda (b) (input/set! b #f)) (cdr frame))) (replay-frame (cons (quote (a right)) (quote ())))"
+     :note "Replay a recorded input frame — press-set followed by release-set. The scaffolding a rollback-netcode replayer builds on."))
+  :caveats ("Unknown button names are silently ignored." "In user code, this bypasses normal input polling — use only in host runtimes or tests." "The edge flag is only set on false→true transitions; consecutive writes of the same value have no edge effect.")
+  :drawbacks ("Multiple #f→#t transitions in one frame produce only one edge.")
+  :usecases ("Host runtimes injecting hardware controller state." "Test harnesses replaying input sequences." "Accessibility mapping — custom device → standard button.")
+  :related ("input/down?" "input/pressed?" "input/buttons" "input/may-i?")
+  :tests ("(begin (input/set! 'a #t) (input/down? 'a))" "(begin (input/set! 'a #f) (input/set! 'a #t) (input/pressed? 'a))")
+  :learn (:concept "The host→program boundary — where external state enters the world." :prerequisites ("input/down?") :progression "Understand user code reads via input/down? and input/pressed?; input/set! is called BY the host, not by user code."))
+
+
+;; ─── library: system — 5 verbs ───────────────────────────────────
+
+(verb
+  :name "system/cards"
+  :library "system"
+  :kind "rd"
+  :signature "(system/cards) -> ((card ...) ...)"
+  :summary "Snapshot the open card fleet."
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Returns state.cards.slice() when no host card-provider is attached. In the base REPL that is the empty list — no host, no cards. A host adapter can inject a real fleet via setCardsProvider without this file knowing about it."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "A card is a UI container on the Sakura surface. This verb snapshots every open card and returns a list. In the base REPL with no host attached, there are no cards — the list is empty. That is honest: nothing IS open. A host with real cards injects them through the same code path."
+  :examples (
+    (:tier "novice"
+     :code "(system/cards)"
+     :note "Base REPL → () (empty). No host, no cards.")
+    (:tier "apprentice"
+     :code "(null? (system/cards))"
+     :note "True in the base REPL — the fleet IS empty, honestly.")
+    (:tier "intermediate"
+     :code "(length (system/cards))"
+     :note "Count the fleet — zero without a host.")
+    (:tier "expert"
+     :code "(let ((cards (system/cards))) (if (null? cards) (quote empty) (map car cards)))"
+     :note "Map over the fleet when it exists, return 'empty when it doesn't.")
+    (:tier "master"
+     :code "(define (card-count-by-kind cards) (fold-left (lambda (acc c) acc) 0 cards)) (card-count-by-kind (system/cards))"
+     :note "Fold pattern for card telemetry — safe on an empty fleet (returns 0)."))
+  :caveats ("Empty list in the base REPL is the honest state — not an error." "The fleet is a snapshot at call time.")
+  :drawbacks ("No filtering built in — filter Scheme-side.")
+  :usecases ("Layout introspection." "Spatial hit-testing.")
+  :related ("system/surface" "system/registry" "card/list")
+  :tests ("(null? (system/cards))")
+  :learn (:concept "Read-only introspection of runtime UI containers." :prerequisites ("null?" "length") :progression "Learn system/cards first, then explore card/focus! and card/rect."))
+
+
+(verb
+  :name "system/health"
+  :library "system"
+  :kind "rd"
+  :signature "(system/health) -> ((quarantined _) (fuel_exhausted _) (illusions _))"
+  :summary "Best-effort read of runtime health flags."
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Returns state.health as an assoc-list. Base runtime: all three fields () (null) — matches the reference's 'all-null return when provider unavailable' contract. A host can inject a real health provider via setHealthProvider."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "The Sakura runtime has three health indicators: 'quarantined (safe-mode flag), 'fuel_exhausted (unfinished-computation count), and 'illusions (anomaly count). This verb reads them. In the base REPL with no host health provider, all three are () — honest: no provider means no data."
+  :examples (
+    (:tier "novice"
+     :code "(system/health)"
+     :note "Returns ((quarantined ()) (fuel_exhausted ()) (illusions ())) in a base REPL — no host, no data.")
+    (:tier "apprentice"
+     :code "(assoc (quote quarantined) (system/health))"
+     :note "Assoc lookup on the returned alist — returns (quarantined ()) with a base runtime.")
+    (:tier "intermediate"
+     :code "(let ((h (system/health))) (car (cdr (assoc (quote quarantined) h))))"
+     :note "Extract the actual value of the quarantine flag — () with no host.")
+    (:tier "expert"
+     :code "(define (healthy?) (let ((h (system/health))) (equal? #f (car (cdr (assoc (quote quarantined) h)))))) (healthy?)"
+     :note "Predicate — returns #f in base REPL because the flag is () not #f. Use with care.")
+    (:tier "master"
+     :code "(define (health-summary) (map (lambda (row) (car row)) (system/health))) (health-summary)"
+     :note "Enumerate the health-flag names — the three canonical keys are always present, values may be null."))
+  :caveats ("Base REPL has no host health provider; all three fields are () (null)." "Field names use snake_case ('fuel_exhausted, 'illusions) to match the reference verbatim.")
+  :drawbacks ("Values are hints, not promises.")
+  :usecases ("Diagnostics UI." "Auto-recovery gating.")
+  :related ("system/scheduler" "system/cards")
+  :tests ("(equal? 3 (length (system/health)))")
+  :learn (:concept "System introspection with honest-null when unwired." :prerequisites ("assoc" "car" "cdr") :progression "Learn system/health, then system/scheduler for fuel-level detail."))
+
+
+(verb
+  :name "system/registry"
+  :library "system"
+  :kind "rd"
+  :signature "(system/registry [domain]) -> ((domain _) (count _) (entries (…)))"
+  :summary "Walk the runtime's verb roster."
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Walks env.vars at call time, filters to function bindings, returns each as an assoc-list with :name and :kind (impl vs stub). Reflects the FULL install stack — post base + AI + game + system + wired + reference. Domain 'events returns an honest empty structure until an event registry is attached."
+  :permission "read-only"
+  :latency-class "sync-slow"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "The Sakura kernel maintains a registry of every verb. This verb snapshots it. Each entry is an assoc-list with 'name (string) and 'kind ('impl or 'stub). Pass 'events as an optional first argument to query the events domain instead. Introspection — used for autocomplete, help systems, and self-discovering agents."
+  :examples (
+    (:tier "novice"
+     :code "(let ((r (system/registry))) (car (cdr (assoc (quote domain) r))))"
+     :note "The domain field of the default registry is the symbol 'verbs.")
+    (:tier "apprentice"
+     :code "(car (cdr (assoc (quote count) (system/registry))))"
+     :note "The count of verbs — a large positive integer in a full Sakura env.")
+    (:tier "intermediate"
+     :code "(let* ((r (system/registry)) (entries (car (cdr (assoc (quote entries) r))))) (length entries))"
+     :note "Length of the entries list should match the count field.")
+    (:tier "expert"
+     :code "(let* ((r (system/registry)) (entries (car (cdr (assoc (quote entries) r))))) (length entries))"
+     :note "Confirm the full-stack registry: after L0+L1+L2+L3+L4 install, entries is well over a thousand.")
+    (:tier "master"
+     :code "(system/registry (quote events))"
+     :note "Query the events domain — returns an honest empty structure with no event registry attached."))
+  :caveats ("Walk is O(N) over the env; N grows with L2+L3+L4 installs.")
+  :drawbacks ("No filtering built in — filter Scheme-side.")
+  :usecases ("IDE autocomplete." "Verb-picker UI." "Self-discovery.")
+  :related ("system/cards" "system/health" "help")
+  :tests ("(equal? 'verbs (car (cdr (assoc 'domain (system/registry)))))")
+  :learn (:concept "Reflective self-introspection of the language's verb roster." :prerequisites ("assoc" "car" "cdr" "length") :progression "Learn system/registry, then filter it with filter to build a verb picker."))
+
+
+(verb
+  :name "system/scheduler"
+  :library "system"
+  :kind "rd"
+  :signature "(system/scheduler) -> ((work _) (speech _) (Q_depth _))"
+  :summary "Snapshot the scheduler's fuel tanks and queue depth."
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Returns state.scheduler as an assoc-list. Base runtime: all three fields () (null) — matches the reference's 'null in sandboxed contexts' contract. A host with a real scheduler injects data via setSchedulerProvider."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "Three fuel tanks and a queue depth — a window into Sakura's own pacing. 'work is planning fuel, 'speech is response-generation fuel, 'Q_depth is pending-task queue. Base runtime: all null. Non-deterministic — two calls may return different values under a live scheduler."
+  :examples (
+    (:tier "novice"
+     :code "(system/scheduler)"
+     :note "Returns ((work ()) (speech ()) (Q_depth ())) with no host attached.")
+    (:tier "apprentice"
+     :code "(assoc (quote work) (system/scheduler))"
+     :note "Assoc lookup — the shape a caller uses to interpret a specific tank.")
+    (:tier "intermediate"
+     :code "(length (system/scheduler))"
+     :note "Three canonical fields — always three.")
+    (:tier "expert"
+     :code "(define (fuel-of tank) (let ((s (system/scheduler))) (car (cdr (assoc tank s))))) (fuel-of (quote work))"
+     :note "Helper — extract one tank's value. Returns () with no host.")
+    (:tier "master"
+     :code "(map car (system/scheduler))"
+     :note "Enumerate the three tank names — the canonical schema, useful when building a UI panel."))
+  :caveats ("Base REPL: all three fields () (null)." "Values are hints only, not exact.")
+  :drawbacks ("No subscription or event API — poll only.")
+  :usecases ("Diagnostics." "Load shedding.")
+  :related ("system/health" "system/cards")
+  :tests ("(equal? 3 (length (system/scheduler)))")
+  :learn (:concept "Self-awareness — introspecting internal resource consumption." :prerequisites ("assoc" "map") :progression "Learn system/scheduler, then compose with system/health for a full health-and-load view."))
+
+
+(verb
+  :name "system/surface"
+  :library "system"
+  :kind "rd"
+  :signature "(system/surface) -> ((cards _) (camera _) (entities _) (grid _))"
+  :summary "Snapshot the entire surface — cards, camera, entities, grid."
+  :impl-status "wired"
+  :impl-file "src/system.js"
+  :impl-notes "Returns state.surface as an assoc-list. Base runtime: cards=(), camera=default (x=0 y=0 k=1), entities=(), grid=(). A host adapter can inject a real surface via setSurfaceProvider."
+  :permission "read-only"
+  :latency-class "sync-slow"
+  :pure #f
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #f
+  :explanation "The dot-matrix world — all visible cards, the camera frame, entity positions, and the grid state. This verb returns everything in one call. Full detail; use system/cards or camera-state if you only need a slice."
+  :examples (
+    (:tier "novice"
+     :code "(system/surface)"
+     :note "Returns the four canonical fields — cards, camera, entities, grid — all empty/default in a base REPL.")
+    (:tier "apprentice"
+     :code "(assoc (quote camera) (system/surface))"
+     :note "Extract the camera slot — an alist of x/y/k.")
+    (:tier "intermediate"
+     :code "(let* ((s (system/surface)) (cam (car (cdr (assoc (quote camera) s))))) (car (cdr (assoc (quote k) cam))))"
+     :note "Drill into the camera's zoom factor k — 1 with the default camera.")
+    (:tier "expert"
+     :code "(map car (system/surface))"
+     :note "Enumerate the four surface slots — cards, camera, entities, grid.")
+    (:tier "master"
+     :code "(define (surface-empty?) (let ((s (system/surface))) (and (null? (car (cdr (assoc (quote cards) s)))) (null? (car (cdr (assoc (quote entities) s))))))) (surface-empty?)"
+     :note "Composite predicate — is the world in its default empty state?"))
+  :caveats ("Full detail — larger than one slice.")
+  :drawbacks ("Non-deterministic — two calls may differ.")
+  :usecases ("Debugging." "Serialization." "System-level planners.")
+  :related ("system/cards" "camera-state")
+  :tests ("(equal? 4 (length (system/surface)))")
+  :learn (:concept "Full-state introspection." :prerequisites ("assoc" "car" "cdr") :progression "Learn system/surface for full state, then narrow to camera-state or system/cards for slice-specific reads."))
+
+
+;; ─── library: eng — 6 verbs ──────────────────────────────────────
+
+(verb
+  :name "eng/beam-reactions"
+  :library "eng"
+  :kind "meta"
+  :signature "(eng/beam-reactions L a P) -> (R_A R_B M_A)"
+  :summary "Reactions at the supports of a simply-supported beam under a point load."
+  :impl-status "wired"
+  :impl-file "src/eng.js"
+  :impl-notes "Closed-form statics: R_B = P·a/L, R_A = P − R_B, M_A = 0. No iteration, no matrix — a direct algebraic evaluation."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #t
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "A simply-supported beam of length L rests on two supports (roller + pin) at its ends. A vertical point load P is applied at distance a from the left support. Force equilibrium (ΣF=0) and moment balance about the left support (ΣM_A=0) uniquely determine the vertical reactions R_A and R_B. Returned as (R_A R_B M_A) where M_A = 0 for a simply-supported beam."
+  :examples (
+    (:tier "novice"
+     :code "(eng/beam-reactions 10 5 100)"
+     :note "10-unit beam, 100-unit load at midpoint → (50 50 0) — equal reactions.")
+    (:tier "apprentice"
+     :code "(eng/beam-reactions 12 3 240)"
+     :note "12-unit beam, 240-unit load at a=3 → (180 60 0) — load nearer left support means larger left reaction.")
+    (:tier "intermediate"
+     :code "(map (lambda (a) (eng/beam-reactions 12 a 240)) (quote (3 6 9)))"
+     :note "Sweep load position across the span; reactions redistribute as expected.")
+    (:tier "expert"
+     :code "(let* ((R (eng/beam-reactions 10 4 100)) (RA (car R)) (RB (car (cdr R)))) (+ RA RB))"
+     :note "Sanity check — sum of reactions equals the applied load (100).")
+    (:tier "master"
+     :code "(let* ((loads (quote ((5 50) (10 100) (15 75)))) (rs (map (lambda (l) (eng/beam-reactions 20 (car l) (car (cdr l)))) loads))) (list (fold-left + 0 (map car rs)) (fold-left + 0 (map car (map cdr rs)))))"
+     :note "Superposition for multiple loads: sum of individual reactions equals sum of loads (225)."))
+  :caveats ("Assumes simply-supported beam; cantilever or fixed-fixed requires different equations." "0 ≤ a ≤ L; values outside are physically meaningless.")
+  :drawbacks ("Point loads only; distributed loads not handled." "Vertical only.")
+  :usecases ("Hand calculations in structural design." "Educational statics.")
+  :related ("eng/statics-solve")
+  :tests ("(equal? '(50 50 0) (eng/beam-reactions 10 5 100))" "(equal? '(180 60 0) (eng/beam-reactions 12 3 240))")
+  :learn (:concept "Static equilibrium — force + moment balance." :prerequisites ("+" "-" "*" "/") :progression "Master eng/beam-reactions for one load, then eng/statics-solve for multi-member frames."))
+
+
+(verb
+  :name "eng/tf"
+  :library "eng"
+  :kind "meta"
+  :signature "(eng/tf numerator denominator) -> transfer-function"
+  :summary "Construct a transfer function H(s) = num(s) / den(s) from coefficient lists."
+  :impl-status "wired"
+  :impl-file "src/eng.js"
+  :impl-notes "Wraps the two coefficient lists in a tagged assoc-list ((kind tf) (num …) (den …)). Non-enumerable _num/_den markers on the JS array make destructuring in eng/tf-dc-gain / eng/tf-stable? / eng/bode fast."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #t
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "H(s) = num(s) / den(s) is the foundation of linear control theory. You give it two coefficient lists (highest degree first) and it returns a callable representation. Query it with eng/tf-dc-gain (steady-state gain), eng/tf-stable? (stability via Routh–Hurwitz), and eng/bode (frequency sweep)."
+  :examples (
+    (:tier "novice"
+     :code "(eng/tf (quote (1)) (quote (1 2 1)))"
+     :note "H(s) = 1 / (s² + 2s + 1) — a critically-damped second-order system. Returned as an assoc-list ((kind tf) (num (1)) (den (1 2 1))).")
+    (:tier "apprentice"
+     :code "(let ((h (eng/tf (quote (10)) (quote (1 5 6))))) (assoc (quote kind) h))"
+     :note "Extract the kind marker — always 'tf.")
+    (:tier "intermediate"
+     :code "(let ((h (eng/tf (quote (10)) (quote (1 5 6))))) (eng/tf-stable? h))"
+     :note "Build then test stability — den = s² + 5s + 6 = (s+2)(s+3), both negative real poles → stable.")
+    (:tier "expert"
+     :code "(define (design k) (list (eng/tf-dc-gain (eng/tf (list k) (quote (1 3 2)))) (eng/tf-stable? (eng/tf (list k) (quote (1 3 2)))))) (design 5)"
+     :note "Design pattern — vary gain k and report both DC gain and stability. Returns (2.5 #t).")
+    (:tier "master"
+     :code "(let* ((plant (eng/tf (quote (1)) (quote (1 2 1)))) (bode (eng/bode plant 0.1 10 5))) (length bode))"
+     :note "Compose eng/tf with eng/bode — build a plant then sweep frequency."))
+  :caveats ("Coefficient lists must be non-empty and denominator non-zero.")
+  :drawbacks ("SISO only; MIMO requires state-space." "No factored form.")
+  :usecases ("Classical control design." "Frequency-domain analysis.")
+  :related ("eng/tf-dc-gain" "eng/tf-stable?" "eng/bode")
+  :tests ("(let ((h (eng/tf '(1) '(1 2 1)))) (equal? 'tf (car (cdr (assoc 'kind h)))))")
+  :learn (:concept "Transfer function as rational polynomial ratio." :prerequisites ("list") :progression "Build with eng/tf, then eng/tf-stable?, then eng/tf-dc-gain, then eng/bode."))
+
+
+(verb
+  :name "eng/tf-dc-gain"
+  :library "eng"
+  :kind "meta"
+  :signature "(eng/tf-dc-gain tf) -> number | (quote infinite)"
+  :summary "Compute the DC (zero-frequency) gain H(0) = num(0) / den(0)."
+  :impl-status "wired"
+  :impl-file "src/eng.js"
+  :impl-notes "Returns num[-1] / den[-1] — the last coefficient of each polynomial (constant term with highest-degree-first convention). Returns 'infinite when the denominator's constant is 0 (system has an integrator)."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #t
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "When a linear system reaches steady state with a constant input, the ratio of output to input is the DC gain: H(0) = num(0) / den(0). Ratio of constant terms. DC gain > 1 amplifies; < 1 attenuates; = 'infinite when the system has a free integrator."
+  :examples (
+    (:tier "novice"
+     :code "(eng/tf-dc-gain (eng/tf (quote (5)) (quote (10))))"
+     :note "Constant 5 / constant 10 = 0.5 — attenuator.")
+    (:tier "apprentice"
+     :code "(eng/tf-dc-gain (eng/tf (quote (1)) (quote (1 2 1))))"
+     :note "num(0)=1, den(0)=1 → DC gain = 1 — unity static gain.")
+    (:tier "intermediate"
+     :code "(let ((h (eng/tf (quote (100)) (quote (1 10 25))))) (* 2 (eng/tf-dc-gain h)))"
+     :note "Scale the DC gain — pattern for reference tracking (want output = 2× reference).")
+    (:tier "expert"
+     :code "(eng/tf-dc-gain (eng/tf (quote (1 0)) (quote (1))))"
+     :note "Numerator has zero constant term → DC gain = 0. Useful for detecting high-pass structure.")
+    (:tier "master"
+     :code "(define (closed-loop-gain k) (let* ((plant (eng/tf (quote (1)) (quote (1 2)))) (open-loop (eng/tf-dc-gain plant)) (loop-gain (* k open-loop))) (/ loop-gain (+ 1 loop-gain)))) (closed-loop-gain 10)"
+     :note "Unity-feedback loop: closed-loop DC = k·L/(1+k·L). Returns ≈0.833."))
+  :caveats ("Static gain only; transient response requires eng/bode or time-domain simulation." "'infinite when denominator constant is 0.")
+  :drawbacks ("DC gain alone reveals nothing about stability." "Ignores phase.")
+  :usecases ("Steady-state tracking-error checks." "Quick controller gain scheduling.")
+  :related ("eng/tf" "eng/tf-stable?" "eng/bode")
+  :tests ("(equal? 0.5 (eng/tf-dc-gain (eng/tf '(5) '(10))))" "(equal? 1 (eng/tf-dc-gain (eng/tf '(1) '(1 2 1))))")
+  :learn (:concept "DC gain as the low-frequency asymptote." :prerequisites ("eng/tf") :progression "Learn eng/tf-dc-gain, then eng/tf-stable?, then eng/bode."))
+
+
+(verb
+  :name "eng/tf-stable?"
+  :library "eng"
+  :kind "meta"
+  :signature "(eng/tf-stable? tf) -> boolean"
+  :summary "Routh–Hurwitz stability test on a transfer function."
+  :impl-status "wired"
+  :impl-file "src/eng.js"
+  :impl-notes "Builds the Routh table from denominator coefficients; returns #t iff no sign changes in the first column and no first-column zero. Conservative on borderline (imaginary-axis) cases — returns #f rather than attempting epsilon perturbation."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #t
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "A linear system is stable iff all poles (roots of the denominator) lie in the left half of the complex plane. Routh–Hurwitz builds a table from denominator coefficients and detects right-half-plane poles without factoring. Returns #t (stable) or #f (unstable or borderline)."
+  :examples (
+    (:tier "novice"
+     :code "(eng/tf-stable? (eng/tf (quote (1)) (quote (1 2 1))))"
+     :note "Roots at -1 (double) → stable → #t.")
+    (:tier "apprentice"
+     :code "(eng/tf-stable? (eng/tf (quote (1)) (quote (1 -1))))"
+     :note "Root at +1 → unstable → #f.")
+    (:tier "intermediate"
+     :code "(eng/tf-stable? (eng/tf (quote (1)) (quote (1 3 3 1))))"
+     :note "(s+1)³ — all poles at -1 → stable → #t.")
+    (:tier "expert"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(filter (lambda (k) (eng/tf-stable? (eng/tf (list k) (quote (1 3 2))))) (quote (1 5 10 20)))"
+     :note "Sweep controller gains; keep only those producing a stable closed loop.")
+    (:tier "master"
+     :code "(map (lambda (den) (eng/tf-stable? (eng/tf (quote (1)) den))) (quote ((1 2 1) (1 -1) (1 0 1) (1 3 3 1) (1 -2 1))))"
+     :note "Test a battery: stable, unstable, borderline (imaginary), stable, unstable. Result: (#t #f #f #t #f)."))
+  :caveats ("Borderline (jω-axis) cases return #f — reference caveat about borderline behavior." "Numeric precision near the boundary may misclassify.")
+  :drawbacks ("No pole locations returned." "No margin (gain / phase margin) — use eng/bode.")
+  :usecases ("Go/no-go check before control design." "Sweeping gains for the stable region.")
+  :related ("eng/tf" "eng/tf-dc-gain" "eng/bode")
+  :tests ("(equal? #t (eng/tf-stable? (eng/tf '(1) '(1 2 1))))" "(equal? #f (eng/tf-stable? (eng/tf '(1) '(1 -1))))")
+  :learn (:concept "Stability via Routh–Hurwitz." :prerequisites ("eng/tf") :progression "Learn eng/tf-stable?, then extract margins with eng/bode."))
+
+
+(verb
+  :name "eng/bode"
+  :library "eng"
+  :kind "meta"
+  :signature "(eng/bode tf f_min f_max n_pts) -> ((freqs (…)) (mag-db (…)) (phase-deg (…))) | ('use-backend info)"
+  :summary "Bode magnitude + phase at n log-spaced frequencies."
+  :impl-status "wired"
+  :impl-file "src/eng.js"
+  :impl-notes "Evaluates H(jω) = N(jω)/D(jω) at n log-spaced points via Horner's method in complex arithmetic. In-language up to n=200; above threshold returns ('use-backend info) per the reference's escalate-permitted contract."
+  :permission "read-only"
+  :latency-class "sync-slow"
+  :pure #t
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "A Bode plot shows how a linear system responds to sinusoidal inputs across frequency. The magnitude plot (dB) reveals gain; the phase plot reveals lag/lead. Essential for stability margins, bandwidth, and resonance. Computed in-language up to n=200; larger sweeps escalate to a backend."
+  :examples (
+    (:tier "novice"
+     :code "(length (eng/bode (eng/tf (quote (1)) (quote (1 2 1))) 0.1 10 5))"
+     :note "Three top-level fields (freqs, mag-db, phase-deg) — length is 3.")
+    (:tier "apprentice"
+     :code "(let ((b (eng/bode (eng/tf (quote (1)) (quote (1 2 1))) 0.1 10 3))) (length b))"
+     :note "The response shape has three canonical keys.")
+    (:tier "intermediate"
+     :code "(let ((b (eng/bode (eng/tf (quote (10)) (quote (1 1))) 0.1 100 5))) (length (car (cdr (car b)))))"
+     :note "Extract the freqs list — its length matches the n_pts argument (5).")
+    (:tier "expert"
+     :code "(let* ((tf1 (eng/tf (quote (10)) (quote (1 1)))) (tf2 (eng/tf (quote (100)) (quote (1 10)))) (b1 (eng/bode tf1 0.01 100 3)) (b2 (eng/bode tf2 0.01 100 3))) (length (list b1 b2)))"
+     :note "Compare two systems — different gains and time constants, same shape of response.")
+    (:tier "master"
+     :code "(car (eng/bode (eng/tf (quote (1)) (quote (1 2 1))) 0.01 100 250))"
+     :note "Beyond in-language threshold (n=250 > 200) — returns 'use-backend honestly."))
+  :caveats ("n > 200 → 'use-backend escalation (honest, per reference contract)." "f_min > 0 and f_min < f_max required.")
+  :drawbacks ("Numerical only — no symbolic zero/pole extraction." "Backend escalation requires network for larger sweeps.")
+  :usecases ("Control design (bandwidth, margins)." "Filter design.")
+  :related ("eng/tf" "eng/tf-stable?" "eng/tf-dc-gain")
+  :tests ("(equal? 3 (length (eng/bode (eng/tf '(1) '(1 2 1)) 0.1 10 5)))" "(equal? 'use-backend (car (eng/bode (eng/tf '(1) '(1 2 1)) 0.01 100 250)))")
+  :learn (:concept "Frequency-domain response." :prerequisites ("eng/tf" "complex arithmetic") :progression "Learn eng/bode after eng/tf-stable? — first check stability, then examine margins."))
+
+
+(verb
+  :name "eng/statics-solve"
+  :library "eng"
+  :kind "meta"
+  :signature "(eng/statics-solve force-eqs moment-eqs unknowns) -> ((unknown value) …) | (quote underdetermined) | (quote inconsistent)"
+  :summary "Solve stacked equilibrium equations via Gauss–Jordan; rank-deficient returns 'underdetermined."
+  :impl-status "wired"
+  :impl-file "src/eng.js"
+  :impl-notes "Concatenates force-eqs and moment-eqs, pads short rows with zeros, runs partial-pivot Gauss–Jordan on the augmented matrix. Returns paired unknowns→values if rank = |unknowns|; 'underdetermined if rank < |unknowns|; 'inconsistent if a row [0…0|b≠0] appears."
+  :permission "read-only"
+  :latency-class "sync-fast"
+  :pure #t
+  :effects "none"
+  :cortex-touch "none"
+  :deterministic #t
+  :explanation "Static equilibrium requires ΣF=0 and ΣM=0. For a multi-member structure, you write force + moment balance equations at each joint/member. This verb takes those rows, stacks them into an augmented matrix, and solves via Gauss–Jordan. Rank-deficient (statically indeterminate) systems return the symbol 'underdetermined; inconsistent systems return 'inconsistent."
+  :examples (
+    (:tier "novice"
+     :code "(eng/statics-solve (quote ((1 1 100))) (quote ((5 -10 0))) (quote (R-A R-B)))"
+     :note "R_A + R_B = 100, 5·R_A − 10·R_B = 0 → R_A ≈ 66.67, R_B ≈ 33.33.")
+    (:tier "apprentice"
+     :code "(eng/statics-solve (quote ((1 0 -100) (0 1 -50))) (quote ()) (quote (A-x A-y)))"
+     :note "Diagonal 2×2 — A-x = -100, A-y = -50 (moves the -RHS onto the LHS convention).")
+    (:tier "intermediate"
+     :code "(eng/statics-solve (quote ((1 1 0 100))) (quote ((0 5 -10 0) (1 0 1 50))) (quote (a b c)))"
+     :note "Three unknowns, three equations — one force, two moment.")
+    (:tier "expert"
+     :code "(eng/statics-solve (quote ((1 0 1 0 500) (0 1 0 1 300))) (quote ((0 0 10 0 1500) (1 1 -1 -1 0))) (quote (A-x A-y C-x C-y)))"
+     :note "A 4-unknown frame with force + moment + member-consistency rows — real static-analysis workload.")
+    (:tier "master"
+     :code "(eng/statics-solve (quote ((1 1 1))) (quote ()) (quote (x y)))"
+     :note "One equation, two unknowns → 'underdetermined — the honest signal that extra compatibility relations are needed."))
+  :caveats ("Row shape: (c1 c2 … cn b) — n coefficients then the RHS constant." "Short rows are zero-padded." "Rank-deficient → 'underdetermined; inconsistent → 'inconsistent.")
+  :drawbacks ("Linear equilibrium only." "No large-deformation or nonlinear support.")
+  :usecases ("Truss and frame analysis." "Machine design.")
+  :related ("eng/beam-reactions")
+  :tests ("(equal? 'underdetermined (eng/statics-solve '((1 1 1)) '() '(x y)))")
+  :learn (:concept "Linear equilibrium as Ax=b." :prerequisites ("linalg/solve" "list") :progression "Learn eng/beam-reactions first, then eng/statics-solve for multi-member structures."))

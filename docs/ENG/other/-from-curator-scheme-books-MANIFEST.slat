@@ -1,0 +1,80 @@
+(book-of-lang-eng
+  :title "Book of LANG-ENG"
+  :subtitle "How Motoi Scheme and its variants promise things to each other"
+  :audience
+  ("engineers authoring a new variant"
+   "engineers authoring a new fork"
+   "cart authors trying to figure out where a cart runs"
+   "Sakura herself, at run time, when she has to honor a Motoi verb"
+   "a curious kid who wondered why the language has more than one name")
+
+  :setting-anchor "the cherry tree — one root (Motoi), one bright blossom (Sakura), many branches (forks)"
+
+  :cast-anchors
+  ((sakura "the blossom on the tree — the variant that authored the rules by shipping and getting paid")
+   (motoi "the root — the public ancestor, foundation, quiet, load-bearing")
+   (lacuna "the SRE branch — a fork, walked away, no compat pledge")
+   (physics-explosions "the load-bearing verb whose name Sakura owns with shader-heavy behavior")
+   (efx-explosions "the Motoi verb Sakura must honor, delegated internally to the heavy one")
+   (jesse "the eng lead who wrote most of the dispatcher and cares that names not collide")
+   (motoi-copilot "the tiny savant LLM that will one day know Motoi and nothing else"))
+
+  :themes
+  ("verb names are the compat contract"
+   "variants pledge; forks walk away"
+   "no reimplementation — delegate through a reserved surface"
+   "the language IS the process, the procedure, and the documentation, not the interpreter"
+   "authority flows from the seller to the ancestor — Sakura authored the rules"
+   "version bumps flow the other way — Motoi bumps, Sakura inherits"
+   "cart portability is the daily test of the pledge"
+   "the tree grows — forks-of-forks are first-class")
+
+  :composition
+  ("publishable prose — kid-readable at SICP bar, no training-data smell"
+   "one voice — Sakura's teaching voice throughout"
+   "worked examples over abstract rules"
+   "cite prior doctrine with [[memory-name]] markers"
+   "real runnable Sakura Scheme where code appears — no eval, no call/cc"
+   "no name-drops of corporate people or researchers-at-labs"
+   "no conjured themes; plain text over invention"
+   "no hallucination — flag with :status blocked-need-alfred when unsure")
+
+  :provenance
+  ("authored 2026-07-14 in response to Alfred's lock:"
+   "'A fork vs a dialect has to mean something. The pledge should mean you"
+   "don't clobber and some behavior is expected... This is the language."
+   "This? Process procedure and documentation? This is the system.'")
+
+  :composes-with
+  ("[[sakura-scheme-base-variant-doctrine]]"
+   "[[project_motoi_scheme_naming_and_dialects]]"
+   "[[merge-not-throw-doctrine]]"
+   "[[reference-manual-IS-the-language]]"
+   "[[operators-are-first-class-scheme-authors]]"
+   "[[the-kid-from-north-georgia-apple-basic]]"
+   "[[publishable-prose-doctrine]]")
+
+  :chapters
+  ((chapter :file "00-cover.book.slatl"                                  :title "Cover")
+   (chapter :file "00-index.book.slatl"                                  :title "The index")
+   (chapter :file "01-what-is-a-language.book.slatl"                     :title "What a language is")
+   (chapter :file "02-base-and-variants.book.slatl"                      :title "Base and variants")
+   (chapter :file "03-variant-vs-fork-pledge.book.slatl"                 :title "The pledge — variant vs fork")
+   (chapter :file "04-verb-names-are-contracts.book.slatl"               :title "Verb names are contracts")
+   (chapter :file "05-runtime-variant-switch.book.slatl"                 :title "How the runtime picks a variant")
+   (chapter :file "06-dialect-slat-format.book.slatl"                    :title "The dialect.slat file")
+   (chapter :file "07-adapter-engine.book.slatl"                         :title "The adapter engine")
+   (chapter :file "08-fork-tree.book.slatl"                              :title "The fork tree")
+   (chapter :file "09-authorship-and-versioning-flow-opposite.book.slatl":title "Authorship and versioning flow opposite")
+   (chapter :file "10-the-drift-problem.book.slatl"                      :title "The drift problem")
+   (chapter :file "11-cartridge-portability.book.slatl"                  :title "Cartridge portability")
+   (chapter :file "12-motoi-copilot-slot.book.slatl"                     :title "The Motoi Copilot slot")
+   (chapter :file "13-the-eng-manifest.book.slatl"                       :title "The eng manifest — how the pieces fit")
+   (chapter :file "14-authoring-a-new-variant.book.slatl"                :title "Authoring a new variant")
+   (chapter :file "15-authoring-a-new-fork.book.slatl"                   :title "Authoring a new fork")
+   (chapter :file "16-worked-example-physics-explosions.book.slatl"      :title "Worked example — physics/explosions vs efx/explosions"))
+
+  :count 18
+  :status "draft-first-pass"
+  :owner "docs-team (Jess)"
+  :last-reviewed "2026-07-14")

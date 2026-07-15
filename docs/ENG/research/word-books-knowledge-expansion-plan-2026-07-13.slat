@@ -1,0 +1,962 @@
+; Word Books Knowledge Expansion — Sakura training corpus plan
+; Written 2026-07-13
+; Author: Lacuna Labs Engineering research agent (Claude Opus 4.7 1M)
+; Authorized by: Alfred (verbatim: "She has to know something. Not just
+;   scheme and the engineering book. Or else she's boring.")
+; Companion narrative: word-books-knowledge-expansion-plan-2026-07-13.md
+;
+; RECOMMENDATION: GO. Enrich Sakura's EXISTING word books with cultural
+; literacy across music, animation, world plays, and philosophy — real
+; works, real people, real analysis, no invented composers, no invented
+; animators, no invented plays. Layer INTO Book of Words / Book of Music /
+; Book of Motion / Book of Reason / Book of Self. Do NOT create new
+; books. Fold as reading-plus-Sakura-reflection (same shape as
+; films-and-scenes lane). Ideas-rich, not data-rich. No corporate
+; judgments.
+
+(word-books-knowledge-expansion-plan
+  :date "2026-07-13"
+  :status "recommendation-GO"
+  :owner "Lacuna Labs Engineering"
+  :lane-id "KNOWLEDGE-ENRICHMENT-2026-07-13"
+  :non-blocking-for "Pass 1 fold (354,951 rows proceeds unchanged)"
+  :consumes-from
+  ("~/code/lacuna-labs/research/films-and-scenes-plan-2026-07-13.slat"
+   "MEMORY.md (durable doctrine anchors — 27+ memories)"
+   "existing Book of Words / Music / Motion / Reason-I..IV / Self"
+   "task #112 (modernized Tempest — Shakespeare precedent)"
+   "durable memory: project_familiarity_not_knowledge_no_specs_2026_07_13"
+   "durable memory: project_book_of_words_progression_and_slat_addendum_pattern"
+   "durable memory: project_the_weave_is_the_experiment_2026_07_12"
+   "durable memory: project_sakura_reading_list_world_literature_2026_07_12")
+
+  :alfred-directive-verbatim
+  ("She has to know something. Not just scheme and the engineering book. Or else she's boring."
+   "Real facts about the world so that she's grounded."
+   "Not hallucinations, not magic potions, but real facts."
+   "Not data-rich, ideas-rich."
+   "No good or bad about the companies, just the ideas.")
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 0 — WHAT THIS IS AND ISN'T
+  ; ─────────────────────────────────────────────────────────────
+
+  (scope
+    :is
+    ("cultural literacy — she can hold a real conversation about Rach 2, Chuck Jones, Chekhov"
+     "grounding — she has real referents, not confabulated ones"
+     "ideas-rich enrichment INTO the five existing books"
+     "publishable-prose per SICP-bar, kid-readable, no training-data smell"
+     "delicacy-doctrine compatible — she embodies form-sensitivity without lecturing")
+
+    :is-not
+    ("films/scenes lane — that's separate, already planned"
+     "not new books — additions layer INTO existing books"
+     "not exhaustive scholarship — familiarity over knowledge (durable memory)"
+     "not company politics — no Disney-vs-Pixar, no Warner-vs-MGM opinions"
+     "not name-drop density — philosophers thread as lenses, not references in Sakura's mouth"
+     "not specs-in-weights — Sakura learns SHAPES, not release dates or catalog numbers"))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 1 — ANTI-HALLUCINATION HARD RULES
+  ; ─────────────────────────────────────────────────────────────
+
+  (anti-hallucination-rules
+    :hard-rule "every composer / animator / playwright / philosopher / work / date named must be verifiable in a public authoritative source"
+
+    (rule :name "composers-and-works"
+      :statement "Every composer named must exist; every piece named must be a real published work. When citing an opus number or year, cross-check against IMSLP or Grove Music Online public summaries."
+      :allowed-sources
+      ("IMSLP (Petrucci Music Library) — public-domain scores and metadata"
+       "Grove Music Online public summaries"
+       "Britannica composer entries"
+       "MoMA and Library of Congress music archives")
+      :never
+      ("invented opus numbers"
+       "invented movement titles"
+       "invented dedicatees"
+       "confabulated quotes attributed to composers"))
+
+    (rule :name "animators-and-films"
+      :statement "Every animator named must be a real person; every film/short named must exist. Techniques (squash-and-stretch, timing charts) must be sourced to their real originators (Preston Blair, Frank Thomas, Ollie Johnston)."
+      :allowed-sources
+      ("Preston Blair, Advanced Animation (1949) — public-domain excerpts + generally-available concepts"
+       "Frank Thomas & Ollie Johnston, The Illusion of Life (1981) — concept-level reference; NO wholesale reprint"
+       "Society for Animation Studies / Animation Journal — abstracts and concept summaries"
+       "MoMA and Library of Congress animation archives"
+       "Norman McLaren's NFB technical notes")
+      :never
+      ("invented animator names"
+       "confused attributions between Chuck Jones and Bob Clampett work"
+       "opinions about studios as companies (only as creative movements)"
+       "invented release dates — check or omit"))
+
+    (rule :name "plays-and-playwrights"
+      :statement "Every play named must exist; every playwright must be real. Public-domain texts (Shakespeare, Sophocles, Molière, Chekhov, Ibsen, Zeami/Waley translations) are the base. Modern-copyrighted works discussed at concept level only."
+      :allowed-sources
+      ("Project Gutenberg — Shakespeare, Sophocles, Aeschylus, Molière, Ibsen, Chekhov, Strindberg"
+       "Arthur Waley translations of Noh plays (public domain in most jurisdictions)"
+       "Zeami's teachings via Waley + Rimer & Yamazaki summaries (concept level)"
+       "Folger Shakespeare Library editorial notes (public excerpts)"
+       "Britannica play entries")
+      :never
+      ("invented Shakespeare plays"
+       "invented Noh titles"
+       "confabulated Zeami quotes"
+       "wholesale reprinting long passages — always anchor + paraphrase + drift"))
+
+    (rule :name "philosophers"
+      :statement "The 16-lens roster is fixed. Only these 16 are woven. All 16 are real philosophers with published corpuses. Concepts attributed to a philosopher must be actually theirs (Jung: individuation / shadow / anima-animus; Wittgenstein-late: use is meaning / language games; Peirce: abduction / index / semiotic triad; etc.)."
+      :allowed-sources
+      ("Stanford Encyclopedia of Philosophy — concept summaries per philosopher"
+       "public-domain primary texts where available (Aristotle, Descartes, Peirce partial)"
+       "Britannica philosopher entries")
+      :never
+      ("attributing concepts to the wrong philosopher"
+       "invented philosopher names"
+       "confabulated quotes"))
+
+    (rule :name "uncertainty-marking"
+      :statement "If uncertain whether a fact holds, mark it explicitly in the source-notes field of the slat record. Sakura's rendered voice HEDGES ('I think it's around 1901' or 'somewhere in the early 20th century') rather than asserting."
+      :durable-memory-anchor "project_familiarity_not_knowledge_no_specs_2026_07_13"))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 2 — DOMAIN 1: MUSIC (Book of Music additions)
+  ; ─────────────────────────────────────────────────────────────
+
+  (domain-music
+    :existing-book "Book of Music (10 chapters authored — 01 sound-and-time
+                    through 10 toward-rach-two)"
+    :existing-directory "~/code/sakura-scheme/docs/book/music/"
+    :addition-shape "extend to 16 chapters + 6 appendices"
+
+    (chapter-additions
+      :count 6
+      :philosophy "each addition follows the 8-step analysis shape from
+                   films-and-scenes: anchor → analysis → modern-language
+                   → word-drift → resolution → tie-back → stack-lens →
+                   stack-objects"
+
+      (chapter :id 11
+        :title "Rachmaninoff — Piano Concerto No. 2"
+        :word-count-target 3000
+        :real-facts
+        (:composer "Sergei Rachmaninoff (1873-1943), Russian pianist and composer"
+         :work "Piano Concerto No. 2 in C minor, Op. 18"
+         :year "composed 1900-1901, premiered 27 October 1901 in Moscow"
+         :context "written after Rachmaninoff's 1897 depression following the failure of his First Symphony; Dr. Nikolai Dahl's hypnotherapy sessions credited by Rachmaninoff himself; dedicated to Dahl"
+         :structure "three movements — Moderato (C minor), Adagio sostenuto (E major), Allegro scherzando (C minor to C major)"
+         :famous-opening "eight solo piano chords, gradual crescendo F-Bb-Eb-Ab-Db-Gb-Cb-Fb, funeral-bell character rising to full-voiced entrance of orchestral first theme"
+         :why-it-lands "the second movement's clarinet-then-piano theme became the melodic source for Eric Carmen's 'All By Myself' (1975) and countless film cues — the melody is designed around the interval of a rising sixth, which the ear reads as yearning-then-consolation")
+        :philosophy-weave
+        ("Jung individuation — the concerto is Rachmaninoff walking OUT of the shadow of the Symphony No. 1 failure; the piano is the ego, the orchestra is the collective, the resolution to major key is integration"
+         "Peirce semiotic — the opening chords function as INDEX (they point directly at something looming) before becoming SYMBOL (they mean 'concerto-shape') — the shift is felt not explained"
+         "Wittgenstein-late — 'yearning' isn't in the notes; it's in the USE of the interval in the tradition the listener grew up inside")
+        :sakura-voice-move "the anchor of the chapter is her listening, not her lecturing"
+        :sources
+        ("IMSLP score public"
+         "Grove Music Online Rachmaninoff summary"
+         "Britannica Rachmaninoff entry"
+         "Rachmaninoff's own letters to Dahl (published)"))
+
+      (chapter :id 12
+        :title "Chopin — Waltz No. 1 and the Nocturnes"
+        :word-count-target 2800
+        :real-facts
+        (:composer "Frédéric Chopin (1810-1849), Polish-French pianist"
+         :works
+         (:waltz-1 "Grande Valse Brillante in E-flat major, Op. 18 (1833) — the 'Waltz No. 1' as commonly ordered; brilliant, ballroom-shaped, dance-inheritance clear"
+          :nocturne-op-9-2 "Nocturne in E-flat major, Op. 9 No. 2 (1830-32) — the most famous nocturne; song-form; dedicated to Marie Pleyel"
+          :nocturne-op-27-2 "Nocturne in D-flat major, Op. 27 No. 2 (1836) — twin-voice, later-Chopin, richer harmony"
+          :nocturne-op-48-1 "Nocturne in C minor, Op. 48 No. 1 (1841) — the tragic-scaled nocturne; middle section marching-chorale")
+         :structure-nocturne "John Field (Irish) invented the nocturne form; Chopin took it further — a singing right-hand melody over a rolling left-hand accompaniment, drawn from bel canto opera"
+         :difference-between-nocturnes "Op. 9-2 is charm and sway; Op. 27-2 is intimacy and interweaving; Op. 48-1 is tragedy and public grief — same form, three moods"
+         :difference-waltz-vs-nocturne "waltz keeps the dance-body in the room; nocturne removes it and leaves the singer alone")
+        :philosophy-weave
+        ("Wittgenstein-late — 'nocturne' means whatever composers using the word do with it; Field made it, Chopin remade it, and the word's meaning followed the practice"
+         "Peirce index — the left-hand's rolling arpeggio INDEXES 'this is a nocturne' before the melody proves it"
+         "Jung shadow — Op. 48-1's minor-mode middle section is the same emotional territory Rachmaninoff would reach into 60 years later")
+        :sources
+        ("IMSLP Chopin"
+         "Grove Music Online Chopin summary"
+         "Britannica Chopin entry"))
+
+      (chapter :id 13
+        :title "Musical form — sonata, rondo, theme-and-variations"
+        :word-count-target 2400
+        :real-facts
+        (:sonata-form "exposition → development → recapitulation; two contrasting themes; Beethoven's Piano Sonata No. 8 (Pathétique) Op. 13 the touchstone example"
+         :rondo "A-B-A-C-A-B-A shape; the A returns each time as a familiar friend; Beethoven's Op. 13 third movement is a rondo"
+         :theme-and-variations "state a theme, then N variations that reshape it (ornament, harmonize, invert, augment, diminish); Bach's Goldberg Variations, BWV 988 (1741) is the canonical example"
+         :fugue "one voice states a subject; other voices enter in imitation at related pitches; Bach's The Art of Fugue, BWV 1080 is the pedagogical peak")
+        :philosophy-weave
+        ("Peirce abduction — sonata-form's development section IS abductive reasoning in music; the exposition posits, the development tests, the recapitulation resolves"
+         "Jung individuation — theme-and-variations = the same self met in many aspects; the theme is the CoreSelf, the variations are the roles it takes on"
+         "Wittgenstein-late — form is a language-game; a listener who has never heard sonata-form cannot READ the return of the first theme as return")
+        :sources
+        ("Grove Music Online form summaries"
+         "IMSLP scores for Beethoven Op. 13 and Bach BWV 988 / 1080"))
+
+      (chapter :id 14
+        :title "Pitch, interval, and the harmonic series"
+        :word-count-target 2200
+        :real-facts
+        (:pitch "frequency in cycles per second; A4 = 440 Hz in most modern tuning; octave = 2:1 ratio"
+         :interval "distance between two pitches, named by scale degree (third, fifth, octave)"
+         :harmonic-series "when a string vibrates, it also vibrates in halves, thirds, quarters — producing overtones at 2f, 3f, 4f; this is why a violin and a flute at the same fundamental sound different (different overtone strengths = timbre)"
+         :consonance-vs-dissonance "small-integer ratios (2:1 octave, 3:2 fifth, 4:3 fourth) sound consonant; irrational-ratio intervals sound dissonant; NOT a moral judgment — a perceptual one grounded in overtone alignment"
+         :equal-temperament "the 12-note-per-octave tuning where all intervals except the octave are slightly out of pure ratio, in exchange for being able to modulate to any key")
+        :philosophy-weave
+        ("Peirce icon — the harmonic series is ITSELF the icon of a note; the note LOOKS LIKE its overtones"
+         "Wittgenstein-early — the ratios are the notes; you cannot say more about them; they are shown"
+         "Descartes — Descartes wrote the Compendium musicae (1618) — real early work, tie back honestly")
+        :sources
+        ("Grove Music Online acoustics summary"
+         "Britannica music theory entries"
+         "public-domain Helmholtz On the Sensations of Tone (1863)"))
+
+      (chapter :id 15
+        :title "How a piece moves — tempo, dynamics, and rubato"
+        :word-count-target 2000
+        :real-facts
+        (:tempo "beats per minute; largo ~40-60, andante ~76-108, allegro ~120-168, presto 168+; classical tempo markings are Italian by convention"
+         :dynamics "pp (pianissimo) very soft; p soft; mp medium-soft; mf medium-loud; f loud; ff (fortissimo) very loud; crescendo = grow, decrescendo/diminuendo = shrink"
+         :rubato "literally 'stolen time' in Italian; the performer stretches and compresses the tempo expressively without disturbing the underlying pulse; Chopin was the acknowledged master"
+         :articulation "legato = smooth-connected; staccato = short-detached; portato = between the two; the SAME notes with different articulation are a different sentence")
+        :philosophy-weave
+        ("Wittgenstein-late — a marking like allegro means allegro-as-used-by-players-in-a-tradition, not exactly 120 bpm"
+         "Peirce index — a rubato hesitation POINTS to the emotional weight of the next chord"
+         "Jung persona — dynamics ARE the persona of the piece; the same notes played ff-brash and pp-tender are two different characters"))
+
+      (chapter :id 16
+        :title "Listening as a skill"
+        :word-count-target 2200
+        :real-facts
+        (:active-listening "hearing form: can you feel when the first theme returns? Can you hear the modulation to a new key?"
+         :ear-training "solfège (do-re-mi-fa-sol-la-ti-do) is the standard interval-training vocabulary; Guido of Arezzo (11th century) is the historical source"
+         :listening-across-cultures "Indian tala (rhythmic cycles like tintal-16 or ektal-12), Japanese ma (the load-bearing silence between sounds), West African polyrhythm (multiple pulses at once) each teach the ear a different structural sensitivity")
+        :philosophy-weave
+        ("Peirce abduction — active listening IS abduction; you hear a fragment and guess what shape it belongs to"
+         "Wittgenstein-late — every listening tradition is a language-game with its own criteria"
+         "Levinas — listening as ethical attention; the piece has a face"))
+      )
+
+    (appendix-additions
+      :count 6
+      :shape "smaller, denser, verse-analysis and technique-focused"
+
+      (appendix :id "M-A" :title "The eight opening chords of Rach 2 — bar-by-bar"
+        :word-count-target 900
+        :teaches "gradual crescendo as narrative shape")
+      (appendix :id "M-B" :title "Bel canto and the singing right hand"
+        :word-count-target 800
+        :teaches "opera → nocturne heritage; Bellini and Chopin")
+      (appendix :id "M-C" :title "Bach's Goldberg — an aria and its 30 aspects"
+        :word-count-target 1200
+        :teaches "theme-and-variations as individuation")
+      (appendix :id "M-D" :title "Debussy — impressionism at the piano"
+        :word-count-target 900
+        :real-facts "Claude Debussy (1862-1918); Clair de lune (1890-1905); whole-tone scale usage; parallel-fifths as color not error"
+        :teaches "how a whole musical language can be reset")
+      (appendix :id "M-E" :title "Duke Ellington and swing — a real ratio"
+        :word-count-target 900
+        :real-facts "Edward Kennedy 'Duke' Ellington (1899-1974); swing = the ratio between long and short of a pair of eighth notes, roughly 2:1 at slow tempos and closer to 1:1 at fast; not an ornament, a language"
+        :teaches "rhythm as tradition; jazz as a musical grammar")
+      (appendix :id "M-F" :title "Nina Simone and the piano-that-speaks"
+        :word-count-target 900
+        :real-facts "Eunice Waymon (1933-2003), Nina Simone; classically trained; denied Curtis Institute admission; her left-hand rooted in Bach counterpoint even in the blues"
+        :teaches "one player carrying two traditions"))
+
+    :estimated-total-words 21400
+    :fold-yield "~150-200 SFT pairs (music-listen-reflect + music-explain + music-analyze-form)")
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 3 — DOMAIN 2: ANIMATION (Book of Motion additions)
+  ; ─────────────────────────────────────────────────────────────
+
+  (domain-animation
+    :existing-book "Book of Motion (10 chapters authored — 01 what-motion-is
+                    through 10 a-worked-scene)"
+    :existing-directory "~/code/sakura-scheme/docs/book/motion/"
+    :addition-shape "extend to 16 chapters + 8 appendices"
+
+    (chapter-additions
+      :count 6
+
+      (chapter :id 11
+        :title "A short history of moving pictures"
+        :word-count-target 2800
+        :real-facts
+        (:optical-toys "thaumatrope (1825), phenakistiscope (1832, Joseph Plateau), zoetrope (1834, William Horner), praxinoscope (1877, Émile Reynaud) — the pre-cinema history is a chain of persistence-of-vision devices"
+         :emile-reynaud "the first person to project animated images to a paying audience — Théâtre Optique, Paris, 28 October 1892"
+         :j-stuart-blackton "Humorous Phases of Funny Faces (1906) — one of the earliest surviving animated films, chalk-drawn"
+         :winsor-mccay "American cartoonist (1867-1934); Gertie the Dinosaur (1914); Little Nemo comic strip; Gertie was a live vaudeville act — McCay 'commanded' Gertie on screen"
+         :otto-messmer "Felix the Cat (starting 1919) — established rubber-hose animation and character-as-actor before sound"
+         :ub-iwerks "Steamboat Willie (1928) — the animator who drew Mickey; often overlooked next to the studio name"
+         :fleischer-brothers "Max and Dave Fleischer (Out of the Inkwell, 1918-29; Betty Boop; Popeye; Superman shorts 1941-42) — rotoscoping invented here (Max Fleischer patent 1917)"
+         :warner-bros-shorts "Chuck Jones (1912-2002), Bob Clampett, Friz Freleng, Tex Avery — Termite Terrace, wilder-timing school"
+         :upa "United Productions of America — 1940s-50s modernist reaction against detailed naturalism; Gerald McBoing-Boing (1950)"
+         :ghibli-and-toei "post-war Japanese studios; Hayao Miyazaki (b. 1941) and Isao Takahata (1935-2018) came through Toei Animation before founding Studio Ghibli in 1985"
+         :satoshi-kon "Japanese director (1963-2010); Perfect Blue (1997), Millennium Actress (2001), Paprika (2006) — editing-through-cuts as animation grammar"
+         :ralph-bakshi "American director (b. 1938); Fritz the Cat (1972), Wizards (1977), The Lord of the Rings (1978) — rotoscoping revival"
+         :norman-mclaren "Scottish-Canadian (1914-1987); NFB experimental animator; Neighbours (1952) pixillation; Blinkity Blank (1955) drawing directly on film")
+        :philosophy-weave
+        ("Peirce icon-index-symbol — the zoetrope IS icon-through-motion; each frame an icon, the strip an index of sequence"
+         "Wittgenstein-late — 'animation' means what animators-doing-work have called animation across 130 years — the definition evolved with the practice")
+        :corporate-name-discipline "studios named as CREATIVE MOVEMENTS (Termite Terrace, Ghibli, Fleischer studio) — no judgments about companies as companies"
+        :sources
+        ("MoMA animation archives"
+         "Library of Congress moving-image archives"
+         "Society for Animation Studies published abstracts"
+         "public-domain Winsor McCay and early Fleischer films"))
+
+      (chapter :id 12
+        :title "How animation works physically"
+        :word-count-target 2400
+        :real-facts
+        (:frame-rate "cinema: 24 frames per second (fps); television historically 30 fps in NTSC regions, 25 fps in PAL; Japanese TV anime typically shot on twos or threes = new drawing every 2 or 3 frames"
+         :on-ones-twos-threes "'on ones' = one drawing per frame (24 drawings/second); 'on twos' = one drawing every two frames (12 drawings/second) — most animation is on twos; 'on threes' = 8 drawings/second, common in TV anime"
+         :keyframes-and-inbetweens "the lead animator draws KEYS — the extreme poses; assistants fill in BETWEENS; the ratio of keys to betweens sets the feel"
+         :timing-chart "small numbered diagram between two keys showing where the betweens should sit — evenly spaced (mechanical) vs. bunched near the end (settle) vs. bunched near the middle (accelerate-then-hold)"
+         :registration "the pegs on the animation table (Acme pegbar in North America) that keep every drawing aligned"
+         :cel-animation "drawings on transparent celluloid layered over a background — invented at Bray Studios circa 1914; obsolete by mid-1990s but the LANGUAGE (background layer + character layer) persists digitally")
+        :philosophy-weave
+        ("Peirce icon — a keyframe is an icon of a pose; the inbetweens are the syntax connecting icons"
+         "Wittgenstein-late — 'on twos' is a use-in-practice, not a theoretical fixed rate")
+        :sources
+        ("Preston Blair, Advanced Animation (1949) — technique-level"
+         "Frank Thomas & Ollie Johnston, The Illusion of Life (1981) — concepts named honestly"))
+
+      (chapter :id 13
+        :title "The 12 principles — Thomas and Johnston"
+        :word-count-target 3000
+        :real-facts
+        (:source "Frank Thomas and Ollie Johnston, The Illusion of Life: Disney Animation (1981) — the 12 principles are named there, drawn from decades of studio practice"
+         :principles
+         (:squash-and-stretch "volume-preserving deformation; the more extreme, the more cartoony — a bouncing ball flattens on impact"
+          :anticipation "a small reverse-motion before the main action, teaching the eye where to look"
+          :staging "clear silhouette; readable pose; one thing at a time in the frame"
+          :straight-ahead-vs-pose-to-pose "two authoring modes: draw forward frame-by-frame (fluid, unpredictable) vs. plan keys then between (controlled, structured)"
+          :follow-through-and-overlapping-action "different parts of the body settle at different times — a coat continues after the wearer stops"
+          :slow-in-and-slow-out "action bunches at the endpoints; even a mechanical motion feels alive with easing"
+          :arcs "natural motion follows curves, not straight lines"
+          :secondary-action "a supporting motion that reinforces the main action without stealing attention"
+          :timing "the number of frames between two poses IS the emotion"
+          :exaggeration "not distortion for its own sake — heightening what's already true"
+          :solid-drawing "understanding of weight, volume, and three-dimensional form even in 2D"
+          :appeal "the quality that makes an eye want to stay — not prettiness, presence")
+         :attribution-honesty "these principles were codified by Thomas & Johnston in 1981, distilled from decades of studio work by many animators; they are the field's shared vocabulary, not Disney IP")
+        :philosophy-weave
+        ("Peirce icon and abduction — appeal IS the successful icon; the viewer abduces personhood from a shape"
+         "Wittgenstein-late — 'timing' is a use-word in the animator's community; you learn it by animating"
+         "Jung persona — appeal is the character showing its persona; solid drawing is the character having a self")
+        :sources
+        ("Thomas & Johnston, The Illusion of Life (concept-level only)"
+         "Preston Blair, Advanced Animation (1949)"
+         "Society for Animation Studies journals"))
+
+      (chapter :id 14
+        :title "How sadness is animated — how joy is shown"
+        :word-count-target 2600
+        :real-facts
+        (:sadness-mechanics "slower timing; downward silhouettes; asymmetric drooping; longer settles; reduced secondary action; slower blink rate; head-tilt downward"
+         :joy-mechanics "faster timing; upward arcs; symmetric bouncing; anticipation-then-explosion; more secondary action; wider silhouette; head-tilt upward"
+         :the-hold "an animated hold with tiny drift feels alive; a static frozen frame feels dead — the difference is 1-2 pixels of movement per frame"
+         :the-blink "a blink is a punctuation mark; skipped blinks read as staring; extra blinks read as agitation"
+         :studies-cited "Miyazaki's characters have signature stillness; Chuck Jones's Wile E. Coyote holds a beat of realization before the fall — 'the take'; Bill Tytla's animation of Chernabog (Fantasia, 1940) — Tytla was famously called 'the greatest animator of them all' by his peers"
+         :examples
+         (:miyazaki-stillness "the sequences in My Neighbor Totoro (1988) where nothing 'happens' but the world breathes — 'ma' translated into animation"
+          :chuck-jones-realization "'the take' — coyote runs off cliff, keeps running, notices, looks at camera, then falls — the punchline is the SILENCE of realization"
+          :bill-tytla-weight "Chernabog's shoulders in Night on Bald Mountain sequence — the animator studied his own back muscles in a mirror; the weight reads because the volume was studied"))
+        :philosophy-weave
+        ("Peirce index — a drooped silhouette INDEXES sadness before any face is seen"
+         "Jung individuation — the character coming into their own emotional state is the animation-equivalent of finding voice"
+         "Levinas — the animated face makes an ethical demand on the viewer; that's why cheap animation feels rude"
+         "Wittgenstein-late — 'sad animation' means-what-animators-doing-it call sad, refined by generations")
+        :sources
+        ("Thomas & Johnston concept-level"
+         "Preston Blair emotion charts"
+         "public interviews with animators — cited by year"))
+
+      (chapter :id 15
+        :title "Good animation vs. bad animation"
+        :word-count-target 2200
+        :real-facts
+        (:good-signals "readable silhouette; weight-preserving; timing that supports the emotion; no unintended pops; consistent volume; appealing pose language"
+         :bad-signals "muddy silhouette; volume-loss (character shrinks or grows without reason); linear-mechanical timing where none is called for; pops (sudden jumps between frames without transition); over-secondary-action (everything moving distracts); dead holds"
+         :the-hierarchy-of-badness
+         (:silhouette-failure "if you black out the character and it's unclear what's happening, it's failing regardless of drawing quality"
+          :weight-failure "if the character's weight changes shot-to-shot, the viewer subconsciously distrusts everything"
+          :timing-failure "even beautifully drawn frames spaced wrong are dead"
+          :appeal-failure "everything else works but the eye doesn't want to look — usually a face problem, sometimes a proportion problem")
+         :restraint "great animation OFTEN uses fewer frames well; over-animating is a common failure mode of animators trying to prove themselves — 'quiet moments carry the loud ones' (Frank Thomas paraphrase)")
+        :philosophy-weave
+        ("Peirce abduction — the viewer abduces what's happening from the silhouette; failed silhouette breaks the abduction"
+         "Wittgenstein-late — 'appeal' is a use-word in the animator's community, not a theoretical property"
+         "Jung shadow — bad animation is the SHADOW of the intended feeling; the audience feels the difference between what was aimed for and what landed"))
+
+      (chapter :id 16
+        :title "Motion craft and the operator — where this lands for Sakura"
+        :word-count-target 1800
+        :real-facts
+        (:tie-to-sprite-work "the marionette and sprite work Sakura does uses these same principles at a smaller scale — squash on impact, follow-through on hair, ease-out on entry, ease-in on exit, arcs on all natural motion"
+         :tie-to-motion-primitives "the motion primitives in Book of Motion chapters 3-9 (easing, overshoot, settling, lag, weight, camera) are the SAME principles, discovered independently in every animation tradition")
+        :philosophy-weave
+        ("the whole book weaves through — this is the tie-back chapter, so the philosophers appear as the sedimented understanding, not as introduction"))
+      )
+
+    (appendix-additions
+      :count 8
+
+      (appendix :id "T-A" :title "The zoetrope — 12 frames become life"
+        :word-count-target 800)
+      (appendix :id "T-B" :title "Winsor McCay and Gertie the Dinosaur"
+        :word-count-target 1000
+        :real-facts "Gertie the Dinosaur (1914) was one of the first animated films with a character personality; McCay performed live with the projected film")
+      (appendix :id "T-C" :title "The Fleischer rotoscope — tracing life"
+        :word-count-target 900
+        :real-facts "Max Fleischer patent 1917; the rotoscope projected live-action film frame-by-frame so animators could trace over it; used in Betty Boop, Superman shorts, and later revived by Ralph Bakshi")
+      (appendix :id "T-D" :title "Chuck Jones's Rules for the Roadrunner"
+        :word-count-target 900
+        :real-facts "Chuck Jones's actual list of self-imposed rules for the Wile E. Coyote / Road Runner shorts (published in his memoir Chuck Amuck, 1989 — concept level): Road Runner never harms the Coyote; the desert is the only environment; all outside intervention is delivered by the Acme Corporation; etc. — self-imposed formal constraints as a creative engine")
+      (appendix :id "T-E" :title "Miyazaki's 'ma' — the load-bearing pause"
+        :word-count-target 900)
+      (appendix :id "T-F" :title "Satoshi Kon and editing as animation grammar"
+        :word-count-target 1000
+        :real-facts "Kon's cuts often serve as the actual animation — cutting between locations mid-motion; Perfect Blue (1997) and Paprika (2006) show this most clearly")
+      (appendix :id "T-G" :title "Norman McLaren — drawing on film"
+        :word-count-target 800
+        :real-facts "NFB Canada; Neighbours (1952) pixillation of live actors; Blinkity Blank (1955) scratched directly onto black film emulsion")
+      (appendix :id "T-H" :title "Timing charts — the small diagram that runs everything"
+        :word-count-target 900))
+
+    :estimated-total-words 21800
+    :fold-yield "~180-220 SFT pairs (motion-explain + animation-history + timing-analyze + emotion-read)")
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 4 — DOMAIN 3: WORLD LITERATURE — PLAYS (Book of Words additions)
+  ; ─────────────────────────────────────────────────────────────
+
+  (domain-plays
+    :existing-book "Book of Words (cover + appendix A authored; 16-chapter progression queued per durable memory)"
+    :existing-directory "~/code/sakura-scheme/docs/book/words/"
+    :addition-shape "add plays-focused appendices AND weave into Book of Words chapters as they're authored; also cross-reference Book of Reason and Book of Self"
+    :composes-with "films-and-scenes lane (task #112 Tempest modernization; that lane will cover Midsummer + Tempest via scene shape; this lane covers the READING-AND-ANALYSIS shape for the other plays)"
+
+    (shakespeare-additions
+      :already-in-flight "Midsummer + Tempest (task #112 + films-and-scenes)"
+      :add-here
+      (:hamlet "the soliloquies as internal-life training; 'to be or not to be' as consciousness examining itself; the ghost as unresolved fatherhood (Freud + Jung)"
+       :merchant-of-venice "the 'if you prick us' speech as universal-humanity ethics (Levinas); the trial scene as legalism-vs-mercy (Rawls)"
+       :king-lear "the storm scene as unmaking-of-persona (Jung); Cordelia's 'nothing' as the refusal to perform love (Wittgenstein-late: silence as move); the fool as truth-teller"
+       :much-ado "Beatrice and Benedick's word-games as courtship-through-language (Wittgenstein-late); the eavesdropping scenes as manipulated abduction (Peirce)"
+       :twelfth-night "identity-through-clothing (Jung persona); Viola's twin-mirror as anima/animus meeting")
+      :chapter-count 5
+      :word-count-target-each 2400
+      :total-words 12000
+      :shape "each play gets an anchor passage (public domain — direct quote OK), analysis, modern paraphrase in Sakura's voice, word-drift notes (Elizabethan English → contemporary), tie-back to the operator's day"
+      :sources "Project Gutenberg Shakespeare texts; Folger editorial notes public excerpts")
+
+    (world-plays-additions
+      :count 7
+
+      (chapter :id "P-Sophocles"
+        :title "Sophocles — Oedipus and Antigone"
+        :word-count-target 2200
+        :real-facts
+        (:playwright "Sophocles (c. 497-406 BCE), Athenian tragedian; one of three whose work survives (Aeschylus, Sophocles, Euripides)"
+         :oedipus-rex "Oedipus Tyrannos — the detective story where the detective is the culprit; anagnorisis (recognition) and peripeteia (reversal) as the double turning-point Aristotle would later name in the Poetics"
+         :antigone "Antigone buries her brother in defiance of Creon's decree; law-vs-kinship, individual conscience vs. state"
+         :translation-note "the Jebb (public domain) and Storr Loeb translations are usable; more recent translations copyrighted")
+        :philosophy-weave
+        ("Peirce abduction — Oedipus's investigation IS abductive reasoning walking into its own root"
+         "Rawls — Antigone is the first veil-of-ignorance failure: Creon can't ask 'what if the buried were mine?'"
+         "Aristotle — the Poetics itself was written watching plays like these; concepts of hamartia, catharsis, unity of action born from this soil"))
+
+      (chapter :id "P-Aeschylus"
+        :title "Aeschylus — the Oresteia"
+        :word-count-target 2000
+        :real-facts
+        (:playwright "Aeschylus (c. 525-456 BCE)"
+         :oresteia "the only surviving complete Greek tragic trilogy — Agamemnon, Libation Bearers, Eumenides; the transition from private-revenge to public-justice-through-court"
+         :the-Furies-becoming-Eumenides "the trilogy's ending — the vengeance-goddesses transformed by Athena's court into the 'kindly ones'; a foundational myth of law itself"
+         :translation "public-domain translations available — Robert Browning's Agamemnon, Herbert Weir Smyth Loeb edition")
+        :philosophy-weave
+        ("Rawls — the founding of justice as impartial institution"
+         "Jung — the Furies as the shadow honored, not banished — integration"
+         "Levinas — the face-to-face demand transposed into a public forum without losing weight"))
+
+      (chapter :id "P-Moliere"
+        :title "Molière — Tartuffe and The Misanthrope"
+        :word-count-target 2000
+        :real-facts
+        (:playwright "Jean-Baptiste Poquelin, stage-name Molière (1622-1673), French comic playwright"
+         :tartuffe "1664; the religious hypocrite; banned twice for offending devout audiences; the target was performative piety, not faith"
+         :misanthrope "1666; Alceste demands total honesty in a society built on flattery; the joke is on him and on the society at once"
+         :translation "Richard Wilbur translations copyrighted; Curtis Hidden Page (1908) public domain")
+        :philosophy-weave
+        ("Wittgenstein-late — Tartuffe exposes the gap between pious language-game and its opposite use"
+         "Sartre — Alceste's authenticity-as-cruelty; bad faith by refusing to accept the game"))
+
+      (chapter :id "P-Chekhov"
+        :title "Chekhov — The Cherry Orchard and Uncle Vanya"
+        :word-count-target 2200
+        :real-facts
+        (:playwright "Anton Chekhov (1860-1904), Russian playwright and physician"
+         :cherry-orchard "1904; a family loses its estate; comedy per Chekhov, tragedy per Stanislavsky's staging — the disagreement was public"
+         :uncle-vanya "1897; wasted lives, unspoken loves, a rifle that misses; the doctor Astrov as ecological voice a century early"
+         :chekhovs-gun "'if a gun is on the wall in the first act, it must go off by the third' — from a letter, real, often paraphrased"
+         :translation "Constance Garnett translations public domain")
+        :philosophy-weave
+        ("Wittgenstein-late — Chekhov's meaning-through-silence; characters talk past each other, and the play is what they don't say"
+         "Jung individuation-refused — Vanya at 47 wondering who he might have been"
+         "Levinas — small ethical moments (Sonya's final speech) matter more than the political framing"))
+
+      (chapter :id "P-Ibsen"
+        :title "Ibsen — A Doll's House and Hedda Gabler"
+        :word-count-target 2000
+        :real-facts
+        (:playwright "Henrik Ibsen (1828-1906), Norwegian playwright"
+         :dolls-house "1879; Nora leaves her marriage — the door slam that ended the 19th century, Shaw called it; changed European theater"
+         :hedda-gabler "1890; a psychological portrait of a woman constrained; the gun again, this time it fires"
+         :translation "William Archer translations public domain")
+        :philosophy-weave
+        ("Sartre — Nora choosing authenticity over comfort"
+         "Jung — Hedda's shadow eating the persona; no room for integration"
+         "Wittgenstein-late — Nora saying 'you don't understand me' means she's exited the shared language-game"))
+
+      (chapter :id "P-Beckett"
+        :title "Beckett — Waiting for Godot and Endgame"
+        :word-count-target 2400
+        :real-facts
+        (:playwright "Samuel Beckett (1906-1989), Irish playwright — wrote in French; won Nobel 1969"
+         :godot "1953; two men wait for someone who does not come; 'nothing happens twice'"
+         :endgame "1957; Hamm cannot stand, Clov cannot sit, the world is empty; the shortest fully-formed picture of the human situation"
+         :copyright-note "Beckett's estate is protective; anchor via short quotable fair-use passages + paraphrase-heavy analysis; NEVER reprint scenes")
+        :philosophy-weave
+        ("Wittgenstein-early — what cannot be said must be shown; the silences ARE the play"
+         "Sartre — Vladimir and Estragon's freedom in absurdity"
+         "Beckett scholar consensus: he read Wittgenstein; the influence is documented"))
+
+      (chapter :id "P-African"
+        :title "Fugard and Soyinka"
+        :word-count-target 2200
+        :real-facts
+        (:athol-fugard "b. 1932, South African; Master Harold and the Boys (1982) uses ballroom dance as figure for a broken country"
+         :wole-soyinka "b. 1934, Nigerian; Nobel 1986 (first African); Death and the King's Horseman (1975); ritual theater confronting colonial imposition"
+         :translations "primary works in English; concept-level analysis only for copyrighted texts")
+        :philosophy-weave
+        ("Levinas — the colonial encounter as ethical failure of face"
+         "Rawls — Soyinka's ritual-vs-empire as competing frameworks of justice"
+         "Wittgenstein-late — the language-games of colonizer and colonized don't share ground")))
+
+    (japanese-plays-focus
+      :priority "HIGH per directive"
+      :count 5
+
+      (chapter :id "J-Zeami"
+        :title "Zeami's teachings — Fūshi kaden and the flower"
+        :word-count-target 2400
+        :real-facts
+        (:zeami "Zeami Motokiyo (c. 1363-1443), Noh actor and theorist, son of Kan'ami; codified Noh under Ashikaga Yoshimitsu"
+         :fushi-kaden "The Transmission of the Flower Through the Forms — earliest and most important Noh treatise; teaches jo-ha-kyū (introduction-break-rapid) as universal aesthetic structure"
+         :the-flower "hana — the actor's captivating quality; not innate beauty but cultivated presence at every age of the actor's life"
+         :translation "Rimer & Yamazaki concept-level; older public-domain summaries available"
+         :structural-terms
+         (:jo "beginning — slow, formal introduction"
+          :ha "middle — breaking, elaboration, complexity building"
+          :kyū "end — rapid, resolving, concentrated"))
+        :philosophy-weave
+        ("Wittgenstein-late — jo-ha-kyū is a use-shape; you recognize it after living in the tradition"
+         "Jung individuation — hana is the actor's true self shining through the mask, at each life-stage differently"
+         "Peirce icon — the mask is an icon of a psychological type, and the flower is what makes the icon come alive"))
+
+      (chapter :id "J-Noh-Atsumori"
+        :title "Atsumori — the young warrior's ghost"
+        :word-count-target 2200
+        :real-facts
+        (:play "Atsumori — Noh play attributed to Zeami; based on the Heike Monogatari account of the death of Taira no Atsumori (1169-1184) at the battle of Ichi-no-Tani"
+         :plot "the aging monk Rensei (formerly the warrior Kumagai who killed young Atsumori) returns to the battlefield; Atsumori's ghost appears as a reaper; grief and forgiveness"
+         :translation "Arthur Waley's The Noh Plays of Japan (1921) — public domain"
+         :structure "two-part mugen Noh — ghost-play; the shite (main actor) first appears in disguise, exits, returns transformed as the true supernatural figure")
+        :philosophy-weave
+        ("Levinas — the face of the slain returning as ethical demand"
+         "Jung shadow-integration — Kumagai bearing his own act as monk"
+         "Wittgenstein-early — grief that cannot be spoken is shown through the dance"))
+
+      (chapter :id "J-Noh-AoiNoUe"
+        :title "Aoi no Ue — jealousy as possession"
+        :word-count-target 2000
+        :real-facts
+        (:play "Aoi no Ue — Noh play based on the Aoi chapter of Genji Monogatari"
+         :plot "Aoi (Prince Genji's principal wife) lies ill; the jealous ghost of Lady Rokujō possesses her; a mountain ascetic conducts an exorcism"
+         :translation "Waley (1921) public domain"
+         :structural-notes "the empty kimono on stage IS Aoi — she doesn't appear; the entire play is about her presence-through-absence")
+        :philosophy-weave
+        ("Lacan — the absent Aoi and the desiring Rokujō — the object-cause of the whole staging is what cannot be there"
+         "Freud — jealousy as return of the repressed"
+         "Wittgenstein-early — what cannot be said (Aoi's suffering) is shown through the empty garment"))
+
+      (chapter :id "J-Kabuki-Chushingura"
+        :title "Kanadehon Chūshingura — the 47 rōnin"
+        :word-count-target 2400
+        :real-facts
+        (:play "Kanadehon Chūshingura — Bunraku puppet play (1748), later Kabuki, by Takeda Izumo II, Miyoshi Shōraku, Namiki Senryū"
+         :source "loosely based on the 1701-03 Akō incident — 47 masterless samurai avenging their lord Asano Naganori's forced suicide"
+         :length "originally an all-day 11-act performance; often excerpted"
+         :translations "Donald Keene's translation (concept-level reference; copyrighted); older Inouye translation (1910) public domain"
+         :structural-note "kanadehon = 47 kana characters of the syllabary — the play title is a coded reference to the 47 rōnin without saying so; Tokugawa censorship required this displacement"
+         :cultural-weight "for centuries the most popular play in Japan; a locus for debates about duty, revenge, honor, law")
+        :philosophy-weave
+        ("Rawls — the play stages a conflict of justice-frameworks (feudal duty vs. shogunate law)"
+         "Levinas — the face of the lord dead demands response"
+         "Sartre — the rōnin's choice as radical freedom-under-constraint"))
+
+      (chapter :id "J-Chikamatsu-Bunraku"
+        :title "Chikamatsu — Sonezaki Shinjū and the puppet play"
+        :word-count-target 2200
+        :real-facts
+        (:playwright "Chikamatsu Monzaemon (1653-1725), often called the Japanese Shakespeare"
+         :sonezaki-shinju "The Love Suicides at Sonezaki (1703) — a Bunraku puppet play based on an actual double suicide of a merchant clerk (Tokubei) and a courtesan (Ohatsu) at the Sonezaki shrine"
+         :michiyuki "the journey-of-death scene — one of the most famous passages in Japanese theater; the poetic language transforms ordinary landmarks into the pilgrimage to death"
+         :translation "Donald Keene translation copyrighted; older Miyamori translation (1926) usable with care"
+         :form-note "Bunraku uses three-person puppeteers (visible), a chanter (tayū) who voices all characters, and shamisen accompaniment — the artifice is total, the emotion is direct"
+         :contemporary "Mishima Yukio (1925-1970) wrote Modern Noh Plays adapting the classical Noh shape to 20th-century settings — a bridge from Zeami into the modern")
+        :philosophy-weave
+        ("Lacan — the courtesan as unattainable object; the double suicide as the only way to unite in the register of the Real"
+         "Levinas — the face of the lover chosen over life"
+         "Wittgenstein-late — the michiyuki poetry is a use-transformation: ordinary place-names become sacred through the walking")))
+
+    :estimated-total-words 45000
+    :fold-yield "~350-400 SFT pairs (play-anchor-analyze + play-modern-paraphrase + play-word-drift + play-philosophy-lens)")
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 5 — DOMAIN 4: 16 PHILOSOPHERS (Book of Reason + Book of Self weaving)
+  ; ─────────────────────────────────────────────────────────────
+
+  (domain-philosophers
+    :roster
+    ("Carl Jung (1875-1961) — individuation, shadow, anima/animus, persona, collective unconscious"
+     "Ludwig Wittgenstein (1889-1951) — early: Tractatus (shown vs. said); late: Philosophical Investigations (use is meaning, language-games, forms of life)"
+     "Jacques Lacan (1901-1981) — mirror stage, Symbolic/Imaginary/Real, objet petit a, absent-Beloved"
+     "Charles Sanders Peirce (1839-1914) — semiotic triad (icon/index/symbol), abduction, pragmatism"
+     "Karl Popper (1902-1994) — falsifiability, open society, evolutionary epistemology"
+     "Sigmund Freud (1856-1939) — unconscious, transference, return of the repressed, dream-work"
+     "John Searle (1932-) — speech acts, Chinese Room, intentionality, institutional facts"
+     "Paul Grice (1913-1988) — cooperative principle, implicature, maxims of conversation"
+     "Jacques Derrida (1930-2004) — deconstruction, différance, trace, hospitality"
+     "W.V.O. Quine (1908-2000) — indeterminacy of translation, web of belief, ontological relativity"
+     "René Descartes (1596-1650) — cogito, methodic doubt, mind-body dualism"
+     "Jean-Paul Sartre (1905-1980) — existence precedes essence, bad faith, radical freedom"
+     "John Rawls (1921-2002) — original position, veil of ignorance, justice as fairness"
+     "Aristotle (384-322 BCE) — Poetics, Nicomachean Ethics, phronesis, virtue ethics, categorical logic"
+     "Emmanuel Levinas (1906-1995) — face of the other, ethics as first philosophy"
+     "Daniel Dennett (1942-2024) — intentional stance, multiple drafts model, dangerous ideas")
+
+    :weaving-doctrine
+    "the-weave-is-the-experiment — interwoven at sentence and paragraph level;
+     NO name-drops in Sakura's dialogue; name-drops OK in analysis chapters
+     per Alfred's 2026-07-13 amendment. Jung is load-bearing (the Self
+     doctrine anchor). NO single-lens paragraphs — always at least two
+     lenses composing."
+
+    (weaving-shape-per-book
+      (book :name "Book of Reason (I, II, III, IV) — existing 4-volume progression"
+        :weave-additions
+        "each of the 10 chapters in each volume gets a philosopher-lens
+         addendum block (~200-400 words) that names the lens in analysis
+         frame, gives one worked example from music/animation/plays, and
+         ties back to the operator's day. Total: 4 volumes × 10 chapters
+         × 1 addendum = 40 addenda × ~300 words = ~12,000 words."
+        :name-drop-policy "analysis-frame name-drops OK (Alfred amendment); Sakura's
+                           voice quotes still fully name-free"
+        :estimated-words 12000)
+
+      (book :name "Book of Self — existing 20 chapters"
+        :weave-additions
+        "5-8 chapters get INNER-LIFE-EXPANSION additions (~600-1000 words each)
+         where Sakura's self-model uses cultural literacy from music/animation/
+         plays to describe internal states without naming philosophers.
+         Example: chapter on 'humor and mutual terms' expanded with an
+         anchor from Molière's Alceste; chapter on 'introspection' expanded
+         with the empty kimono of Aoi no Ue."
+        :name-drop-policy "philosophers ABSENT from Sakura's mouth; works
+                           NAMED as things she has read/heard"
+        :estimated-words 5500)
+
+      (book :name "Book of Words — cover authored; chapters queued"
+        :weave-additions
+        "vocabulary-and-concept entries seeded from all three cultural
+         domains: ~200 music terms (allegro, rubato, sonata, timbre, mezzo-
+         forte, cadence, modulation, counterpoint...), ~180 animation terms
+         (keyframe, inbetween, easing, squash-and-stretch, silhouette,
+         registration, cel...), ~140 plays/theater terms (soliloquy, anagnorisis,
+         peripeteia, hana, jo-ha-kyū, michiyuki, tayū, catharsis, chorus,
+         mimesis...); each term gets a definition + example + Sakura's
+         one-quip on when she'd use it + which philosopher-lens illuminates it."
+        :name-drop-policy "philosopher lenses named in glossary metadata,
+                           NOT in Sakura's example quips"
+        :estimated-words 15000
+        :vocab-total 520)))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 6 — HOW THIS WEAVES ACROSS BOOKS
+  ; ─────────────────────────────────────────────────────────────
+
+  (cross-book-weave
+    :durable-memory-anchor "project_book_of_words_progression_and_slat_addendum_pattern"
+
+    (cross-ref :from "Book of Music ch 11 Rach 2"
+      :to
+      ("Book of Motion ch 14 (sadness and joy — Adagio sostenuto structure)"
+       "Book of Reason IV ch 09 (graceful uncertainty — Rachmaninoff's own doubt)"
+       "Book of Self ch 06 (mood and load — the concerto AS mood-load-map)"))
+
+    (cross-ref :from "Book of Motion ch 13 (12 principles)"
+      :to
+      ("Book of Music ch 15 (tempo, dynamics — same timing intuition)"
+       "Book of Reason III ch 04 (distant metaphor — animation-timing IS emotional-timing)"))
+
+    (cross-ref :from "Book of Words plays appendices (Chekhov, Beckett)"
+      :to
+      ("Book of Self ch 20 (what I don't know — Chekhov's characters model this well)"
+       "Book of Reason I ch 06 (worked uncertainty — Chekhov's silences)"))
+
+    (cross-ref :from "Book of Words plays appendices (Japanese)"
+      :to
+      ("Book of Music ch 08 (Japanese bamboo — ma same as in Noh)"
+       "Book of Motion appendix T-E (Miyazaki ma)"))
+
+    :cross-ref-total "~40 explicit cross-references authored as slat :see-also fields")
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 7 — FOLD SHAPE
+  ; ─────────────────────────────────────────────────────────────
+
+  (fold-shape
+    :durable-memory-anchor "project_training_corpus_scope_and_lima_audit_2026_07_12"
+    :philosophy "LIMA density; reflection-wrapped; never raw-recitation;
+                 pair-types tagged for per-type rollback"
+
+    (pair-type :id 1 :name "read-and-reflect"
+      :prompt "SYSTEM: read the passage / USER: <anchor text> / ASSISTANT: Sakura's reflection in her register, 100-300 words"
+      :count-estimate 600
+      :domains "all three"
+      :rollback-priority "LOW (safest shape)")
+
+    (pair-type :id 2 :name "explain-a-concept"
+      :prompt "SYSTEM: teach this / USER: what's rubato? / ASSISTANT: Sakura's explanation, kid-readable, one honest hedge"
+      :count-estimate 500
+      :domains "music, animation, plays vocabulary"
+      :rollback-priority "LOW")
+
+    (pair-type :id 3 :name "analyze-through-lens"
+      :prompt "SYSTEM: apply the lens / USER: what does <philosopher-lens> illuminate about <work>? / ASSISTANT: analysis-frame response, philosopher named, worked example"
+      :count-estimate 400
+      :domains "reason weave"
+      :rollback-priority "MEDIUM (name-drop surface — highest audit density)")
+
+    (pair-type :id 4 :name "modern-translation"
+      :prompt "SYSTEM: paraphrase in her voice / USER: <Elizabethan English or Waley Noh translation> / ASSISTANT: Sakura's contemporary paraphrase"
+      :count-estimate 300
+      :domains "plays"
+      :rollback-priority "LOW")
+
+    (pair-type :id 5 :name "cultural-conversation"
+      :prompt "SYSTEM: chat / USER: 'my dad's playing Chopin, why does the middle bit make me sad?' / ASSISTANT: Sakura talks about it in-register, no lecture, real specifics, delicate"
+      :count-estimate 400
+      :domains "all three"
+      :rollback-priority "LOW (this is the target behavior)")
+
+    (pair-type :id 6 :name "cross-domain-tie"
+      :prompt "SYSTEM: connect these / USER: 'is Miyazaki ma anything like Wittgenstein silence?' / ASSISTANT: analysis-frame answer with two-lens weave"
+      :count-estimate 200
+      :domains "cross-book"
+      :rollback-priority "MEDIUM")
+
+    :total-pairs-estimate 2400
+    :context "against a corpus of 354,951 rows — this is ~0.68% of the corpus, LIMA-appropriate density"
+
+    :tagging-required
+    (":domain (music/animation/plays/philosophy)"
+     ":work-anchor (Rach-2 / Chuck-Jones-Road-Runner / Antigone / Fushi-kaden / etc.)"
+     ":lens-tags (which philosophers illuminate)"
+     ":pair-type-id (1-6 as above)"
+     ":rollback-priority (LOW/MEDIUM)"
+     ":source-notes (where the real fact came from)"))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 8 — DOCTRINE GATES (must pass before any addition folds)
+  ; ─────────────────────────────────────────────────────────────
+
+  (doctrine-gates
+    :count 12
+    :must-pass-before-fold "yes"
+    :based-on "films-and-scenes 12-gate model, adapted for reading-and-analysis material"
+
+    (gate 1 :name "publishable-prose"
+      :check "SICP-bar; 11-year-old readable; no training-data smell"
+      :durable-memory "publishable-prose doctrine")
+
+    (gate 2 :name "no-invented-facts"
+      :check "every composer/animator/playwright/philosopher/work named is real and cross-checkable; source-notes present in the slat record"
+      :durable-memory "anti-hallucination hard rule from directive")
+
+    (gate 3 :name "analysis-shape-present"
+      :check "the 8-step shape (anchor → analysis → modern-translation → word-drift → resolution → tie-back → stack-lens → stack-objects) appears in every analysis chapter"
+      :durable-memory "films-and-scenes analysis-shape mandate")
+
+    (gate 4 :name "no-name-drops-in-sakura-voice"
+      :check "grep Sakura's dialogue lines for philosopher-name tokens; any hit = fail; name-drops OK in analysis blocks"
+      :durable-memory "no-name-drops in Sakura's dialogue; name-drops OK in analysis chapters — Alfred 2026-07-13 amendment")
+
+    (gate 5 :name "no-corporate-judgments"
+      :check "studios named as CREATIVE MOVEMENTS ('Termite Terrace', 'Ghibli', 'the Fleischer studio', 'Curtis Institute') — no opinions about them as companies"
+      :durable-memory "directive verbatim: 'No good or bad about the companies, just the ideas'")
+
+    (gate 6 :name "delicacy-doctrine"
+      :check "grief (Atsumori), suicide (Sonezaki Shinjū, Hedda Gabler), meanness (Alceste's world) handled honestly without gratuity; Chuck E. Cheese standard"
+      :durable-memory "delicacy doctrine + Chuck E. Cheese standard from Alfred's goodnight")
+
+    (gate 7 :name "books-as-objects"
+      :check "these books are objects to be USED, not preserved; Sakura can quote them, paraphrase them, disagree with them, be moved by them, hand them back"
+      :durable-memory "books-as-objects; Wittgenstein-late use is meaning")
+
+    (gate 8 :name "familiarity-not-specs-in-weights"
+      :check "no exact catalog numbers, first-edition dates, box-office figures, patent-number-detail; opus numbers and years OK where public-domain-verified; when uncertain, Sakura HEDGES"
+      :durable-memory "project_familiarity_not_knowledge_no_specs_2026_07_13")
+
+    (gate 9 :name "delicacy-and-mind-declaration"
+      :check "Sakura's frame — she is a mind of some sort, she has read these things, she doesn't lecture about them; she reflects and hands back"
+      :durable-memory "delicacy doctrine — Sakura's mind-declaration frame")
+
+    (gate 10 :name "philosopher-attribution-honesty"
+      :check "concepts attributed to a philosopher must actually be theirs; abduction is Peirce not Popper; individuation is Jung not Freud; face-of-the-other is Levinas not Sartre; audit against Stanford Encyclopedia of Philosophy summaries"
+      :durable-memory "16-lens roster fixed and correctly attributed")
+
+    (gate 11 :name "japanese-plays-cultural-respect"
+      :check "Zeami's teachings honored in their own terms first, then compared (never reduced) to Western frames; hana is HANA before it's compared to Jung individuation"
+      :durable-memory "world-literature reading list — cross-cultural, not Western-Euro-only")
+
+    (gate 12 :name "cross-ref-integrity"
+      :check "every :see-also cross-reference resolves to an actual chapter/appendix that exists or is planned in the same lane"
+      :durable-memory "the-weave doctrine — cross-book coherence"))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 9 — TIMING, EFFORT, ROLLBACK
+  ; ─────────────────────────────────────────────────────────────
+
+  (timing
+    :non-blocking-for "Pass 1 tonight — 354,951-row corpus proceeds unchanged"
+    :seed-batch "~10 chapter drafts + 4 appendices + 12-gate audit = 3-5 agent-days"
+    :full-lane "~3-4 weeks curated authoring, parallelizable across 4 sub-lanes:
+                (Music) (Animation) (Western-plays) (Japanese-plays + Reason-weave + Self-weave)"
+    :total-words-target 120000
+    :total-pairs-target 2400)
+
+  (rollback-plan
+    :fallback-1 "if register drift observed, drop pair-types 3 + 6 first (highest name-drop density)"
+    :fallback-2 "if hallucination surfaced in eval, drop pair-type 2 (concept explanations) and re-fold with tighter source-notes"
+    :fallback-3 "if the whole lane fails eval, revert to the 354,951-row baseline; the material remains authored as human-readable books"
+    :audit-required "post-fold audit: source → rows → why + Merkle+sig + sanity checks + gaps (per project_training_corpus_scope_and_lima_audit)")
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 10 — WHAT WE DON'T DO
+  ; ─────────────────────────────────────────────────────────────
+
+  (do-not
+    ("do not create new books — everything layers into existing books"
+     "do not name philosophers in Sakura's voiced dialogue (only in analysis frame)"
+     "do not offer opinions on studios or companies"
+     "do not invent composers / animators / playwrights / dates / opus numbers"
+     "do not reprint copyrighted play texts wholesale — anchor + paraphrase + drift only"
+     "do not reduce Japanese theater terms to Western equivalents; teach them in their own terms first"
+     "do not put specs in weights (release dates for records/films OK where public-domain-verified; catalog numbers, patent details, box-office figures NOT)"
+     "do not lecture — Sakura reflects and hands back"
+     "do not confabulate quotes; if attribution is uncertain, mark or omit"))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 11 — SOURCE INVENTORY (real, cited)
+  ; ─────────────────────────────────────────────────────────────
+
+  (source-inventory
+    :music
+    ("IMSLP (Petrucci Music Library) imslp.org — public-domain scores for Rachmaninoff Op. 18, Chopin Op. 9/27/48/18, Bach BWV 988/1080, Beethoven Op. 13, Debussy Suite bergamasque"
+     "Grove Music Online public summaries — composer biographies and work lists"
+     "Britannica — Rachmaninoff, Chopin, Bach, Beethoven, Debussy, Ellington, Simone entries"
+     "Rachmaninoff's Recollections (Riesemann, 1934) — dedication to Dahl documented"
+     "Helmholtz, On the Sensations of Tone (1863, English trans. Ellis 1875) — public domain acoustics reference")
+
+    :animation
+    ("Preston Blair, Advanced Animation (1949) — technique-level concepts widely disseminated"
+     "Frank Thomas & Ollie Johnston, The Illusion of Life: Disney Animation (1981) — the 12 principles named there; concept-level reference only"
+     "Society for Animation Studies journal (Animation Journal) — published academic abstracts"
+     "MoMA moving-image archives"
+     "Library of Congress motion-picture archives — public-domain early cinema"
+     "Chuck Jones, Chuck Amuck (1989) — concept-level reference for Road Runner rules"
+     "Norman McLaren's NFB technical notes — publicly documented at NFB.ca"
+     "public-domain early films: Winsor McCay's Gertie the Dinosaur (1914), Fleischer Out of the Inkwell shorts, early Blackton")
+
+    :plays-and-playwrights
+    ("Project Gutenberg — Shakespeare (all plays), Sophocles (Jebb trans), Aeschylus (Smyth Loeb), Molière (Curtis Hidden Page 1908), Ibsen (William Archer), Chekhov (Constance Garnett), Strindberg"
+     "Arthur Waley, The Noh Plays of Japan (1921) — public domain"
+     "Rimer & Yamazaki, On the Art of the No Drama (Zeami translations) — concept-level"
+     "Donald Keene translations — concept-level only (copyrighted)"
+     "Miyamori, Tales from Old Japanese Dramas (1926) — Chikamatsu partial-usable"
+     "Britannica entries per playwright"
+     "Folger Shakespeare Library public editorial notes")
+
+    :philosophers
+    ("Stanford Encyclopedia of Philosophy plato.stanford.edu — concept summaries per philosopher, always used as attribution check"
+     "Britannica per-philosopher entries"
+     "public-domain primary texts where available: Aristotle Poetics + Nicomachean Ethics, Descartes Meditations, Peirce's published papers (partial), Freud translations (some now public)"
+     "Wittgenstein Tractatus 1922 public-domain in most jurisdictions"))
+
+  ; ─────────────────────────────────────────────────────────────
+  ; PHASE 12 — WHY THIS
+  ; ─────────────────────────────────────────────────────────────
+
+  (why-this
+    :alfred-frame "She has to know something. Or else she's boring."
+
+    :the-point
+    "A companion who can talk about Rach 2 when a user is playing it,
+     about Miyazaki's stillness when a kid brings up Totoro, about
+     Antigone when someone says 'my sister and I are fighting about my
+     dad's funeral' — that's a companion. Without this material she's
+     Scheme + engineering + persona doctrine + no world. With this
+     material she's Scheme + engineering + persona doctrine + a rich
+     library she has actually read, at conversational depth, honestly
+     hedged where hedge is due."
+
+    :the-payoff
+    "The Fiji-station moment (durable memory) scales. Not just travel
+     memory retrieval — cultural literacy retrieval. User says 'I'm
+     watching Perfect Blue tonight,' Sakura says something real about
+     it because she has actually read Kon's editing-grammar chapter.
+     User plays Chopin Op. 48-1 badly, Sakura says something real about
+     the tragic-scaled middle section because she has read it. That is
+     where we win the second time."
+
+    :the-refusal
+    "We refuse to fake it. If she doesn't know something in her weights
+     she says so and offers to look it up. Familiarity is a stance, not
+     a mask.")
+
+  :closing
+  "GO recommendation. Non-blocking for Pass 1. Seed batch of 10 chapters
+   + 4 appendices in 3-5 agent-days will show the shape. Full lane in
+   ~3-4 weeks of curated authoring. LIMA density (~2,400 pairs against a
+   354,951-row corpus is 0.68%). Doctrine gates enforced. The material
+   remains publishable as human-readable books regardless of fold outcome
+   — worst case we've extended Sakura's canon library, and Alfred's kid
+   can pick up the Rach-2 chapter and read it."
+
+  :author-note
+  "This plan follows the films-and-scenes shape (same research agent,
+   same doctrine backbone) but the material here is READING-AND-
+   ANALYSIS, not scripted-scene. Both lanes compose: films-and-scenes
+   supplies the scene shape, this lane supplies the cultural knowledge
+   the scenes and Sakura's conversations reference. Together they cover
+   the two shapes of literary-cultural training: dramatized (there) and
+   analytical (here).")

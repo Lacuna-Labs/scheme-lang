@@ -1,0 +1,233 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; jess-alg audit — Phase A
+;; Lane: alg/* (abstract algebra, group theory, music-theory algebra)
+;; Author: Jess (Lacuna Eng Lead — alg lane)
+;; Date: 2026-07-14
+;;
+;; Alfred's floor doctrine — every stamp MUST correspond to a REAL REPL
+;; run that succeeded. No auto-stubs. No hallucinated behavior. If a verb
+;; cannot be honestly wired + verified, its entry ships with
+;;   :entry-provenance "author-blocked"
+;; and a plain-English reason. We do not lie.
+;;
+;; Composition with kid-from-North-Georgia doctrine:
+;;   alg/ is where the kid meets group theory. A ten-year-old opening
+;;   (alg/dihedral 4) should see the 8 symmetries of a square, not a
+;;   descriptor stub. A music-theory learner calling (alg/prime-form
+;;   '(0 4 7)) had better get the actual Forte prime form. The library
+;;   is small and self-contained — no excuse for lying.
+;;
+;; Composition with reference-manual-IS-the-language doctrine:
+;;   The reference already ships 3-tier examples for 87 alg verbs. Our
+;;   5-tier upgrade PRESERVES the existing novice/intermediate/expert
+;;   where correct and REPL-verifiable, and ADDS apprentice + master.
+;;   If an existing example calls a still-descriptor verb we cannot
+;;   verify, we replace with a runnable variant and note :caveats.
+;; ─────────────────────────────────────────────────────────────────────
+
+(audit
+  :lane "alg"
+  :author "jess"
+  :dated "2026-07-14"
+  :verbs-total 87
+  :verbs-stubbed-baseline 30
+  :verbs-wired-baseline 57
+  :verbs-real-vs-descriptor-note "Of the 57 'wired' in the baseline audit, an unknown number are DESCRIPTOR shells — they return [name, ...args] tuples via reference-impls.js's mass-descriptor pass at line 2183+. Phase B upgrades those in place; the audit below flags candidates."
+
+  :audit-command
+    "node -e \"const {makeBaseEnv}=await import('./src/base.js');const {registerReferenceVerbs}=await import('./src/reference-register.js');const e=makeBaseEnv();const r=registerReferenceVerbs(e);r.missingImpls.filter(n=>n.startsWith('alg/')).forEach(n=>console.log(n));\""
+
+  ;; ── The 30 baseline-stubs, categorized by tier ──
+  :categories (
+
+    ;; ── CHEAP: closed-form arithmetic on plain arrays, ~5-15 lines each
+    (:tier "cheap"
+     :count 12
+     :verbs (
+       "alg/perm-identity"      ; [0,1,...,n-1]
+       "alg/perm-pow"           ; iterate compose k times; k<0 uses inverse first
+       "alg/perm-sign"          ; +1 if even parity, -1 if odd (count transpositions)
+       "alg/perm-support"       ; indices where perm[i] != i
+       "alg/perm->cycles"       ; cycle-decompose; omit fixed points
+       "alg/perm-conjugate"     ; return compose(g, compose(p, invert(g)))
+       "alg/zn-add"             ; (a+b) mod n
+       "alg/zn-mul"             ; (a*b) mod n
+       "alg/zn-inverse"         ; extended Euclidean
+       "alg/zn-units"           ; [i for 1<=i<n where gcd(i,n)=1]
+       "alg/poly-add"           ; elementwise sum; optional modulus arg
+       "alg/poly-mul"           ; convolution; optional modulus arg
+     )
+     :note "Pure functions on arrays. REPL-verifiable immediately.")
+
+    ;; ── MEDIUM: constructors + group-theory algorithms
+    (:tier "medium"
+     :count 8
+     :verbs (
+       "alg/perm"               ; wrap image-vec after validation; return 'nan if invalid
+       "alg/zn"                 ; ring descriptor (list of elements 0..n-1)
+       "alg/symmetry-group"     ; Dₙ constructor (alias of alg/dihedral shape)
+       "alg/op"                 ; group product a·b — polymorphic on group representation
+       "alg/orbit"              ; BFS from x under act, collect fixed set
+       "alg/stabilizer"         ; filter G by g·x == x
+       "alg/subgroup-gen"       ; closure under op starting from element list
+       "alg/subgroup?"          ; H ⊆ G, closed under op + inverses
+     )
+     :note "Well-defined algorithms; need a canonical group representation to compose cleanly with existing alg/cyclic / alg/dihedral shapes in reference-impls.js.")
+
+    ;; ── MUSIC-THEORY: pitch-class algebra (12-TET)
+    (:tier "music"
+     :count 8
+     :verbs (
+       "alg/pcset"              ; sort + dedupe + mod 12
+       "alg/normal-form"        ; Rahn normal form: rotation minimizing outer/inner intervals
+       "alg/prime-form"         ; Forte prime form: normal-form of transposed-to-0 AND inversion, pick smaller
+       "alg/transpose"          ; (map (lambda (p) (mod (+ p n) 12)) pcs)
+       "alg/triad"              ; root + kind ('major 'minor 'diminished 'augmented) -> pc-set
+       "alg/nr-P"               ; Parallel: major<->minor with same root
+       "alg/nr-L"               ; Leading-tone: swap the top note by semitone
+       "alg/nr-R"               ; Relative: major<->minor, related root
+     )
+     :note "Standard music-theory algebra (Forte/Straus/Rahn). All closed-form on pitch-class integers in [0,12).")
+
+    ;; ── STRUCTURAL: uses other alg verbs in composition
+    (:tier "structural"
+     :count 2
+     :verbs (
+       "alg/is-isomorphic?"     ; brute-force bijection search on Cayley tables (|G|! candidates); escalate for |G|>8
+       "alg/rosette"            ; n rotation angles: (list 0 (/ 2π n) (* 2 (/ 2π n)) ...)
+     )
+     :note "alg/is-isomorphic? is expensive by nature. We implement small-|G| brute force and honestly escalate 'use-backend for |G|>8. Reference signature already permits 'use-backend return.")
+
+    ;; ── DEFERRED: none this lane
+    (:tier "deferred"
+     :count 0
+     :verbs ()
+     :note "Every stubbed alg verb has a well-defined mathematical spec. None are author-blocked. If wiring surfaces spec ambiguity we flag :entry-provenance \"spec-ambiguous\" per that verb; not expected on these 30."))
+
+  ;; ── The 57 already-wired verbs, split into real-impl vs descriptor ──
+  ;; Auditing which are real (need only schema-shape upgrade + 5-tier
+  ;; examples) vs which return descriptor shells (need full re-implement).
+  ;; Identified by inspecting reference-impls.js.
+  :already-wired-audit (
+
+    ;; ── REAL IMPLS (14) — logic works, just needs schema-shape upgrade
+    (:kind "real-impl"
+     :count 14
+     :verbs (
+       "alg/identity"           ; returns [0,1,...,n-1] — correct
+       "alg/inverse"             ; array inverse of permutation — correct
+       "alg/invert"              ; alias of alg/inverse — correct
+       "alg/element-order"       ; LCM of cycle lengths — correct
+       "alg/cyclic"              ; Cayley table for Z/nZ — correct
+       "alg/dihedral"            ; ['rot',i] + ['ref',i] list — correct
+       "alg/is-abelian?"         ; commutativity check on Cayley table — correct
+       "alg/order"               ; group.length — correct for table repr
+       "alg/index"               ; |G|/|H| — correct
+       "alg/is-group?"           ; always #t (structural check via constructor) — pragmatic
+       "alg/is-field?"           ; always #f — flagged in caveats
+       "alg/direct-product"      ; returns |G|*|H| (size only, not full table)
+       "alg/interval-vector"     ; music-theory intervallic content — correct
+       "alg/cycles->perm"        ; correct
+     )
+     :note "These need :impl-status \"wired\" + full 5-tier examples + schema slices. Some (alg/direct-product) return only order, not full table — we upgrade to return the full Cayley table if downstream verbs need it.")
+
+    ;; ── DESCRIPTOR SHELLS (33) — return [name, ...args] tuples; LIES
+    (:kind "descriptor-shell"
+     :count 33
+     :verbs (
+       ;; From reference-impls.js mass-stub at line 2183+:
+       "alg/symmetric"           ; needs S_n Cayley table generation
+       "alg/alternating"          ; needs A_n (even permutations only)
+       "alg/is-normal?"           ; needs conjugation check gHg^-1 = H
+       "alg/is-solvable?"         ; needs derived-series termination check
+       "alg/is-simple?"           ; needs normal-subgroup enumeration
+       "alg/quotient"             ; needs normal subgroup + coset construction
+       "alg/kernel"               ; needs homomorphism representation
+       "alg/homomorphism"         ; needs (op-preserving fn) validation
+       "alg/isomorphism?"         ; bijective + hom
+       "alg/rank"                 ; min-generating-set size
+       "alg/torsion"              ; elements of finite order
+       "alg/generators"           ; min generating set (returns from group)
+       "alg/action"               ; group action apply
+       "alg/permutation-cycles"   ; alias of alg/perm-cycles
+       "alg/perm-order"           ; alias of alg/element-order for perms
+       "alg/perm-parity"          ; alias of alg/perm-sign
+       "alg/perm-cycles"          ; alias of alg/perm->cycles
+       "alg/perm-inverse"         ; alias of alg/inverse (perm form)
+       "alg/perm-compose"         ; compose two perms
+       "alg/permutation-compose"  ; alias of alg/perm-compose
+       "alg/generate"             ; alias of alg/subgroup-gen
+       "alg/random-element"       ; sample from group elements
+       "alg/subgroup"              ; alias of alg/subgroup-gen
+       "alg/subgroups"             ; enumerate all subgroups (small |G|)
+       "alg/is-cyclic?"           ; exists element of order |G|
+       "alg/is-subgroup?"         ; alias of alg/subgroup?
+       "alg/left-cosets"          ; alias of alg/cosets
+       "alg/right-cosets"         ; right-multiply variant
+       "alg/normalizer"           ; N_G(H) = {g : gHg^-1 = H}
+       "alg/centralizer"          ; C_G(x) = {g : gx = xg}
+       "alg/commutator"           ; [a,b] = aba^-1 b^-1
+       "alg/derived-subgroup"     ; [G,G] = subgroup generated by all commutators
+       "alg/exponent"             ; LCM of element orders
+       "alg/perm-apply"           ; already covered in wired-verbs.js: returns perm[i] — REAL
+       "alg/perm-fixed?"          ; perm[i] == i
+       "alg/perm-fixed-points"    ; [i for i where perm[i] == i]
+     )
+     :note "These currently return descriptor tuples like [\"alg/symmetric\", 4]. That's a lie — the reference documents a group return. Phase B upgrades each to a real algorithm.")
+
+    ;; ── FROM wired-verbs.js (not descriptor — real impl) but audit tricky
+    (:kind "wired-verbs-real"
+     :count 10
+     :verbs (
+       ;; wired-verbs.js has REAL impls that run only inside makeSakuraEnv
+       ;; but the baseline audit (makeBaseEnv) marks them as missing.
+       ;; Phase B consolidates: real impls belong in src/alg.js which runs
+       ;; in BOTH envs, not scattered.
+       "alg/perm-identity"       ; wired-verbs.js:523 — REAL, move to src/alg.js
+       "alg/perm-compose"        ; wired-verbs.js:529 — REAL, move to src/alg.js
+       "alg/perm-pow"            ; wired-verbs.js:533 — REAL, move to src/alg.js
+       "alg/perm-apply"          ; wired-verbs.js:540 — REAL, move to src/alg.js
+       "alg/zn-add"              ; wired-verbs.js:544 — REAL, move to src/alg.js
+       "alg/zn-mul"              ; wired-verbs.js:549 — REAL, move to src/alg.js
+       "alg/zn-inverse"          ; wired-verbs.js:554 — REAL, move to src/alg.js
+       "alg/zn-units"            ; wired-verbs.js:568 — REAL, move to src/alg.js
+       "alg/poly-add"            ; wired-verbs.js:575 — REAL, move to src/alg.js
+       "alg/poly-mul"            ; wired-verbs.js:583 — REAL, move to src/alg.js
+     )
+     :note "wired-verbs.js has 10 real alg impls but only makeSakuraEnv installs them. The Jesse binary + Lacuna Eng standalone (makeBaseEnv) miss them entirely. Consolidating to src/alg.js hooked from base.js ensures BOTH environments get them.")
+  )
+
+  :risks (
+    "alg/op is polymorphic — must handle Cayley-table groups (alg/cyclic, alg/group-from-table), dihedral tuples (['rot',i], ['ref',i] from alg/dihedral), and permutation arrays. We dispatch on shape. Document the shape in :impl-notes."
+    "alg/prime-form + alg/normal-form: Forte vs Straus conventions differ on tie-breaking. Reference summary says 'Forte prime form' — we use Forte convention (Straus 2005 pp. 44-56) and document the choice in :caveats. If Alfred prefers Rahn we flip."
+    "alg/is-isomorphic?: brute-force bijection search is O(|G|!). We cap at |G| ≤ 8 (40320 candidates ≈ ms). Above that we return 'use-backend per the reference signature. Documented in :caveats and :complexity."
+    "alg/perm signature returns 'nan if input is not a valid permutation. Validation: length n, values in [0,n), no duplicates. Reference explicitly names this sentinel."
+    "src/alg.js does not exist yet. Create + wire from base.js (peer to media.js) so both makeBaseEnv and makeSakuraEnv get the impls. Removes duplication in wired-verbs.js."
+    "Neo-Riemannian transforms (P/L/R) operate on triads. Triad representation: sorted pc-set of 3 notes. Convention: identify root by voicing OR by kind label from alg/triad. We accept both and document the shape."
+    "Deletion of duplicated wired-verbs.js alg impls is a follow-up cleanup after src/alg.js lands + REPL is verified. Not blocking Phase B first pass."
+  )
+
+  :plan (
+    "1. Wait until Ada confirms docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat is stable (already exists on branch as of this audit)."
+    "2. Create src/alg.js with export installAlg(env). Register from src/base.js (peer to media.js) so both makeBaseEnv + makeSakuraEnv see the impls."
+    "3. Wire CHEAP tier first (12 verbs). REPL-verify each of 5 example tiers per verb via ./bin/sakura-scheme eval."
+    "4. Wire MUSIC tier (8 verbs). Pure pitch-class algebra — no dependencies on group structure. Fast to verify."
+    "5. Wire MEDIUM tier (8 verbs). Group constructors + orbit/stabilizer/subgroup-gen. Requires shape-dispatch for alg/op."
+    "6. Wire STRUCTURAL tier (2 verbs). alg/is-isomorphic? small-|G| brute force + honest 'use-backend escalation."
+    "7. Upgrade 33 DESCRIPTOR SHELLS to real impls (this is the biggest chunk of work — replaces the lies)."
+    "8. Upgrade 14 REAL IMPLS from reference-impls.js: schema-shape + 5-tier examples in docs/staging/verbs-jess-alg.slat."
+    "9. Consolidate 10 wired-verbs.js real impls into src/alg.js. Delete duplicates from wired-verbs.js after REPL green."
+    "10. Ship staging file docs/staging/verbs-jess-alg.slat — one full-schema entry per verb (87 total)."
+    "11. Commit + push per verb. Update stamps file per Architect convention."
+  )
+
+  :permission-notes (
+    "All alg/ verbs are computationally pure — no I/O, no network, no cortex mutation. :permission 'read is correct for all 87. :cortex-touch 'none."
+    "alg/is-isomorphic? in :expensive escalation mode may take seconds for |G|=8. Tag :latency-class 'sync-slow. All others :latency-class 'sync-fast."
+    ":fuel-cost 'low for cheap/music tiers. 'medium for medium/structural."
+  )
+
+  :deps (
+    "None. Pure math on arrays and lists. No dependency on ai.js, game.js, commercial.js, or fetch."
+    "Uses only stdlib + a small extended-Euclidean helper (already in wired-verbs.js:554-566 for alg/zn-inverse) that will move to src/alg.js."
+  ))

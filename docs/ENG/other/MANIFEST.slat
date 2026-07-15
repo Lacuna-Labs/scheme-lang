@@ -1,0 +1,66 @@
+(book-of-flower-stories
+  :audience "kids (7-11) + Sakura training"
+  :setting-anchor "Brooklyn Botanic Garden — Sakura's origin garden"
+  :cast-anchors
+  ((cherry-blossom "Sakura — the namesake; spring, brief, warm")
+   (daffodil "the first; sturdy, a little proud, an early riser")
+   (iris "the elegant; blue, quiet, keeps her own counsel")
+   (hosta "the shade lover; broad-leaved, patient, hospitable")
+   (dahlia "the summer show; many-petaled, generous")
+   (weed "the honest one; low, hardy, everywhere")
+   (wildflower "the meadow friend; small, resilient, plural")
+   (bee "the visitor; hardworking, brief, always leaves a bit of pollen")
+   (sparrow "the small witness; watchful, kind, chatty")
+   (rain "the gentle repair; patient, everywhere at once")
+   (wind "the mover; carries messages, sometimes clumsy")
+   (sun "the constant; warms without asking who")
+   (snow "the quiet blanket; only ever mentioned kindly"))
+
+  :themes
+  ("helping" "feeling tired" "feeling lonely" "returning a favor"
+   "being small" "being new" "being late" "being seen"
+   "a friend leaving" "a friend arriving" "changing shape")
+
+  :composition
+  ("Aristotle arc — beginning of state, middle of small action, end of small connection"
+   "Grice cooperation — talk that helps"
+   "Sartre being-is-doing — a flower becomes generous by giving pollen"
+   "Jung anima woven silently — the garden's mother-shape is never named"
+   "NO moralizing — the story is the lesson"
+   "NO violence, NO business, NO product references"
+   "kid-readable at Andersen-bar")
+
+  :stories
+  ((story :file "01-cherry-blossom-and-the-first-morning.slat" :theme "being new · being brief")
+   (story :file "02-daffodil-and-the-late-snow.slat" :theme "being early · patience")
+   (story :file "03-iris-and-the-quiet-bee.slat" :theme "returning a favor")
+   (story :file "04-hosta-and-the-tired-sparrow.slat" :theme "feeling tired · hospitality")
+   (story :file "05-dahlia-and-the-forgotten-corner.slat" :theme "being seen · generosity")
+   (story :file "06-weed-and-the-crack-in-the-path.slat" :theme "being small · being hardy")
+   (story :file "07-wildflowers-and-the-meadow-song.slat" :theme "being plural · being together")
+   (story :file "08-cherry-blossom-and-the-wind-message.slat" :theme "friend arriving")
+   (story :file "09-daffodil-and-the-borrowed-yellow.slat" :theme "helping")
+   (story :file "10-iris-and-the-blue-rain.slat" :theme "changing shape")
+   (story :file "11-hosta-and-the-shade-guest.slat" :theme "welcoming")
+   (story :file "12-dahlia-and-the-many-names.slat" :theme "being named")
+   (story :file "13-weed-and-the-gardener-who-noticed.slat" :theme "being seen")
+   (story :file "14-wildflower-lantern.slat" :theme "friend leaving")
+   (story :file "15-bee-and-the-late-summer-daisy.slat" :theme "returning a favor")
+   (story :file "16-sparrow-and-the-fallen-petal.slat" :theme "small kindness")
+   (story :file "17-rain-and-the-thirsty-hosta.slat" :theme "helping")
+   (story :file "18-sun-and-the-morning-glory.slat" :theme "being constant")
+   (story :file "19-wind-and-the-clumsy-message.slat" :theme "trying again")
+   (story :file "20-cherry-blossom-and-the-visitor.slat" :theme "being new to a garden")
+   (story :file "21-daffodil-and-the-crocus-cousin.slat" :theme "who is first")
+   (story :file "22-iris-and-the-quiet-afternoon.slat" :theme "being still")
+   (story :file "23-hosta-and-the-family-of-hostas.slat" :theme "family")
+   (story :file "24-dahlia-and-the-first-fall-frost.slat" :theme "a friend leaving · gentle")
+   (story :file "25-weed-and-the-wildflower-friend.slat" :theme "being together")
+   (story :file "26-wildflowers-and-the-lost-bee.slat" :theme "returning a favor")
+   (story :file "27-cherry-blossom-in-the-rain.slat" :theme "being brief · being seen")
+   (story :file "28-sparrow-and-the-iris-secret.slat" :theme "trust")
+   (story :file "29-daffodil-and-the-birthday-gardener.slat" :theme "being noticed")
+   (story :file "30-the-garden-at-night.slat" :theme "all of them together"))
+
+  :pd "original stories authored by Sakura; no derivative material"
+  :count 30)

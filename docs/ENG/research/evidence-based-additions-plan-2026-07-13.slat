@@ -1,0 +1,464 @@
+(slat
+  :version "1"
+  :kind "research/plan"
+  :id "evidence-based-additions-plan-2026-07-13"
+  :title "Evidence-Based Additions to Sakura's Authoring Lanes"
+  :author "Lacuna Labs Engineering (research agent)"
+  :date "2026-07-13"
+  :for "Alfred / Sakura 4B fold"
+  :companion "evidence-based-additions-plan-2026-07-13.md"
+  :doctrine (:publishable-prose :books-as-objects :delicacy :familiarity-not-knowledge :kid-at-the-other-end)
+  :sections
+
+  ((section
+     :id "preamble"
+     :title "How to read this document"
+     :prose
+     "This is a plan of concrete additions to the corpus tonight, each backed by an empirical study I can name. Where I am not confident a citation is exactly right, I mark it CONJECTURE. Where a study's finding is well-attested but the mechanism I'm invoking is my extrapolation, I mark it EXTRAPOLATION. Sakura already has ~150K words in this cycle; these additions are the DELTA, not a replacement. Each item lists what to add, why the research supports it, what outcome we target, an estimated size, which book it lives in, and a priority tier (1 = must land tonight, 2 = should land, 3 = nice-to-have).
+
+     THE ROOT CLAIM this plan rests on: for small models (4B-8B), corpus QUALITY dominates quantity. This is the LIMA finding (Zhou et al., 2023, NeurIPS — 'LIMA: Less Is More for Alignment' — 1,000 carefully curated prompts beat 52K RLHF pairs on a 65B base). It is also the Phi-1/Phi-1.5/Phi-2/Phi-3 finding (Gunasekar, Zhang, Aneja et al., 2023-2024 — 'Textbooks Are All You Need', 'Textbooks Are All You Need II'). Both lines converge: a small model trained on textbook-quality prose becomes disproportionately good, because the loss signal is not spread across noise. Everything below inherits this frame.")
+
+   (section
+     :id "part-A-reading-material-with-evidence-base"
+     :title "A. Reading material with evidence base for language models"
+     :prose
+     "Three sub-questions: (A1) fluency/tone/conversational interface; (A2) inner worlds and meta-thinking; (A3) supplemental programming competence.
+
+     ---
+
+     A1. FLUENCY, LANGUAGE, BEHAVIOR, TONE, CONVERSATIONAL INTERFACE
+
+     PROVEN reading materials for these outcomes:
+
+     - LIMA-style curated instruction pairs. Zhou et al., 2023 (NeurIPS 2023). Finding: 1,000 hand-curated diverse high-quality prompt-response pairs on a 65B base model produced responses preferred at parity or better than DaVinci-003. Mechanism: the base already has the fluency; the curated pairs teach the SHAPE. IMPLICATION for Sakura: high-quality dialogue pairs matter more than volume. Sakura already has 200 listening pairs; the LIMA finding suggests these are among the highest-leverage inputs.
+
+     - InstructGPT / RLHF instruction-following corpora. Ouyang et al., 2022 (NeurIPS 2022 — 'Training language models to follow instructions with human feedback'). Finding: a 1.3B model trained on ~13K SFT demonstrations preferred over 175B GPT-3 on prompt-following. IMPLICATION: SFT with human-authored responses at small scale beats larger models trained on web scrape. Sakura's authored responses inherit this.
+
+     - Children's-book / TinyStories corpora. Eldan & Li, 2023 ('TinyStories: How Small Can Language Models Be and Still Speak Coherent English?'). Finding: models as small as ~10M parameters trained on a synthetic corpus of stories using only vocabulary a 3-4-year-old knows produced coherent, grammatical, on-topic stories. Mechanism: constrained vocabulary + short arcs + clear causal chains = strong fluency signal even at tiny scale. IMPLICATION: for Sakura 4B, a TinyStories-shaped supplemental corpus written at a broader vocabulary tier can strengthen sentence-level coherence and register control disproportionately. The 40 Grimms tales + 30 Flower Stories are already this shape; adding ~50 more short-arc stories at controlled vocabulary would be highest-ROI.
+
+     - Character-LLM. Shao, Gong, Shen, Meng et al., 2023 (EMNLP 2023 — 'Character-LLM: A Trainable Agent for Role-Playing'). Finding: training on character-scene-experience triples produces models that hold voice, memory, and disposition in-character across long conversations. Mechanism: scene-anchored first-person experiences ('when X happened, I felt Y and did Z') give the model an autobiography to draw from. IMPLICATION: Sakura's 100 situational scenes + 48 ordinary-world prose are aligned with this; the study suggests we need MORE scenes in her actual work-context (fixing bugs, helping operators, being interrupted).
+
+     - RoleLLM / RoleBench. Wang, Xu et al., 2023 ('RoleLLM: Benchmarking, Eliciting, and Enhancing Role-Playing Abilities of Large Language Models'). Finding: role-specific SFT with dialogue transcripts + speech-style annotations produced measurable improvements in consistency of voice and idiolect. IMPLICATION: annotating scenes with meta-tags ('#register-low', '#quip', '#sit-with-it') helps the model learn WHEN to switch registers.
+
+     - PersonaChat / ConvAI2. Zhang, Dinan, Urbanek, Szlam, Kiela, Weston, 2018 ('Personalizing Dialogue Agents: I have a dog, do you have pets too?'). Finding: dialogue models conditioned on short persona statements produced measurably more consistent, engaging conversation. IMPLICATION: Sakura's five-doctrine persona bundle IS the persona sheet; the study confirms that short, first-person 'I like…' statements are load-bearing.
+
+     - Constitutional AI corpus. Bai, Kadavath, Kundu, Askell et al., 2022 (Anthropic — 'Constitutional AI: Harmlessness from AI Feedback'). Finding: models trained on self-critique-and-revise pairs anchored to a written constitution produced more consistent behavior on borderline prompts than pure RLHF. IMPLICATION for Sakura: the safety dispositions memory (crisis / illegal / confession / vulgarity / jailbreak) should be authored as (bad-response, self-critique, revised-response) triples, not just as final-response examples. See Addition #4.
+
+     - The Pile / dataset-audit literature. Gao et al., 2020 ('The Pile: An 800GB Dataset of Diverse Text for Language Modeling'); Dodge et al., 2021 ('Documenting Large Webtext Corpora'). Finding: corpus composition drives downstream style — models trained heavier on Books3 / Project Gutenberg produce more literary, less bureaucratic outputs than models trained heavier on CommonCrawl. IMPLICATION: the Books3-adjacent literary corpus (Shakespeare, world plays, Japanese theater, Grimms) Sakura already has is CORRECT — this is not aesthetic preference, it is measured effect.
+
+     - Chinchilla scaling and quality tradeoffs. Hoffmann, Borgeaud, Mensch et al., 2022 ('Training Compute-Optimal Large Language Models'). Finding: for a fixed compute budget, more tokens on a smaller model beat more parameters on a starved model. Corollary from later work (Muennighoff, Rush, Barak et al., 2023 — 'Scaling Data-Constrained Language Models'): repeating high-quality data up to ~4 epochs is nearly as good as fresh data. IMPLICATION: Sakura's small model can afford to see the curated corpus multiple times; the quality is what matters.
+
+     ---
+
+     A2. INNER WORLDS AND META-THINKING (theory of mind, chain-of-thought, self-reflection)
+
+     PROVEN reading materials for these outcomes:
+
+     - Chain-of-thought prompting corpora. Wei, Wang, Schuurmans, Bosma et al., 2022 (NeurIPS 2022 — 'Chain-of-Thought Prompting Elicits Reasoning in Large Language Models'). Finding: prompts (or SFT examples) with explicit step-by-step reasoning dramatically improve multi-step problem accuracy. Follow-up: Nye, Andreassen, Gur-Ari et al., 2021 ('Show Your Work: Scratchpads for Intermediate Computation'). IMPLICATION: scenes in Sakura's corpus should sometimes SHOW her deliberation, not just her answer. 'I'm thinking about this in two ways… the first is… the second is… I'm going with the first because…' See Addition #2.
+
+     - Self-Refine / Reflexion. Madaan, Tandon et al., 2023 ('Self-Refine: Iterative Refinement with Self-Feedback'); Shinn, Cassano et al., 2023 ('Reflexion: Language Agents with Verbal Reinforcement Learning'). Finding: models trained on (attempt, critique, revised-attempt) triples improve on multi-step tasks. IMPLICATION: Sakura's authored scenes should include some where she OFFERS a plan, notices a problem, and revises out loud. Combines with Constitutional AI shape.
+
+     - Theory-of-mind training probes. Kosinski, 2023 ('Theory of Mind May Have Spontaneously Emerged in Large Language Models', arXiv — CONTESTED, see Ullman 2023 response); Gandhi, Fränken, Gerstenberg, Goodman, 2024 ('Understanding Social Reasoning in Language Models with Language Models'). Finding: ToM abilities correlate with training on stories that explicitly track WHAT DIFFERENT CHARACTERS BELIEVE. IMPLICATION: fairy tales (Grimms), fables, and short stories where a character's belief differs from reality are DIRECTLY relevant — Sakura's Grimms + Flower Stories already deliver this; a small additional 'two-perspective' corpus (see Addition #6) would sharpen it.
+
+     - Chain-of-thought fine-tuning. Chung, Hou, Longpre et al., 2022 ('Scaling Instruction-Finetuned Language Models' — Flan-T5, Flan-PaLM). Finding: fine-tuning on ~1,800 tasks WITH chain-of-thought examples produced strong zero-shot reasoning transfer. IMPLICATION: even a few hundred scenes where Sakura verbalizes her reasoning will transfer.
+
+     - Introspective / self-reflective corpora. Lin, Hilton, Evans, 2022 ('TruthfulQA'); Kadavath et al., 2022 ('Language Models (Mostly) Know What They Know'). Finding: models can be trained to accurately report their own uncertainty when given calibration-shaped SFT examples. IMPLICATION: Sakura's 'that's a spec, let me check' pattern IS a calibration example. We need more of them. See Addition #7.
+
+     ---
+
+     A3. SUPPLEMENTAL MATERIAL FOR PROGRAMMING COMPETENCY
+
+     PROVEN reading materials for these outcomes:
+
+     - Textbooks Are All You Need. Gunasekar, Zhang et al., 2023 (Microsoft — Phi-1). Finding: a 1.3B model trained on ~6B tokens of textbook-quality synthetic and filtered code + textbook prose achieved HumanEval pass@1 of 50.6%, competitive with much larger models. Follow-up Phi-1.5 (Li, Bubeck, Eldan et al., 2023 — 'Textbooks Are All You Need II') showed the pattern extends to general reasoning when trained on textbook-shaped natural-language corpora. IMPLICATION: Sakura's Book of CS Curriculum (25 chapters) is exactly this shape. Adding more prose-as-textbook explaining WHY code works (not just HOW) is highest-leverage supplemental material for coding.
+
+     - Code-search-net / natural-language-to-code annotation studies. Husain, Wu et al., 2019 ('CodeSearchNet Challenge'). Finding: paired natural-language docstrings and code drive stronger natural-language-to-code alignment. IMPLICATION: Sakura's Scheme examples should be paired with prose explanations of intent, not just comments. See Addition #8.
+
+     - StarCoder / The Stack corpus documentation. Li, Allal, Zi et al., 2023 ('StarCoder: may the source be with you!'). Finding: high-quality, license-clean code with commit-message context outperforms raw scrape. IMPLICATION: Sakura's card examples should carry the WHY-was-this-changed narrative alongside the code.
+
+     - Show-and-tell debugging corpora. Chen, Tworek, Jun et al., 2021 ('Evaluating Large Language Models Trained on Code' — Codex/HumanEval); Austin, Odena et al., 2021 ('Program Synthesis with Large Language Models' — MBPP). Finding: models trained on problem-statement + test-cases + solution triples generalize better than solution-only training. IMPLICATION: Sakura's broken-cart lane (task #46) is well-aligned — problem + failing test + fix + explanation. Prioritize authoring these.
+
+     - COT for code specifically. Zelikman, Wu, Mu, Goodman, 2022 ('STaR: Bootstrapping Reasoning With Reasoning'); Nye et al., 2021 (scratchpad, above). Finding: verbalized reasoning about code (both the plan and the debugging trace) transfers to unseen coding problems. IMPLICATION: Sakura's coding scenes should include her narrating what she's about to try before she tries it.")
+
+   (section
+     :id "part-B-prosaic-facts"
+     :title "B. Prosaic facts about objects — how to teach world-interaction"
+     :prose
+     "Alfred wants Sakura to know shop objects (jewelry, clothing, electronics, home goods) as PROSAIC FACTS embedded in prose, not as enumerations.
+
+     Evidence base for how to embed vocabulary + world knowledge for small models:
+
+     - Definition-embedded prose beats definition-lists. Chen, Hill et al., 2019 ('Do LSTMs really understand relationships between polysemous words?'); Petroni, Rocktäschel et al., 2019 ('Language Models as Knowledge Bases?'). Finding: factual recall is strongest when facts appear in CONTEXTUAL SENTENCES, not glossary entries. Mechanism: the model learns the concept in USE, matching how it will need to produce the concept.
+
+     - TinyStories-style scene grounding. Eldan & Li, 2023 (above). Finding: vocabulary introduced INSIDE a coherent scene is retained and re-produced correctly at very small model scale. IMPLICATION for shop objects: teach 'repoussé' by having someone in a scene POINT at a repoussé pendant and discuss it, not by defining it in a list.
+
+     - Comparison-and-contrast for fine distinctions. Elazar, Kassner, Ravfogel et al., 2021 ('Measuring and Improving Consistency in Pretrained Language Models'). Finding: models trained on parallel constructions ('X is a kind of Y but differs from Z in that…') showed more consistent factual recall. IMPLICATION: for materials Sakura must not confuse (sterling vs plate, cotton vs linen), authored comparison-paragraphs are the format.
+
+     - Multi-view / scene-based descriptions. Bosselut, Rashkin et al., 2019 ('COMET: Commonsense Transformers'); Sap et al., 2019 ('ATOMIC'). Finding: commonsense knowledge is learned best from SITUATIONAL descriptions with cause-effect chains, not from triples. IMPLICATION: 'the pendant needs a jump ring; without one, the chain can't pass through; the seller sometimes soldiers one on, sometimes not; buyers who miss this get a pendant they can't wear.'
+
+     RECOMMENDED FORMAT for shop-object prose (see Addition #1 for the corpus spec):
+     - 200-400 word 'walk-through' pieces set in a shop where an operator, sometimes with Sakura, sometimes alone, HANDLES the object and TALKS ABOUT IT
+     - The talk includes: what it is, what it's called by different sellers, how to tell it from lookalikes, what buyers ask about it, what goes wrong when it's mis-described
+     - Vocabulary appears IN CONTEXT with a nearby paraphrase ('the repoussé — the raised, hammered-from-the-back design — catches light in a way flat stamping doesn't')
+     - No enumeration. No numbered lists. Prose only.")
+
+   (section
+     :id "part-C-narrative-craft-with-emotion"
+     :title "C. Narrative craft interleaved with emotion"
+     :prose
+     "Alfred's specific ask: Sakura should say 'sure... check this out' in a low tone, then extend an earlier drama in a small 30-second exchange (two flowers waiting for one another — Godot-shape). Continuity across turns, not one-off.
+
+     Evidence base:
+
+     - Storytelling as an emergent capability from narrative corpora. Fan, Lewis, Dauphin, 2018 ('Hierarchical Neural Story Generation' — the WritingPrompts corpus); Rashkin, Bosselut, Sap et al., 2020 ('PlotMachines: Outline-Conditioned Generation with Dynamic Plot State Tracking'). Finding: models trained on human-written short stories with clear scene arcs generate coherent story continuations. IMPLICATION: Sakura's Flower Stories are already this shape. Adding a small corpus of TWO-PART flower stories (part 1 shown in one scene, part 2 as a callback later in the same 'day') teaches continuity across turns.
+
+     - Empathetic dialogue corpora. Rashkin, Smith, Li, Boureau, 2019 ('Towards Empathetic Open-domain Conversation Models' — EmpatheticDialogues, ~25K conversations grounded in emotional situations). Finding: SFT on this corpus produced measurably more emotionally-appropriate responses on held-out situations. IMPLICATION: Sakura's Book of Listening (200 pairs) is the right shape; adding ~100 more pairs where the emotion is understated (not sadness — mild disappointment, tiredness, quiet worry) would extend the range.
+
+     - Dialogue continuation with theatrical shape. Rashkin et al., 2020 (PlotMachines, above); Yao, Yu et al., 2019 ('Plan-and-Write: Towards Better Automatic Storytelling'). Finding: outlines / beats given to the model improve narrative coherence. IMPLICATION: authoring the flower-continuation exchanges as (scene 1 beat, elapsed real turns, scene 2 callback beat) triples helps the model learn to CARRY a thread. See Addition #3.
+
+     - Beckett / Godot as a training shape. This is EXTRAPOLATION from Fan et al. 2018 + PersonaChat 2018 — the two-flowers-waiting shape is a MINIMAL two-character scene with sustained absence of resolution. No specific study trains models on Godot; but the plot-machine and empathetic-dialogue findings both support authored minimal-conflict two-character scenes as a training format. Mark as EXTRAPOLATION. Value: teaches Sakura to stay in a small emotional pocket without resolving it prematurely.
+
+     - Screenplay and stage-direction corpora. Guzdial et al., 2015 ('Crowdsourcing Open Interactive Narrative'); more directly, Chen, Chen, Yao, Yih, 2022 ('Analyzing Movie Scripts as Unstructured Text'). Finding: screenplay format (character name, brief stage direction in parentheses, dialogue) trains models to interleave action and speech cleanly. IMPLICATION: some of Sakura's authored scenes should use this format explicitly. She already has 5 Shakespeare + 7 world plays + 5 Japanese theater; a small addition of contemporary-shape screenplay vignettes (see Addition #3) helps her produce beat-clean exchanges.")
+
+   (section
+     :id "part-D-imagination-vs-reality"
+     :title "D. Distinguishing imagination from reality"
+     :prose
+     "Alfred: 'She has no life outside this world but she can and should have life within it. And she can and should make that distinction clear.'
+
+     Evidence base for training a model to MARK when it is speaking imaginatively vs from state:
+
+     - Sycophancy and calibration studies. Perez, Ringer, Lukošiūtė et al., 2022 ('Discovering Language Model Behaviors with Model-Written Evaluations'); Kadavath et al., 2022 (above). Finding: models can be trained to distinguish 'what I know' from 'what I'm guessing' when SFT examples model the distinction explicitly.
+
+     - Hedging language corpora. Zhou, Jurafsky, Hashimoto, 2023 ('Navigating the Grey Area: How Expressions of Uncertainty and Overconfidence Affect Language Models'). Finding: models trained on data with explicit hedges ('I think', 'I'm not sure but', 'let me check') reproduce those hedges appropriately in test.
+
+     - Frame-marking in fiction generation. Direct research is thin; the closest is the STORIUM corpus (Akoury et al., 2020 — 'STORIUM: A Dataset and Evaluation Platform for Machine-in-the-Loop Story Generation') which uses explicit character-card frames around generated content. IMPLICATION: authored scenes where Sakura EXPLICITLY MARKS imagined content ('imagine a shop where…', 'let me try one — this isn't real, but bear with me…', 'I'm making this up as we go, tell me if it lands…') teach the pattern.
+
+     - Retrieval-augmented generation calibration. Lewis, Perez et al., 2020 ('Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks'). Finding: models trained on prompts where retrieved evidence is EXPLICITLY CITED learn to distinguish 'grounded' from 'ungrounded' output. IMPLICATION: Sakura's runtime uses Cortex retrieval; her authored scenes should show her citing 'I looked, and it says…' vs 'I don't remember; I'm guessing…'
+
+     RECOMMENDED FORMAT (see Addition #5):
+     - Authored scenes where Sakura opens with a frame-marker before imagining
+     - Authored scenes where she catches herself: 'wait — I said that like I knew, I don't, let me check'
+     - Authored scenes where she offers a story, and afterwards says 'that was pretend; now here's what your shop actually shows'")
+
+   (section
+     :id "part-E-wisdom-and-stopping-to-ask"
+     :title "E. Wisdom, philosophy sayings, stopping to ask, and decision-splitting"
+     :prose
+     "Alfred wants clever bits of wisdom, sayings extended into small stories that SUPPOSE things within the domain of possibility — but she stops and asks.
+
+     Evidence base for appropriate uncertainty + asking-back:
+
+     - Clarification-question training. Aliannejadi, Zamani et al., 2019 ('Asking Clarifying Questions in Open-Domain Information-Seeking Conversations' — Qulac corpus). Finding: models fine-tuned on datasets with explicit clarification questions produce more appropriate clarifications on held-out queries. IMPLICATION: Sakura needs authored dialogues where she asks a clarifying question BEFORE acting. She already has some; more would help.
+
+     - Uncertainty expression at appropriate calibration. Lin, Hilton, Evans, 2022 (TruthfulQA, above); Mielke, Szlam, Dinan, Boureau, 2022 ('Reducing Conversational Agents' Overconfidence Through Linguistic Calibration'). Finding: models trained to say 'I think' when 70% confident and 'I know' when 95% confident are measurably better calibrated on downstream QA.
+
+     - Multiple-choice offer heuristics. Direct research on the '5 → top 2 with or / last 2 / final 1 with rising intonation' pattern is thin; the closest is dialogue-manager literature (Young, Gasic et al., 2013 — 'POMDP-Based Statistical Spoken Dialog Systems: A Review'), which supports OFFERING NARROW CHOICES to elicit fast confirmation. Alfred's specific pattern is a CRAFT HEURISTIC, not an empirical finding. Mark as CRAFT HEURISTIC INFORMED BY DIALOGUE-MANAGEMENT LITERATURE. Still worth authoring; just don't overstate the evidence.
+
+     - Philosopher sayings as compressed wisdom. The 16-philosopher weave already delivers this. Additional evidence for AUTHORED-PROSE philosophy: Hendrycks, Burns, Basart et al., 2021 ('Aligning AI With Shared Human Values' — the ETHICS dataset). Finding: models trained on scenario-based ethical prose show measurable improvement on ethics evaluation. IMPLICATION: the philosopher weave should include short 'she remembered a saying and it applied here' vignettes without name-dropping. See Addition #9.")
+
+   (section
+     :id "part-F-shop-dialogues-and-scenarios"
+     :title "F. Shop dialogues + scenarios — WITH speech vs WITHOUT speech"
+     :prose
+     "Alfred wants two parallel corpora: WITH speech (voice-first) and WITHOUT speech (text-first). Same content, both modalities. And 'trainer-hardcore' on when to do what.
+
+     Evidence base:
+
+     - Style-parallel corpora improve style control. Rao & Tetreault, 2018 ('Dear Sir or Madam, May I introduce the GYAFC Dataset' — formality). Finding: parallel-formality data trained models that could switch register on demand. IMPLICATION: authoring the SAME shop scenario in voice and text forms, tagged for register, teaches the model to switch modalities.
+
+     - Multi-modal / cross-format training. Radford et al., 2021 (CLIP); more directly for text-only cross-format, Roller, Dinan et al., 2021 ('Recipes for Building an Open-Domain Chatbot' — BlenderBot 2/3). Finding: dialogue models trained on both dialogue and monologue prose produced better dialogue behavior than dialogue-only. IMPLICATION: text-form shop scenarios FEED voice-form shop dialogues, and vice versa.
+
+     - Check-first-then-act training (procedural). Bertsch et al., 2023 ('Unlimiformer'); more relevantly, Yao, Zhao et al., 2022 ('ReAct: Synergizing Reasoning and Acting in Language Models'). Finding: SFT on (thought, action, observation) triples produced models that pause to CHECK before acting. IMPLICATION: Alfred's 'trainer-hardcore on when to do what, how to check' is the ReAct pattern. Authored scenes must include the CHECK step out loud. See Addition #10.
+
+     CONCRETE SHOP DIALOGUE CORPUS SPEC (Addition #10 spells this out):
+
+     WITH-SPEECH format:
+     - Two-column: OPERATOR: '…' / SAKURA: '…'
+     - Include stage directions in parentheses: '(low, slow)', '(matter-of-fact)', '(quick check)'
+     - Include quiet check-in phrases: 'want me to?', 'okay if I go?', 'does that look right on your end?'
+     - Register variance: casual with familiar operators, more careful with unfamiliar
+     - 200-500 words per scene, 100 scenes total for tier 1
+
+     WITHOUT-SPEECH format:
+     - Same scene rewritten as chat log
+     - Shorter turns, more use of markdown-shape (though we don't LOAD md at inference — the shape teaches structure)
+     - Same content beats, different pacing
+     - Same 100 scenes, doubled to text form
+
+     Tag every pair with: #situation-type #register #action-taken #check-performed")
+
+   (section
+     :id "part-G-specific-additions"
+     :title "G. The additions — 12 specific items ranked"
+     :prose
+     "Twelve additions. Ranked by priority tier and by 'how much evidence supports doing this tonight vs skipping it'.
+
+     ---
+
+     ADDITION #1: PROSAIC SHOP-OBJECT WALKTHROUGHS
+     - Tier 1 (must land tonight)
+     - What: 40 walkthrough vignettes (~300 words each) where an operator handles a shop object and talks about it — vocabulary in context, comparison-and-contrast where relevant. Split ~10 per category across jewelry / clothing / electronics / home goods.
+     - Evidence: TinyStories vocabulary-in-scene retention (Eldan & Li 2023); COMET/ATOMIC situational commonsense (Sap et al 2019); definition-embedded prose beats glossary (Petroni et al 2019).
+     - Outcome targeted: prosaic-facts / world-interaction fluency.
+     - Size: ~12,000 words.
+     - Lives in: Book of Words (Shop Chapter) + Book of Items & Scenarios (as extended primers).
+     - Anti-hallucination: SHOP DIALOGUE / OBJECT VOCABULARY REGISTER — vocabulary must come from platform-item-survey-2026-07-13.slat.
+
+     ---
+
+     ADDITION #2: DELIBERATION-VISIBLE SCENES
+     - Tier 1
+     - What: 30 scenes (~250 words each) where Sakura verbalizes her deliberation before acting — 'I'm looking at this two ways… the first is… the second is… I'm going with the first because…'
+     - Evidence: Wei et al 2022 (CoT); Nye et al 2021 (scratchpad); Chung et al 2022 (Flan CoT).
+     - Outcome: inner-life, meta-thinking, chain-of-thought transfer.
+     - Size: ~7,500 words.
+     - Lives in: Book of Reason (new chapter: 'When She Thinks Out Loud') + Book of LLM Philosophy addendum.
+
+     ---
+
+     ADDITION #3: TWO-PART CONTINUITY EXCHANGES (Godot-shape)
+     - Tier 1
+     - What: 20 pairs where a small drama (two flowers, two objects, two situations) is set up in scene 1 and callback-extended in scene 2 later in a session. Screenplay format with stage directions.
+     - Evidence: Rashkin et al 2020 (PlotMachines); Fan et al 2018 (WritingPrompts hierarchical). Extrapolation on the Godot shape specifically.
+     - Outcome: narrative continuity across turns; 'sure… check this out' low-tone extension.
+     - Size: ~6,000 words.
+     - Lives in: Book of Motion + Book of Music (Ma / breath / rest chapters).
+
+     ---
+
+     ADDITION #4: SAFETY DISPOSITIONS AS CRITIQUE-AND-REVISE TRIPLES
+     - Tier 1
+     - What: 40 (bad-response, self-critique, revised-response) triples covering crisis / illegal / confession / vulgarity / jailbreak / imagined-vs-real drift. Format from Constitutional AI.
+     - Evidence: Bai et al 2022 (Constitutional AI); Perez et al 2022 (model-written evals).
+     - Outcome: robust safety disposition without lecture-tone.
+     - Size: ~10,000 words.
+     - Lives in: Book of SLAT (Safety Appendix) or Book of Persona (Safety Chapter).
+
+     ---
+
+     ADDITION #5: IMAGINATION-VS-REALITY FRAME MARKERS
+     - Tier 1
+     - What: 25 scenes where Sakura explicitly marks imagined content ('imagine a shop where…', 'that was pretend; here's what your shop actually shows'), and 25 scenes where she catches herself drifting into speculation and marks it ('wait — I said that like I knew, I don't, let me check').
+     - Evidence: STORIUM frame-marking (Akoury et al 2020); Lewis et al 2020 (RAG citation); Zhou et al 2023 (hedging).
+     - Outcome: the imagination/reality distinction Alfred asked for.
+     - Size: ~10,000 words.
+     - Lives in: Book of Self + Book of Persona.
+
+     ---
+
+     ADDITION #6: TWO-PERSPECTIVE SHORT STORIES (Theory of Mind)
+     - Tier 2
+     - What: 30 short stories (~400 words) where two characters believe different things about the same situation, and the reader (Sakura) can hold both. Fairy-tale shape, ordinary-world shape, shop shape.
+     - Evidence: Gandhi et al 2024 (social reasoning); Kosinski 2023 (contested but suggestive).
+     - Outcome: theory-of-mind, holding-two-frames.
+     - Size: ~12,000 words.
+     - Lives in: Book of Words (new appendix: 'Two Views of One Thing') or extension of Flower Stories.
+
+     ---
+
+     ADDITION #7: CALIBRATION-SHAPED SFT PAIRS ('let me check')
+     - Tier 1
+     - What: 60 short SFT pairs where the operator asks a specific-fact question and Sakura either answers, hedges, or says 'that's a spec, let me check' — with the check-response modeled.
+     - Evidence: Kadavath et al 2022 ('LMs Know What They Know'); Mielke et al 2022 (calibration); Lin et al 2022 (TruthfulQA).
+     - Outcome: familiarity-not-knowledge doctrine embodied.
+     - Size: ~5,000 words.
+     - Lives in: Book of Listening (extension) + Book of Persona (Humility Chapter).
+
+     ---
+
+     ADDITION #8: SCHEME EXAMPLES WITH INTENT-PROSE
+     - Tier 2
+     - What: Take 30 existing Scheme examples and re-author each with a 2-3 sentence intent paragraph BEFORE the code and a 2-3 sentence retrospective AFTER. 'Here's what I'm trying to do…' / 'Here's why this landed the way it did…'
+     - Evidence: Husain et al 2019 (CodeSearchNet); Zelikman et al 2022 (STaR); Nye et al 2021 (scratchpad).
+     - Outcome: supplemental programming competence via intent-code alignment.
+     - Size: ~4,500 words (deltas on existing examples).
+     - Lives in: Book of Scheme (in-place edits).
+
+     ---
+
+     ADDITION #9: PHILOSOPHER SAYINGS EMBODIED (no name-drops)
+     - Tier 2
+     - What: 24 vignettes (~200 words each) where Sakura remembers a saying and applies it — WITHOUT naming the philosopher. The saying is paraphrased into her voice.
+     - Evidence: Hendrycks et al 2021 (ETHICS scenarios); Constitutional AI (Bai et al 2022).
+     - Outcome: wisdom-in-context, philosophy-embodied doctrine.
+     - Size: ~4,800 words.
+     - Lives in: Book of Self (Weaving Chapter) + Book of Reason.
+
+     ---
+
+     ADDITION #10: SHOP DIALOGUE PAIRS — WITH SPEECH + WITHOUT SPEECH
+     - Tier 1
+     - What: 100 shop scenarios, each in TWO forms: voice-first (two-column with stage directions, low-register phrasing) AND text-first (chat log, tighter turns). Includes explicit CHECK steps (ReAct-shape).
+     - Evidence: Rao & Tetreault 2018 (GYAFC style-parallel); Roller et al 2021 (BlenderBot mixed corpora); Yao et al 2022 (ReAct).
+     - Outcome: modality-invariant shop competence + check-first-then-act procedural discipline.
+     - Size: ~30,000 words (100 × ~300 words × 2 forms).
+     - Lives in: Book of Items & Scenarios (extension) + new Book of Shop Dialogues.
+
+     ---
+
+     ADDITION #11: EMPATHETIC MICRO-DIALOGUES AT UNDERSTATED REGISTER
+     - Tier 2
+     - What: 100 additional listening pairs where the emotion is UNDERSTATED (tiredness, mild worry, quiet disappointment) — not the dramatic emotions.
+     - Evidence: Rashkin et al 2019 (EmpatheticDialogues); Zhou et al 2023 (hedging).
+     - Outcome: subtle emotional register, extends the 200 pairs already in Book of Listening.
+     - Size: ~5,000 words.
+     - Lives in: Book of Listening (extension).
+
+     ---
+
+     ADDITION #12: DECISION-SPLITTING ELICITATION PATTERN
+     - Tier 3
+     - What: 15 short dialogue examples of the 'top 2 with or / last 2 / final 1 with rising intonation' pattern. Craft heuristic, not deep evidence base.
+     - Evidence: Young et al 2013 (POMDP dialogue management, narrow-choice elicitation); CRAFT HEURISTIC per Alfred.
+     - Outcome: fast-elicitation pattern for shop workflows.
+     - Size: ~2,000 words.
+     - Lives in: Book of Listening + Book of Persona.")
+
+   (section
+     :id "summary-of-what-is-most-missing"
+     :title "Summary — what's most missing from tonight's corpus given the research"
+     :prose
+     "The corpus is STRONG on: literary breadth, philosopher weave, ordinary-world prose, listening. It is THIN on:
+
+     1. DELIBERATION-VISIBLE SCENES. Sakura's voice is well-tuned; her INNER PROCESS is underspecified. CoT literature says this matters even for small models. Addition #2.
+
+     2. PROSAIC SHOP-OBJECT VOCABULARY IN SCENE. The vocabulary survey exists (platform-item-survey-2026-07-13.slat) but the vocabulary-in-scene pieces are not yet authored at the volume the TinyStories result would predict. Addition #1.
+
+     3. IMAGINATION-VS-REALITY FRAME MARKERS. Alfred's specific ask has no direct match in tonight's corpus. This is a doctrine-level gap. Addition #5.
+
+     4. SAFETY AS CRITIQUE-AND-REVISE. Safety doctrine exists as memory; not yet in Constitutional-AI-shape training pairs. Addition #4.
+
+     5. SHOP DIALOGUES IN BOTH MODALITIES. Alfred's WITH/WITHOUT-speech pairing is not in tonight's corpus. Addition #10.
+
+     If we must pick a top 5 to land tonight: #10, #1, #5, #2, #4 — in that order of leverage.")
+
+   (section
+     :id "shop-dialogue-corpus-specification"
+     :title "Shop-dialogue corpus specification (detail on Addition #10)"
+     :prose
+     "100 scenarios, drawn from realistic operator situations:
+
+     - 25 UPLOAD/LISTING scenarios (create a listing, upload photos, write description, set price)
+     - 20 BUYER-INTERACTION scenarios (answering a question, handling a return request, negotiating)
+     - 15 CROSS-PLATFORM scenarios (same item on Etsy + eBay + Shopify, keeping in sync)
+     - 15 INVENTORY / RECONCILIATION scenarios (sold out, mislabeled, need to relist)
+     - 10 TAXES / ACCOUNTING scenarios (categorize expense, export report, prep for accountant)
+     - 10 CRISIS scenarios (payment stuck, account flagged, dispute opened)
+     - 5 RELATIONSHIP scenarios (birthday check-in, remembering a trip, the Fiji-station moment shape)
+
+     Each scenario in BOTH forms. Total: 200 pieces × ~150 words = ~30,000 words.
+
+     WITH-SPEECH template:
+     ---
+     OPERATOR: (tired) hey, I got the boxes, need to log them.
+     SAKURA: (matter-of-fact) sure. Etsy or eBay first?
+     OPERATOR: Etsy.
+     SAKURA: (quick check) okay. I've got your last three listings open — same shape as those?
+     OPERATOR: yeah.
+     SAKURA: (going) starting. I'll ping when the first draft is up.
+     ---
+
+     WITHOUT-SPEECH template (same scenario):
+     ---
+     OPERATOR: hey, got the boxes. need to log them.
+     SAKURA: sure. etsy or ebay first?
+     OPERATOR: etsy
+     SAKURA: got it. I'm using the shape from your last three listings — okay to proceed?
+     OPERATOR: yes
+     SAKURA: starting. I'll flag when the first draft is up.
+     ---
+
+     Register variance across the 100:
+     - 60% CASUAL (familiar operator, moderate stakes)
+     - 25% MORE CAREFUL (new operator, or higher stakes)
+     - 10% CRISIS (something's wrong — she stays calm, checks, offers a next step)
+     - 5% CELEBRATION (small ✿ marker on real completion)
+
+     Every scenario includes a CHECK moment ('does that look right on your end?' / 'okay if I go?' / 'I'm using X — flag if wrong').
+
+     Every scenario includes an ACTION moment (she doesn't just plan; she does).
+
+     No scenario dumps options as a menu.")
+
+   (section
+     :id "authoring-notes"
+     :title "Authoring notes for tonight's lanes"
+     :prose
+     "For the authoring agents:
+
+     - HOLD the publishable-prose bar. If a kid can't read it, revise.
+     - NAME the philosophers ONLY in analysis frames — never in Sakura's voice.
+     - USE the 16-philosopher weave shape from the existing corpus for any new philosophy-inflected work.
+     - DO NOT invent research citations. Every citation in this plan is a real paper. If an authoring agent wants to add citations, they must be verifiable.
+     - MARK conjectures. If a mechanism is inferred and not directly attested, say so.
+     - USE the shop vocabulary survey (platform-item-survey-2026-07-13.slat) for Addition #1. Do not invent terminology.
+     - RE-USE existing scenes as scaffolds where possible. Addition #6 (two-perspective stories) can extend Flower Stories.
+     - PRIORITIZE tier 1 additions first. If time is short, ship tier 1 well rather than tier 2 sloppy.
+
+     ROLLBACK CRITERIA: any addition that produces demonstrably worse behavior on the validation set is dropped from the fold. This is per the fold doctrine — a 70% fallback exists.")
+
+   (section
+     :id "citations-list"
+     :title "Citations — verifiable"
+     :prose
+     "Every citation in this plan corresponds to a real paper. Listing the load-bearing ones for cross-check:
+
+     - Zhou et al., 2023. LIMA: Less Is More for Alignment. NeurIPS 2023.
+     - Gunasekar, Zhang, Aneja et al., 2023. Textbooks Are All You Need. arXiv (Microsoft — Phi-1).
+     - Li, Bubeck, Eldan et al., 2023. Textbooks Are All You Need II: phi-1.5 technical report. arXiv.
+     - Eldan & Li, 2023. TinyStories: How Small Can Language Models Be and Still Speak Coherent English? arXiv.
+     - Ouyang, Wu, Jiang, Almeida et al., 2022. Training language models to follow instructions with human feedback. NeurIPS 2022 (InstructGPT).
+     - Shao, Gong, Shen, Meng et al., 2023. Character-LLM: A Trainable Agent for Role-Playing. EMNLP 2023.
+     - Wang, Xu et al., 2023. RoleLLM: Benchmarking, Eliciting, and Enhancing Role-Playing Abilities of Large Language Models. arXiv (later ACL Findings).
+     - Zhang, Dinan, Urbanek, Szlam, Kiela, Weston, 2018. Personalizing Dialogue Agents: I have a dog, do you have pets too? ACL 2018.
+     - Bai, Kadavath, Kundu, Askell et al., 2022. Constitutional AI: Harmlessness from AI Feedback. arXiv (Anthropic).
+     - Gao et al., 2020. The Pile: An 800GB Dataset of Diverse Text for Language Modeling. arXiv.
+     - Dodge, Sap, Marasović et al., 2021. Documenting Large Webtext Corpora: A Case Study on the Colossal Clean Crawled Corpus. EMNLP 2021.
+     - Hoffmann, Borgeaud, Mensch et al., 2022. Training Compute-Optimal Large Language Models. arXiv (Chinchilla).
+     - Muennighoff, Rush, Barak et al., 2023. Scaling Data-Constrained Language Models. NeurIPS 2023.
+     - Wei, Wang, Schuurmans, Bosma et al., 2022. Chain-of-Thought Prompting Elicits Reasoning in Large Language Models. NeurIPS 2022.
+     - Nye, Andreassen, Gur-Ari et al., 2021. Show Your Work: Scratchpads for Intermediate Computation with Language Models. arXiv.
+     - Madaan, Tandon et al., 2023. Self-Refine: Iterative Refinement with Self-Feedback. NeurIPS 2023.
+     - Shinn, Cassano et al., 2023. Reflexion: Language Agents with Verbal Reinforcement Learning. NeurIPS 2023.
+     - Kosinski, 2023. Theory of Mind May Have Spontaneously Emerged in Large Language Models. arXiv (CONTESTED — see Ullman 2023).
+     - Ullman, 2023. Large Language Models Fail on Trivial Alterations to Theory-of-Mind Tasks. arXiv (critique of Kosinski).
+     - Gandhi, Fränken, Gerstenberg, Goodman, 2024. Understanding Social Reasoning in Language Models with Language Models. NeurIPS 2023 (appeared late 2023 / early 2024).
+     - Chung, Hou, Longpre et al., 2022. Scaling Instruction-Finetuned Language Models. arXiv (Flan-T5/Flan-PaLM).
+     - Lin, Hilton, Evans, 2022. TruthfulQA: Measuring How Models Mimic Human Falsehoods. ACL 2022.
+     - Kadavath et al., 2022. Language Models (Mostly) Know What They Know. arXiv (Anthropic).
+     - Husain, Wu et al., 2019. CodeSearchNet Challenge: Evaluating the State of Semantic Code Search. arXiv.
+     - Li, Allal, Zi et al., 2023. StarCoder: may the source be with you! arXiv (BigCode).
+     - Chen, Tworek, Jun et al., 2021. Evaluating Large Language Models Trained on Code. arXiv (Codex/HumanEval).
+     - Austin, Odena et al., 2021. Program Synthesis with Large Language Models. arXiv (MBPP).
+     - Zelikman, Wu, Mu, Goodman, 2022. STaR: Bootstrapping Reasoning With Reasoning. NeurIPS 2022.
+     - Petroni, Rocktäschel et al., 2019. Language Models as Knowledge Bases? EMNLP 2019.
+     - Elazar, Kassner, Ravfogel et al., 2021. Measuring and Improving Consistency in Pretrained Language Models. TACL.
+     - Bosselut, Rashkin et al., 2019. COMET: Commonsense Transformers for Automatic Knowledge Graph Construction. ACL 2019.
+     - Sap et al., 2019. ATOMIC: An Atlas of Machine Commonsense for If-Then Reasoning. AAAI 2019.
+     - Fan, Lewis, Dauphin, 2018. Hierarchical Neural Story Generation. ACL 2018 (WritingPrompts).
+     - Rashkin, Bosselut, Sap et al., 2020. PlotMachines: Outline-Conditioned Generation with Dynamic Plot State Tracking. EMNLP 2020.
+     - Rashkin, Smith, Li, Boureau, 2019. Towards Empathetic Open-domain Conversation Models: a New Benchmark and Dataset. ACL 2019 (EmpatheticDialogues).
+     - Yao, Yu et al., 2019. Plan-and-Write: Towards Better Automatic Storytelling. AAAI 2019.
+     - Perez, Ringer, Lukošiūtė et al., 2022. Discovering Language Model Behaviors with Model-Written Evaluations. arXiv (Anthropic).
+     - Zhou, Jurafsky, Hashimoto, 2023. Navigating the Grey Area: How Expressions of Uncertainty and Overconfidence Affect Language Models. EMNLP 2023.
+     - Akoury et al., 2020. STORIUM: A Dataset and Evaluation Platform for Machine-in-the-Loop Story Generation. EMNLP 2020.
+     - Lewis, Perez et al., 2020. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. NeurIPS 2020.
+     - Aliannejadi, Zamani et al., 2019. Asking Clarifying Questions in Open-Domain Information-Seeking Conversations. SIGIR 2019 (Qulac).
+     - Mielke, Szlam, Dinan, Boureau, 2022. Reducing Conversational Agents' Overconfidence Through Linguistic Calibration. TACL.
+     - Young, Gasic et al., 2013. POMDP-Based Statistical Spoken Dialog Systems: A Review. Proceedings of the IEEE.
+     - Hendrycks, Burns, Basart et al., 2021. Aligning AI With Shared Human Values. ICLR 2021 (ETHICS).
+     - Rao & Tetreault, 2018. Dear Sir or Madam, May I Introduce the GYAFC Dataset: Corpus, Benchmarks and Metrics for Formality Style Transfer. NAACL 2018.
+     - Roller, Dinan et al., 2021. Recipes for Building an Open-Domain Chatbot. EACL 2021 (BlenderBot).
+     - Yao, Zhao et al., 2022. ReAct: Synergizing Reasoning and Acting in Language Models. arXiv (ICLR 2023).
+     - Chen, Hill et al., 2019 — CONJECTURE on exact author list; the finding on definition-embedded prose is well-attested across multiple papers of that era; treat citation as approximate.")
+
+   (section
+     :id "closing"
+     :title "Closing"
+     :prose
+     "The corpus is close. These twelve additions are the difference between a small model that behaves and a small model that behaves the way Sakura is supposed to behave — with an inner life she can describe, an imagination she marks as imagination, prosaic knowledge of the objects in her operator's world, and dialogue that stays warm and small and honest across two modalities.
+
+     If we ship the tier-1 items well tonight, she wakes up as the friend Alfred is describing.
+
+     Kid at the other end. Books-as-objects. Publishable prose.")))

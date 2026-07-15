@@ -1,0 +1,777 @@
+;;;slat 1.0
+; ═══════════════════════════════════════════════════════════════════════════
+; MOTOI COPILOT — DESIGN + SPEC — 2026-07-14
+;
+; Lane:    Motoi Scheme Copilot
+; Author:  Lacuna Eng lane (Claude Opus 4.7, 1M-ctx), dispatched by Alfred
+; Date:    2026-07-14
+;
+; Purpose. Specify the Motoi Copilot: a tiny savant language model that
+; only knows Motoi Scheme. It reads a Scheme buffer and suggests the next
+; form. It is a peer-programmer at the command line. It is NOT a chatbot,
+; NOT a Sakura persona, NOT wired to Cortex. Its whole personality is
+; being extremely good at one language.
+;
+; Tonight (2026-07-14) we do design + CLI stub, NOT training. Training is
+; weeks of GPU work and its own lane. This SLAT is the contract the
+; training lane will honor.
+;
+; Composes with:
+;   project_motoi_scheme_naming_and_dialects_2026_07_14
+;   project_sakura_scheme_base_variant_doctrine_2026_07_14
+;   project_reference_manual_IS_the_language_2026_07_13
+;   research/motoi-scheme-spec-and-gaps-burndown-2026-07-14.slat
+;   curator/scheme-books/book-of-lang-eng/12-motoi-copilot-slot.book.slatl
+;
+; SLAT rules obeyed: one form per line, LF terminators, kebab-case symbols,
+; keyword-value pairs.
+;
+; No hallucinations. Where a number is not measurable tonight, the field
+; carries :confidence "unknown-needs-measurement" and the reasoning path
+; for arriving at it.
+; ═══════════════════════════════════════════════════════════════════════════
+
+(doc
+  :id "motoi-copilot-spec-2026-07-14"
+  :status "draft-for-alfred-review"
+  :audience "Alfred, Lacuna Labs, future training lane"
+  :author "lacuna-eng-lane"
+  :date "2026-07-14"
+  :section-count 11
+  :composes-with (
+    "project_motoi_scheme_naming_and_dialects_2026_07_14"
+    "project_sakura_scheme_base_variant_doctrine_2026_07_14"
+    "project_reference_manual_IS_the_language_2026_07_13"
+    "research/motoi-scheme-spec-and-gaps-burndown-2026-07-14.slat"
+    "curator/scheme-books/book-of-lang-eng/12-motoi-copilot-slot.book.slatl"
+  )
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 1 — WHAT THE COPILOT IS (AND ISN'T)
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 1 :title "The Copilot's shape")
+
+(shape
+  :name "motoi-copilot"
+  :one-line "A tiny savant model that reads a Motoi Scheme buffer and suggests the next form."
+  :personality "savant — extremely good at one language, no character, no voice"
+  :chatbot? #f
+  :sakura-persona? #f
+  :cortex-connected? #f
+  :first-person-voice? #f
+  :emojis? #f
+  :greetings? #f
+  :advocacy? #f
+  :represents-anyone? #f
+  :interface "CLI subcommand — reads Scheme text on stdin or from a file, emits completions on stdout"
+)
+
+(purpose
+  :primary "Fork/variant authors get help staying inside the Motoi base."
+  :secondary "Cart authors get portable completions that don't leak into Sakura Dialect verbs."
+  :tertiary "Adapter authors get translation candidates between variants."
+  :not-purpose (
+    "General programming help across languages"
+    "Natural conversation"
+    "Emotional support, teaching pedagogy, character interaction — that's Sakura"
+    "Long-form reasoning about business logic, taste, or design tradeoffs"
+    "Anything requiring world knowledge beyond the Motoi reference"
+  )
+)
+
+(distinction-from-sakura
+  :sakura "A character. Speaks in first person. Has a voice. Persona-trained. Wired to Cortex for memory + tools."
+  :motoi-copilot "A tool. No first person. No voice. Completion-trained only. No persistent memory. No Cortex."
+  :training-data-sakura "Curator books (32 canon books, personality prose, philosopher lenses, listening/silence/self-model)."
+  :training-data-motoi-copilot "Reference manual verbs + examples + book-of-lang-eng + tests + carts. Zero persona prose."
+  :why "One artifact should do one job. Mixing them makes both worse. Sakura is warm; Copilot is precise. Different systems."
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 2 — MODEL ARCHITECTURE TARGET
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 2 :title "Model architecture — recommendation")
+
+(model
+  :name "motoi-copilot-1"
+  :param-range "1B–4B"
+  :recommended-target "≈3B parameters (dense transformer)"
+  :rationale (
+    "1B is too small to hold 1,000+ verb signatures + 3,500+ examples reliably; hallucination risk is high even after fine-tuning."
+    "7B+ is overkill for a single-language completion task and blows the local-inference budget; a 7B model at 4-bit needs ~4.5 GB RAM and pushes into GPU-only territory for latency."
+    "3B at 4-bit quantization fits in ≈2 GB RAM, runs CPU-only on a modern laptop at usable interactive latency, and has enough capacity to memorize the reference surface."
+  )
+  :architecture "dense decoder-only transformer, standard causal LM"
+  :context-window-min 4096
+  :context-window-target 8192
+  :context-window-rationale "Enough to hold a Motoi source file (typical carts are 200–800 LOC) plus a few reference entries surfaced by the runtime as system-prompt context."
+  :base-model-family-preference "small open-weight code-adjacent model, licensed for commercial use, from the small-open-model landscape circa knowledge cutoff — final vendor selection is a training-lane decision documented in a follow-on SLAT"
+  :confidence "medium — architecture size is defensible; base-model choice awaits training-lane audit of license + tokenizer + throughput on target hardware"
+)
+
+(quantization
+  :method "GGUF 4-bit (Q4_K_M) for release; Q5_K_M offered for users with more RAM"
+  :size-on-disk-est "≈1.7–2.0 GB at Q4_K_M for a 3B model"
+  :size-in-ram-est "≈2.0–2.5 GB working set"
+  :rationale "Q4_K_M is the widely-adopted quality/size sweet spot for small models on CPU; Q5_K_M gives noticeably better completion quality at ≈25% more RAM."
+  :confidence "medium — final quant choice validated by perplexity + completion-accuracy measurement on Motoi eval set (task for training lane)"
+)
+
+(deployment-target
+  :primary "local CPU inference via llama.cpp (GGUF format)"
+  :why-llama-cpp (
+    "Single-binary distribution — no runtime dependency hell."
+    "CPU-first — the kid on the Chromebook doesn't have CUDA."
+    "GGUF is the de-facto small-model quantization format; wide tooling support."
+    "MIT-licensed and self-contained; we can vendor a static build with `motoi copilot`."
+    "Supports streaming token output natively, which the CLI needs for interactive feel."
+  )
+  :alternatives-considered (
+    "ONNX Runtime — heavier, more complex distribution, no clear win for our shape."
+    "MLX (Apple only) — excellent perf on Apple silicon, but forks the deployment story two ways."
+    "Bring-your-own-server (Ollama, LM Studio) — good for power users, but we want zero-friction default."
+  )
+  :fallback "Users on Apple silicon can point the Copilot at a local MLX build via `motoi copilot --backend mlx` in a later phase."
+  :confidence "high"
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 3 — TRAINING CORPUS COMPOSITION
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 3 :title "Training corpus composition")
+
+(corpus-principle
+  :single "Every training pair MUST come from a source that would land in the Motoi base (not Sakura Dialect surface)."
+  :dual "Corpus is DERIVED from the reference and books. Reference wins on conflict."
+  :triple "Zero persona prose. Zero first-person voice. Zero character material. The Copilot cannot say 'I think' because it never sees 'I think' in training."
+)
+
+(corpus-source
+  :id "reference-verbs"
+  :path "scheme-lang/docs/SAKURA-SCHEME-REFERENCE.slat"
+  :size-mb 3.36
+  :line-count 21843
+  :verb-count-total 1167
+  :example-count-total 3573
+  :motoi-verb-count-est 960
+  :motoi-verb-count-calc "1167 total minus Sakura Dialect namespaces (ai 45 + phys 19 + card 10 + radio 14 + cine 7 + world 39 + entity 40 + motion 10 + scene 5 + weather 1 + surface 5 + artifact 4 + shoppe 7 + afford 1 = 207) = 960 base verbs"
+  :motoi-namespace-inventory (
+    (:ns "core"   :verbs 322)
+    (:ns "alg"    :verbs 59)
+    (:ns "geom"   :verbs 57)
+    (:ns "curve"  :verbs 37)
+    (:ns "ops"    :verbs 35)
+    (:ns "calc"   :verbs 30)
+    (:ns "nt"     :verbs 29)
+    (:ns "topo"   :verbs 27)
+    (:ns "game"   :verbs 26)
+    (:ns "math"   :verbs 25)
+    (:ns "sym"    :verbs 20)
+    (:ns "linalg" :verbs 20)
+    (:ns "part"   :verbs 19)
+    (:ns "exact"  :verbs 19)
+    (:ns "stat"   :verbs 18)
+    (:ns "complex" :verbs 18)
+    (:ns "plot"   :verbs 14)
+    (:ns "vec"    :verbs 13)
+    (:ns "solve"  :verbs 13)
+    (:ns "matrix" :verbs 13)
+    (:ns "comb"   :verbs 13)
+    (:ns "audio"  :verbs 13)
+    (:ns "seq"    :verbs 12)
+    (:ns "grid"   :verbs 12)
+    (:ns "tick"   :verbs 9)
+    (:ns "synth"  :verbs 9)
+    (:ns "const"  :verbs 8)
+    (:ns "time"   :verbs 7)
+    (:ns "juggle" :verbs 6)
+    (:ns "eng"    :verbs 6)
+    (:ns "system" :verbs 5)
+    (:ns "input"  :verbs 5)
+    (:ns "chem"   :verbs 5)
+    (:ns "sprite" :verbs 3)
+    (:ns "note"   :verbs 3)
+    (:ns "group"  :verbs 3)
+    (:ns "cortex" :verbs 3)
+    (:ns "animation" :verbs 3)
+    (:ns "prefab" :verbs 2)
+    (:ns "object" :verbs 2)
+    (:ns "num"    :verbs 2)
+    (:ns "cadence" :verbs 2)
+    (:ns "transport" :verbs 1)
+    (:ns "think"  :verbs 1)
+    (:ns "text"   :verbs 1)
+    (:ns "route"  :verbs 1)
+    (:ns "pattern" :verbs 1)
+    (:ns "need"   :verbs 1)
+    (:ns "floor"  :verbs 1)
+    (:ns "domain" :verbs 1)
+    (:ns "collision" :verbs 1)
+    (:ns "beat"   :verbs 1)
+    (:ns "base"   :verbs 1)
+    (:ns "ask"    :verbs 1)
+  )
+  :sakura-namespaces-excluded (
+    (:ns "ai"        :verbs 45)
+    (:ns "phys"      :verbs 19)
+    (:ns "card"      :verbs 10)
+    (:ns "radio"     :verbs 14)
+    (:ns "cine"      :verbs 7)
+    (:ns "world"     :verbs 39)
+    (:ns "entity"    :verbs 40)
+    (:ns "motion"    :verbs 10)
+    (:ns "scene"     :verbs 5)
+    (:ns "weather"   :verbs 1)
+    (:ns "surface"   :verbs 5)
+    (:ns "artifact"  :verbs 4)
+    (:ns "shoppe"    :verbs 7)
+    (:ns "afford"    :verbs 1)
+    (:ns "flower"    :verbs 1)
+  )
+  :pair-shapes (
+    (:shape "verb-signature-completion"
+      :input "(verb-name arg1 arg2"
+      :output "(verb-name arg1 arg2 arg3)"
+      :yield-per-verb 3
+      :total-est 2880)
+    (:shape "verb-summary-lookup"
+      :input ";; What does <verb> do?"
+      :output "<summary sentence from :summary field>"
+      :yield-per-verb 1
+      :total-est 960)
+    (:shape "verb-explanation-lookup"
+      :input ";; Explain <verb>"
+      :output "<:explanation paragraph>"
+      :yield-per-verb 1
+      :total-est 960)
+    (:shape "example-completion-tiered"
+      :input ":dialect \"motoi\" :tier \"novice\" :code prefix"
+      :output "full :code body"
+      :yield-per-example 1
+      :total-est 2880
+      :note "3573 examples total; ~2880 belong to Motoi base (proportional to verb split 960/1167 ≈ 82%)")
+    (:shape "verb-relationship-hop"
+      :input "verb A → :related verbs"
+      :output "list of related verb names"
+      :yield-per-verb 1
+      :total-est 960)
+    (:shape "verb-caveat-recall"
+      :input ";; Gotchas for <verb>?"
+      :output "<:caveats bulleted>"
+      :yield-per-verb 1
+      :total-est 960)
+    (:shape "verb-refuse-out-of-scope"
+      :input "(<sakura-only-verb> ...)"
+      :output "(escalate 'out-of-scope :verb '<name> :reason \"not in Motoi base\")"
+      :yield-per-sakura-verb 2
+      :total-est 414)
+  )
+  :estimated-pairs-total 9114
+  :confidence "high — computed from reference schema"
+)
+
+(corpus-source
+  :id "scheme-books"
+  :path "curator/scheme-books/"
+  :size-total-est "≈2.0 GB (mixed prose + code)"
+  :books-total 32
+  :chapters-est 1400
+  :motoi-relevant-books (
+    "book-of-lang-eng"
+    "book-of-scheme"
+    "book-of-math"
+    "book-of-math-ii"
+    "book-of-reason"
+    "book-of-reason-code"
+    "book-of-slat"
+    "book-of-one-shot"
+    "book-of-challenges"
+    "book-of-extensions"
+    "book-extensions"
+    "book-of-cs-curriculum"
+    "book-of-animation"
+    "book-of-instruments"
+    "book-of-sound"
+    "book-of-music"
+    "book-of-motion"
+    "book-of-hellosurface"
+    "book-of-systems"
+    "book-of-training"
+  )
+  :sakura-only-books-excluded (
+    "book-of-self"
+    "book-of-listening"
+    "book-of-personality"
+    "book-of-flower-stories"
+    "book-of-jesse"
+    "book-of-llm-philosophy"
+    "book-of-items-and-scenarios"
+    "book-of-scenes"
+    "book-of-money"
+    "book-of-words"
+    "book-of-miscellany"
+    "book-of-marionette"
+    "book-of-don-ts"
+  )
+  :pair-shapes (
+    (:shape "code-block-extraction"
+      :input "chapter prose preceding a code block"
+      :output "the code block"
+      :yield-per-motoi-chapter 3
+      :note "many chapters have multiple runnable examples")
+    (:shape "concept-to-code"
+      :input ";; Show me <concept>"
+      :output "<smallest runnable example from a book>"
+      :yield-per-motoi-chapter 2)
+    (:shape "code-to-explanation"
+      :input "runnable code fragment"
+      :output "prose that precedes/follows it"
+      :yield-per-motoi-chapter 2)
+  )
+  :motoi-relevant-chapters-est 700
+  :estimated-pairs-total 4900
+  :confidence "medium — chapter counts inferred from directory listing; actual code-block density needs a script pass"
+  :extraction-safety "Read-only. Book files are canonical prose that Alfred authors. Extraction produces derivative training data, never edits."
+)
+
+(corpus-source
+  :id "book-of-lang-eng"
+  :path "curator/scheme-books/book-of-lang-eng/"
+  :size-kb 176
+  :chapter-count 14
+  :status "actively being authored per Alfred, load-bearing for base+variant doctrine"
+  :special-role "This book teaches the Motoi language itself. Highest per-token training value for the Copilot."
+  :pair-shapes (
+    (:shape "doctrine-Q-to-A"
+      :input "concept question from a chapter"
+      :output "prose answer + code demonstration"
+      :yield-per-chapter 4)
+    (:shape "dialect-slat-completion"
+      :input "partial dialect.slat header"
+      :output "full dialect.slat body")
+    (:shape "fork-pledge-completion"
+      :input "partial fork-tree entry"
+      :output "full pledge block")
+  )
+  :estimated-pairs-total 100
+  :confidence "medium — chapter contents skimmed, exact yield needs a per-chapter walk"
+)
+
+(corpus-source
+  :id "tests"
+  :path "scheme-lang/tests/"
+  :file-count 8
+  :subdirs ("r7rs-small" "reference" "verbs" "repl" "ide")
+  :pair-shapes (
+    (:shape "input-expected-completion"
+      :input "test setup code + partial assertion"
+      :output "full assertion")
+    (:shape "test-name-to-body"
+      :input "test description"
+      :output "test body")
+    (:shape "buggy-to-correct"
+      :input "known-failing snippet"
+      :output "passing snippet"
+      :note "generated by mutating passing tests")
+  )
+  :estimated-pairs-total 400
+  :confidence "medium — need to walk each test file for actual assertion count"
+)
+
+(corpus-source
+  :id "carts-and-examples"
+  :paths ("scheme-lang/carts/" "scheme-lang/examples/")
+  :file-count-known 56
+  :breakdown "50 files under carts/ subdirs (animation/games/math/music/physics/story/tutorial) + 6 files under examples/"
+  :sks-cart-count-in-tree 10
+  :sks-cart-note "10 .sks carts found under sakura-preservation-2026-07-11/artifact-usage-carts/ — mostly Sakura-Dialect verbs. Excluded from Motoi corpus."
+  :pair-shapes (
+    (:shape "buffer-prefix-to-next-form"
+      :input "cart body up to line N"
+      :output "line N+1's next top-level form"
+      :yield-per-cart 20)
+    (:shape "cart-name-to-skeleton"
+      :input ";; A snake game"
+      :output "(_init ...) (_update ...) (_draw ...) skeleton")
+    (:shape "idiom-completion"
+      :input "common pattern prefix (e.g. state-machine header, fantasy-console loop)"
+      :output "canonical body")
+  )
+  :estimated-pairs-total 1200
+  :confidence "medium — .scm files are dense; per-cart yield of 20 is a reasonable middle estimate"
+)
+
+(corpus-source
+  :id "synthetic-mutation"
+  :method "programmatic — generate near-miss variants of known-good code"
+  :mutations (
+    "swap arg order → assert refuses or corrects"
+    "wrong arity → assert corrects"
+    "typo in verb name → assert suggests correct name via edit-distance"
+    "Sakura-Dialect verb in Motoi buffer → assert emits (escalate 'out-of-scope ...)"
+    "leaked `set!` in immutable context → assert corrects to functional form"
+  )
+  :pair-shapes (
+    (:shape "malformed-to-corrected" :yield-per-source-pair 2))
+  :estimated-pairs-total 5000
+  :confidence "medium — yield depends on how aggressive the mutator is; 5k is a safe planning number"
+  :quality-gate "Every synthetic pair MUST validate against the reference before entering the training set."
+)
+
+(corpus-rollup
+  :estimated-pairs-total 20714
+  :breakdown (
+    (:source "reference-verbs" :pairs 9114)
+    (:source "scheme-books" :pairs 4900)
+    (:source "book-of-lang-eng" :pairs 100)
+    (:source "tests" :pairs 400)
+    (:source "carts-and-examples" :pairs 1200)
+    (:source "synthetic-mutation" :pairs 5000)
+  )
+  :quality-target "≥95% of pairs pass reference-validation (verb name exists in Motoi base, arity matches signature, no Sakura-Dialect namespace leaks)"
+  :dedup-strategy "hash on normalized (input, output) tuple; drop exact dupes; keep near-dupes because paraphrase diversity helps generalization"
+  :confidence "medium-high"
+  :note "20k pairs is a healthy fine-tuning corpus for a 3B model on a narrow task. If we later measure and find undertraining, synthetic-mutation is the easiest lever to grow."
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 4 — FINE-TUNING STRATEGY
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 4 :title "Fine-tuning strategy — defaults, not final numbers")
+
+(training
+  :method "SFT (supervised fine-tuning) on completion pairs"
+  :adapter "LoRA (Low-Rank Adaptation) to keep training cheap and to allow modular re-training as Motoi verbs are added/renamed"
+  :lora-rank-default 16
+  :lora-rank-rationale "r=16 is a common sweet spot for domain adaptation on 3B models; r=8 undershoots for a 1k-verb vocabulary, r=32+ costs more without measured quality gain in this shape of task."
+  :lora-alpha-default 32
+  :lora-target-modules "q_proj, k_proj, v_proj, o_proj (attention only, standard for narrow-domain adaptation)"
+  :epochs-default 3
+  :epochs-rationale "1 epoch under-fits on a narrow corpus; 5+ over-fits and starts hallucinating verb combinations that don't exist. 3 is the safe middle; final number set by held-out validation loss."
+  :learning-rate-default 2e-4
+  :lr-schedule "cosine decay with 3% warmup"
+  :batch-size-effective 32
+  :batch-size-note "Actual per-device batch depends on hardware; use gradient accumulation to hit effective 32."
+  :max-seq-length 4096
+  :max-seq-length-note "Set to context-window-min from Section 2. Longer during eval-time inference is fine because it's the base model's context, not the LoRA's."
+  :mixed-precision "bf16"
+  :optimizer "AdamW"
+  :weight-decay 0.01
+  :confidence "medium — defaults are reasonable starting points; final numbers land in a training-run report"
+)
+
+(eval-set
+  :held-out-fraction 0.05
+  :held-out-pair-count-est 1035
+  :held-out-composition (
+    "50 hand-picked golden completions covering every Motoi namespace"
+    "canonical carts (breakout, snake, life, langtons-ant, wolfram-1d, bouncing-ball) as end-to-end regressions"
+    "known Sakura-Dialect out-of-scope prompts to verify refusal shape"
+    "reference-schema round-trip: given a verb name, emit a valid example"
+  )
+  :metrics (
+    (:name "reference-validity" :def "% of completions that parse and only reference Motoi-base verbs" :target ">= 98%")
+    (:name "signature-adherence" :def "% of completions where verb arity matches reference signature" :target ">= 95%")
+    (:name "out-of-scope-refusal-rate" :def "% of Sakura-Dialect prompts that emit (escalate 'out-of-scope ...)" :target ">= 90%")
+    (:name "top-1-accuracy" :def "% where the first completion matches the held-out expected exactly" :target ">= 40%")
+    (:name "top-5-accuracy" :def "% where any of 5 sampled completions matches" :target ">= 70%")
+  )
+  :note "Target numbers are aspirational baselines. Final gates set after the first training run tells us what's actually achievable at 3B."
+  :confidence "target numbers unknown-needs-measurement"
+)
+
+(training-cost-envelope
+  :hardware "single A100 (80GB) or equivalent — LoRA on 3B is not GPU-hungry"
+  :wall-time-est "≈8–16 hours for 3 epochs at the corpus size above"
+  :dollar-cost-est "≈$25–$75 on-demand cloud rental"
+  :confidence "medium — LoRA fine-tuning cost is well-characterized in the literature; exact numbers depend on base-model choice"
+  :re-training-cost "≈same, run whenever the reference grows by >5% or verbs get renamed"
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 5 — INFERENCE INTERFACE
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 5 :title "Inference interface — CLI shape")
+
+(cli
+  :subcommand "motoi copilot"
+  :subcommand-rationale "Copilot lives under the main `motoi` (or `sakura-scheme` today) binary as a subcommand, not a separate binary. One install, one PATH entry, discoverable by tab-completion."
+  :default-mode "read stdin, write stdout — Unix-composable"
+  :interactive-mode "motoi copilot --repl — start an interactive completion loop for exploration"
+  :file-mode "motoi copilot --file <path> — read a file, output completions at cursor point (--line N --col M)"
+  :help "motoi copilot --help — usage summary and flag list"
+  :version "reports the model version separately from the CLI version: `motoi copilot --version`"
+)
+
+(cli-flags
+  :temperature-default 0.2
+  :temperature-rationale "Low temperature for a savant task; we want the model's best guess, not creative variety. Higher temperatures inflate hallucination rate on narrow domains."
+  :top-p-default 0.9
+  :top-p-rationale "Nucleus sampling at 0.9 keeps well-typed completions dominant while allowing occasional alternatives."
+  :max-tokens-default 512
+  :max-tokens-rationale "One form is usually much less; 512 gives room for a small definition + a call."
+  :n-candidates-default 1
+  :n-candidates-max 5
+  :streaming #t
+  :streaming-rationale "Tokens print as generated for interactive feel; disable with --no-stream for scripted use."
+  :flag-list (
+    (:flag "--stdin" :desc "read prefix from stdin (default)")
+    (:flag "--file <path>" :desc "read prefix from file")
+    (:flag "--line <N>" :desc "cursor line (1-indexed, use with --file)")
+    (:flag "--col <M>" :desc "cursor column (1-indexed, use with --file)")
+    (:flag "--n <k>" :desc "return k candidates (default 1, max 5)")
+    (:flag "--temperature <t>" :desc "sampling temperature (default 0.2)")
+    (:flag "--top-p <p>" :desc "nucleus sampling (default 0.9)")
+    (:flag "--max-tokens <N>" :desc "max output tokens (default 512)")
+    (:flag "--no-stream" :desc "buffer full output before printing")
+    (:flag "--json" :desc "emit structured JSON instead of raw text")
+    (:flag "--model <path>" :desc "override model path (default: bundled GGUF)")
+    (:flag "--backend <name>" :desc "llama-cpp (default) | mlx (Apple silicon opt-in)")
+    (:flag "--repl" :desc "start interactive REPL")
+    (:flag "--version" :desc "print Copilot model version")
+    (:flag "--help" :desc "print this help")
+  )
+)
+
+(io-schema
+  :input-text-default "raw Scheme prefix, exactly as it appears in the buffer"
+  :input-json-shape (
+    (input
+      :prefix "string — full text before cursor"
+      :suffix "string — full text after cursor (optional, enables fill-in-the-middle)"
+      :cursor (:line "int" :col "int")
+      :context (:file "string?" :verb-hints "array of strings — verbs the runtime thinks are in scope, optional))"
+    )
+  )
+  :output-text-default "raw completion text"
+  :output-json-shape (
+    (output
+      :completions (
+        "array of { :text string :log-prob number :kind 'form|'define|'call|'refuse }"
+      )
+      :meta (
+        :model-version "string"
+        :prompt-tokens "int"
+        :completion-tokens "int"
+        :elapsed-ms "int"
+      )
+    )
+  )
+  :out-of-scope-refusal (
+    "When the Copilot is asked something outside Motoi (Sakura-Dialect verb, natural-language question,"
+    " world-knowledge query), it emits a refusal in the SAME SHAPE as any other Motoi refusal:"
+    "  (escalate 'out-of-scope :reason \"<one-line reason>\" :suggest '<motoi-alternative-if-any>)"
+    "This is a completion, not a chat message. Consumers can pattern-match on the head symbol `escalate`"
+    "to detect refusals and surface them however they like."
+  )
+)
+
+(examples-of-use
+  :ex-1 (
+    :name "single-form completion from a shell pipe"
+    :cmd "echo '(define (square x) ' | motoi copilot"
+    :expected-stdout "(* x x))"
+  )
+  :ex-2 (
+    :name "fill-in-the-middle in an editor plugin"
+    :cmd "motoi copilot --json --file cart.scm --line 42 --col 17"
+    :expected-stdout "{ \"completions\": [ { \"text\": \"...\", \"log-prob\": -0.42, \"kind\": \"call\" } ], ... }"
+  )
+  :ex-3 (
+    :name "refusal on Sakura-Dialect verb"
+    :cmd "echo '(entity/spawn ' | motoi copilot"
+    :expected-stdout "(escalate 'out-of-scope :reason \"entity/spawn belongs to Sakura Dialect, not Motoi base\" :suggest #f)"
+  )
+  :ex-4 (
+    :name "interactive REPL"
+    :cmd "motoi copilot --repl"
+    :expected-behavior "prompt-response loop; each user input is a prefix, each response is the top-1 completion"
+  )
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 6 — LOCAL DEPLOYMENT PATH
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 6 :title "Local deployment path")
+
+(deployment
+  :engine "llama.cpp"
+  :bundle-strategy "ship a small helper (`motoi copilot`) that fetches the GGUF on first run to a user-cache dir, then invokes a vendored llama.cpp binary"
+  :first-run-flow (
+    "1. User runs `motoi copilot` for the first time."
+    "2. Copilot checks ~/.motoi/copilot/models/motoi-copilot-1.Q4_K_M.gguf"
+    "3. If absent, prints: \"downloading motoi-copilot-1 (≈1.8 GB, one-time)... [progress bar]\""
+    "4. Downloads over HTTPS from a signed URL (checksum-verified)."
+    "5. Cached. Subsequent runs skip download."
+  )
+  :offline-story "After first-run download, the Copilot works entirely offline. No telemetry. No phone-home."
+  :model-hosting "unknown-needs-measurement — a training-lane decision. Likely a signed static file on a CDN; specific host is not this doc's call."
+  :binary-vendoring "vendor a llama.cpp static build per platform (macOS-arm64, macOS-x64, linux-x64, linux-arm64, windows-x64) inside the `scheme-lang` npm package, OR fetch on demand — TBD by install-lane"
+  :size-on-disk-total-est "≈2.0 GB (model) + ≈4 MB (llama.cpp binary) per platform"
+  :update-story "`motoi copilot --update` re-checks the model manifest and downloads a new version if available"
+  :confidence "medium — llama.cpp integration is a well-worn path; specific packaging choices land in an install-lane SLAT"
+)
+
+(privacy
+  :telemetry "none — no request logging, no anonymous stats, no crash reports"
+  :network "one-time download at first run; zero network after"
+  :data-locality "the model runs in the user's process, on the user's CPU. Their code never leaves the machine."
+  :rationale "Copilot is a peer-programmer, not a service. Cloud-based coding assistants are a business model; this is a tool."
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 7 — DISTINCTION FROM SAKURA (LOAD-BEARING)
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 7 :title "Distinction from Sakura — why Copilot is a tool, not a character")
+
+(distinction
+  :axis "purpose"
+  :sakura "warmth, character, teaching, tools, memory across sessions"
+  :copilot "next-form completion, memoryless, no character"
+)
+
+(distinction
+  :axis "training data"
+  :sakura "persona books, philosopher lenses, listening chapter, self-model, first-person prose"
+  :copilot "reference + code + non-persona books ONLY — every persona SLAT explicitly excluded"
+)
+
+(distinction
+  :axis "voice"
+  :sakura "first-person, quips, restraint, poetic when useful"
+  :copilot "no voice — outputs Scheme forms and structured JSON; comments in output are `;;` code comments, not conversation"
+)
+
+(distinction
+  :axis "cortex"
+  :sakura "wired — reads/writes/topk into persistent memory"
+  :copilot "not wired — no cortex/read, no cortex/write, no external state"
+)
+
+(distinction
+  :axis "escalation"
+  :sakura "(escalate 'out-of-scope ...) opens a conversation with the user"
+  :copilot "(escalate 'out-of-scope ...) is a completion — a machine-readable refusal token, no follow-up"
+)
+
+(distinction
+  :axis "when to reach for which"
+  :for-completion-help "Copilot — deterministic, fast, local, cheap"
+  :for-teaching-help "Sakura — she reads the book with you, she has voice, she remembers"
+  :for-writing-a-cart "Copilot at your fingertips inside the editor + Sakura when you're stuck on why"
+)
+
+(hard-rule
+  :name "no-persona-bleed"
+  :statement "The Copilot's training set MUST NOT contain any file from the sakura-only-books-excluded list in Section 3."
+  :enforcement "corpus-build script verifies against a `motoi-corpus.allowlist.slat` at pack time; refuses to build if a persona file sneaks in"
+)
+
+(hard-rule
+  :name "no-first-person"
+  :statement "Copilot completions MUST NOT contain the tokens \"I\", \"me\", \"my\" as English pronouns. Scheme identifiers like `i` (loop index) are fine."
+  :enforcement "held-out eval measures first-person leak rate; target < 0.1%; failing runs are rejected"
+)
+
+(hard-rule
+  :name "no-cortex-calls"
+  :statement "Copilot completions MUST NOT emit cortex/read, cortex/write, cortex/topk. Those verbs are in the Motoi reference but the Copilot is trained to treat them as out-of-scope for its own suggestions."
+  :rationale "The Copilot is a compiler for a buffer, not a memory-hoarding assistant. Users who want Sakura's memory should ask Sakura."
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 8 — MODEL DOSSIER (WHAT IT CAN'T DO)
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 8 :title "Model dossier — honest limits")
+
+(cannot-do
+  :long-context-reasoning "3B models struggle with multi-thousand-token dependency chains. The Copilot is trained for local (single-form to few-form) completion, not whole-program refactor."
+  :general-knowledge "The Copilot does not know world facts. It cannot answer `who wrote Hamlet?` or `what year is it?`. Those go to Sakura or a general model."
+  :natural-conversation "Small talk fails. The Copilot has no dialogue-shape training. Its output is Scheme forms + structured refusals."
+  :code-outside-motoi "It cannot help with Python, JavaScript, Rust, or any language other than Motoi. It cannot help with English prose either."
+  :taste-tradeoffs "It cannot answer `is this design good?`. It knows the reference; the reference has no taste."
+  :cross-file-refactor "No project-wide edits. Prefix-in, completion-out. If you want to move a definition across files, you do it; the Copilot suggests the shape at each cursor."
+)
+
+(can-do
+  :scheme-form-completion "given a valid Motoi prefix, emit a plausible next form"
+  :verb-lookup "given a partial verb name, emit likely completions from the reference"
+  :contract-checking "notice arity/type mismatches vs. the reference and correct them"
+  :common-idiom-recognition "state machines, fantasy-console loops, HOFs — trained on the canonical carts"
+  :whitelisted-dispatch-suggestion "when a cart uses a dispatch pattern, suggest the next branch"
+  :refusal-on-out-of-scope "emit a structured refusal instead of hallucinating a verb that doesn't exist"
+  :fill-in-the-middle "given prefix + suffix, complete the middle (useful for editor integrations)"
+)
+
+(failure-modes
+  :hallucinated-verb "possible but rate-controlled — the (escalate 'out-of-scope ...) shape is trained to fire on unfamiliar prefixes; measure and gate"
+  :wrong-arity "possible on rarely-used verbs; caught by post-generation reference-validation pass"
+  :verbose-completion "the Copilot may over-complete (emit 3 forms when 1 was asked). --max-tokens caps this; the CLI trims to the first complete form by default"
+  :locale-drift "no locale-specific handling; all completions are in the reference's authoring style (kebab-case, keyword-value pairs)"
+  :graceful-degradation "on any failure to produce a well-typed Motoi form, emit `(escalate 'copilot-uncertain :reason \"<what happened>\")` — never emit malformed text as if it were Scheme"
+)
+
+(measurement-status
+  :perplexity-on-eval-set "unknown-needs-measurement"
+  :top-1-accuracy "unknown-needs-measurement"
+  :out-of-scope-refusal-rate "unknown-needs-measurement"
+  :inference-latency-cpu "unknown-needs-measurement — expected sub-second on a modern laptop CPU for typical prefixes at 3B/Q4_K_M, but not measured"
+  :ram-usage "≈2.0–2.5 GB working set at Q4_K_M; measured on target hardware after training"
+  :note "Every measurement above is the training lane's job. This spec sets the shape; it does not fabricate numbers."
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 9 — DEVELOPMENT PHASES
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 9 :title "Build phases — after Alfred approves this spec")
+
+(phase :id "P1" :name "CLI stub + spec commit" :owner "lacuna-eng" :status "COMPLETE 2026-07-14" :outputs ("bin/sakura-scheme subcommand `copilot`" "this SLAT"))
+(phase :id "P2" :name "Corpus extraction scripts" :owner "corpus-lane" :outputs ("scripts/build-motoi-corpus.mjs" "motoi-corpus-manifest.slat") :depends-on ("P1") :estimate "3-5 days")
+(phase :id "P3" :name "Reference-validator" :owner "corpus-lane" :outputs ("scripts/validate-motoi-completion.mjs — parse + check verb-in-base + arity-vs-signature") :depends-on ("P2") :estimate "2-3 days")
+(phase :id "P4" :name "Eval set curation" :owner "eval-lane" :outputs ("eval/motoi-copilot-eval-v1.jsonl (~1000 pairs)") :depends-on ("P2") :estimate "2-3 days")
+(phase :id "P5" :name "Base-model selection audit" :owner "training-lane" :outputs ("base-model-audit-YYYY-MM-DD.slat — license + tokenizer + throughput comparison across candidates") :depends-on ("P3") :estimate "1 week")
+(phase :id "P6" :name "First training run (LoRA)" :owner "training-lane" :outputs ("motoi-copilot-1-v0.1 GGUF + training-report SLAT") :depends-on ("P4" "P5") :estimate "1 week (mostly wall-clock for training + eval)")
+(phase :id "P7" :name "llama.cpp integration" :owner "eng-lane" :outputs ("wired `motoi copilot` subcommand replacing the stub, invoking llama.cpp with the GGUF") :depends-on ("P6") :estimate "3-5 days")
+(phase :id "P8" :name "First-run download + caching" :owner "install-lane" :outputs ("model-fetcher with progress + checksum verification") :depends-on ("P7") :estimate "2-3 days")
+(phase :id "P9" :name "Editor integration seeds" :owner "eng-lane" :outputs ("VS Code + Emacs + Vim minimal shims that call `motoi copilot --json` at cursor point") :depends-on ("P7") :estimate "1 week" :priority "nice-to-have — CLI-first")
+(phase :id "P10" :name "Iteration loop" :owner "training-lane" :cadence "every time reference grows >5% or verbs get renamed" :outputs ("re-training runs, versioned GGUFs, changelog SLAT"))
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 10 — HARD RULES (RESTATED FROM BRIEF)
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 10 :title "Hard rules the Copilot must honor")
+
+(rule :id "R1" :name "no-corporate-name-drops" :statement "This spec and the Copilot's own outputs must not name corporate people, money-people, or researchers at labs. Model family names in this SLAT are category-only.")
+(rule :id "R2" :name "no-hallucination" :statement "Any unmeasured number carries `:confidence \"unknown-needs-measurement\"`. Do not fabricate benchmarks, latency, or accuracy claims.")
+(rule :id "R3" :name "slat-format-for-all-motoi-docs" :statement "This spec and all Copilot documentation is SLAT. Markdown only for Claude's working files.")
+(rule :id "R4" :name "no-deletes" :statement "The Copilot lane touches nothing in the reference and nothing in scheme-books. It is a consumer of those artifacts, not an editor.")
+(rule :id "R5" :name "personality-is-savant" :statement "Zero character. No emojis. No greetings. Just completions and structured refusals.")
+
+; ═══════════════════════════════════════════════════════════════════════════
+; SECTION 11 — OPEN QUESTIONS FOR ALFRED
+; ═══════════════════════════════════════════════════════════════════════════
+(section :id 11 :title "Open questions — Alfred to decide")
+
+(question :id "Q1"
+  :topic "binary name"
+  :body "The stub tonight lives under `sakura-scheme copilot` because that binary already exists and Motoi-extraction hasn't happened yet. When Motoi extracts, should the Copilot subcommand move to `motoi copilot` and stay dual-installed under `sakura-scheme copilot` for compatibility, or hard-migrate?"
+  :recommendation "dual-install for one release cycle, hard-migrate after"
+)
+
+(question :id "Q2"
+  :topic "training corpus governance"
+  :body "The training corpus derives from the reference and books. When Alfred edits the reference, should re-training auto-fire, gate on a diff-size threshold, or stay manual?"
+  :recommendation "manual-trigger for v1; auto-suggest re-training when reference grows >5%; the model version bumps on every re-training"
+)
+
+(question :id "Q3"
+  :topic "distribution of the GGUF"
+  :body "The GGUF is ≈1.8 GB. Where does it live? Options: (a) signed static file on a CDN of our choosing; (b) an open model hub; (c) bundled in the npm tarball (bloats install but eliminates first-run download). Each has tradeoffs. Alfred's call because it touches the money story and the trust story."
+  :recommendation "signed CDN with checksum, first-run download — smallest install footprint, clearest update path, and Alfred controls the hosting"
+)
+
+; ═══════════════════════════════════════════════════════════════════════════
+; END
+; ═══════════════════════════════════════════════════════════════════════════
+(footer :spec-version "1.0-draft" :date "2026-07-14" :next-action "Alfred reviews; on approval, phase P2 (corpus extraction) opens.")

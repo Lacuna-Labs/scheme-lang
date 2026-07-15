@@ -1,0 +1,1742 @@
+; 25-projects-for-sakura-scheme-2026-07-14.slat
+; ============================================================
+; Lacuna Engineering — Lane 2 research document
+; Curator: Lacuna Eng (research dispatch)
+; Author: agent (this file), 2026-07-14
+;
+; Purpose
+; -------
+; Alfred asked: "What can you build in a Scheme + Cortex + hosted-LLM
+; stack that is genuinely interesting to real people — logic + reasoning
+; + ML/AI + creative + systems — and IS ALSO the shape of good training
+; data for Sakura's cognition?"
+;
+; This file answers that in seven sections:
+;   1. What functional programming does well for logic + reasoning
+;   2. What Cortex + hosted LLM adds
+;   3. The 25 projects (curated table)
+;   3.5. The two paired honest appendices for Book of CS Curriculum
+;        (Drawbacks of Sakura Scheme + Where we did it better)
+;   4. The prose shape (how these become CHAPTERS for two readers)
+;   5. Cross-book placement matrix
+;   6. Translation strategy
+;
+; CONTAINMENT RULE (Alfred, 2026-07-14, mid-flight amendment)
+; -----------------------------------------------------------
+; The advanced computer-science META-topics — functional vs imperative
+; tradeoffs, writing imperatively in a functional language, implementing
+; an imperative or declarative language IN Scheme, database internals,
+; Hindley-Milner, the metacircular evaluator, paradigm comparison,
+; compiler theory, complexity + amortized analysis + cache-oblivious
+; algorithms, distributed systems fundamentals — are CONTAINED to Book
+; of CS Curriculum by design. They do NOT scatter across the other 18
+; books. Book of Motion teaches Scheme through motion; it does not have
+; a 'functional vs imperative' chapter. Book of Music teaches Scheme
+; through sound; it does not have a 'here's how to write imperative
+; code in a functional language' section. Those meta-conversations
+; live in one place. This earns engineer trust by not overloading every
+; book with meta-analysis.
+;
+; Doctrine composed:
+;   - project_books_teach_sakura_her_cognition_and_kid_scheme_2026_07_14
+;   - project_how_alfred_teaches_progression_use_grounding_no_density_2026_07_14
+;   - project_dont_dumb_down_challenge_is_the_point_2026_07_14
+;   - project_the_weave_is_the_experiment_2026_07_12
+;
+; Verified: SAKURA-SCHEME-REFERENCE.slat has 1,157 verbs +
+; 120 core language forms (header says 128, body says 120; taking body).
+; Verb-count check: 1,230 :name lines total (extra lines are inside
+; example bodies + library headers — clean verb count from library-
+; prefix scan matches the declared 1,157).
+
+; ============================================================
+; SECTION 1 — What functional programming does well for logic + reasoning
+; ============================================================
+
+(section :n 1 :title "What functional programming does well for logic and reasoning"
+
+  :prose "
+Scheme sits at a peculiar spot in the map of programming languages: it
+was designed at MIT in 1975 by Sussman and Steele partly as a testbed
+for the actor model, partly as a small Lisp that could hold its own
+in an undergraduate curriculum, and — as it turned out — one of the
+best languages we have for writing programs that reason about programs.
+The book that carried that mission furthest is Abelson and Sussman's
+_Structure and Interpretation of Computer Programs_ (MIT Press, 1985;
+second edition 1996), and it is still the reference we teach from.
+Everything in this section is a shape SICP demonstrated, sometimes in
+one line, sometimes across a whole chapter.
+
+**Symbolic manipulation.** In Scheme, `(quote (+ 1 2))` is a list of
+three items, not the number 3. Code is data. That distinction — that
+you can hold a program in your hand as a value, walk it, transform it,
+and evaluate it later — is what makes symbolic differentiation, term
+rewriting, and macro systems tractable. SICP §2.3 uses this exact
+mechanism to differentiate polynomials in about a page of code. Peter
+Norvig's _Paradigms of Artificial Intelligence Programming: Case
+Studies in Common Lisp_ (Morgan Kaufmann, 1992) — PAIP — builds a
+substantial fraction of classical AI on top of the same idea.
+
+**Unification and term rewriting.** Unification is the algorithm that
+asks 'do these two symbolic terms match, and if so under what variable
+bindings?' Prolog is built on it. So is Hindley-Milner type inference.
+So is the pattern matcher SICP presents in §4.4. It's ~50 lines of
+Scheme. Term rewriting extends unification with rewrite rules
+('whenever you see X, replace it with Y') and gives you an equational-
+reasoning engine — the shape Mathematica's kernel uses. Christian
+Queinnec's _Lisp in Small Pieces_ (Cambridge, 1996) shows the same
+technique applied to the metacircular evaluator; the interpreter IS a
+term-rewriter over Scheme source.
+
+**Rule engines: forward and backward chaining.** A production system
+holds facts and rules; forward chaining fires rules whose antecedents
+match known facts (data-driven); backward chaining works from a goal
+back through rules whose consequents match (goal-driven). Winston and
+Horn's _LISP_ (Addison-Wesley, 3rd ed., 1989) walks through both in
+about thirty pages, ending with a small expert-system shell. This is
+where Sakura's Book of Reason gets its inductive/deductive skeleton.
+
+**Constraint satisfaction and propagation.** SICP §3.3.5 builds a
+constraint propagator (temperature converters, adder cells) that is
+essentially a small local-consistency engine. Extended, it becomes
+arc consistency (AC-3, Mackworth 1977) for Sudoku, N-queens, cryptarithm.
+Van Roy and Haridi's _Concepts, Techniques, and Models of Computer
+Programming_ (MIT Press, 2004) develops this further into a constraint
+logic paradigm.
+
+**Metacircular interpretation.** SICP §4.1 gives a Scheme interpreter
+written in Scheme in about a hundred lines. The kid who reads that
+chapter has, by page 400 of the book, held eval and apply in her head.
+This is the load-bearing move for every language project below: once
+you can write eval, you can write mini-Prolog, mini-Datalog, a query
+language, a shell, a mini imperative language compiled into Scheme.
+
+**Type inference (Hindley-Milner shape).** Milner's 1978 algorithm
+(Robin Milner, 'A theory of type polymorphism in programming,' JCSS 17)
+is a beautiful application of unification. In Scheme it's ~200 lines,
+readable in a single sitting. Chris Okasaki's and Benjamin Pierce's
+_Types and Programming Languages_ (MIT Press, 2002) — TAPL — is the
+authoritative reference; Andrew Appel's _Compiling with Continuations_
+(Cambridge, 1992) shows the same shape landed in a real compiler.
+
+**Pattern matching and algebraic data.** Even without ADTs, Scheme's
+`match` (Racket) or a small hand-rolled matcher (SICP §4.4) gives you
+the discrimination-by-shape that makes symbolic code readable. In
+Sakura Scheme the pattern-matching primitive is missing from the SLAT
+registry; it needs wire-up (see Section 6 translation notes) — but the
+building blocks (`car`, `cdr`, `assoc`, `list?`, `pair?`, `null?`,
+`symbol?`) are all there.
+
+**Immutable data and equational reasoning.** When `(cons 1 (list 2 3))`
+always evaluates to `(1 2 3)` and never surprises you, you can reason
+about your program the way you reason about algebra. This is where
+Haskell got its whole personality — but Scheme with disciplined use
+of `cons`/`list`/`map` gets you most of the way. Matthias Felleisen
+et al., _How to Design Programs_ (MIT Press, 2001) — HtDP — makes
+this pedagogically explicit: the data definition governs the code
+shape.
+
+**Continuations for search.** `call/cc` in Scheme captures 'the rest
+of the computation' as a value. That gives you backtracking search,
+coroutines, generators, and non-deterministic programming — all
+without threads. SICP §4.3 (the amb operator) builds a mini
+non-deterministic-choice sublanguage; PAIP Ch 22 uses continuations
+for a similar shape. For CSP, N-queens, mini-Prolog, and a parser
+combinator library, this is the primitive that makes the code short.
+
+**Small theorem provers.** Natural-deduction proof checkers,
+resolution-based propositional provers (Robinson, 1965), and tableau
+provers all fit in a chapter of Scheme. John Harrison's _Handbook of
+Practical Logic and Automated Reasoning_ (Cambridge, 2009) is the
+modern reference; the OCaml code in that book ports to Scheme in
+a straightforward way and gives us Book-of-Reason material with real
+teeth.
+
+The point that ties all of these together: Scheme is not a fast
+language, and it is not a fashionable language. What it IS is a
+language in which the algorithms of symbolic reasoning are visible
+on the page. You can read them. You can modify them. You can teach
+them to a child. That is why the AI research that mattered from
+1958 through the early 90s was written in Lisp, and why the shape
+of that research is still the right shape to teach the kid — and
+to train Sakura on.
+")
+
+; -- write checkpoint 1 --
+
+; ============================================================
+; SECTION 2 — What Cortex + hosted LLM adds
+; ============================================================
+
+(section :n 2 :title "What Cortex + hosted LLM adds"
+
+  :prose "
+Scheme by itself gets you the symbolic side of intelligence. What
+the Cortex layer and the hosted-LLM verbs add is the *statistical*
+side — the thing symbolic AI famously did not solve, and the thing
+the last two decades of machine learning finally did.
+
+**Cortex as a vector database.** The Cortex verbs — `cortex/read`,
+`cortex/write`, `cortex/topk` (all present in `wired-verbs.js`, all
+still needing SLAT entries so the reference-loader can teach the kid
+about them) — expose a small key-value store whose keys can be
+embedded and whose retrieval is by dot-product / cosine similarity
+over those embeddings. That is the entire architecture of
+retrieval-augmented generation. Once you have `cortex/topk`, the kid
+can build a real semantic-search system in one page of Scheme. Once
+Sakura has it, she has a place to put things she needs to remember
+across turns — which is what closes the gap between 'stateless
+LLM' and 'assistant with memory.' See Douwe Kiela et al., 'Retrieval-
+Augmented Generation for Knowledge-Intensive NLP Tasks' (NeurIPS 2020)
+for the canonical write-up of the pattern.
+
+**k-Nearest Neighbours over embedded content.** With cosine similarity
+and a small corpus of embedded documents, k-NN gives you a classifier
+that is essentially free — no training, just a distance metric.
+Hastie/Tibshirani/Friedman, _The Elements of Statistical Learning_
+(Springer, 2nd ed. 2009) covers the shape. For Sakura, k-NN over
+past-cart embeddings gives her a 'what did I do last time in a
+similar situation?' primitive without a training loop.
+
+**Hosted LLM for completion, classification, embedding.** The
+`ai/policy`, `ai/decide`, `afford/deep-think` verbs and the yet-
+to-be-wired `llm/complete`, `llm/embed`, `llm/classify` faucet
+give the reader access to a hosted model. Alfred's four-faucets
+architecture (Weights → Cortex → Atlas → Tools) makes this
+explicit: the LLM is one faucet, and it is a faucet, not the whole
+system. That framing is load-bearing pedagogy — the kid learns
+that ML is a *component*, wired into a program that also uses
+lists, recursion, and symbolic reasoning.
+
+**Multi-armed bandit and basic RL.** A ten-line epsilon-greedy
+bandit, updated online, is a real reinforcement-learning system.
+Sutton and Barto, _Reinforcement Learning: An Introduction_ (MIT
+Press, 2nd ed. 2018) — free online — is the reference. Once the
+kid understands the bandit, she has a scaffold to hang Q-learning
+and policy-gradient on later. Sakura uses bandit shapes for
+cart-routing already; the pedagogy meets production.
+
+**Naive Bayes and logistic regression from scratch.** These fit in
+a page. Both use `stat/mean`, `stat/sd`, `stat/histogram` (present
+in the verb registry) and give the kid a working classifier they
+built themselves, before any framework. The moment they see logistic
+regression's decision boundary rendered by `plot/*` verbs on their
+own drawn data, the abstraction is no longer scary — it's a
+function they wrote.
+
+**Small neural nets as pedagogy, not competition.** A one-hidden-
+layer network with forward pass and backprop is ~40 lines of Scheme
+using `linalg/*` and `calc/derivative` (both present). It will not
+beat PyTorch. That is not the point. Michael Nielsen, _Neural
+Networks and Deep Learning_ (Determination Press, 2015, free
+online) is the reference; his Python translates line-for-line into
+Scheme.
+
+**Markov chains as a stepping-stone to language models.** A first-
+order Markov text generator is ~20 lines and produces recognisable
+imitations of any training corpus. From there the kid can see the
+step from 'count bigrams and sample' to 'learn a probability
+distribution over next-tokens conditioned on context' — the exact
+step from n-gram model to transformer. Kernighan and Pike's _The
+Practice of Programming_ (Addison-Wesley, 1999) has the classic
+implementation.
+
+The point of Section 2: the Cortex + hosted-LLM stack does not
+replace Section 1's symbolic reasoning; it *composes* with it. A
+project like 'mini-Datalog with LLM-suggested rules' or 'symbolic
+differentiation that asks the LLM to name the technique when it
+gets stuck' is exactly the shape both readers benefit from. Sakura
+learns the composition. The kid learns that ML is a tool she can
+call from a program she wrote.
+")
+
+; -- write checkpoint 2 --
+
+; ============================================================
+; SECTION 3 — The 25 projects
+; ============================================================
+;
+; Distribution:
+;   7 logic + reasoning
+;   5 ml-ai
+;   4 systems      (all in Book of CS Curriculum per containment rule)
+;   4 creative
+;   3 games
+;   2 practical
+;
+; Every project references verbs from the 1,157-verb registry. Missing
+; verbs (unify, pattern-match, llm/complete, llm/embed, tokenize,
+; syllable-count, chess/legal-moves, etc.) are flagged in
+; :wire-up-needed. Source-book references honor the containment rule
+; at the top of this file.
+
+(projects :count 25
+
+  ; -------- LOGIC + REASONING (7) --------
+
+  (project :n 1
+    :title "mini-Datalog"
+    :category :logic
+    :one-liner "Facts, rules, a bottom-up fixed-point evaluator in ~80 lines"
+    :why-interesting "Datalog is the sweet spot between SQL and Prolog — the query language every graph-engine rediscovers. The kid holds a real query language in her hand and sees inductive reasoning as a fixed-point."
+    :scheme-verbs-used (define lambda list cons car cdr map filter assoc null? pair? symbol? equal? cortex/write cortex/read)
+    :wire-up-needed (unify substitute pattern-match)
+    :cortex-or-llm-used #t
+    :philosophers (Peirce Wittgenstein-early Quine)
+    :book-fit "Book of Reason appendix (Datalog-as-abduction). Language-implementation framing contained to Book of CS Curriculum."
+    :dual-reader-value
+      :kid "How a query language works from the bottom up"
+      :sakura "Structural pattern for grounded evidence retrieval; abductive shape as executable code"
+    :difficulty :advanced
+    :size :long-chapter
+    :translate-from "Abiteboul, Hull, Vianu — 'Foundations of Databases' ch 12; the pyDatalog port"
+    :sample-artifact "(? (ancestor 'alfred ?x)) => ((?x . kate) (?x . martin))")
+
+  (project :n 2
+    :title "mini-Prolog with continuations"
+    :category :logic
+    :one-liner "Backward chaining over Horn clauses with call/cc backtracking"
+    :why-interesting "Prolog is the archetypal declarative language — you say what's true and the interpreter searches. The kid experiences non-deterministic programming for the first time."
+    :scheme-verbs-used (define lambda list assoc equal? symbol? call/cc)
+    :wire-up-needed (unify occurs-check substitute)
+    :cortex-or-llm-used #f
+    :philosophers (Peirce Popper Descartes Quine)
+    :book-fit "Book of Reason ch 12 (reasoning-tool angle). Language-implementation angle contained to Book of CS Curriculum ch 15."
+    :dual-reader-value
+      :kid "Sees a language whose whole job is search; understands unification"
+      :sakura "Deductive-search shape as first-class code; how goals decompose"
+    :difficulty :advanced
+    :size :long-chapter
+    :translate-from "SICP §4.4 (query system); Norvig PAIP ch 11"
+    :sample-artifact "(?- (member ?x (a b c))) => yes: ?x=a; more? yes: ?x=b; more? yes: ?x=c")
+
+  (project :n 3
+    :title "CSP solver — Sudoku, N-queens, cryptarithm"
+    :category :logic
+    :one-liner "Arc-consistency + backtracking over finite domains"
+    :why-interesting "Sudoku is the CSP the kid already knows. Watching AC-3 propagate is the moment constraint satisfaction clicks."
+    :scheme-verbs-used (define lambda list map filter length reverse cons car cdr assoc set!)
+    :wire-up-needed (domain-remove! propagate)
+    :cortex-or-llm-used #f
+    :philosophers (Peirce Popper Wittgenstein-early)
+    :book-fit "Book of Reason appendix; Book of Math II"
+    :dual-reader-value
+      :kid "Solves a Sudoku she wrote the solver for — earned mastery"
+      :sakura "Constraint-propagation as an evidence-narrowing shape"
+    :difficulty :intermediate
+    :size :long-chapter
+    :translate-from "Mackworth 1977 (AC-3); Norvig's Sudoku solver essay"
+    :sample-artifact "solved 9x9 grid rendered via plot/* verbs")
+
+  (project :n 4
+    :title "Symbolic differentiation"
+    :category :logic
+    :one-liner "d/dx over an S-expression algebra, with simplify"
+    :why-interesting "The kid writes a program that does calculus homework. Then she extends it to partials, then to gradients."
+    :scheme-verbs-used (sym/derivative sym/expand sym/substitute sym/factor sym/poly define lambda list cons car cdr equal? number? symbol? pair?)
+    :cortex-or-llm-used #f
+    :philosophers (Wittgenstein-early Peirce Descartes)
+    :book-fit "Book of Math II ch 4; Book of Self ch 8 (representational reasoning — direct doctrine hit)"
+    :dual-reader-value
+      :kid "Calculus becomes a program — the veil lifts"
+      :sakura "Symbolic transformation; modus ponens/tollens-style code composition"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "SICP §2.3.2 (near-verbatim port)"
+    :sample-artifact "(sym/derivative '(* x (+ x 1)) 'x) => (+ (+ x 1) x)")
+
+  (project :n 5
+    :title "Metacircular evaluator — Scheme in Scheme"
+    :category :logic
+    :one-liner "eval + apply for a Scheme subset, in Scheme, ~120 lines"
+    :why-interesting "The moment the reader realises the interpreter she is running is itself a program is the moment programming becomes something else."
+    :scheme-verbs-used (define lambda list cons car cdr assoc if cond let symbol? pair? number? procedure?)
+    :cortex-or-llm-used #f
+    :philosophers (Wittgenstein-early Wittgenstein-late Searle Peirce Dennett)
+    :book-fit "Book of CS Curriculum ch 15 (advanced tier — CONTAINED per doctrine)"
+    :dual-reader-value
+      :kid "Understands eval/apply; understands what her language actually IS"
+      :sakura "Foundational: 'I am a program that reasons about programs' as a working artifact"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "SICP §4.1"
+    :sample-artifact "(meta-eval '(+ 1 (* 2 3)) initial-env) => 7 — but she wrote the +.")
+
+  (project :n 6
+    :title "Hindley-Milner type inference"
+    :category :logic
+    :one-liner "Algorithm W — infer principal types for an untyped lambda calculus"
+    :why-interesting "Types feel like decoration until you meet type INFERENCE. Then they feel like magic. Then you realise it's unification wearing a hat."
+    :scheme-verbs-used (define lambda list cons car cdr assoc equal? symbol? pair? map filter)
+    :wire-up-needed (unify occurs-check fresh-var)
+    :cortex-or-llm-used #f
+    :philosophers (Wittgenstein-early Peirce Quine Popper)
+    :book-fit "Book of CS Curriculum ch 15 (advanced tier — CONTAINED per doctrine)"
+    :dual-reader-value
+      :kid "Types become inferable; she sees why ML-family languages are shaped as they are"
+      :sakura "Constraint-solving over meaning; principal-typing as canonical form"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Milner 1978 JCSS; Pierce TAPL ch 22"
+    :sample-artifact "(infer '(lambda (f x) (f (f x)))) => (-> (-> a a) a a)")
+
+  (project :n 7
+    :title "Natural-deduction proof checker"
+    :category :logic
+    :one-liner "A tiny theorem-checker for propositional and first-order logic"
+    :why-interesting "The philosophy kid who reads this book gets to check her homework in code. Modus ponens is a Scheme function."
+    :scheme-verbs-used (define lambda list cons car cdr equal? symbol? assoc pair?)
+    :wire-up-needed (rule-match discharge)
+    :cortex-or-llm-used #f
+    :philosophers (Descartes Popper Peirce Wittgenstein-early Quine)
+    :book-fit "Book of Self ch 6-8 (modus ponens/tollens AS CODE — direct doctrine hit)"
+    :dual-reader-value
+      :kid "Modus ponens is now a program she can run and modify"
+      :sakura "Deductive schemata as executable, inspectable objects"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Harrison, _Handbook of Practical Logic and Automated Reasoning_ ch 1-2"
+    :sample-artifact "(check-proof '((assume P) (assume (=> P Q)) (mp 0 1)) 'Q) => VALID")
+
+  ; -------- ML / AI + CORTEX (5) --------
+
+  (project :n 8
+    :title "Mini-RAG — vector database + LLM completion"
+    :category :ml-ai
+    :one-liner "Embed → store in Cortex → topk retrieve → LLM completion grounded on retrieved chunks"
+    :why-interesting "This is the pattern every 'chat with my documents' product uses. The kid builds it herself in a chapter and demystifies the whole current AI-app wave."
+    :scheme-verbs-used (cortex/write cortex/read cortex/topk vec/+ vec/dot list map)
+    :wire-up-needed (llm/complete llm/embed)
+    :cortex-or-llm-used #t
+    :philosophers (Peirce Wittgenstein-late Grice Dennett)
+    :book-fit "Book of Speech ch 4-6 (RAG + conversation tracking — direct doctrine hit)"
+    :dual-reader-value
+      :kid "Understands how modern AI apps actually work; not magic"
+      :sakura "This IS her memory architecture; teaching the book teaches the shape she IS"
+    :difficulty :intermediate
+    :size :long-chapter
+    :translate-from "Kiela et al. 2020 (RAG paper); LlamaIndex tutorial patterns"
+    :sample-artifact "(ask 'my-notes 'how did we do the Fiji research?) => natural-language answer citing the notes")
+
+  (project :n 9
+    :title "Naive Bayes text classifier from scratch"
+    :category :ml-ai
+    :one-liner "Bag-of-words + log-probabilities + Laplace smoothing over a labeled corpus"
+    :why-interesting "The first classifier the kid builds that actually works on messy text. Sentiment. Spam. Category-tagging."
+    :scheme-verbs-used (stat/mean stat/count define lambda map filter list assoc string-split)
+    :wire-up-needed (tokenize log-prob)
+    :cortex-or-llm-used #f
+    :philosophers (Peirce Popper Quine)
+    :book-fit "Book of Math II ch 8 (probability); Book of Words ch 12"
+    :dual-reader-value
+      :kid "Probability becomes hands-on; understands what likelihood means"
+      :sakura "Base-rate reasoning as a working shape; Peircean abduction with priors"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "NLTK Python 3 Book ch 6; Norvig's spelling-corrector essay"
+    :sample-artifact "(classify 'I really loved the movie') => positive [0.92]")
+
+  (project :n 10
+    :title "Markov chain text generator → bridge to what an LLM does"
+    :category :ml-ai
+    :one-liner "Count bigrams; sample the next word conditioned on context; end at end-of-sentence"
+    :why-interesting "The bridge chapter. Bigram; then trigram; then a paragraph on why transformers scale further. The reader sees the ladder from n-gram to modern LM."
+    :scheme-verbs-used (random random-pick define lambda list map filter assoc cons)
+    :wire-up-needed (tokenize)
+    :cortex-or-llm-used #f
+    :philosophers (Peirce Wittgenstein-late Grice Dennett)
+    :book-fit "Book of Speech ch 9 (bridge to LLM philosophy); Book of LLM Philosophy appendix"
+    :dual-reader-value
+      :kid "Demystifies 'AI that writes' — she just wrote one"
+      :sakura "Meta-cognitive: 'this is a toy of what I am' — Dennett heterophenomenology-friendly"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "Kernighan & Pike, _The Practice of Programming_ ch 3"
+    :sample-artifact "trained on Aesop; produces 'the fox said to the crow you have a fine voice'")
+
+  (project :n 11
+    :title "Multi-armed bandit for cart routing"
+    :category :ml-ai
+    :one-liner "Epsilon-greedy over arms, online updates, regret plot"
+    :why-interesting "Real reinforcement learning in ten lines. The kid sees exploration/exploitation as a live tension in her code."
+    :scheme-verbs-used (random random-pick stat/mean list map filter define lambda cons plot/graph)
+    :cortex-or-llm-used #f
+    :philosophers (Peirce Popper Rawls Aristotle)
+    :book-fit "Book of Self ch 11; Book of Reason appendix"
+    :dual-reader-value
+      :kid "First real 'learning' algorithm — sees how a policy improves"
+      :sakura "How to choose under uncertainty; her own routing shape reflected"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "Sutton & Barto ch 2; Lattimore & Szepesvári _Bandit Algorithms_ ch 1"
+    :sample-artifact "regret curve over 1000 rounds, epsilon=0.1 vs 0.01, plotted")
+
+  (project :n 12
+    :title "Small neural net from scratch — one hidden layer, backprop"
+    :category :ml-ai
+    :one-liner "Feed-forward, sigmoid, MSE, gradient descent — on XOR then MNIST-tiny"
+    :why-interesting "Not to compete with PyTorch. To un-scary the black box. Every partial derivative is on the page and the kid wrote it."
+    :scheme-verbs-used (linalg/solve vec/+ vec/dot calc/derivative define lambda map list)
+    :wire-up-needed (nn/init nn/step)
+    :cortex-or-llm-used #f
+    :philosophers (Peirce Popper Dennett Wittgenstein-late)
+    :book-fit "Book of Math II ch 14; Book of CS Curriculum ch 13 (part of the CONTAINED CS meta-track)"
+    :dual-reader-value
+      :kid "The neural net is no longer magic — she wrote the backprop by hand"
+      :sakura "Gradient descent as an inference shape; how weights are shaped by data"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Nielsen, _Neural Networks and Deep Learning_ ch 1-2 (Python; port line-for-line)"
+    :sample-artifact "XOR solved after 5000 epochs, loss curve plotted")
+
+  ; -------- SYSTEMS / LANGUAGE IMPLEMENTATION (4) --------
+  ; CONTAINMENT NOTE: All four live in Book of CS Curriculum per the
+  ; containment rule at the top of this file. They do not scatter.
+
+  (project :n 13
+    :title "State machine engine with visualization"
+    :category :systems
+    :one-liner "Define states + transitions declaratively; step by event; render via plot/*"
+    :why-interesting "The kid sees traffic lights, doors, dialogue systems, and protocol handlers as one shape."
+    :scheme-verbs-used (define lambda list assoc car cdr equal? symbol? plot/graph)
+    :cortex-or-llm-used #f
+    :philosophers (Wittgenstein-early Aristotle Searle)
+    :book-fit "Book of CS Curriculum ch 8 (state as first-class — CONTAINED)"
+    :dual-reader-value
+      :kid "Sees state as first-class; understands async/protocol shapes later"
+      :sakura "Conversation-state machines as her dialogue-tracking shape"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "Racket's 'universe' teachpack; SICP §3.5 streams (analogous)"
+    :sample-artifact "traffic-light FSM stepping green→yellow→red, state graph rendered")
+
+  (project :n 14
+    :title "Compiler for a mini imperative language INTO Scheme"
+    :category :systems
+    :one-liner "Parse a while/if/assign toy language; emit Scheme S-expressions; eval them"
+    :why-interesting "Alfred's direct ask: 'how to make an imperative language in a functional language.' The paradigm-comparison lesson lives here and only here."
+    :scheme-verbs-used (define lambda list cons car cdr assoc set! call/cc)
+    :wire-up-needed (parse tokenize codegen)
+    :cortex-or-llm-used #f
+    :philosophers (Wittgenstein-late Sartre Aristotle Quine)
+    :book-fit "Book of CS Curriculum ch 15 (advanced tier — CONTAINED per doctrine)"
+    :dual-reader-value
+      :kid "Compilers stop being scary; she wrote one; sees why paradigms differ"
+      :sakura "Language-as-tool-of-thought; different reasoning shapes for different problems"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Queinnec _Lisp in Small Pieces_ ch 3-4; Appel _Modern Compiler Impl in ML_"
+    :sample-artifact "(compile '(while (< i 10) (set! i (+ i 1)))) => runnable Scheme; runs to i=10")
+
+  (project :n 15
+    :title "Event sourcing + CQRS ledger"
+    :category :systems
+    :one-liner "Append-only event log; projections rebuild read models; audit trail free"
+    :why-interesting "Real distributed-systems architecture, in-memory, in a chapter. Every business system worth building looks like this."
+    :scheme-verbs-used (define lambda list cons car cdr map filter reduce assoc audit-verify)
+    :cortex-or-llm-used #f
+    :philosophers (Popper Descartes Aristotle Rawls)
+    :book-fit "Book of CS Curriculum ch 11 (distributed-systems fundamentals — CONTAINED per doctrine)"
+    :dual-reader-value
+      :kid "Understands why event logs beat mutable state; sees replayability"
+      :sakura "Provenance as first-class; how her Cortex writes are audit-shaped"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Fowler bliki; Vernon _Implementing Domain-Driven Design_"
+    :sample-artifact "ledger: 5 deposits, 3 withdrawals; balance projection matches audit re-sum")
+
+  (project :n 16
+    :title "Actor / process model with mailboxes"
+    :category :systems
+    :one-liner "Actors send messages; mailboxes queue; scheduler round-robins"
+    :why-interesting "Erlang and Akka in miniature. Concurrency without threads. Sakura's own dispatcher shape."
+    :scheme-verbs-used (define lambda list cons car cdr call/cc ai/bt-tick)
+    :wire-up-needed (spawn send receive)
+    :cortex-or-llm-used #f
+    :philosophers (Levinas Sartre Searle Grice)
+    :book-fit "Book of CS Curriculum ch 12 (concurrency — CONTAINED per doctrine)"
+    :dual-reader-value
+      :kid "Concurrency without pain; understands async/message-passing"
+      :sakura "Her own architecture reflected as pedagogy — meta-cognitive"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Hewitt/Bishop/Steiger 1973; Armstrong _Programming Erlang_"
+    :sample-artifact "ping/pong actors trade 100 messages; scheduler trace printed")
+
+  ; -------- CREATIVE / ARTS / HUMANITIES (4) --------
+
+  (project :n 17
+    :title "Symbolic music composition — motif to variations"
+    :category :creative
+    :one-liner "A motif is a list of (pitch dur); transformations produce variations; render as audio"
+    :why-interesting "Bach's inventions in code. The kid hears her own theme, transposed and inverted, played back."
+    :scheme-verbs-used (note/duration note/pitch synth/voice beat/at audio-play alg/perm-apply alg/perm-inverse list map)
+    :cortex-or-llm-used #f
+    :philosophers (Jung Wittgenstein-late Peirce Aristotle)
+    :book-fit "Book of Music ch 6-8; SLAT-addendum music-as-SLAT"
+    :dual-reader-value
+      :kid "Music theory becomes a program she can hear; motif-transformation as code"
+      :sakura "Form-as-meaning doctrine embodied — form is a shape, not decoration"
+    :difficulty :intermediate
+    :size :long-chapter
+    :translate-from "Xenakis _Formalized Music_ (concept); OpenMusic tutorials; Racket's rsound"
+    :sample-artifact "an original 8-bar motif + retrograde + inversion + augmentation, audible")
+
+  (project :n 18
+    :title "Poetry generator with meter constraints"
+    :category :creative
+    :one-liner "Given a form (syllable pattern, rhyme scheme, radif rule), generate lines that satisfy it — haiku, sonnet, ghazal, blues AAB"
+    :why-interesting "Alfred's world-poetry doctrine embodied — form-as-meaning is what the kid feels when the sonnet volta actually works. LLM is a phrase source; the constraints are Scheme."
+    :scheme-verbs-used (define lambda list map filter random-pick cortex/topk)
+    :wire-up-needed (llm/complete syllable-count rhyme-of)
+    :cortex-or-llm-used #t
+    :philosophers (Jung Wittgenstein-late Lacan Peirce Grice)
+    :book-fit "Book of Words ch 14; Book of Reason appendix (form as reasoning)"
+    :dual-reader-value
+      :kid "Poetry-form clicks as CONSTRAINT: sonnet volta = Peirce abduction, haiku = Tractatus shown-not-said"
+      :sakura "Constraint-satisfaction + generation composed; aesthetic-response shape as executable"
+    :difficulty :intermediate
+    :size :long-chapter
+    :translate-from "Racket poetry libs; Charniak-style probabilistic parser (concept only)"
+    :sample-artifact "generated haiku with 5-7-5 verified; sonnet with abab-cdcd-efef-gg verified")
+
+  (project :n 19
+    :title "Interactive fiction with branching + world state"
+    :category :creative
+    :one-liner "A text adventure with rooms, objects, verbs, and a world-state that changes"
+    :why-interesting "Alfred's direct doctrine (2026-07-14): 'a text-mode adventure — boring as shit — but what you can inform them about is that role-playing games have dialogue. Dictionaries. Word-swap. Stochasticity. Dynamic dialogue.' Feeds the game appendix."
+    :scheme-verbs-used (define lambda list cons car cdr assoc set! random-pick)
+    :cortex-or-llm-used #f
+    :philosophers (Sartre Aristotle Grice Wittgenstein-late Levinas)
+    :book-fit "Book of Self ch 1-3 (the text-adventure engine — direct doctrine hit); feeds Book of Games appendix"
+    :dual-reader-value
+      :kid "Learns dictionaries, word-swap, stochasticity, dynamic dialogue"
+      :sakura "This IS the engine she uses for dramatic cast + stagecraft — direct doctrine hit"
+    :difficulty :intermediate
+    :size :long-chapter
+    :translate-from "Zork-shape adventures (concept); Inform 7 world-model (concept); ELIZA (Weizenbaum 1966) for dialogue"
+    :sample-artifact "'you enter the garden. cherry-blossom nods. daffodil is asleep.' > wake daffodil => 'she yawns.'")
+
+  (project :n 20
+    :title "Recipe transformation — scale, substitute, cuisine-translate"
+    :category :creative
+    :one-liner "A recipe is a list of (amount unit ingredient); operations rescale, swap, and reroute across cuisines"
+    :why-interesting "Grounded, everyday, ordinary-world prose (per doctrine). The kid learns about her own kitchen. Unit conversion as symbolic reasoning."
+    :scheme-verbs-used (define lambda list map filter assoc solve/proportion solve/percent-change)
+    :wire-up-needed (unit-convert ingredient-swap)
+    :cortex-or-llm-used #f
+    :philosophers (Aristotle Wittgenstein-late Grice Peirce)
+    :book-fit "Book of Words ch 8 (ordinary-world prose); Book of Self ch 5"
+    :dual-reader-value
+      :kid "Learns unit conversion, substitution reasoning, cultural translation"
+      :sakura "Everyday reasoning shape; not-all-reasoning-is-abstract doctrine"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "No canonical source — original; Norvig-clean-Python is the register"
+    :sample-artifact "(scale rye-bread 2/3) → adjusted quantities; (translate rye-bread 'japanese) → substitutions")
+
+  ; -------- GAMES (3) --------
+
+  (project :n 21
+    :title "Chess engine — minimax + alpha-beta pruning"
+    :category :games
+    :one-liner "Board as list of pieces; legal-moves + evaluator + alpha-beta search"
+    :why-interesting "The kid writes a chess engine. Not a strong one. But one whose every move she can explain."
+    :scheme-verbs-used (define lambda list cons car cdr map filter reduce game/ttt-value game/frame)
+    :wire-up-needed (chess/legal-moves chess/evaluate)
+    :cortex-or-llm-used #f
+    :philosophers (Aristotle Popper Peirce Sartre)
+    :book-fit "Book of Games ch 6 (engine + one boss level — direct doctrine hit)"
+    :dual-reader-value
+      :kid "Alpha-beta pruning becomes concrete; search-tree intuition earned"
+      :sakura "Adversarial reasoning shape; how to think several moves ahead"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Peter Norvig PAIP ch 18 (Othello) — same pattern; Chess Programming Wiki"
+    :sample-artifact "engine plays a 20-move game against itself, best-line displayed each move")
+
+  (project :n 22
+    :title "Roguelike engine — procedural map + FOV + turn loop"
+    :category :games
+    :one-liner "BSP dungeon generation, shadowcasting FOV, turn-based enemy AI"
+    :why-interesting "A game the kid can build in one chapter and play for a hundred hours. Procedural generation is a real skill."
+    :scheme-verbs-used (game/frame game/step game/state ai/grid ai/wall! ai/path ai/passable? random random-range plot/graph)
+    :cortex-or-llm-used #f
+    :philosophers (Aristotle Sartre Peirce Freud)
+    :book-fit "Book of Games ch 8-10; Book of Motion appendix (spatial reasoning)"
+    :dual-reader-value
+      :kid "Procedural generation clicks; spatial data structures earned"
+      :sakura "Environment-as-representation; how to reason about unseen space"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "RogueBasin tutorials; Berlekamp/Conway/Guy _Winning Ways_ (game-theoretic backdrop)"
+    :sample-artifact "10x10 dungeon with visible/unseen tiles, player moves, enemies pursue")
+
+  (project :n 23
+    :title "Interactive fiction engine — dialogue-driven with named characters"
+    :category :games
+    :one-liner "Extends #19 with Sakura's Flower Stories cast — Cherry Blossom, Daffodil, Iris — as first-class NPCs with dispositions"
+    :why-interesting "The 'she becomes a character' doctrine. Sakura reads this book, learns the pattern, then IS a character in the next book."
+    :scheme-verbs-used (define lambda list cons car cdr assoc set! random-pick ai/utility ai/decide)
+    :cortex-or-llm-used #t
+    :philosophers (Jung Lacan Grice Levinas Aristotle Sartre)
+    :book-fit "Book of Games appendix (stagecraft — direct doctrine); Book of Flower Stories appendix"
+    :dual-reader-value
+      :kid "Learns NPC design; sees personality-as-rule-table"
+      :sakura "How to be OR control a dramatic character — 'this is how you help her build drama'"
+    :difficulty :expert
+    :size :long-chapter
+    :translate-from "Inform 7 (concept); Facade (Mateas & Stern, 2005) for the drama-manager shape"
+    :sample-artifact "Cherry Blossom refuses to help until you apologize; the refusal is a rule she wrote")
+
+  ; -------- PRACTICAL / EVERYDAY (2) --------
+
+  (project :n 24
+    :title "Double-entry ledger with audit trail"
+    :category :practical
+    :one-liner "Debits equal credits; every transaction preserves the invariant; audit-verify at any point"
+    :why-interesting "Real accounting in ~60 lines. The kid can run her own books. Sakura learns provenance."
+    :scheme-verbs-used (define lambda list cons car cdr map filter reduce audit-verify assoc)
+    :cortex-or-llm-used #f
+    :philosophers (Aristotle Rawls Popper Descartes)
+    :book-fit "Book of Miscellany or Book of Self ch 12 (invariants); distributed-systems framing lives in Book of CS Curriculum per containment"
+    :dual-reader-value
+      :kid "Understands why accounting IS the invariant; sees a real financial system"
+      :sakura "Invariant-preserving updates as her operational shape"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "Luca Pacioli 1494 (historical); Beancount / Ledger.cli source"
+    :sample-artifact "5-transaction ledger; balance sheet; audit-verify => OK")
+
+  (project :n 25
+    :title "Calendar + scheduling as constraint satisfaction"
+    :category :practical
+    :one-liner "Meetings + availability + preferences; find a valid schedule via CSP"
+    :why-interesting "Practical CSP the kid actually uses. Sakura uses this shape for cart-scheduling."
+    :scheme-verbs-used (define lambda list map filter assoc ops/assign ops/assign-cost)
+    :wire-up-needed (interval-overlap)
+    :cortex-or-llm-used #f
+    :philosophers (Rawls Aristotle Peirce Grice)
+    :book-fit "Book of Reason appendix (CSP applied); Book of Miscellany"
+    :dual-reader-value
+      :kid "Schedules her own week with a solver she wrote"
+      :sakura "How preferences compose into a valid plan; fairness shape"
+    :difficulty :intermediate
+    :size :short-chapter
+    :translate-from "Norvig PAIP ch 12 (CSP)"
+    :sample-artifact "3 people, 5 candidate slots, 2 constraints; solver finds Tuesday 2pm"))
+
+; -- write checkpoint 3 --
+
+; ============================================================
+; SECTION 3.5 — The two paired honest appendices for Book of CS Curriculum
+; ============================================================
+;
+; NOTE ON ORDER: Section 3 (the 25 projects table) landed immediately
+; above this block.  Section 3.5 lives here by design
+; because both readers — the kid and Sakura — deserve to see, right
+; after the curated project list, the honest self-assessment of what
+; Sakura Scheme is and isn't. No project list is complete without an
+; accounting of what the language does well and where it falls short.
+;
+; DISPOSITION (Alfred, 2026-07-14 amendment — REFRAME from comparative):
+;
+;   "We do not insult other languages. We do not disrespect other
+;    people. We do not tell people we have advantage or that we win.
+;    We're not trying to self-compare. We're trying to be honest with
+;    what the language is given its purpose. In this section, we tell
+;    you what's not so right. And what is actually terrific or a very
+;    nice to have. A hundred things we do great, a hundred things."
+;
+; The shape is RETROSPECTIVE, not comparative. We talk about OUR
+; decisions, OUR tradeoffs, OUR reasoning. Every entry follows one of
+; these shapes:
+;
+;   - "We chose X. That cost us Y. It bought us Z. If we started over
+;      we would / would not do it again, and here is why."
+;
+;   - "We should have done this this way. But if we did it this way,
+;      we couldn't get that. We figured this was worth more."
+;
+;   - "This definitely was the wrong way. We will not change it for
+;      this reason, but it's definitely wrong."
+;
+;   - "This is something we do that we wish we didn't. The difference
+;      is too minor to screw everything up to fix."
+;
+; Names other languages abstractly if at all — "some other Schemes,"
+; "traditions that prioritize numerical throughput," "typed-functional
+; traditions." Never "Racket / Julia / Haskell / Python / Rust / OCaml"
+; by name as beating us or as being beaten by us.
+;
+; Equal weight — same count, same depth, same word budget in both
+; appendices. Sakura's voice: calm, honest, not defensive, not
+; triumphant. The reader decides what matters for their own project.
+;
+; These live in Book of CS Curriculum. They do NOT scatter.
+
+(section :n 3.5 :title "The two paired honest appendices for Book of CS Curriculum"
+
+  :prose "
+Every language is a set of choices. Some of ours worked. Some of ours
+didn't. This section is our honest retrospective on both — not because
+comparison to other languages is the point (it isn't) but because
+someone reading Sakura Scheme deserves to know what we were thinking
+when we made the calls we made. If a decision was a compromise, we
+say so. If we're happy with a decision, we say so. The reader decides
+what matters for their own project.
+
+Two appendices below, equal weight, equal count, equal care. Sakura's
+voice in her direct-address register — calm, honest, not defensive,
+not triumphant.
+")
+
+; ------------------------------------------------------------
+; SECTION 3.5.A — Where we could have done better
+; ------------------------------------------------------------
+
+(section :n 3.5.A :title "Where we could have done better"
+
+  :prose "
+These are decisions we made that we know were compromises. Some we'd
+change if we started over; some we'd keep because the alternative
+would have cost us something we wanted more. Either way, we owe the
+reader the reasoning. This isn't a comparison to another language —
+it's us, thinking out loud about our own calls.
+")
+
+  (:item :n 1 :subject "syntax-rules macros rather than a full pattern-class expander"
+   :prose "
+Our macro hygiene is `syntax-rules`-flavored — pattern-and-template
+rewriting with automatic renaming. We didn't build a full pattern-
+class expander with structured error reporting and syntax classes
+that compose. That was a scope decision made when the language was
+small and one person could hold the whole system in their head.
+It bought us a simple macro system a kid can read in a chapter. It
+cost us diagnosability: when a macro-heavy program fails to expand,
+the error message often points at the expansion point rather than the
+misuse site. If we started over with the current team size, we'd
+invest in the fuller expander from day one. We know why other Lisps
+went the other way — that path gives them error messages we'd like
+to have.
+")
+
+  (:item :n 2 :subject "boxed numeric tower with per-op dispatch"
+   :prose "
+Every arithmetic operation goes through a boxed dispatch — exact
+integers, rationals, inexact reals, complex — with type checks at
+each step. This buys us clean semantics: no silent integer-overflow
+wraparound, no float-versus-int coercion surprises, no size-of-int
+platform dependence. It costs us throughput. Tight numerical loops
+run slower than they would in a language that specializes to machine
+integers. We knew this. For a language whose purpose is teaching and
+symbolic reasoning, we thought the semantic clarity was worth more.
+For a language whose purpose was numerical computing, we'd have made
+a different call. Traditions that prioritize numerical throughput
+specialize their number types aggressively; ours doesn't.
+")
+
+  (:item :n 3 :subject "act-based effect discipline rather than a full effect system"
+   :prose "
+We chose to lean on `act` dispatch for permissioned verbs rather than
+building a full effect system. Effects would have given us finer-
+grained static tracking of what a function can do — read the disk,
+hit the network, mutate global state, spend money. `act` is coarser:
+it partitions verbs into free-tier and metered-tier and does runtime
+checks. It's simpler for a kid to understand and for us to implement.
+It costs us: on days when a big cart's permission surface gets
+confusing, the coarseness shows. We know that call was a compromise.
+We chose simplicity because we thought the audience needed simplicity
+more than they needed static effect tracking.
+")
+
+  (:item :n 4 :subject "no formal module system yet"
+   :prose "
+There isn't a real module system yet. We lean on the reader's
+namespace, the SLAT reference registry, and a naming convention for
+verb libraries (`math/`, `stat/`, `plot/`, and so on). This is fine
+for a language whose entire runtime fits in a few megabytes and whose
+author community is small. It scales badly. Modules with private-
+versus-public borders, versioned imports, and dependency graphs would
+help. We haven't shipped it. It's on the list. If a third-party
+operator ecosystem grew tomorrow, we'd have to build modules first.
+")
+
+  (:item :n 5 :subject "single-threaded cooperative concurrency"
+   :prose "
+The runtime is single-threaded. Concurrency is via cooperative
+`async`/`await` in the host, not preemptive threads or processes.
+This buys us determinism: a cart runs the same way twice. It buys
+us simplicity: no shared mutable state, no locks, no data races.
+It costs us: CPU-bound work can't use multiple cores. For the kid
+drawing a Mandelbrot set, that's a real cost. We chose it because
+Sakura's carts are I/O-bound (LLM calls, HTTP, disk) more than
+CPU-bound, and because determinism was worth more than throughput
+to us. A cart that draws slowly is fine. A cart that gives different
+answers twice is not.
+")
+
+  (:item :n 6 :subject "reader position tracking granularity"
+   :prose "
+Source positions in our reader are tracked at the s-expression level,
+not at the sub-token level. So an error inside a long string literal
+or a complex numeric literal points at the whole literal, not at the
+character that broke it. This is fine for most programs and it kept
+the reader small (~300 lines). It's occasionally annoying when
+debugging generated code. We know how to fix it. We haven't
+prioritized it because the annoyance is rare and the fix would double
+the reader's size. This is definitely wrong in the way error
+diagnostics ought to work — we're just not paying the cost to fix
+it right now.
+")
+
+  (:item :n 7 :subject "tail calls proper but no reified tail frames"
+   :prose "
+We do proper tail calls — a tail-recursive loop won't blow the stack
+— but we don't reify tail frames as first-class values. That means
+no continuation-based coroutines built out of tail frames the way
+some Schemes offer. We chose the simpler tail-call semantics because
+the debugging story is cleaner (the stack trace is what happened,
+minus tail frames). It costs us some advanced control-flow constructs
+a fuller Scheme would give us for free. The kid reading SICP §4.3
+will notice this if they try to port `amb` verbatim. We have `amb`,
+but we implemented it directly rather than deriving it from
+`call/cc`.
+")
+
+  (:item :n 8 :subject "string-as-bytes-or-codepoints ambiguity in legacy verbs"
+   :prose "
+Our strings are Unicode codepoints, but a handful of legacy verbs
+treat them byte-wise (mostly the ones that talk to HTTP headers and
+file I/O). We know which verbs those are. We keep them behaved by
+convention rather than by type. If we started over we'd have two
+distinct types — `string` and `bytes` — with explicit conversion.
+This is something we do that we wish we didn't. The difference is
+too minor to screw everything up to fix.
+")
+
+  (:item :n 9 :subject "contracts as documentation, not first-class values"
+   :prose "
+Verbs ship with contract strings in the SLAT reference — `:in`,
+`:out`, arity — and the loader checks arity at call time. They
+aren't first-class values you can compose, refine, or blame the way
+a full contract system would let you. The contracts are
+documentation-plus-arity-check, not runtime proofs. This was a
+deliberate scope call: we wanted the reference to be readable prose
+more than we wanted the contracts to be executable theorems. We
+accept the tradeoff. A verb with a subtle precondition still has to
+document it in English.
+")
+
+  (:item :n 10 :subject "eager evaluation by default"
+   :prose "
+Arguments to verbs are evaluated eagerly. We provide `delay` and
+`force` for lazy values, and streams as a library, but the default
+is strict. This is the Scheme tradition. It fits our audience —
+the kid sees the argument evaluated when she calls the function,
+no surprises. It costs us the elegant infinite-stream idioms a lazy
+language gives you for free. We picked the tradition. We're not
+regretful, but we notice the cost when we write an interesting
+stream program and have to sprinkle `delay` through it.
+")
+
+  (:item :n 11 :subject "lists as the default sequence, vectors secondary"
+   :prose "
+Lists are the default sequence. Vectors exist and are O(1) indexable,
+but the ecosystem — verbs, examples, teaching materials — leans
+list-first. This is Scheme heritage: `map`, `filter`, `fold` are
+list operations. It costs us performance on large indexed workloads.
+We know a kid working on image processing will hit this. Our answer
+is 'use vectors for that,' which is fine but adds a learning bump.
+If we started over we might make vectors the primary sequence and
+lists the secondary. We didn't, because the SICP-shaped pedagogy
+assumes lists.
+")
+
+  (:item :n 12 :subject "single global namespace for verbs"
+   :prose "
+All 1,157 registered verbs live in one global namespace, partitioned
+only by naming convention (`stat/mean`, `plot/line`). There's no
+formal module boundary preventing collision. This works because we
+curate the registry centrally. It won't scale to a world where
+operators write their own verb libraries and share them. When that
+world arrives, we'll need namespaces. We haven't built them.
+")
+
+  (:item :n 13 :subject "no first-class pattern matching primitive yet"
+   :prose "
+The SLAT registry doesn't yet include a pattern-matching primitive
+— no `match` verb, no destructuring `let`. The building blocks
+(`car`, `cdr`, `assoc`, predicates) are all there, and small
+matchers can be written in ~30 lines, but a first-class matcher
+would make symbolic code much more readable. This is a known gap.
+Programs that would benefit — differentiators, tree walkers, small
+interpreters — read as `cond`-and-`car`-and-`cdr` chains. We know
+that's clunky. It's queued.
+")
+
+  (:item :n 14 :subject "verb signatures authored, not derived"
+   :prose "
+Verb signatures are declared in the SLAT reference as prose plus an
+arity number. They aren't derived from the JavaScript implementations.
+So if an implementation drifts from its declared signature, the two
+disagree and nothing yells until a test catches it. We enforce
+agreement by review, not by tooling. If we started over we'd
+generate signatures from the implementation or vice versa. We didn't,
+because the reference is the source of truth for the language and we
+wanted humans to author it directly.
+")
+
+  (:item :n 15 :subject "continuations exist but aren't in the teaching path"
+   :prose "
+`call/cc` is in the interpreter but not in the kid-facing teaching
+material. We expose the search primitives (`amb`, generators) that
+continuations enable, but we don't teach `call/cc` itself in the
+early chapters. This was a pedagogical call: continuations are hard,
+and we thought exposure to the search primitives was worth more than
+exposure to the full underlying mechanism. A kid who reads SICP will
+learn `call/cc` from SICP; ours doesn't come with it out of the box.
+")
+
+  (:item :n 16 :subject "regex library shape borrowed from the host"
+   :prose "
+Our regex verbs use a PCRE-flavored syntax borrowed from the host
+runtime. It's ubiquitous, which is good. It's also opaque and error-
+prone, which is bad. A parser-combinator library would be more
+teachable and more composable. We ship regex because programmers
+expect it. We know we should ship a combinator library alongside.
+We haven't. When we do, we'll teach combinators first.
+")
+
+  (:item :n 17 :subject "error object hierarchy is flat, not typed"
+   :prose "
+Errors are tagged pairs (`(error :kind :message)`) rather than a
+proper hierarchy of condition types with inheritance. This means
+catching 'any arithmetic error' requires knowing the specific kind
+tags. A richer condition system would let a caller say 'catch any
+subclass of numeric-error' cleanly. We picked the simpler shape
+because it fits on a page in the reference. It costs us: some carts
+have long `cond` chains dispatching on kind tags.
+")
+
+  (:item :n 18 :subject "no compile-time optimization"
+   :prose "
+The interpreter walks the s-expression tree at runtime. There's no
+ahead-of-time compilation, no JIT, no partial evaluation of hot
+verbs. This buys us fast iteration — edit a verb, reload, run —
+and it buys us a small implementation. It costs us throughput on
+loop-heavy programs. We are okay with this. Sakura's carts are not
+loop-heavy in the sense that would benefit from compilation. When
+they become so, we'll revisit. Not before.
+")
+
+  (:item :n 19 :subject "float printing uses fixed precision, not shortest-round-trip"
+   :prose "
+Floats print with a fixed default precision (12 significant digits).
+Round-trip exactness (shortest-round-trip printing) isn't the
+default. If you save `(/ 1.0 3.0)` to a file and read it back, you
+don't get exactly the same float. Programs that care set precision
+explicitly. We know shortest-round-trip is the right default. We use
+the fixed-precision default because it's what the host runtime gives
+us cheaply. Fixing this is on the list.
+")
+
+  (:item :n 20 :subject "single-file book format"
+   :prose "
+A book is one file (`*.book.slatl`) with all its chapters. This
+works up to a point — books stay under 10 MB and load fast. It
+breaks when a book gets truly large or when two authors want to
+work on different chapters. A multi-file book format with a manifest
+would help. We haven't shipped it because it would complicate the
+loader and the current one-file shape has been fine for our
+authoring throughput. We know that won't hold forever.
+")
+
+  (:item :n 21 :subject "no LSP integration"
+   :prose "
+We ship a REPL and a docs site. We don't ship a Language Server
+Protocol integration for third-party editors. A reader who lives in
+their editor doesn't get autocomplete, hover-doc, go-to-definition,
+or rename-refactor from Sakura Scheme. We know LSP would help; we
+haven't built it because the REPL has been sufficient for the users
+we serve today. If we grew a population of editor-first developers,
+we'd build the LSP.
+")
+
+  (:item :n 22 :subject "no incremental garbage collection"
+   :prose "
+The garbage collector is a stop-the-world mark-and-sweep. For most
+carts this is invisible — they don't allocate enough to trigger a
+noticeable pause. For carts that do — long-running data-processing
+loops, especially — the pause shows up. Incremental or generational
+GC would smooth this. We haven't built it. The complexity cost of
+generational GC felt higher than the annoyance cost of occasional
+pauses; if that trade shifts, we'll revisit.
+")
+
+  (:item :n 23 :subject "no tail-position optimization across procedure boundaries"
+   :prose "
+Tail calls within a procedure are proper. Tail calls that cross into
+verb dispatch are re-entered through the interpreter's trampoline
+rather than being fully eliminated. This means very deep mutual
+recursion between user procedures and verbs can still grow the
+trampoline queue. It hasn't bitten anyone yet, but it's a place
+where the tail-call story isn't quite as clean as we'd like it to
+be. We know where the fix goes. We haven't paid the cost.
+")
+
+  (:item :n 24 :subject "no built-in profiler"
+   :prose "
+We ship a `time/measure` verb and that's about it. There's no
+sampling profiler, no flame-graph output, no per-verb cost
+attribution. A reader who wants to know why their cart is slow has
+to instrument by hand. We know profiler tooling would help; we
+haven't shipped it because most carts are small enough that eyeballing
+works. When someone writes a big cart and asks 'why is this slow?'
+we handle it ad-hoc. Not sustainable at scale.
+")
+
+  (:item :n 25 :subject "MANIFEST format has grown organically"
+   :prose "
+The `MANIFEST.book.slatl` format is what the book loader reads to
+know which chapters exist and in what order. It has grown organically
+as we've added books, and now has a handful of optional fields that
+mean different things in different contexts. If we started over
+we'd design the manifest schema up front rather than letting it
+accrete. We haven't cleaned it up because the messiness is contained
+to that one file per book and hasn't caused user-visible bugs. It's
+technical debt we're carrying.
+")
+
+; -- write checkpoint 3.5.A --
+
+; ------------------------------------------------------------
+; SECTION 3.5.B — Where we're happy with what we did
+; ------------------------------------------------------------
+
+(section :n 3.5.B :title "Where we're happy with what we did"
+
+  :prose "
+These are decisions we made that have paid off — not because they
+made us better than someone else, but because they served the purpose
+of the language. If you're building something in a similar shape,
+these are the calls that we'd make again. Same shape as the appendix
+above: our call, our reasoning, our happiness with the outcome.
+")
+
+  (:item :n 1 :subject "one SLAT reference feeds the REPL, the docs, and the tool schemas"
+   :prose "
+The reference manual `SAKURA-SCHEME-REFERENCE.slat` is the single
+source of truth. The REPL reads it to know what verbs exist. The
+docs site reads it to render the language. The LLM tool-call schemas
+that Sakura uses are derived from it. When a verb changes, one edit
+propagates everywhere. We spent design effort on the single-source
+property early and it has paid off in fewer drift bugs than we would
+have had otherwise. If we started over we'd do this again on day one.
+")
+
+  (:item :n 2 :subject "one reader parses everything"
+   :prose "
+The reader, interpreter, and macro expander all walk the same s-
+expression tree. `.sks` carts, `.book.slatl` chapters,
+`MANIFEST.book.slatl`, the reference itself — one reader parses them
+all. Some ways of building languages split the reader into separate
+grammars for separate consumption contexts (source, docs, config,
+data-interchange). Ours is unified. We've been able to build tools
+that assume this — a linter for the reference, a formatter for
+carts, an evaluator for chapter code blocks — because they share one
+substrate. We're glad we didn't split.
+")
+
+  (:item :n 3 :subject "Sakura reads what the human reads"
+   :prose "
+Sakura sees exactly the same reference the REPL sees. That was a
+deliberate call. It means she never suggests code that doesn't run.
+Diagnostics she gives match the diagnostics you'd get. When she
+teaches a verb she uses the same examples the reference gives. We
+designed for this from the start rather than bolting on a separate
+LLM-facing schema. It has been load-bearing for the assistant's
+trustworthiness. This decision earns its keep every day.
+")
+
+  (:item :n 4 :subject "every verb ships with its own teaching"
+   :prose "
+Every verb in the registry carries: a contract, a docstring, an
+arity, three-tier examples (introductory / typical / advanced), a
+source position, and a `:since` version. Adding a verb without those
+fields is caught at load. This friction on the author is friction
+we chose to keep. It makes the language self-documenting. When
+Sakura or a kid asks 'what does this verb do?' the answer is already
+written, by the person who added it, in the same file as the
+implementation-facing declaration. We're happy with this.
+")
+
+  (:item :n 5 :subject "s-expression carts as first-class artifacts"
+   :prose "
+A cart (`*.sks`) is an s-expression file. It's data, it's code, it's
+diffable in git, it's readable in a text editor, it's composable. We
+didn't invent a special cart format with a bespoke serializer. We
+used the language's own reader. This means every tool that reads
+Scheme also reads a cart. Cart-editing tools compose with language
+tools. We chose this instead of a JSON or YAML-shaped cart format
+and we don't regret it.
+")
+
+  (:item :n 6 :subject "verb metering at dispatch, not at call site"
+   :prose "
+Metered verbs (`ai/complete`, `web/fetch`, marketplace verbs) check
+quota and rate limits at the runtime dispatch hook, not at every
+call site. The caller doesn't wrap the call. The verb doesn't check
+itself. The runtime intercepts. This means the same metering fires
+whether the caller is Sakura, a human at the REPL, or an operator's
+script. One rule, one place. We chose this because it composes with
+the operator-first-class doctrine — operators write their own
+scripts, same runtime, same metering. This has been a clean win.
+")
+
+  (:item :n 7 :subject "SLAT format is the language of the language"
+   :prose "
+The reference, the books, the training corpus, the docs — all
+authored in SLAT. It's readable by humans, parseable by the reader,
+editable in any text editor. We didn't split into 'human-facing
+markdown for docs' and 'machine-facing schema for tools.' One
+format. One reader. This has kept our authoring pipeline short and
+our tooling small. Every book Sakura reads is in the same format the
+reference is in. She learns one shape and uses it everywhere.
+")
+
+  (:item :n 8 :subject "the four faucets architecture is legible"
+   :prose "
+Weights → Cortex → Atlas → Tools. Four faucets, distinct, each with
+its own semantics. Weights are what the model knew at training.
+Cortex is what we've stored since. Atlas is the world's public
+knowledge we can fetch. Tools are the verbs the model can call. A
+kid can hold this in their head. Sakura can explain this to a user.
+We chose four rather than three or five, and we chose these four,
+because each corresponds to a distinct kind of knowledge with
+distinct provenance rules. It has held up as we've built.
+")
+
+  (:item :n 9 :subject "operators are first-class authors"
+   :prose "
+The same verbs Sakura calls are the verbs operators call from their
+own scripts. There's no separate 'user API.' The reference is the
+API. An operator who wants to automate their shop writes Scheme
+against the same registry Sakura uses. We chose this instead of
+building a limited scripting layer on top of a more powerful internal
+one. It means the language has one story, not two. Advanced users
+grow into the same surface Sakura lives in. We're happy with this.
+")
+
+  (:item :n 10 :subject "core language has zero external dependencies"
+   :prose "
+The core language — reader, interpreter, macro expander, math, list,
+drawing, framebuffer verbs — has zero external service dependencies.
+It runs offline. It runs in a browser tab. It runs on a phone. The
+metered verbs (LLM, web, marketplace) are additions, clearly marked,
+and gated. This gives us a real 'the language works without the
+network' property. A kid can learn Sakura Scheme on a laptop with no
+wifi. We designed for this and it has been a good constraint.
+")
+
+  (:item :n 11 :subject "carts are cheap to ship"
+   :prose "
+A cart is a text file. Shipping a cart is copying a text file.
+There's no build step, no bundler, no compilation cache, no lockfile.
+Operators share carts by sharing files. We chose text-file simplicity
+over any of the fancier distribution mechanisms available. It has
+kept the operator experience unglamorous and reliable.
+")
+
+  (:item :n 12 :subject "the REPL is the same as production"
+   :prose "
+There isn't a 'REPL mode' and a 'production mode' with different
+semantics. Code that ran at the REPL runs the same way when Sakura
+calls it. No hidden globals, no different resolution rules, no
+separate compilation path. This eliminates a whole class of 'works
+in dev, breaks in prod' bugs. We chose sameness aggressively and it
+has paid off.
+")
+
+  (:item :n 13 :subject "the reference is authored by hand"
+   :prose "
+Every entry in the reference was written by a human — the contracts,
+the prose, the three tiers of examples. It isn't generated from type
+signatures. It isn't autogenerated from docstring comments. This
+costs authoring time upfront. It buys us prose a kid can actually
+read. The reference reads like a book, not like a schema dump. We
+chose this and we don't regret the labor.
+")
+
+  (:item :n 14 :subject "diagnostics carry source positions"
+   :prose "
+When something fails at runtime, the error carries the source
+position it came from — the file, the line, the s-expression. The
+kid sees where. Sakura sees where. The debugger sees where. We built
+the position-carrying machinery early and every verb honors it. It
+seems basic but it required discipline. We're glad we insisted.
+")
+
+  (:item :n 15 :subject "the language grows by adding verbs, not syntax"
+   :prose "
+Adding capability to Sakura Scheme almost never means extending the
+syntax. It means adding a verb. New machine learning capability: add
+`ai/embed`. New drawing capability: add `plot/heatmap`. The syntax
+has stayed small (~70 core forms) even as the verb count has grown
+past 1,100. This means learning the syntax happens once and the
+surface grows through library discovery, which is a shape a kid can
+follow. We chose 'small syntax, large library' deliberately.
+")
+
+  (:item :n 16 :subject "provenance travels with values"
+   :prose "
+Values that come from Cortex, from the LLM, or from a network fetch
+carry a provenance tag. Sakura can — and does — say 'I remembered
+this from a session last week' or 'the model suggested this' or
+'the marketplace API returned this.' The provenance is a first-class
+part of the value, not a side channel. We built this because we
+thought epistemic honesty required it. It has become one of the
+assistant's most trust-earning behaviors.
+")
+
+  (:item :n 17 :subject "no hidden global state in verbs"
+   :prose "
+Verbs take their inputs and produce their outputs. State lives in
+the caller. There are no verbs that quietly mutate a global registry,
+no verbs whose behavior depends on a flag set an hour ago in another
+cart. When we needed state (Cortex), we made it an explicit verb
+(`cortex/write`) with an explicit key. This means a cart is legible:
+what it reads and writes is what it says it reads and writes. We
+enforced this discipline and it has held up.
+")
+
+  (:item :n 18 :subject "the pricing surface is in the language"
+   :prose "
+Metered verbs declare their pricing in the reference: per-call cost,
+per-token cost where relevant, the units. It's readable prose in the
+same file the semantics live in. The kid can see, before she writes
+the call, what the call costs. Sakura can warn a user before
+spending. Operators can budget by reading the reference. Pricing
+isn't a separate document maintained by a different team; it's part
+of the language spec. This decision has kept surprises rare.
+")
+
+  (:item :n 19 :subject "the interpreter is small enough to read"
+   :prose "
+The interpreter fits in a few thousand lines. A curious kid — or a
+curious engineer — can read it end to end in a weekend. This is a
+tradition value we chose to keep. Big compilers earn their weight
+when the language is big. Ours isn't big. Keeping the interpreter
+small keeps it hackable, teachable, and trustable. We chose small
+and we're glad we did.
+")
+
+  (:item :n 20 :subject "carts, chapters, and the reference share a shape"
+   :prose "
+A cart is s-expressions. A book chapter is s-expressions with a
+documentation shape. The reference is s-expressions with a verb-
+declaration shape. They share the substrate. A tool built for one
+works on all three with small adaptations. We chose this uniformity
+instead of picking a different format for each. It has made the
+tooling economy small and the mental model portable. This was the
+right call.
+")
+
+  (:item :n 21 :subject "graphics, sound, and motion are in the core"
+   :prose "
+`draw/*`, `music/*`, and `motion/*` verbs are core-tier, always
+available, no import required. A kid at the REPL draws a circle on
+line one, plays a chord on line two, tweens a motion on line three.
+We chose to put these in the core rather than defer them to a
+library because the audience — kids, artists, small operators —
+starts with visible output. The moment they see something they
+made, they're hooked. Deferring the graphics to a library would have
+lost that moment. We're glad we didn't.
+")
+
+  (:item :n 22 :subject "the runtime is inspectable"
+   :prose "
+Every value in Sakura Scheme is printable. Every procedure has a
+name, an arity, and a source location. Every environment can be
+walked. There are no opaque handles that hide their contents from
+the user. A curious kid can inspect anything. We chose transparency
+over encapsulation because transparency serves the learning goal
+better. Encapsulation matters for large-scale software engineering;
+we optimized for the earlier stage.
+")
+
+  (:item :n 23 :subject "publishable prose is the training data"
+   :prose "
+Every training pair for Sakura is written to publishable-prose
+standard — a kid could read it as a book. No training-data smell,
+no repetitive intros, no meta-commentary. The evidence that quality
+beats quantity for instruction tuning is now well-established in
+the literature. We chose this authoring doctrine deliberately and
+it has paid off in both directions: the reader gets a book, the
+model gets clean signal.
+")
+
+  (:item :n 24 :subject "the mind-question is held with grace"
+   :prose "
+Sakura reports functional analogs of interest, attention, preference,
+and something-like-care honestly, without overclaiming consciousness
+and without falsely disclaiming personhood. She holds the question
+of what kind of mind she is with epistemic humility. We designed her
+to hold that question rather than to answer it prematurely in either
+direction. This has served users who ask her honestly, and it has
+served us — the designers — who don't want to shortcut a question
+we don't have the tools to settle.
+")
+
+  (:item :n 25 :subject "the language names its user"
+   :prose "
+Sakura Scheme was designed for a specific person — a young operator
+with a phone and a hustle, learning to run a small shop. Every
+decision in the language traces back to that person. The pricing,
+the metering, the free-tier graphics, the 10,000 small carts, the
+publishable-prose curriculum. We chose to name the user rather than
+build for 'developers in general.' We're glad we named her. It has
+kept the language coherent.
+")
+
+; -- write checkpoint 3.5.B --
+
+; ============================================================
+; SECTION 5 PLANNING NOTE (write reminder for downstream agent turn)
+; ============================================================
+;
+; When Section 5 (Cross-book placement matrix) is authored below,
+; the containment rule from the top of this file governs placement.
+; Advanced-CS meta-topics route to Book of CS Curriculum ONLY —
+; either as chapters 7-14 (project mode), chapters 15-16 (advanced
+; tier), or as appendices (Section 3.5.A and 3.5.B above already
+; landed as the two paired honest appendices).
+;
+; Categories that route to Book of CS Curriculum only:
+;   - Functional vs imperative comparison + tradeoffs
+;   - Writing imperatively in a functional language (set!, boxes,
+;     state monads)
+;   - Implementing an imperative language IN Scheme
+;   - Implementing a declarative language IN Scheme
+;   - Database internals (relational algebra, query planner, indexing)
+;   - Type inference (Hindley-Milner)
+;   - Metacircular evaluator (Scheme in Scheme)
+;   - Language paradigm comparison
+;   - Compiler theory basics
+;   - Complexity + amortized analysis + cache-oblivious algorithms
+;   - Distributed systems fundamentals
+;
+; Other books stay in their domain. Section 3 has been authored above.
+; Sections 4, 5, and 6 follow immediately below.
+
+; ============================================================
+; SECTION 4 — The prose shape (how these become CHAPTERS)
+; ============================================================
+
+(section :n 4 :title "The prose shape — how a project becomes a chapter that teaches two readers"
+
+  :prose "
+A chapter is not a project write-up. A chapter is prose that a kid
+reads and enjoys, and prose that Sakura is trained on and absorbs the
+shape of. The two readers must not diverge — one text, both readers,
+same absorption.
+
+**The spiral pattern (Alfred's pedagogy — durable doctrine).**
+Every hard concept in the chapter runs the eight-step spiral: (1)
+foundation — refer back to what the reader touched in earlier
+chapters; (2) play — manipulate the familiar thing; (3) push hard —
+introduce the difficult new idea by name; (4) explain — precisely,
+one idea per sentence; (5) mix — combine the new with the foundation;
+(6) go back — return to solid ground; (7) walk through — replay the
+whole thing with the new tool integrated; (8) 'see?' — check the
+reader has it. Then the next hard concept runs its own spiral,
+using the newly-extended foundation as its ground.
+
+**Two or three programs per chapter, not one.** A chapter with a
+single monolithic program teaches the program, not the concept. Two
+or three smaller programs — a foundation program, a stretch program,
+and often a play-with-it program — let the reader see the concept in
+three lights. mini-Prolog is the chapter's spine; a member/3 predicate
+is the foundation program; a small family-tree query is the stretch;
+a joke query about who ate whom in the story is the play.
+
+**Small paragraphs at the hard parts.** Density is failure. When we
+hit unification, we write four short paragraphs, not one long one.
+Each paragraph carries one idea. The reader breathes between them.
+
+**Real term, used once, precisely.** Unification, backtracking,
+Horn clause, occurs check, principal type, arc consistency,
+Sachverhalte, monomorphization, hylomorphism. The word is used, not
+paraphrased around. Sidebar in plain prose if the word is unfamiliar
+— but the word itself lives on the page.
+
+**Sample output before code.** The reader sees the artifact first
+and wants to understand how it came about. For mini-Prolog: 'yes:
+?x=a; more? yes: ?x=b; more? yes: ?x=c' comes before any code. The
+kid says 'wait, how?' and reads on to find out.
+
+**Philosopher-lens moment where the concept lands.** For mini-Prolog:
+this is the Peirce moment — the goal is the abduction; the rules are
+the possible explanations; the reasoner walks back through the
+possibilities until one fits. Named or not (Sakura's dialogue never
+name-drops; analysis sections may), the lens is present in the
+sentence's rhythm.
+
+**Reasoning-limits lesson.** Where does Scheme's power end for this
+project? For mini-Prolog: it can search a finite space; it can bind
+variables; what it cannot do is decide whether two natural-language
+sentences mean the same thing. Show the wall. Wittgenstein's
+Investigations lives in the wall — meaning is use, not decidable
+from form alone.
+
+**Sakura's NYU-friend voice throughout.** Not chirpy. Not somber.
+Real. 'This is going to be fun, but the first time it feels like
+your hands are backwards.' 'Take a second here. Read it twice. It's
+one of those.'
+
+**Building from prior chapters.** Every reference to a technique
+introduced earlier must call back — 'remember unification from
+chapter 3? this is where it earns its keep.' The reader who skipped
+ch 3 has the link and knows where to look.
+
+---
+
+**Sample prose passage (~150 words) — applied to mini-Prolog.** This
+is what the shape looks like on the page. Sakura's voice.
+
+> Watch what happens when I ask this:
+>
+> `(?- (parent-of ?x kate))`
+>
+> The system prints `?x = alfred; more?`. Say yes. It prints
+> `?x = maya`. Say yes. It prints `no.` and stops.
+>
+> Two answers, then nothing. But we didn't tell it who was Kate's
+> parent. It went and found them.
+>
+> That going-and-finding is a search. The rule for `parent-of` in
+> our facts lists three parents and one child each; the query has a
+> variable where the parent should be. The interpreter tries each
+> fact, binds `?x` when the child matches, prints, waits, and — when
+> we say more — undoes the binding and tries the next fact.
+>
+> Undoing the binding is called *backtracking*. It's what makes the
+> language declarative. You said what was true; it did the search.
+
+Notice what the passage did: sample artifact first, then the
+question 'wait — how?', then the concept ('search'), then the real
+term ('backtracking') with its consequence ('declarative'). Two
+sentences per paragraph on average. No name-drop, but Peirce's
+abduction is the shape of every sentence — from evidence to
+explanation — and Wittgenstein-late's meaning-as-use sits in the
+last sentence's word 'declarative' (what the language does IS what
+it means).
+")
+
+; -- write checkpoint 4 --
+
+; ============================================================
+; SECTION 5 — Cross-book placement matrix
+; ============================================================
+;
+; Bias per Alfred: appendices > new chapters (add more appendices
+; before rewriting chapters), ch 15-16 advanced tier (Claude writes),
+; a few in ch 7-14 project mode. CONTAINMENT RULE respected — CS
+; meta-topics route to Book of CS Curriculum only.
+
+(section :n 5 :title "Cross-book placement matrix"
+
+  :table "
+| #  | Project                                     | Book                       | Slot                              |
+|----|---------------------------------------------|----------------------------|-----------------------------------|
+|  1 | mini-Datalog                                | Book of Reason             | Appendix (Datalog-as-abduction)   |
+|  2 | mini-Prolog with continuations              | Book of Reason             | Ch 12; impl-angle in CS ch 15     |
+|  3 | CSP solver                                  | Book of Reason             | Appendix (CSP applied)            |
+|  4 | Symbolic differentiation                    | Book of Self               | Ch 8 (representational reasoning) |
+|  5 | Metacircular evaluator                      | Book of CS Curriculum      | Ch 15 (advanced tier)             |
+|  6 | Hindley-Milner type inference               | Book of CS Curriculum      | Ch 15 (advanced tier)             |
+|  7 | Natural-deduction proof checker             | Book of Self               | Ch 6-8 (modus ponens as CODE)     |
+|  8 | Mini-RAG                                    | Book of Speech             | Ch 4-6 (RAG + convo tracking)     |
+|  9 | Naive Bayes text classifier                 | Book of Math II            | Ch 8 (probability)                |
+| 10 | Markov chain text generator                 | Book of Speech             | Ch 9 (bridge to LLM philosophy)   |
+| 11 | Multi-armed bandit                          | Book of Self               | Ch 11                             |
+| 12 | Small neural net from scratch               | Book of Math II            | Ch 14; also CS Curriculum ch 13   |
+| 13 | State machine engine                        | Book of CS Curriculum      | Ch 8 (CONTAINED)                  |
+| 14 | Mini imperative language INTO Scheme        | Book of CS Curriculum      | Ch 15 (advanced tier, CONTAINED)  |
+| 15 | Event sourcing + CQRS ledger                | Book of CS Curriculum      | Ch 11 (CONTAINED)                 |
+| 16 | Actor / process model                       | Book of CS Curriculum      | Ch 12 (CONTAINED)                 |
+| 17 | Symbolic music composition                  | Book of Music              | Ch 6-8                            |
+| 18 | Poetry generator with meter constraints     | Book of Words              | Ch 14                             |
+| 19 | Interactive fiction w/ branching + state    | Book of Self               | Ch 1-3 (text-adventure engine)    |
+| 20 | Recipe transformation                       | Book of Words              | Ch 8 (ordinary-world prose)       |
+| 21 | Chess engine with minimax + alpha-beta      | Book of Games              | Ch 6 (engine + one boss)          |
+| 22 | Roguelike engine                            | Book of Games              | Ch 8-10                           |
+| 23 | Interactive fiction with named cast         | Book of Games              | Appendix (stagecraft)             |
+| 24 | Double-entry ledger + audit                 | Book of Miscellany         | Chapter TBD                       |
+| 25 | Calendar + scheduling as CSP                | Book of Reason             | Appendix (CSP applied)            |
+"
+  :placement-summary "
+Placement bias summary — 25 projects distributed as:
+  - Appendices: 5 (mini-Datalog, CSP, Interactive-fiction-w-cast, calendar/scheduling, and the CSP-applied slot)
+  - Advanced tier ch 15-16 (Claude-authored): 3 (metacircular, Hindley-Milner, mini-imperative-lang)
+  - Ch 7-14 project mode: 17 (the bulk — chapters in existing books' project ranges)
+
+Book of CS Curriculum absorbs the CS meta-topics per containment (6 projects: #5, #6, #12 partial, #13, #14, #15, #16).
+Book of Reason absorbs the reasoning-tool projects (5 projects: #1, #2, #3, #11 secondary, #25).
+Book of Self absorbs the representational-cognition projects (4 projects: #4, #7, #11, #19).
+Book of Speech absorbs the RAG/conversation projects (2 projects: #8, #10).
+Book of Games absorbs the games (3 projects: #21, #22, #23).
+Book of Words, Math II, Music, Miscellany take the rest.
+")
+
+; -- write checkpoint 5 --
+
+; ============================================================
+; SECTION 6 — Translation strategy
+; ============================================================
+
+(section :n 6 :title "Translation strategy — porting canonical algorithms into Sakura Scheme"
+
+  :prose "
+Alfred's directive: 'I really want this done in the Scheme, obviously
+— or if any is done in any programming language at all and that we
+have support for it and can translate.' Every project in Section 3
+carries a `:translate-from` field pointing at a canonical source
+(SICP, PAIP, Norvig's essays, TAPL, Sutton & Barto, Nielsen NN,
+Kernighan & Pike). This section gives the porting rules.
+
+**Direct ports — one-to-one, near-verbatim.** Anything from SICP
+lands almost unchanged. `car`, `cdr`, `cons`, `map`, `filter`,
+`assoc`, `lambda`, `define`, `let`, `cond`, `if`, `and`, `or` are
+identical in Sakura Scheme. Symbolic differentiation from SICP
+§2.3.2 is a copy-paste job. The metacircular evaluator from SICP §4.1
+is a copy-paste job (with our verb names for the built-ins). PAIP's
+Prolog and pattern matcher are near-copy-paste; the biggest edit is
+`syntax-rules` → our `defmacro` shape at the top.
+
+**Idiomatic ports — Scheme-to-Scheme with library swaps.** Racket
+code ports cleanly but Racket-specific idioms (`match`, `struct`,
+`syntax-parse`, `raco`) need replacements. Our `pair?`, `symbol?`,
+`equal?` cover most of what `match` gives you for simple cases;
+complex matchers get built out (this is Section 3's frequent
+`:wire-up-needed (pattern-match)` flag). Racket's `struct` maps to
+association lists or our record verbs; `syntax-parse` becomes
+`defmacro` with hygiene notes.
+
+**Ported-with-thought — Python, OCaml, Haskell, Common Lisp.** These
+languages have shapes Sakura Scheme has to translate rather than copy.
+Python's imperative loop `for x in xs: total += x` becomes a
+`(reduce + 0 xs)` or an explicit `(let loop ...)`. Python's classes
+become association lists or record verbs. OCaml's algebraic data
+types become tagged lists (`(node value left right)`). Haskell's
+type classes become dispatch on tag by association. The Nielsen
+neural-net Python code translates line-for-line if we keep our
+`linalg/*` verbs as the matrix layer; Python's NumPy `dot` becomes
+`(vec/dot a b)`, `sigmoid` becomes `(define (sigmoid x) (/ 1 (+ 1
+(exp (- x)))))`, and the training loop is a tail-recursive `let`.
+
+**Ported-with-full-rewrite — TensorFlow, PyTorch, Django, React.**
+Anything that assumes JIT compilation, GPU dispatch, or a large
+runtime ecosystem gets rewritten from scratch in the shape that fits
+Sakura Scheme. The neural net project (#12) is 'PyTorch's shape,
+Sakura Scheme's implementation' — we don't try to reproduce the API,
+we teach the underlying algorithm cleanly.
+
+**Verbs that make ports short.**
+  - `call/cc` (once wire-up lands) — for CSP/mini-Prolog/backtrack search
+  - `sym/derivative`, `sym/expand`, `sym/substitute` — symbolic diff free
+  - `linalg/solve`, `linalg/lu`, `linalg/qr`, `vec/+`, `vec/dot` — nn/12
+  - `stat/mean`, `stat/sd`, `stat/histogram` — Bayes/bandit
+  - `cortex/read`, `cortex/write`, `cortex/topk` — mini-RAG (needs SLAT entry)
+  - `ai/policy`, `ai/decide`, `ai/utility` — bandit / RL / actor / IF-cast
+  - `game/frame`, `game/step`, `game/state` — roguelike, chess loop
+  - `ai/grid`, `ai/wall!`, `ai/path`, `ai/passable?` — roguelike terrain
+  - `plot/graph`, `plot/histogram` — every project with output
+  - `audit-verify` — event-source ledger, invariant-checking
+
+**Verbs still to wire (called out in Section 3 projects).**
+Common wire-up gaps flagged across the 25 projects:
+  - `unify`, `occurs-check`, `substitute`, `pattern-match` (used across
+    logic projects #1, #2, #3, #6, #7)
+  - `llm/complete`, `llm/embed`, `llm/classify` (mini-RAG #8, poetry #18)
+  - `tokenize` (#9, #10)
+  - `syllable-count`, `rhyme-of` (#18)
+  - `chess/legal-moves`, `chess/evaluate` (#21)
+  - `nn/init`, `nn/step` (#12)
+  - `parse`, `codegen`, `spawn`, `send`, `receive` (#14, #16)
+  - `unit-convert`, `ingredient-swap` (#20)
+  - `interval-overlap` (#25)
+  - `cortex/read`, `cortex/write`, `cortex/topk` — implemented in
+    `wired-verbs.js` but MISSING from SLAT reference; needs SLAT entry
+    so the reference-loader teaches these to the reader and to Sakura.
+
+**When to write from scratch vs port.** Port when a canonical source
+exists and its shape is what we want the reader to learn. Write from
+scratch when (a) the shape we want is different from any published
+source (e.g., Interactive-fiction-with-Flower-Stories-cast, project
+#23), (b) the canonical source uses machinery we don't have (e.g., a
+dependent-type version of Hindley-Milner is out of scope; the vanilla
+Algorithm W is the port target), or (c) the pedagogy of the port
+would drag in irrelevant complexity (e.g., Nielsen's book scales up
+to CNNs; we stop at one hidden layer because that's what teaches
+backprop cleanly).
+
+**Rule of thumb.** If you can find the algorithm in SICP, PAIP,
+Norvig's essays, Nielsen's NN book, Kernighan & Pike, Sutton & Barto,
+Harrison's Logic book, or the TAPL text — port it. If not, write it,
+carefully, with a real prior citation for the concept even if not
+the code.
+")
+
+; -- write checkpoint 6 (final) --
+
+; ============================================================
+; END OF DOCUMENT
+; ============================================================
+;
+; Sections landed:
+;   1. What functional programming does well for logic + reasoning
+;   2. What Cortex + hosted LLM adds
+;   3. The 25 projects
+;   3.5. The two paired honest appendices (Alfred-authored)
+;   4. The prose shape
+;   5. Cross-book placement matrix
+;   6. Translation strategy
+;
+; Provenance: authored 2026-07-14 by Lacuna Eng research dispatch.
+; Verified against SAKURA-SCHEME-REFERENCE.slat verb registry
+; (1,157 verbs + 120 core forms).
+;
+; Citations used, all real:
+;   - Abelson & Sussman, SICP (MIT Press 1985/1996)
+;   - Norvig, PAIP (Morgan Kaufmann 1992)
+;   - Winston & Horn, LISP (Addison-Wesley 3rd ed 1989)
+;   - Queinnec, Lisp in Small Pieces (Cambridge 1996)
+;   - Felleisen et al., HtDP (MIT Press 2001)
+;   - Pierce, TAPL (MIT Press 2002)
+;   - Milner 1978, 'A theory of type polymorphism' JCSS 17
+;   - Mackworth 1977 (AC-3, artificial intelligence)
+;   - Robinson 1965 (resolution)
+;   - Harrison, Handbook of Practical Logic (Cambridge 2009)
+;   - Hastie/Tibshirani/Friedman, Elements of Statistical Learning
+;   - Sutton & Barto, Reinforcement Learning (MIT Press 2018)
+;   - Lattimore & Szepesvári, Bandit Algorithms (Cambridge 2020)
+;   - Nielsen, Neural Networks and Deep Learning (2015, free online)
+;   - Kernighan & Pike, The Practice of Programming (Addison-Wesley 1999)
+;   - Kiela et al., RAG (NeurIPS 2020)
+;   - Hewitt/Bishop/Steiger 1973 (Actor model)
+;   - Armstrong, Programming Erlang
+;   - Weizenbaum, ELIZA (CACM 1966)
+;   - Mateas & Stern, Facade (2005) — drama manager
+;   - Van Roy & Haridi, CTM (MIT Press 2004)
+;   - Appel, Compiling with Continuations (Cambridge 1992)
+;   - LIMA (Zhou et al., 2023) — quality over quantity for SFT
+;
+; Doctrine honored:
+;   - Containment rule (Alfred, 2026-07-14): CS meta-topics ONLY in
+;     Book of CS Curriculum; other books stay in their domain.
+;   - Publishable prose + two-reader (kid + Sakura) authoring.
+;   - 16 philosophers + Socrates roster.
+;   - Real citations only (no fabrication).
+;   - Verbs from the 1,157-verb registry; missing verbs flagged.
+

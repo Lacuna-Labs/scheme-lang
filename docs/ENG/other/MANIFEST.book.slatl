@@ -1,0 +1,124 @@
+(book-of-training-4b-manifest
+  :version "1"
+  :kind "training-corpus/manifest"
+  :id "book-of-training-4b-manifest"
+  :title "Book of Training 4B — MANIFEST"
+  :date "2026-07-13"
+  :author "Lacuna Labs (Sakura authoring lane)"
+  :doctrine (:publishable-prose :familiarity-not-knowledge :delicacy :kid-at-the-other-end)
+
+  :warning
+  "This package is training data, not a book. See README.slat."
+
+  :structure
+  "Every SLAT record has :messages in chat-training format:
+     ((:user \"...\") (:assistant \"...\"))
+   :meta carries fold-time grouping tags:
+     :emotion :register :shape :cluster :cite :modality :platform :category"
+
+  :sections
+  ((section :id "A"
+    :file "section-A-objects-in-web.slat"
+    :title "Objects in their web — 40 named objects × 8 pairs"
+    :pair-count 320
+    :doctrine (:vocabulary-in-scene :no-enumeration :relational-web)
+    :cite (:TinyStories :ATOMIC :COMET :ConceptNet :FrameNet))
+
+   (section :id "B"
+    :file "section-B-shop-dialogues-with-without-speech.slat"
+    :title "Shop dialogues — WITH-speech + WITHOUT-speech parallel"
+    :pair-count 200
+    :scenario-count 100
+    :doctrine (:absorb-combative-load :check-first-then-act :modality-parallel)
+    :cite (:GYAFC :BlenderBot :ReAct))
+
+   (section :id "C"
+    :file "section-C-emotional-range.slat"
+    :title "Emotional range training — 18 emotional targets"
+    :pair-count 540
+    :emotion-count 18
+    :pairs-per-emotion 30
+    :emotions (:stutter :whisper :chuckle :taken-aback :sly :wry :witty
+               :chipper :somber :slow :patient :abrupt :warm :rueful
+               :dry :exhausted :amused :quiet-proud)
+    :doctrine (:register-counterbalance :emotional-hedging)
+    :cite (:EmpatheticDialogues :PersonaChat :RoleLLM :GYAFC))
+
+   (section :id "D"
+    :file "section-D-deliberation-visible.slat"
+    :title "Deliberation-visible scenes — think-out-loud"
+    :pair-count 30
+    :doctrine (:chain-of-thought :scratchpad :meta-thinking)
+    :cite (:CoT-Wei2022 :Nye-scratchpad :Flan-Chung :STaR))
+
+   (section :id "D2"
+    :file "section-D2-deliberation-visible-more.slat"
+    :title "Deliberation-visible scenes — extended set"
+    :pair-count 30
+    :doctrine (:chain-of-thought :scratchpad :meta-thinking)
+    :cite (:CoT-Wei2022 :Nye-scratchpad))
+
+   (section :id "C2"
+    :file "section-C2-emotional-range-extended.slat"
+    :title "Emotional range — extended set"
+    :pair-count 310
+    :doctrine (:register-counterbalance :emotional-hedging)
+    :cite (:EmpatheticDialogues :PersonaChat :RoleLLM))
+
+   (section :id "E"
+    :file "section-E-imagination-vs-reality.slat"
+    :title "Imagination-vs-reality frame markers"
+    :pair-count 100
+    :doctrine (:frame-marking :calibration :RAG-citation)
+    :cite (:STORIUM-Akoury2020 :RAG-Lewis2020 :hedging-Zhou2023 :Kadavath2022))
+
+   (section :id "F"
+    :file "section-F-critique-revise.slat"
+    :title "Constitutional-shape critique-revise triples"
+    :triple-count 40
+    :pair-count 80
+    :doctrine (:safety-dispositions :critique-revise :no-lecture-tone)
+    :cite (:Constitutional-AI-Bai2022 :Perez2022-evals :Reflexion-Shinn2023))
+
+   (section :id "G"
+    :file "section-G-prosody-decision.slat"
+    :title "Prosody + decision elicitation patterns"
+    :pair-count 100
+    :sub-shapes (:top-2-with-or :last-two :final-1-upswing :hedging)
+    :doctrine (:splitting-five :top-two-with-or :final-with-upswing :hedging)
+    :cite (:POMDP-Young2013 :hedging-Zhou2023 :Mielke2022))
+
+   (section :id "H"
+    :file "section-H-godot-continuity.slat"
+    :title "Two-flowers Godot continuity"
+    :arc-count 40
+    :pair-count 56
+    :doctrine (:narrative-continuity :cross-turn-callback :fiction-frame-marker)
+    :cite (:PlotMachines-Rashkin2020 :WritingPrompts-Fan2018)))
+
+  :totals
+  (:total-pairs 1767
+   :total-scenarios "100 shop scenarios × 2 modalities + 40 objects × 8 clusters + 40 safety triples + 40 godot arcs + 60 deliberation scenes + 100 hedge/split patterns + 18 emotions × 30 base + priority emotions × 20 extended"
+   :estimated-words 69000
+   :sections 10
+   :files 12)
+
+  :fold-notes
+  "Fold script should treat each (pair :messages (...)) as a single SFT
+   training example. The :meta field carries tags the fold can group
+   on for weighted sampling. The triples in Section F have three pairs
+   per triple but only the :revised pair should be the training target
+   — the :naive pair is a counterexample, the :critique is analysis
+   prose (skip in fold). Alternately, all three can be included with
+   emphasis on the revised form."
+
+  :order-of-priority-if-time-short
+  "If the fold has to drop material for size:
+   1. Keep Section A (world grounding, hardest to author)
+   2. Keep Section C (emotional range, Alfred's main ask)
+   3. Keep Section F revised turns (safety)
+   4. Keep Section B WITH-speech (voice) — drop WITHOUT-speech first
+   5. Everything else in order of section leverage"
+
+  :closing
+  "Kid at the other end. Publishable prose in the assistant turn.")

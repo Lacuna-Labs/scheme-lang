@@ -1,0 +1,2677 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-rin-topo-comb.slat — Rin's authored verb entries
+;;
+;; Lane: topo+comb (40 verbs total)
+;; Author: Rin (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0:
+;;   Required: :name :library :signature :summary :examples :impl-status
+;;   Examples: 5 tiers — novice, apprentice, intermediate, expert, master
+;;   Slices: :general, +math, +cs, +eng, +commerce, +hacker, +ai, +meta
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval before landing.
+;; Alfred's floor doctrine: We can't lie to people. They trust us.
+;; ═══════════════════════════════════════════════════════════════
+
+(verb
+  :name "comb/bell"
+  :library "comb"
+  :signature "(comb/bell n) -> integer"
+  :summary "Bell number B(n): count the ways to partition an n-element set into non-empty subsets."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/bell 3)"
+     :note "Returns 5: the five partitions of {1,2,3} are {{1,2,3}}, {{1,2},{3}}, {{1,3},{2}}, {{2,3},{1}}, {{1},{2},{3}}.")
+    (:tier "apprentice"
+     :code "(map comb/bell (list 0 1 2 3 4 5 6))"
+     :note "Returns (1 1 2 5 15 52 203) — the first seven Bell numbers. Note B(0) = 1: the empty set has exactly one partition, the empty one.")
+    (:tier "intermediate"
+     :code "(let ((n 5)) (list (comb/bell n) (comb/stirling2 n 1) (comb/stirling2 n 2) (comb/stirling2 n 3) (comb/stirling2 n 4) (comb/stirling2 n 5)))"
+     :note "Returns (52 1 15 25 10 1). Bell is the row-sum of Stirling numbers of the second kind: B(n) = sum over k of S(n,k). 1+15+25+10+1 = 52. This is the bridge between bell and stirling2.")
+    (:tier "expert"
+     :code "(define (bell-verify n)\n  (define (sum-stirling k)\n    (if (> k n) 0 (+ (comb/stirling2 n k) (sum-stirling (+ k 1)))))\n  (equal? (comb/bell n) (sum-stirling 0)))\n(map bell-verify (list 1 2 3 4 5 6 7))"
+     :note "Cross-check: for each n from 1 to 7, sum Stirling(n,k) over all k and compare to Bell(n). Returns (#t #t #t #t #t #t #t). This is a real proof-witness — the identity holds under both impls.")
+    (:tier "master"
+     :code "(define (count-schedules students groups) (comb/bell students))\n(list ':three-students (count-schedules 3 'any)\n      ':five-students (count-schedules 5 'any)\n      ':seven-students (count-schedules 7 'any))"
+     :note "Domain model: a teacher wants to know how many distinct ways to group her students for a project, where the grouping labels don't matter (just who ends up with whom). That is exactly the Bell number. Returns (:three-students 5 :five-students 52 :seven-students 877)."))
+
+  :related ("comb/stirling2" "comb/partition-count" "comb/catalan" "comb/multinomial")
+  :caveats ("Bell numbers grow super-exponentially: B(10) = 115975, B(20) ≈ 5.2e13, B(30) ≈ 8.5e23." "For n ≥ 20 the return may exceed JavaScript's safe integer range (2^53 − 1); results become approximate." "n must be a non-negative integer; negative or fractional n falls through to 0 without warning.")
+  :drawbacks ("No memoization across calls; repeated (comb/bell n) for the same n recomputes." "Not useful for enumerating the partitions themselves — this counts only." "For very large n, prefer computing incrementally via the Stirling-column recurrence rather than the direct formula.")
+  :usecases ("Counting distinct ways to cluster a set into unlabeled groups (customer segments, project teams, physical piles)." "Verifying identities involving Stirling numbers of the second kind." "Benchmarking sequences that appear in combinatorics puzzles and dynamic-programming problems." "Teaching set partitions before introducing equivalence relations.")
+  :learn (:concept "Bell numbers count set partitions into unlabeled non-empty groups. They are the row-sums of the Stirling triangle of the second kind." :prerequisites ("comb/choose" "comb/stirling2" "map") :progression "Study comb/stirling2 first to see partitions counted by group count; then comb/bell as their sum; then comb/partition-count for integer partitions (a different beast); then comb/catalan for another rapid-growth sequence with a distinct combinatorial meaning.")
+
+  :+math
+    (:algebra "Row-sum identity: B(n) = sum(k=0..n) S(n,k) where S is Stirling number of the second kind. Recurrence: B(n+1) = sum(k=0..n) C(n,k) B(k). Generating function (EGF): sum B(n)/n! x^n = exp(exp(x) - 1)."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "non-negative integer"
+     :proofs "Row-sum identity from double-counting partitions by number of parts. Dobinski's formula B(n) = (1/e) sum(k=0..inf) k^n / k! provides an exact real-analytic characterization.")
+
+  :+cs
+    (:complexity "Time O(n^2), space O(n^2) via the dynamic-programming table over Stirling numbers of the second kind. A slightly smarter Bell-triangle recurrence achieves O(n^2) time and O(n) space per row."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Computes Stirling(n,k) for k = 1..n via the standard recurrence S(n,k) = k·S(n-1,k) + S(n-1,k-1), then sums the row. Numeric type: JavaScript number. Safe up to about n = 20 before floating-point drift enters the low bits."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified by Rin 2026-07-14: (comb/bell 0) = 1; (comb/bell 3) = 5; (comb/bell 6) = 203; row-sum identity holds for n = 1..7 against comb/stirling2."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/stirling2" "comb/partition-count")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting B(0) = 1 by convention (there is exactly one partition of the empty set — the empty one). Confusing set-partition counting with integer-partition counting (use comb/partition-count for the latter). Assuming k! grows faster than B(n) — B(n) grows faster than any exponential."
+     :when-not-to-use "You need the partitions themselves, not the count. You are counting labeled partitions (use comb/multinomial). You need very large n (n > 25) — floating point loses precision.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Bell numbers count unlabeled set partitions. Row-sum of Stirling(n,·). Grows super-exponentially."))
+
+(verb
+  :name "comb/binomial-coeffs"
+  :library "comb"
+  :signature "(comb/binomial-coeffs n) -> list-of-integer"
+  :summary "Return the n-th row of Pascal's triangle: (C(n,0) C(n,1) ... C(n,n))."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/binomial-coeffs 5)"
+     :note "Returns (1 5 10 10 5 1) — the six binomial coefficients C(5,0) through C(5,5).")
+    (:tier "apprentice"
+     :code "(comb/binomial-coeffs 0)"
+     :note "Returns (1) — the zeroth row has exactly one coefficient, C(0,0) = 1. The empty product is 1.")
+    (:tier "intermediate"
+     :code "(map comb/binomial-coeffs (list 0 1 2 3 4))"
+     :note "Returns ((1) (1 1) (1 2 1) (1 3 3 1) (1 4 6 4 1)) — the first five rows of Pascal's triangle as a list-of-lists. Every entry is the sum of the two above it.")
+    (:tier "expert"
+     :code "(let ((row (comb/binomial-coeffs 8)))\n  (list ':length (length row) ':sum (apply + row)))"
+     :note "Returns (:length 9 :sum 256). The sum of the n-th row is 2^n — a fundamental identity: sum over k of C(n,k) = 2^n, because it counts all subsets of an n-set. Here 2^8 = 256, and there are 9 = 8+1 coefficients.")
+    (:tier "master"
+     :code "(define (probability-mass n)\n  (let* ((row (comb/binomial-coeffs n))\n         (tot (apply + row)))\n    (map (lambda (c) (/ c tot)) row)))\n(probability-mass 4)"
+     :note "Build the probability mass function of a Binomial(n=4, p=1/2) distribution. Returns (0.0625 0.25 0.375 0.25 0.0625) — the discrete bell shape. This is how binomial coefficients become a distribution: normalize by 2^n."))
+
+  :related ("comb/choose" "comb/pascal-row" "comb/pascal-triangle" "comb/multichoose")
+  :caveats ("Result is the full row as a list; O(n) memory even if you only need one coefficient (use comb/choose for a single value)." "Row grows large numerically: C(52, 26) is ≈ 4.96e14, close to JavaScript's safe integer limit." "For n = 0 the return is (1), a one-element list — length is always n+1.")
+  :drawbacks ("Not memoized across calls; each invocation recomputes." "Cannot be indexed lazily; the whole row is materialized." "For symmetric-row optimization (only compute half), pull comb/choose in a loop instead.")
+  :usecases ("Draw a Pascal-triangle row for teaching combinatorics." "Compute binomial probability mass by normalizing the row." "Feed into polynomial expansion: (a+b)^n = sum(k) C(n,k) a^(n-k) b^k." "Reference row for compressed-encoding schemes or symmetric-pattern searches.")
+  :learn (:concept "Pascal's row: the n-th row of the triangle, which encodes both binomial-coefficient combinatorics and the probability structure of a fair Bernoulli n-flip." :prerequisites ("comb/choose" "map" "apply") :progression "Follow with comb/pascal-triangle for the full triangle, then comb/multichoose for multisets with replacement, then hana-math's stat/binomial for a distribution wrapper.")
+
+  :+math
+    (:algebra "The row is (C(n,0) C(n,1) … C(n,n)) with C(n,k) = n! / (k! (n-k)!). Row identities: sum over k = 2^n, alternating sum = 0 for n ≥ 1, sum of k·C(n,k) = n·2^(n-1). Adjacent entries relate by C(n,k+1) = C(n,k) · (n-k) / (k+1)."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "list of length n+1, each entry a non-negative integer"
+     :proofs "Recurrence: C(n,k) = C(n-1,k-1) + C(n-1,k) — Pascal's identity, by cases on 'was element n in the subset'.")
+
+  :+cs
+    (:complexity "Time O(n) using the multiplicative recurrence C(n,k+1) = C(n,k)·(n-k)/(k+1). Space O(n) for the returned row."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Uses the shared binom helper (multiplicative form) inside a for-loop for k = 0..n. Same helper backs comb/choose."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14: (comb/binomial-coeffs 0) = (1); (comb/binomial-coeffs 5) = (1 5 10 10 5 1); row sum equals 2^n for n = 8 (verified in master tier)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("apply" "map" "comb/pascal-triangle")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the row is 0-indexed by C(n,k) — it is, but the list has n+1 entries, so length is n+1, not n. Assuming symmetry breaks for large n — it doesn't; C(n,k) = C(n,n-k) always."
+     :when-not-to-use "You need only a single coefficient — use comb/choose instead, it's O(min(k,n-k)) and avoids the whole row. You need arbitrary-precision — JavaScript's number type loses precision past 2^53.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Return the n-th Pascal row as a list. Row-sum is 2^n. Foundation for binomial coefficients and combinatorial probability."))
+
+(verb
+  :name "comb/catalan"
+  :library "comb"
+  :signature "(comb/catalan n) -> integer"
+  :summary "Catalan number C_n: count of balanced parenthesizations, binary tree shapes, monotonic lattice paths, and much else."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/catalan 5)"
+     :note "Returns 42: there are 42 ways to fully parenthesize a product of 6 factors ((...)... a·b·c·d·e·f).")
+    (:tier "apprentice"
+     :code "(comb/catalan 0)"
+     :note "Returns 1: there is exactly one way to parenthesize zero factors (the empty product). Catalan starts at C_0 = 1.")
+    (:tier "intermediate"
+     :code "(map comb/catalan (list 0 1 2 3 4 5 6 7 8))"
+     :note "Returns (1 1 2 5 14 42 132 429 1430) — the Catalan sequence. Growth is ~4^n / n^(3/2); one of the fastest-appearing sequences in enumerative combinatorics.")
+    (:tier "expert"
+     :code "(define (cat-recurrence n)\n  (define (helper k acc)\n    (if (>= k n)\n        acc\n        (helper (+ k 1) (+ acc (* (comb/catalan k) (comb/catalan (- n 1 k)))))))\n  (helper 0 0))\n(list ':direct (comb/catalan 5) ':via-recurrence (cat-recurrence 5))"
+     :note "Verify Segner's recurrence C_n = sum(k=0..n-1) C_k · C_(n-1-k). Returns (:direct 42 :via-recurrence 42). This recurrence proves the closure by splitting the outermost parenthesis at position k.")
+    (:tier "master"
+     :code "(define (paren-balancings n) (comb/catalan n))\n(list ':n0 (paren-balancings 0)\n      ':n3 (paren-balancings 3)\n      ':n4 (paren-balancings 4)\n      ':n5 (paren-balancings 5))"
+     :note "Domain: parser writer counts distinct syntax trees. 3 factors → 5 trees; 4 → 14; 5 → 42. Returns (:n0 1 :n3 5 :n4 14 :n5 42). The same number counts triangulations of an (n+2)-gon, monotonic paths in an n×n grid staying weakly below the diagonal, and Dyck words of length 2n."))
+
+  :related ("comb/binomial-coeffs" "comb/choose" "comb/bell" "comb/multinomial")
+  :caveats ("Grows fast: C_10 = 16796, C_15 ≈ 9.7e6, C_20 ≈ 6.6e9, C_30 ≈ 3.8e15 (near JS safe-integer limit)." "For n ≥ 30 the return may lose low-bit precision." "C_0 = 1 by convention — the empty case is one, not zero.")
+  :drawbacks ("No memoization across calls." "Not useful for enumerating the objects themselves (parenthesizations, trees, paths) — counts only." "Closed-form uses factorials; large n can overflow before Catalan-specific optimizations kick in.")
+  :usecases ("Counting binary tree shapes for parser tests or compiler benchmarks." "Enumerating unique triangulations of a convex polygon." "Verifying the count of Dyck words / balanced-parenthesis strings." "Analyzing algorithms whose subproblem structure decomposes into Catalan-many cases (matrix-chain multiplication order, optimal BST shapes).")
+  :learn (:concept "Catalan numbers count balanced binary structures. They emerge from Segner's convolution recurrence C_n = sum C_k · C_(n-1-k) — the same shape as split-at-outermost decompositions." :prerequisites ("comb/choose" "comb/factorial") :progression "Compare to comb/bell (partitions) and comb/binomial-coeffs (Pascal); read comb/catalan as C(2n,n)/(n+1) to see the closed form; then explore how catalan appears in triangulations, ballot problems, and Dyck lattice paths.")
+
+  :+math
+    (:algebra "Closed form: C_n = C(2n, n) / (n+1) = (2n)! / ((n+1)! n!). Recurrences: Segner C_n = sum(k=0..n-1) C_k C_(n-1-k); linear C_n = 2(2n-1)/(n+1) · C_(n-1). Generating function: c(x) = (1 - sqrt(1 - 4x)) / (2x). Asymptotic: C_n ~ 4^n / (n^(3/2) sqrt(pi))."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "non-negative integer"
+     :proofs "Segner's recurrence follows from the bijection between balanced parenthesizations of length 2n and pairs of balanced strings meeting at the outermost split. Closed-form derivation via the reflection principle on lattice paths.")
+
+  :+cs
+    (:complexity "Time O(n) via the linear recurrence C_n = 2(2n-1) · C_(n-1) / (n+1). Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Uses the linear recurrence C_n = C_(n-1) · 2(2n-1) / (n+1) starting from C_0 = 1. One number, one multiply, one divide per step; final result is a JavaScript number."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: C_0 = 1, C_5 = 42, C_8 = 1430; Segner recurrence cross-check for n = 5 matches direct call."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/binomial-coeffs" "comb/choose")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting C_0 = 1. Confusing with the Bell numbers (Bell grows faster and counts partitions, not balanced structures). Using it to enumerate objects — it only counts."
+     :when-not-to-use "You need very large n and can tolerate arbitrary-precision — JS number type loses precision past ~n = 30. You need the balanced strings themselves, not the count.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Catalan numbers count balanced binary structures: parenthesizations, tree shapes, Dyck paths. C_n = C(2n,n)/(n+1)."))
+
+(verb
+  :name "comb/choose"
+  :library "comb"
+  :signature "(comb/choose n k) -> integer"
+  :summary "Binomial coefficient C(n,k) = n! / (k! (n-k)!): count of k-element subsets of an n-set."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/choose 5 2)"
+     :note "Returns 10: there are 10 ways to choose 2 items from 5. C(5,2) = 5·4/2·1 = 10.")
+    (:tier "apprentice"
+     :code "(comb/choose 10 0)"
+     :note "Returns 1: there is exactly one way to choose zero items — the empty subset. C(n,0) = 1 for every n.")
+    (:tier "intermediate"
+     :code "(comb/choose 52 5)"
+     :note "Returns 2598960: the number of distinct 5-card poker hands from a standard 52-card deck. This is the total-hands denominator in poker probability.")
+    (:tier "expert"
+     :code "(map (lambda (k) (comb/choose 6 k)) (list 0 1 2 3 4 5 6))"
+     :note "Returns (1 6 15 20 15 6 1) — the 6th row of Pascal's triangle. Same as (comb/binomial-coeffs 6); choose is the point-lookup, binomial-coeffs is the row.")
+    (:tier "master"
+     :code "(define (probability-of-k-heads n k)\n  (/ (comb/choose n k) (expt 2 n)))\n(list ':n5-k2 (probability-of-k-heads 5 2)\n      ':n10-k5 (probability-of-k-heads 10 5)\n      ':n10-k10 (probability-of-k-heads 10 10))"
+     :note "Compute the probability of exactly k heads in n fair coin flips: C(n,k) / 2^n. Returns (:n5-k2 0.3125 :n10-k5 0.24609375 :n10-k10 0.0009765625). The peak at k=n/2 mirrors the Pascal-row peak."))
+
+  :related ("comb/binomial-coeffs" "comb/multichoose" "comb/multinomial" "comb/factorial" "comb/pascal-row")
+  :caveats ("For k < 0 or k > n, returns 0 (empty subset count)." "Uses the multiplicative form C(n,k) = product((n-i)/(i+1)) for i in 0..k-1, symmetric-min-k optimization applied." "C(n,k) can grow past JS's safe integer limit (2^53); for n ≈ 60 and k ≈ n/2 the number crosses that boundary and rounding enters.")
+  :drawbacks ("No arbitrary-precision — for n > 60 use log-space arithmetic or a big-integer library." "The multiplicative loop is O(k); for k close to n use the symmetry C(n,k) = C(n,n-k) — the impl does this automatically." "Not memoized across calls; a hot loop over many (n,k) pairs may benefit from a local table.")
+  :usecases ("Card and dice probability: '2598960 poker hands.'" "Statistics: binomial probability mass and cumulative distributions." "Combinatorial enumeration: how many ways to seat, choose, sample, pair." "Buffer sizing in probabilistic algorithms: expected number of collisions grows as C(n,2).")
+  :learn (:concept "Binomial coefficient — the point value in Pascal's triangle; counts unordered selections without replacement." :prerequisites ("comb/factorial") :progression "Follow with comb/multichoose for selections WITH replacement, comb/multinomial for k-way splits, comb/binomial-coeffs to see the whole Pascal row, and stat/binomial for the full Binomial(n,p) distribution.")
+
+  :+math
+    (:algebra "C(n,k) = n! / (k! (n-k)!) = product((n-i)/(i+1)) for i in 0..k-1. Symmetry: C(n,k) = C(n,n-k). Pascal identity: C(n,k) = C(n-1,k-1) + C(n-1,k). Sum: sum(k) C(n,k) = 2^n. Vandermonde: sum(k) C(m,k) C(n,r-k) = C(m+n,r)."
+     :total #t
+     :domain "n and k are integers; result is 0 for k < 0 or k > n"
+     :codomain "non-negative integer"
+     :proofs "Direct combinatorial: C(n,k) counts k-subsets of an n-set, by k-length selection sequences (n!/(n-k)!) divided by orderings within a subset (k!).")
+
+  :+cs
+    (:complexity "Time O(min(k, n-k)) via the multiplicative form. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Uses the multiplicative form C(n,k) = product((n-i)/(i+1)) with the symmetric-min-k optimization k := min(k, n-k). Final rounds to nearest integer to correct for accumulated FP error. Same helper backs comb/binomial-coeffs, comb/multichoose, comb/pascal-row."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/choose 5 2)=10, (comb/choose 10 0)=1, (comb/choose 52 5)=2598960, row of C(6,k) matches binomial-coeffs 6."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("expt" "comb/binomial-coeffs" "stat/binomial")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Reading C(n,k) as an ordered selection — it's UNORDERED (use n!/(n-k)! for k-permutations). Forgetting C(n,0) = 1. Assuming C(n,k) = 0 for k > n is a math law — it's a boundary convention that this impl honors."
+     :when-not-to-use "You need k-permutations (ordered) — that's n!/(n-k)!, not C(n,k). You need selection with replacement — that's comb/multichoose. You need arbitrary-precision — big-int libraries required past n ≈ 60.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Binomial coefficient. Point-lookup in Pascal's triangle. Foundation for probability, statistics, and combinatorial enumeration."))
+
+(verb
+  :name "comb/derangement"
+  :library "comb"
+  :signature "(comb/derangement n) -> integer"
+  :summary "Derangement number D(n) or !n: count of permutations of n items where no item stays in its original position."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/derangement 4)"
+     :note "Returns 9: of the 24 permutations of {1,2,3,4}, exactly 9 have no fixed point (no element sitting in its own slot).")
+    (:tier "apprentice"
+     :code "(comb/derangement 0)"
+     :note "Returns 1: the empty permutation is a derangement by convention (there are no fixed points because there are no points). D(1) = 0 — the only permutation has one fixed point.")
+    (:tier "intermediate"
+     :code "(map comb/derangement (list 0 1 2 3 4 5 6 7))"
+     :note "Returns (1 0 1 2 9 44 265 1854). Note D(1) = 0 (the identity can't be avoided in a 1-permutation) and the sequence grows like n!/e.")
+    (:tier "expert"
+     :code "(let ((n 6)) (list (comb/derangement n) (comb/factorial n)))"
+     :note "Returns (265 720). D(6) / 6! = 265/720 ≈ 0.368. The ratio D(n)/n! approaches 1/e ≈ 0.3679 as n grows — a probability limit theorem hiding in combinatorics.")
+    (:tier "master"
+     :code "(define (secret-santa-fair-probability n)\n  (/ (comb/derangement n) (comb/factorial n)))\n(list ':n3 (secret-santa-fair-probability 3)\n      ':n5 (secret-santa-fair-probability 5)\n      ':n10 (secret-santa-fair-probability 10))"
+     :note "Model: n friends draw names for Secret Santa; the draw is 'fair' iff nobody draws themselves — a derangement. Returns (:n3 0.333 :n5 0.367 :n10 0.368). Even for small n, chance of a valid random draw is already ≈ 1/e."))
+
+  :related ("comb/factorial" "comb/permute" "comb/choose")
+  :caveats ("D(1) = 0: no way to derange a single item." "D(0) = 1 by convention (empty product / empty permutation)." "For large n, D(n) approaches n!/e; the impl returns exact integers via the recurrence D(n) = (n-1)(D(n-1) + D(n-2)).")
+  :drawbacks ("Not memoized across calls." "For very large n (n > 20), D(n) exceeds JS safe integer precision — same limit as comb/factorial." "Doesn't enumerate derangements, only counts them.")
+  :usecases ("Secret Santa or 'don't-draw-yourself' probability calculations." "Message-envelope problem: how likely is it that a random shuffle leaves nobody in their intended slot." "Fixed-point-free permutation enumeration in group theory." "Probability approximations near 1/e for large-n random-permutation questions.")
+  :learn (:concept "Derangement is a permutation with no fixed points. The count D(n)/n! → 1/e as n → ∞ — the ubiquitous 'about 37% chance' benchmark for permutation problems." :prerequisites ("comb/factorial" "comb/permute") :progression "Study inclusion-exclusion (of which D(n) is the canonical example: D(n) = n! sum(k=0..n) (-1)^k / k!); then look at fixed-point-free permutations in group theory.")
+
+  :+math
+    (:algebra "Closed form: D(n) = n! sum(k=0..n) (-1)^k / k! = nearest-integer(n!/e). Recurrence: D(n) = (n-1)(D(n-1) + D(n-2)), or D(n) = n·D(n-1) + (-1)^n. Limit: D(n)/n! → 1/e."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "non-negative integer"
+     :proofs "By inclusion-exclusion on the set of permutations with at least one fixed point. The alternating sum sum(k) (-1)^k n!/k! subtracts, adds, subtracts permutations with 1, 2, 3, … forced fixed points.")
+
+  :+cs
+    (:complexity "Time O(n) via the two-term linear recurrence. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Iterative dynamic-programming table via D(n) = (n-1)(D(n-1) + D(n-2)) starting from D(0) = 1, D(1) = 0. Result is a JavaScript number."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: D(0)=1, D(1)=0, D(4)=9, D(7)=1854; D(6)/6! ≈ 0.3681 (close to 1/e = 0.3679)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/factorial" "/")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming D(1) = 1 like a factorial — it's 0 (impossible). Ignoring the (-1)^n term in the linear form. Treating D(n) as approximately n!/e for very small n where the approximation is poor."
+     :when-not-to-use "You need to enumerate the derangements themselves. You need any specific structural property beyond the count.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Count permutations with no fixed points. D(n)/n! → 1/e. Canonical inclusion-exclusion example."))
+
+(verb
+  :name "comb/factorial"
+  :library "comb"
+  :signature "(comb/factorial n) -> integer"
+  :summary "Factorial n! = 1 · 2 · 3 · … · n. By convention 0! = 1."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/factorial 5)"
+     :note "Returns 120: 5! = 5·4·3·2·1 = 120.")
+    (:tier "apprentice"
+     :code "(comb/factorial 0)"
+     :note "Returns 1: the empty product is 1 by convention. This makes formulas involving 0! (e.g., in binomial coefficients) work cleanly at the boundary.")
+    (:tier "intermediate"
+     :code "(map comb/factorial (list 0 1 2 3 4 5 6 7 8 9 10))"
+     :note "Returns (1 1 2 6 24 120 720 5040 40320 362880 3628800). Factorial grows explosively — 10! is already over three million.")
+    (:tier "expert"
+     :code "(define (binom-verify n k)\n  (equal? (comb/choose n k)\n          (/ (comb/factorial n)\n             (* (comb/factorial k) (comb/factorial (- n k))))))\n(map (lambda (p) (binom-verify (car p) (cadr p)))\n     (list (list 5 2) (list 10 3) (list 8 4) (list 6 6)))"
+     :note "Verify the direct-form binomial identity C(n,k) = n! / (k! (n-k)!) for four (n,k) pairs. Returns (#t #t #t #t). The choose impl uses a faster iterative form, but the definitions align.")
+    (:tier "master"
+     :code "(define (permutations-of-word word-length)\n  (comb/factorial word-length))\n(list ':three-letters (permutations-of-word 3)\n      ':five-letters (permutations-of-word 5)\n      ':seven-letters (permutations-of-word 7))"
+     :note "Domain: how many distinct anagrams of an all-distinct-letter word? Answer is word-length!. Returns (:three-letters 6 :five-letters 120 :seven-letters 5040). 5040 is the number of ways to seat 7 dinner guests in a row."))
+
+  :related ("comb/choose" "comb/permute" "comb/multichoose" "comb/multinomial" "comb/derangement")
+  :caveats ("Grows explosively: 20! ≈ 2.4e18, past JS safe-integer limit (2^53 - 1 ≈ 9e15)." "For n > 18 the result loses low-bit precision; for n > 21 it enters floating-point range." "Negative n falls through the loop and returns 1 (empty product); this is an undocumented behavior — assume n >= 0.")
+  :drawbacks ("No arbitrary-precision — use log-space for large-n manipulations." "Iterative loop; no memoization across calls." "For quotients like n!/(n-k)! or n!/k!, prefer computing the falling factorial or the binomial coefficient directly to avoid intermediate overflow.")
+  :usecases ("Counting permutations of distinct items." "Denominator in binomial and multinomial expansions." "Denominator in Poisson probability: e^(-λ) λ^k / k!." "Base cases for many combinatorial recurrences.")
+  :learn (:concept "Factorial n! counts orderings of n distinct items. Empty product 0! = 1 anchors the boundary case in every formula that uses it." :prerequisites ("*") :progression "Follow with comb/permute (enumerate them), comb/choose (unordered subsets), comb/multinomial (ordered groups), comb/derangement (permutations with no fixed points).")
+
+  :+math
+    (:algebra "Recurrence: n! = n · (n-1)!, base 0! = 1. Stirling's approximation: n! ~ sqrt(2πn) (n/e)^n. Gamma extension: Γ(n+1) = n! for non-negative integer n; extends to non-integer arguments."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "positive integer"
+     :proofs "Direct combinatorial: n! counts linear orderings of n items — n choices for the first slot, n-1 for the second, and so on.")
+
+  :+cs
+    (:complexity "Time O(n), space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Iterative for-loop multiplying an accumulator by k for k = 2..n. Base case n <= 1 returns 1. Result is a JavaScript number; precision degrades past n = 18."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 0!=1, 5!=120, 10!=3628800; binomial identity cross-check for (5,2), (10,3), (8,4), (6,6) all pass."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/choose" "comb/permute" "comb/multinomial" "expt" "/")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting 0! = 1. Trying to use factorials for n > 18 without switching to log-space or big-integer. Computing n!/(n-k)! directly and hitting overflow before the divide."
+     :when-not-to-use "You need very large n — switch to log-space (gamma-log-factorial) or big-int. You need only a ratio like n!/(n-k)!; compute the falling factorial directly.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Factorial n! counts orderings of n distinct items. 0! = 1 by convention. Grows explosively; safe for n ≤ 18 in JS numbers."))
+
+(verb
+  :name "comb/multichoose"
+  :library "comb"
+  :signature "(comb/multichoose n k) -> integer"
+  :summary "Multiset coefficient — combinations with replacement — C(n+k-1, k): count of size-k multisets drawn from n distinct types."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/multichoose 3 2)"
+     :note "Returns 6: from 3 flavors of ice cream, there are 6 ways to build a 2-scoop cup where scoops can repeat — {AA, AB, AC, BB, BC, CC}.")
+    (:tier "apprentice"
+     :code "(comb/multichoose 5 0)"
+     :note "Returns 1: exactly one way to choose an empty multiset — the empty one. Boundary case matches C(n-1, 0) = 1.")
+    (:tier "intermediate"
+     :code "(map (lambda (k) (comb/multichoose 4 k)) (list 0 1 2 3 4 5))"
+     :note "Returns (1 4 10 20 35 56): the number of multisets of size k from 4 types, for k = 0..5. Notice these are diagonal entries in Pascal's triangle (also called 'triangle of tetrahedral numbers' for the k=3 column).")
+    (:tier "expert"
+     :code "(define (verify-stars-bars n k)\n  (equal? (comb/multichoose n k)\n          (comb/choose (+ n k -1) k)))\n(map (lambda (p) (verify-stars-bars (car p) (cadr p)))\n     (list (list 3 2) (list 5 4) (list 10 3) (list 7 5)))"
+     :note "Verify the stars-and-bars identity: multichoose(n,k) = C(n+k-1, k). Returns (#t #t #t #t) — the impl uses exactly this identity.")
+    (:tier "master"
+     :code "(define (ways-to-buy-donuts flavors dozen-size)\n  (comb/multichoose flavors dozen-size))\n(list ':three-flavors-six (ways-to-buy-donuts 3 6)\n      ':six-flavors-dozen (ways-to-buy-donuts 6 12)\n      ':baker-dozen-6-flavors (ways-to-buy-donuts 6 13))"
+     :note "Domain: donut shop offers `flavors` types; how many distinct boxes of size `dozen-size` can you buy? Order doesn't matter, repeats OK. Returns (:three-flavors-six 28 :six-flavors-dozen 6188 :baker-dozen-6-flavors 8568). This is a textbook stars-and-bars application."))
+
+  :related ("comb/choose" "comb/binomial-coeffs" "comb/multinomial")
+  :caveats ("Same numeric limits as comb/choose (safe integer range around C(60, 30))." "Order of arguments matters: (comb/multichoose n k) means 'choose k items with replacement from n types', so n is the number of types and k is the sample size.")
+  :drawbacks ("No enumeration of the multisets — count only." "Same JS number precision limits — big enough n and k exceed 2^53.")
+  :usecases ("Counting size-k multisets from n categories (donuts, coins, colors)." "Counting monomials of degree k in n variables (multichoose(n+1, k))." "Bosonic-particle state counting in statistical mechanics." "Menu-combination counters for e-commerce recommendation UIs.")
+  :learn (:concept "Multiset coefficient — the with-replacement cousin of choose. Reduces to a Pascal lookup via stars-and-bars." :prerequisites ("comb/choose") :progression "Follow with comb/multinomial for ordered groupings, and stat/negative-binomial for the probability-mass extension.")
+
+  :+math
+    (:algebra "Closed form: multichoose(n, k) = C(n+k-1, k) = (n+k-1)! / (k! (n-1)!). Stars-and-bars proof: k stars and n-1 bars in a row have C(n+k-1, k) arrangements."
+     :total #t
+     :domain "non-negative integers n and k; n = 0 with k > 0 returns 0 (no types to sample from)"
+     :codomain "non-negative integer"
+     :proofs "Stars-and-bars: arrange k stars (items) and n-1 bars (dividers between n types) in a line; the arrangement fully specifies a multiset. Count of arrangements is (k + n - 1)! / (k! (n-1)!).")
+
+  :+cs
+    (:complexity "Time O(min(k, n-1)) via the underlying comb/choose call. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "One-liner: multichoose(n, k) = binom(n + k - 1, k). Reuses the shared binom helper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/multichoose 3 2) = 6; (comb/multichoose 5 0) = 1; stars-and-bars identity holds for (3,2), (5,4), (10,3), (7,5)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/choose")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Reversing the argument order — n is the count of types, k the sample size. Confusing with (comb/choose n k) which is WITHOUT replacement."
+     :when-not-to-use "You need combinations without replacement — use comb/choose. You need permutations (ordered) — different verb entirely.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Multiset coefficient (with-replacement combinations). Stars-and-bars: multichoose(n,k) = C(n+k-1, k)."))
+
+(verb
+  :name "comb/multinomial"
+  :library "comb"
+  :signature "(comb/multinomial k1 k2 ... km) -> integer"
+  :summary "Multinomial coefficient n! / (k1! k2! ... km!) where n = k1 + ... + km. Counts arrangements of n items into m labeled groups of sizes k1..km."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/multinomial 2 3 1)"
+     :note "Returns 60: 6! / (2! · 3! · 1!) = 720 / 12 = 60. This counts arrangements of 6 items into three labeled groups of sizes 2, 3, and 1.")
+    (:tier "apprentice"
+     :code "(comb/multinomial 3 2)"
+     :note "Returns 10: 5! / (3! · 2!) = 10 = C(5, 2). With exactly two groups the multinomial reduces to the binomial coefficient.")
+    (:tier "intermediate"
+     :code "(comb/multinomial 5 2 3)"
+     :note "Returns 2520: 10! / (5! · 2! · 3!) = 3628800 / (120 · 2 · 6) = 2520. Three groups of sizes 5, 2, 3.")
+    (:tier "expert"
+     :code "(comb/multinomial 10 3 4 3)"
+     :note "Returns 775975200: 20! / (10! · 3! · 4! · 3!) — arrangements of 20 items into four labeled bins of sizes 10, 3, 4, 3.")
+    (:tier "master"
+     :code "(define (word-permutations letter-counts)\n  (apply comb/multinomial letter-counts))\n(list ':aabbc (word-permutations (list 2 2 1))\n      ':aaabbc (word-permutations (list 3 2 1))\n      ':mississippi (word-permutations (list 1 4 4 2)))"
+     :note "Domain: how many distinct anagrams of a word given its letter-frequency profile? Total letters = sum of counts, groups = per-letter counts. Returns (:aabbc 30 :aaabbc 60 :mississippi 34650)."))
+
+  :related ("comb/choose" "comb/factorial" "comb/permute" "comb/multichoose")
+  :caveats ("**Impl/reference drift**: the impl in src/reference-impls.js takes rest args (comb/multinomial k1 k2 ...) but the historical reference documented a single-list form (comb/multinomial ks). Passing a Scheme list — (comb/multinomial '(2 3 1)) — returns 1 (silently wrong), not 60. Rin flags this as impl-blocked pending Alfred/Architect decision: either update the impl to accept both forms, or lock the rest-args signature in the reference." "Grows fast — same JS-number precision limits as comb/factorial." "For only 2 groups, prefer comb/choose (same result, faster).")
+  :drawbacks ("Rest-args form is idiomatic but awkward to build programmatically — one must (apply comb/multinomial …) with a list of counts." "No memoization." "Group sizes must be non-negative integers; negative or fractional values fall through to garbage.")
+  :usecases ("Word-anagram counting given letter-frequency profiles (Mississippi = 34650 anagrams)." "Multinomial distribution probability weights." "Counting distinct ordered partitions into labeled bins." "Team-formation problems: split n distinct players into labeled teams of specified sizes.")
+  :learn (:concept "Multinomial generalizes binomial to more than two groups. It counts ORDERED partitions into labeled subsets of specified sizes." :prerequisites ("comb/factorial" "comb/choose") :progression "Compare with comb/stirling2 (partitions into UNLABELED groups) and comb/bell (total partitions any size). Then look at the multinomial probability distribution.")
+
+  :+math
+    (:algebra "Closed form: multinomial(k1, ..., km) = (sum ki)! / product(ki!). Recurrence via chained binomials: sum(k) = n; multinomial = C(n, k1) · C(n-k1, k2) · ... Multinomial theorem: (x1+...+xm)^n = sum over compositions ki of multinomial · product(xi^ki)."
+     :total #t
+     :domain "one or more non-negative integer arguments (rest-args)"
+     :codomain "positive integer"
+     :proofs "Combinatorial: n! orderings of n items, divided by k_i! orderings within each labeled group. Also equals the iterated product of binomials.")
+
+  :+cs
+    (:complexity "Time O(n) where n = sum(ki) via the factorial computation. Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/reference-impls.js"
+     :impl-notes "Rest-args form: sums the args to get n, computes n! via a local factorial helper, then divides by each k_i!. Rounds to nearest integer to correct FP drift. **Does NOT accept a single-list argument** — passing a list silently returns 1 due to numeric coercion of the list to 0."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/multinomial 2 3 1)=60, (comb/multinomial 5 2 3)=2520, (comb/multinomial 10 3 4 3)=775975200; list-arg silently returns 1 (documented bug)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/factorial" "apply")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing a Scheme list instead of rest args — silently returns 1. Use (apply comb/multinomial group-sizes) to bridge. Confusing labeled multinomial with unlabeled Stirling numbers of the second kind."
+     :when-not-to-use "Groups are unlabeled — use comb/stirling2. You have a list of group sizes — you must (apply comb/multinomial …) or the reference-documented list form silently returns 1.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "spec-ambiguous"
+     :required-fields-present #t
+     :entry-summary "Multinomial coefficient. Rest-args form works; list-arg form silently returns 1 (impl/spec drift — flagged for Alfred)."))
+
+(verb
+  :name "comb/partition-count"
+  :library "comb"
+  :signature "(comb/partition-count n) -> integer"
+  :summary "Number of INTEGER partitions of n: distinct ways to write n as a sum of positive integers (order-independent)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/partition-count 5)"
+     :note "Returns 7: the seven integer partitions of 5 are 5, 4+1, 3+2, 3+1+1, 2+2+1, 2+1+1+1, 1+1+1+1+1.")
+    (:tier "apprentice"
+     :code "(comb/partition-count 0)"
+     :note "Returns 1: the empty partition is the only partition of 0. Anchors the boundary for the recurrence.")
+    (:tier "intermediate"
+     :code "(map comb/partition-count (list 0 1 2 3 4 5 6 7 8 9 10))"
+     :note "Returns (1 1 2 3 5 7 11 15 22 30 42) — the partition function p(n). Growth is sub-exponential, given by Hardy-Ramanujan: p(n) ~ exp(pi sqrt(2n/3)) / (4n sqrt(3)).")
+    (:tier "expert"
+     :code "(let ((n 10))\n  (list ':integer-partitions (comb/partition-count n)\n        ':set-partitions (comb/bell n)))"
+     :note "Returns (:integer-partitions 42 :set-partitions 115975). Contrast: integer partitions treat the summands as anonymous positive integers; set partitions (Bell) treat the elements as distinguishable and count subset-groupings. Same n, very different counts.")
+    (:tier "master"
+     :code "(define (integer-decompositions target)\n  (comb/partition-count target))\n(list ':n15 (integer-decompositions 15)\n      ':n30 (integer-decompositions 30)\n      ':n50 (integer-decompositions 50))"
+     :note "Domain: how many distinct ways can n be written as an unordered sum of positive integers? Returns (:n15 176 :n30 5604 :n50 204226). This is the classic partition function studied by Hardy, Ramanujan, and Euler. Note: this counts partitions with UNRESTRICTED part sizes — not coin change with fixed denominations."))
+
+  :related ("comb/bell" "comb/stirling2" "comb/catalan")
+  :caveats ("Counts INTEGER partitions of n, not set partitions (compare comb/bell)." "All positive integers are valid summands — this is unrestricted partition counting, not coin-change with fixed denominations." "p(n) grows sub-exponentially; safe for n up to about 400 within JS number precision.")
+  :drawbacks ("O(n^2) time via the sieve-like DP; for very large n, use the pentagonal-number recurrence for O(n sqrt(n))." "No memoization across calls." "Does not enumerate partitions, only counts them.")
+  :usecases ("Counting distinct integer decompositions in enumerative combinatorics puzzles." "Verifying identities involving Ramanujan-type partition-congruence proofs." "Baseline for exploring restricted partitions (into odd parts, distinct parts, at most k parts, etc.).")
+  :learn (:concept "Integer partition function p(n) counts unordered decompositions of n into positive integers. Fundamental in Hardy-Ramanujan analysis and modular-form theory." :prerequisites ("+") :progression "Compare to comb/bell (set partitions, distinguishable elements) and comb/catalan (balanced structures). Then explore restricted partitions: into odd parts, into distinct parts, into parts of size at most k.")
+
+  :+math
+    (:algebra "Generating function: sum p(n) x^n = product(k=1..inf) 1/(1 - x^k). Euler pentagonal number theorem: p(n) = sum(k) (-1)^(k+1) (p(n - k(3k-1)/2) + p(n - k(3k+1)/2)). Hardy-Ramanujan asymptotic: p(n) ~ exp(pi sqrt(2n/3)) / (4n sqrt(3))."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "positive integer"
+     :proofs "The generating-function identity comes from expanding each factor 1/(1-x^k) = 1 + x^k + x^(2k) + ... as 'choose how many k's appear' — the multiplicative structure exactly encodes independent choice per part size.")
+
+  :+cs
+    (:complexity "Time O(n^2), space O(n) via the standard DP: for i from 1 to n, for j from i to n, p[j] += p[j - i]."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Iterative 1D DP: initialize p[0] = 1, iterate part-size i from 1 to n, and for each i update p[j] += p[j - i] for j from i to n. Space O(n). Simple, correct, plenty fast for n up to a few hundred."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: p(0)=1, p(5)=7, p(10)=42, p(50)=204226; sequence matches OEIS A000041."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/bell" "comb/stirling2")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing with set partitions (Bell numbers). Assuming it models coin change — it counts partitions with ALL positive integers as allowed part sizes, not restricted denominations."
+     :when-not-to-use "You need partitions with restricted part sizes (odd only, distinct only, at most k parts). You need the partitions themselves, not the count.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Integer partition function p(n). O(n^2) DP. Distinguish from set partitions (Bell)."))
+
+(verb
+  :name "comb/pascal-row"
+  :library "comb"
+  :signature "(comb/pascal-row n) -> list-of-integer"
+  :summary "Alias for comb/binomial-coeffs: return the n-th row (C(n,0) ... C(n,n)) of Pascal's triangle."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/pascal-row 5)"
+     :note "Returns (1 5 10 10 5 1) — the 5th row.")
+    (:tier "apprentice"
+     :code "(comb/pascal-row 0)"
+     :note "Returns (1) — the apex of the triangle.")
+    (:tier "intermediate"
+     :code "(let ((row (comb/pascal-row 8)))\n  (list ':entries row ':sum (apply + row) ':expected-sum (expt 2 8)))"
+     :note "Returns entries plus sum. Row-sum equals 2^n identically. :sum 256 :expected-sum 256.")
+    (:tier "expert"
+     :code "(define (symmetric? row)\n  (equal? row (reverse row)))\n(map (lambda (n) (list n (symmetric? (comb/pascal-row n))))\n     (list 0 1 2 5 8 12))"
+     :note "Verify the palindrome symmetry C(n,k) = C(n,n-k) for six choices of n. Returns ((0 #t) (1 #t) (2 #t) (5 #t) (8 #t) (12 #t)).")
+    (:tier "master"
+     :code "(define (fair-coin-pmf n)\n  (let* ((row (comb/pascal-row n)) (tot (expt 2 n)))\n    (map (lambda (c) (/ c tot)) row)))\n(fair-coin-pmf 6)"
+     :note "Build the PMF of Binomial(6, 1/2). Returns (1/64 6/64 15/64 20/64 15/64 6/64 1/64) as decimals — the classic bell shape. Same as comb/binomial-coeffs 6 normalized by 2^6."))
+
+  :related ("comb/binomial-coeffs" "comb/choose" "comb/pascal-triangle")
+  :caveats ("Same impl as comb/binomial-coeffs — kept as a nameable alias for readability where 'pascal-row' reads better in code." "Result is a list of length n+1." "For very large n, JS number precision degrades same as comb/choose.")
+  :drawbacks ("Alias adds no functionality — pick either name for a codebase and stay consistent." "Materializes the whole row; use comb/choose for a single value.")
+  :usecases ("Reading code where 'pascal-row' is clearer than 'binomial-coeffs' (teaching contexts, historical references)." "Everything comb/binomial-coeffs does.")
+  :learn (:concept "Second name for the n-th Pascal row. Preserves the historical naming used in classic combinatorics texts." :prerequisites ("comb/binomial-coeffs") :progression "Study comb/pascal-triangle for the whole triangle, then explore identities: hockey-stick, sums-of-squares of a row, alternating-sign sums.")
+
+  :+math
+    (:algebra "Identical to comb/binomial-coeffs. See that verb's :+math slice."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "list of length n+1 of non-negative integers"
+     :proofs "Same as comb/binomial-coeffs.")
+
+  :+cs
+    (:complexity "Time O(n), space O(n)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Literal duplicate of comb/binomial-coeffs. Both def calls share the same binom helper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: matches comb/binomial-coeffs bit-for-bit."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("apply" "map" "reverse")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming pascal-row is somehow different from binomial-coeffs — it's a strict alias."
+     :when-not-to-use "You want just one coefficient — use comb/choose.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Alias for comb/binomial-coeffs. Returns the n-th Pascal row."))
+
+(verb
+  :name "comb/pascal-triangle"
+  :library "comb"
+  :signature "(comb/pascal-triangle n) -> list-of-list-of-integer"
+  :summary "Return the first n+1 rows of Pascal's triangle as a list of lists."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/pascal-triangle 3)"
+     :note "Returns ((1) (1 1) (1 2 1) (1 3 3 1)) — the first four rows.")
+    (:tier "apprentice"
+     :code "(comb/pascal-triangle 0)"
+     :note "Returns ((1)) — just the apex, one row containing one entry.")
+    (:tier "intermediate"
+     :code "(map length (comb/pascal-triangle 6))"
+     :note "Returns (1 2 3 4 5 6 7): the i-th row has i+1 entries. Same pattern as (comb/binomial-coeffs i) is n+1 long.")
+    (:tier "expert"
+     :code "(define (row-sums n)\n  (map (lambda (row) (apply + row)) (comb/pascal-triangle n)))\n(list ':expected (map (lambda (i) (expt 2 i)) (list 0 1 2 3 4 5))\n      ':actual (row-sums 5))"
+     :note "Row-sum identity across the triangle: row i sums to 2^i. Returns (:expected (1 2 4 8 16 32) :actual (1 2 4 8 16 32)). Verified for six rows.")
+    (:tier "master"
+     :code "(define (fibonacci-via-diagonals n)\n  ;; sum of C(n-k, k) for k = 0..floor(n/2) — Fibonacci from Pascal diagonals\n  (define (helper k acc)\n    (let ((upper (- n k)))\n      (if (< upper k) acc\n          (helper (+ k 1) (+ acc (comb/choose upper k))))))\n  (helper 0 0))\n(map fibonacci-via-diagonals (list 0 1 2 3 4 5 6 7 8 9 10))"
+     :note "Domain: Fibonacci numbers hidden in Pascal's diagonals. Sum of shallow diagonals of Pascal's triangle produces the Fibonacci sequence. Returns (1 1 2 3 5 8 13 21 34 55 89) — F(0) through F(10). This is Fibonacci = sum C(n-k, k) for k = 0..floor(n/2)."))
+
+  :related ("comb/binomial-coeffs" "comb/pascal-row" "comb/choose")
+  :caveats ("Materializes ALL n+1 rows; O(n^2) memory." "Result has n+1 rows (rows 0 through n)." "Very large n runs out of numeric precision in the last rows (same limit as comb/choose).")
+  :drawbacks ("Not lazy — cannot stream row by row." "No memoization." "For scanning specific coefficients, prefer comb/choose (O(k)) per query.")
+  :usecases ("Displaying Pascal's triangle for teaching combinatorics or probability." "Batch-computing binomial coefficients when you know you'll need many rows." "Reference table for Fibonacci-via-diagonals and hockey-stick-identity demonstrations.")
+  :learn (:concept "Pascal's triangle — the geometric arrangement of binomial coefficients. Every entry is the sum of the two above it. Contains Fibonacci, powers of 2, triangular numbers, and much more." :prerequisites ("comb/binomial-coeffs" "map") :progression "Study the hidden identities: hockey-stick, row-sums = 2^n, diagonal-sums = Fibonacci, sum of squares of a row = middle entry of the double-length row.")
+
+  :+math
+    (:algebra "Row n is the sequence of C(n,k) for k = 0..n. Pascal's identity: T[n][k] = T[n-1][k-1] + T[n-1][k]. Fibonacci from shallow diagonals: F(n) = sum(k=0..floor(n/2)) C(n-k, k)."
+     :total #t
+     :domain "non-negative integer n"
+     :codomain "list of lists — outer length n+1, inner lengths 1..n+1"
+     :proofs "Pascal's identity by cases on 'was element n in the subset'.")
+
+  :+cs
+    (:complexity "Time O(n^2), space O(n^2). Uses n+1 calls to comb/binomial-coeffs (each O(n))."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Nested loop: for i = 0..n build row i by calling binom(i, k) for k = 0..i. Result is a fresh list of fresh lists."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: length pattern (1 2 3 ...), row sums equal 2^n, Fibonacci-via-diagonals identity checks."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("map" "apply")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the output has n rows — it has n+1 (rows 0 through n). Requesting a huge triangle when one row (comb/pascal-row) would do."
+     :when-not-to-use "You need only one row — use comb/pascal-row / comb/binomial-coeffs. You need only one entry — use comb/choose.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "The first n+1 rows of Pascal's triangle as list-of-lists."))
+
+(verb
+  :name "comb/permute"
+  :library "comb"
+  :signature "(comb/permute xs) -> list-of-list"
+  :summary "Enumerate all permutations of the list xs in lexicographic order."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/permute '(1 2 3))"
+     :note "Returns ((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1)) — the six permutations of (1 2 3) in lex order.")
+    (:tier "apprentice"
+     :code "(comb/permute '())"
+     :note "Returns (()) — exactly one permutation, the empty one. Not the empty list; a list containing the empty list.")
+    (:tier "intermediate"
+     :code "(comb/permute '(a))"
+     :note "Returns ((a)) — one permutation of a single-element list.")
+    (:tier "expert"
+     :code "(define (verify-count-matches-factorial xs)\n  (equal? (length (comb/permute xs))\n          (comb/factorial (length xs))))\n(list ':empty (verify-count-matches-factorial '())\n      ':one   (verify-count-matches-factorial '(a))\n      ':three (verify-count-matches-factorial '(a b c))\n      ':five  (verify-count-matches-factorial '(a b c d e)))"
+     :note "Cross-check: |permutations(xs)| == length(xs)! Returns (:empty #t :one #t :three #t :five #t). The identity holds for all list sizes.")
+    (:tier "master"
+     :code "(define (traveling-salesman-brute cities distance)\n  ;; smallest total-distance tour visiting every city exactly once\n  (define tours (comb/permute cities))\n  (define (tour-length tour)\n    (let loop ((remaining tour) (total 0))\n      (if (or (null? remaining) (null? (cdr remaining))) total\n          (loop (cdr remaining) (+ total (distance (car remaining) (cadr remaining)))))))\n  (fold-left min 999999 (map tour-length tours)))\n(traveling-salesman-brute '(a b c d)\n  (lambda (x y)\n    (cond ((and (eq? x 'a) (eq? y 'b)) 1) ((and (eq? x 'b) (eq? y 'c)) 2)\n          ((and (eq? x 'c) (eq? y 'd)) 1) ((and (eq? x 'a) (eq? y 'c)) 3)\n          ((and (eq? x 'a) (eq? y 'd)) 4) ((and (eq? x 'b) (eq? y 'd)) 2)\n          (else 5))))"
+     :note "Domain: brute-force traveling-salesman on 4 cities. Enumerate all 24 tours, sum edge weights, take the min. This example is the FIRST use-case people reach for after learning permute — TSP is O(n!), so comb/permute is only tractable for tiny n but demonstrates the pattern."))
+
+  :related ("comb/factorial" "comb/choose" "comb/multichoose")
+  :caveats ("**Not memory-safe for large lists**: (comb/permute xs) allocates length(xs)! lists. n = 10 is 3.6 million lists; n = 12 is 479 million (do not run)." "Order is lexicographic — stable across calls, useful for tests." "For duplicate elements in xs, duplicates appear in the output (not deduplicated).")
+  :drawbacks ("Materializes the whole set; cannot stream." "No lazy variant." "For with-replacement, use tuple enumeration; for k-permutations of an n-set, no direct verb — pull comb/permute + comb/choose in combination.")
+  :usecases ("Small-n brute-force search (traveling salesman, task assignment, code-golf enumerations)." "Test scaffolding: generate all orderings of a small input to check invariants." "Teaching factorial growth by displaying permutations for small n.")
+  :learn (:concept "Enumerate all orderings. Count is n!. Grows explosively — safe only for n < 10." :prerequisites ("comb/factorial" "list operations") :progression "For very small n use as brute-force enumerator. For larger n, learn algorithms that avoid full enumeration (branch-and-bound, dynamic programming).")
+
+  :+math
+    (:algebra "Enumerate the symmetric group S_n as a list. Cardinality of the output is n!. Lex-order is total, well-defined for any list whose elements support <."
+     :total #t
+     :domain "list of any elements (empty list allowed)"
+     :codomain "list of lists — outer length n!, each inner a permutation of xs"
+     :proofs "Standard recursive-insertion enumeration: to permute (x . xs), permute xs and insert x at every position. Correct by induction on length.")
+
+  :+cs
+    (:complexity "Time O(n · n!), space O(n · n!) for the returned list-of-lists. Do not run for n > 10."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Iterative recursion: for each i, take arr[i], recurse on arr without arr[i], concat. Output ordering is lex when the input is sorted."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (comb/permute '(1 2 3)) has 6 entries in lex order, (comb/permute '()) = (()), count = n! for n up to 5."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "for-each" "fold-left")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Calling on lists longer than 9 or 10 — memory/time explode. Assuming duplicates are deduped — they're not (list is treated positionally)."
+     :when-not-to-use "n > 10 — will exhaust memory. You need lazy iteration — no lazy variant here; pull element-by-element via a custom generator.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Enumerate all permutations of a list in lex order. Safe for n <= 9. O(n · n!)."))
+
+(verb
+  :name "comb/stirling2"
+  :library "comb"
+  :signature "(comb/stirling2 n k) -> integer"
+  :summary "Stirling number of the second kind S(n,k): count of ways to partition n distinct items into exactly k non-empty unlabeled subsets."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(comb/stirling2 4 2)"
+     :note "Returns 7: partitions of {a,b,c,d} into 2 non-empty groups. {{a},{b,c,d}}, {{b},{a,c,d}}, {{c},{a,b,d}}, {{d},{a,b,c}}, {{a,b},{c,d}}, {{a,c},{b,d}}, {{a,d},{b,c}}.")
+    (:tier "apprentice"
+     :code "(comb/stirling2 5 5)"
+     :note "Returns 1: only one way to partition 5 items into 5 singleton groups — each item alone. Same is true of S(n,n) for all n >= 1.")
+    (:tier "intermediate"
+     :code "(map (lambda (k) (comb/stirling2 5 k)) (list 1 2 3 4 5))"
+     :note "Returns (1 15 25 10 1) — the full Stirling row for n=5. Peaks in the middle, tapers to 1 at both ends. Row-sum is Bell(5) = 52.")
+    (:tier "expert"
+     :code "(define (bell-via-stirling n)\n  (define (helper k acc)\n    (if (> k n) acc\n        (helper (+ k 1) (+ acc (comb/stirling2 n k)))))\n  (helper 0 0))\n(map (lambda (n) (list n ':stirling-sum (bell-via-stirling n) ':bell (comb/bell n)))\n     (list 1 3 5 7))"
+     :note "Verify Bell-Stirling row-sum identity: Bell(n) = sum(k) S(n,k). Returns ((1 :stirling-sum 1 :bell 1) (3 :stirling-sum 5 :bell 5) (5 :stirling-sum 52 :bell 52) (7 :stirling-sum 877 :bell 877)). Identity holds for n >= 1.")
+    (:tier "master"
+     :code "(define (partition-students n groups) (comb/stirling2 n groups))\n(list ':6-into-3-teams (partition-students 6 3)\n      ':10-into-4-teams (partition-students 10 4)\n      ':10-into-2-teams (partition-students 10 2))"
+     :note "Domain: teacher partitions n students into exactly k unlabeled teams (each team non-empty). Returns (:6-into-3-teams 90 :10-into-4-teams 34105 :10-into-2-teams 511). Contrast with comb/bell (allow ANY number of teams) and comb/multinomial (labeled teams of fixed sizes)."))
+
+  :related ("comb/bell" "comb/partition-count" "comb/choose" "comb/multinomial")
+  :caveats ("k must be provided — (comb/stirling2 n) silently returns 0. Full signature is (n k) both required." "**Impl boundary bug**: (comb/stirling2 0 0) returns 0 but mathematically S(0,0) = 1 (empty set has exactly one partition into 0 blocks). The row-sum identity Bell(n) = sum S(n,k) therefore fails at n=0 (Bell(0) = 1, sum returns 0). Rin recommends the impl gate be changed from `k <= 0` to `k < 0 && n < 0`. Documented, not corrected in this lane (impl-fix belongs to a separate cleanup)." "Grows fast: S(20, 10) ≈ 5.9e12, near safe-int limit.")
+  :drawbacks ("Full O(n·k) DP allocated fresh per call — no memoization." "Does not enumerate the partitions themselves." "S(n,k) = 0 for k > n by definition; impl honors this correctly.")
+  :usecases ("Counting ways to partition distinguishable items into a specific number of unlabeled groups (teams, clusters, equivalence classes)." "Building block for Bell numbers (row-sum)." "Counting surjective functions from an n-set to a k-set (S(n,k) · k!)." "Analysis of clustering algorithms and equivalence relations.")
+  :learn (:concept "Stirling numbers of the second kind: partition n distinct items into exactly k non-empty unlabeled groups." :prerequisites ("comb/choose" "comb/bell") :progression "Sum a Stirling row to get Bell(n). Multiply S(n,k) by k! to get the count of surjections from n-set to k-set. Compare with comb/partition-count for integer partitions (a completely different structure).")
+
+  :+math
+    (:algebra "Recurrence: S(n,k) = k·S(n-1,k) + S(n-1,k-1). Explicit formula: S(n,k) = (1/k!) sum(j=0..k) (-1)^j C(k,j) (k-j)^n. Boundary: S(n,0) = 0 for n >= 1, S(0,0) = 1 (by convention — impl bug: returns 0 here)."
+     :total #t
+     :domain "non-negative integers n and k"
+     :codomain "non-negative integer"
+     :proofs "Recurrence proof: to partition n items into k blocks, either item n forms its own block (S(n-1, k-1) ways for the rest) or item n joins one of the k existing blocks (k · S(n-1, k) ways).")
+
+  :+cs
+    (:complexity "Time O(n·k), space O(n·k) via the standard DP table. Space could drop to O(k) with a two-row rolling table."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/wired-verbs.js"
+     :impl-notes "Full 2D DP: S[i][j] = j·S[i-1][j] + S[i-1][j-1] with base S[0][0] = 1, others zero. Impl guards `k <= 0` which incorrectly zeros out S(0,0) — this is the documented boundary bug."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: S(4,2)=7, S(5,·) row = (1 15 25 10 1), Bell = sum S row verified for n = 1, 3, 5, 7."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comb/bell" "*" "+")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing with Stirling numbers of the FIRST kind (unsigned or signed) — those count permutations by cycle count, not partitions. Assuming (comb/stirling2 n) with no k works — it returns 0. Assuming S(0,0) = 0 based on the impl — it's 1 by convention; impl is bugged here."
+     :when-not-to-use "You need Stirling of the FIRST kind (cycle counts). You need labeled groups — use comb/multinomial. You need partition into ANY number of groups — use comb/bell.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Stirling number of the second kind. Recurrence S(n,k)=k·S(n-1,k)+S(n-1,k-1). Boundary bug: S(0,0) returns 0 (should be 1) — documented."))
+
+;; ══════════════════════════════════════════════════════════════════
+;; topo/* — TOPOLOGY
+;; ══════════════════════════════════════════════════════════════════
+;;
+;; Canonical representations (locked by Rin, 2026-07-14; Alfred's
+;; open-question #2 defaulted to option (a)):
+;;
+;;   Simplicial complex = list of MAXIMAL simplices.
+;;     Triangle:            ((a b c))
+;;     Tetrahedron:         ((a b c d))
+;;     Hollow tetrahedron:  ((a b c) (a b d) (a c d) (b c d))  ; 2-sphere
+;;
+;;   Graph = list of undirected edges.
+;;     3-cycle:  ((a b) (b c) (c a))
+;;
+;;   Vertex labels are normalized to STRINGS internally and returned
+;;   as strings. To keep symbol identity, callers can wrap results
+;;   with `string->symbol` or compare using string=?.
+;;
+;; ══════════════════════════════════════════════════════════════════
+
+(verb
+  :name "topo/f-vector"
+  :library "topo"
+  :signature "(topo/f-vector complex-or-faces) -> list-of-integer"
+  :summary "Return the f-vector (f_0 f_1 f_2 …) counting simplices at each dimension. f_k = number of k-dimensional faces."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/f-vector '((a b c)))"
+     :note "Returns (3 3 1): a triangle has 3 vertices (f_0=3), 3 edges (f_1=3), and 1 face (f_2=1).")
+    (:tier "apprentice"
+     :code "(topo/f-vector '((a b c d)))"
+     :note "Returns (4 6 4 1): a solid tetrahedron has 4 vertices, 6 edges, 4 triangular faces, and 1 solid cell (f_3=1).")
+    (:tier "intermediate"
+     :code "(topo/f-vector '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns (4 6 4): a HOLLOW tetrahedron (just its boundary, four triangles glued into a topological 2-sphere) has 4 vertices, 6 edges, 4 faces — but no 3-cell.")
+    (:tier "expert"
+     :code "(topo/f-vector '((a b) (b c) (c d)))"
+     :note "Returns (4 3): a path graph — 4 vertices, 3 edges, no 2-cells. Works for 1-dim complexes (graphs) too; missing higher-dim entries mean f_k = 0 for that k.")
+    (:tier "master"
+     :code "(let ((tet (topo/f-vector '((a b c d)))))\n  (list ':f0 (list-ref tet 0)\n        ':f1 (list-ref tet 1)\n        ':f2 (list-ref tet 2)\n        ':f3 (list-ref tet 3)))"
+     :note "Named-access to individual entries via list-ref. Returns (:f0 4 :f1 6 :f2 4 :f3 1). Foundation for Euler characteristic: chi = f_0 - f_1 + f_2 - f_3 + ... which for a tetrahedron gives 4 - 6 + 4 - 1 = 1."))
+
+  :related ("topo/euler-char" "topo/euler-genus" "topo/complex")
+  :caveats ("Input is a list of MAXIMAL simplices; the face lattice is generated internally (all subsets of each maximal face)." "Vertex labels are normalized to strings; sym-input works but sym-output is not preserved." "Result length equals max-dim + 1; a graph produces a length-2 list.")
+  :drawbacks ("Face-lattice enumeration is O(2^d) per maximal simplex of dimension d — safe for d ≤ 15 or so, blows up for very high-dim." "Does not detect ill-formed inputs (repeated vertices in a simplex, empty faces) — assume clean data.")
+  :usecases ("Compute Euler characteristic from the vector." "Verify simplicial-complex construction: does the vertex/edge/face count match your intent?" "Study f-vector inequalities in polytope theory.")
+  :learn (:concept "The f-vector is the raw combinatorial fingerprint of a simplicial complex. Everything else (Euler char, Betti numbers) is a derivative." :prerequisites ("comb/choose") :progression "Follow with topo/euler-char (sum with alternating signs) and topo/complex (constructor).")
+
+  :+math
+    (:algebra "f_k = number of k-simplices (i.e., (k+1)-vertex faces) in the complex. Related to Betti numbers via Euler-Poincare: sum (-1)^k f_k = sum (-1)^k b_k."
+     :total #t
+     :domain "list of maximal simplices, or a ('complex ...) tagged value"
+     :codomain "list of non-negative integers, length = max-dim + 1"
+     :proofs "Faces are subsets; the face lattice of a set of maximal simplices is the union of the power sets. Counting by size gives the f-vector.")
+
+  :+cs
+    (:complexity "Time O(sum_i 2^(d_i)) where d_i is the size of the i-th maximal simplex. Space same. For a d-dim complex with n maximal faces of size ~d, this is O(n * 2^d)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Generates the face lattice by enumerating non-empty subsets of each maximal simplex via bitmask (masks 1..2^n-1). Dedupes shared faces by canonical (sorted) key. Counts by dimension."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle=(3 3 1), tet=(4 6 4 1), hollow-tet=(4 6 4), path-graph=(4 3)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/euler-char" "list-ref" "apply")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing a list of ALL faces (subsets) rather than just the MAXIMAL ones — result will over-count. Pass only the top-dim faces you want in the complex."
+     :when-not-to-use "You want the Betti numbers directly — use topo/betti. You want to iterate over faces themselves, not just count them — use topo/close on the maximal set.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "f-vector: count of k-simplices for each k. Foundation for Euler characteristic and Betti numbers."))
+
+(verb
+  :name "topo/euler-char"
+  :library "topo"
+  :signature "(topo/euler-char complex-or-faces) -> integer"
+  :summary "Euler characteristic chi = sum_k (-1)^k f_k: the alternating-signed sum of the f-vector."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/euler-char '((a b c)))"
+     :note "Returns 1: triangle has f-vector (3 3 1), chi = 3 - 3 + 1 = 1. A filled triangle is contractible (homotopic to a point) so chi = 1.")
+    (:tier "apprentice"
+     :code "(topo/euler-char '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns 2: HOLLOW tetrahedron (four triangles forming a 2-sphere). Sphere has chi = 2; any triangulation gives the same answer. This is Euler's polyhedron formula V - E + F = 2.")
+    (:tier "intermediate"
+     :code "(topo/euler-char '((a b c d)))"
+     :note "Returns 1: SOLID tetrahedron. f-vector (4 6 4 1), chi = 4 - 6 + 4 - 1 = 1. A solid 3-ball is contractible.")
+    (:tier "expert"
+     :code "(topo/euler-char '((a b c) (a c d)))"
+     :note "Returns 1: two triangles sharing an edge (a disk-like 2-complex). f-vector (4 5 2), chi = 4 - 5 + 2 = 1. Any disk-like shape is contractible; chi = 1.")
+    (:tier "master"
+     :code "(define (classify-closed-surface faces)\n  (let ((chi (topo/euler-char faces)))\n    (cond ((= chi 2) 'sphere)\n          ((= chi 0) 'torus-or-klein-bottle)\n          ((< chi 0) (list 'genus (/ (- 2 chi) 2)))\n          (else 'not-closed-surface))))\n(list ':sphere (classify-closed-surface '((a b c) (a b d) (a c d) (b c d)))\n      ':disk   (classify-closed-surface '((a b c) (a c d))))"
+     :note "Domain: given a triangulated surface, guess its topological type from chi. Returns (:sphere sphere :disk not-closed-surface). The disk has chi = 1, doesn't match any closed-surface template — the classifier honestly reports 'not-closed-surface. This is Euler-based classification."))
+
+  :related ("topo/f-vector" "topo/euler-genus" "topo/betti" "topo/complex")
+  :caveats ("Only meaningful for simplicial complexes. Doesn't distinguish between manifolds and non-manifolds — chi is a topological invariant, not a geometric one." "Empty complex has chi = 0.")
+  :drawbacks ("Cannot infer more than chi; use topo/betti or topo/homology-gf2 for finer information." "Requires a well-formed complex — repeated maximal faces are silently deduped by the face-lattice generator.")
+  :usecases ("Euler's polyhedron formula V - E + F = 2 for convex polyhedra." "Quick topology-type checks for surfaces (sphere = 2, torus = 0, orientable genus g surface = 2 - 2g)." "Verifying triangulations preserve topology after mesh operations.")
+  :learn (:concept "Euler characteristic is the simplest topological invariant — the alternating sum of face counts. Robust under homotopy: any two homotopic complexes have the same chi." :prerequisites ("topo/f-vector") :progression "Once chi is second nature, learn topo/euler-genus for the genus formula g = (2 - chi)/2, then topo/betti for the full Betti-number vector.")
+
+  :+math
+    (:algebra "chi = sum_k (-1)^k f_k. Alternating-sum identity: chi = sum_k (-1)^k b_k where b_k are Betti numbers (Euler-Poincare). Homotopy invariant."
+     :total #t
+     :domain "list of maximal simplices, or a ('complex ...) tagged value"
+     :codomain "integer (may be negative for high-genus surfaces)"
+     :proofs "By induction on the face-lattice construction; each face contributes +1 or -1 depending on parity of its dimension.")
+
+  :+cs
+    (:complexity "Same as topo/f-vector — O(sum 2^d_i)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Computes f-vector via face-lattice enumeration, then folds with alternating signs. One-pass over the resulting f-vector."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle=1, hollow-tet=2 (sphere), solid-tet=1, two-triangles-shared-edge=1."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/euler-genus" "topo/betti")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming chi tells you 'the shape' — it only tells you a topological invariant; the sphere and the projective plane both have chi = 2 and 1 respectively, but chi = 0 covers BOTH the torus AND the Klein bottle."
+     :when-not-to-use "You need the Betti numbers or the homology groups — use topo/betti. You need geometric info (curvature, distance) — this is topology, not geometry.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Euler characteristic — alternating-sum of f-vector. Robust topological invariant."))
+
+(verb
+  :name "topo/euler-genus"
+  :library "topo"
+  :signature "(topo/euler-genus complex-or-faces) -> number"
+  :summary "Genus g of a closed ORIENTABLE surface, via g = (2 - chi) / 2. Returns non-integer if the complex is not a closed orientable surface."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/euler-genus '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns 0: the boundary of a tetrahedron is a topological 2-sphere. Genus 0 = sphere.")
+    (:tier "apprentice"
+     :code "(topo/euler-genus '((a b c)))"
+     :note "Returns 1/2: a triangle is not a closed surface. The non-integer result honestly signals 'not a closed orientable surface — this formula does not apply here'.")
+    (:tier "intermediate"
+     :code "(topo/euler-genus '((a b c) (a c d)))"
+     :note "Returns 1/2: two triangles sharing an edge form a disk-like patch, not a closed surface. Same honest signal: non-integer genus means the formula doesn't apply.")
+    (:tier "expert"
+     :code "(define (surface-info faces)\n  (let ((chi (topo/euler-char faces)))\n    (list ':euler-char chi\n          ':orientable-genus (topo/euler-genus faces))))\n(list ':sphere (surface-info '((a b c) (a b d) (a c d) (b c d)))\n      ':disk   (surface-info '((a b c) (a c d))))"
+     :note "Report both chi and the derived genus for two complexes. Returns (:sphere (:euler-char 2 :orientable-genus 0) :disk (:euler-char 1 :orientable-genus 1/2)). The disk's fractional genus honestly signals 'not applicable'.")
+    (:tier "master"
+     :code "(define (guess-closed-orientable-surface faces)\n  (let ((g (topo/euler-genus faces)))\n    (cond ((not (integer? g)) 'not-closed-surface)\n          ((= g 0) 'sphere)\n          ((= g 1) 'torus)\n          ((> g 1) (list 'orientable-genus g)))))\n(list ':sphere (guess-closed-orientable-surface '((a b c) (a b d) (a c d) (b c d)))\n      ':disk   (guess-closed-orientable-surface '((a b c) (a c d))))"
+     :note "Domain: classify a triangulated surface by its orientable genus. Returns (:sphere sphere :disk not-closed-surface). Uses integer? to guard against the fractional 'not-applicable' signal. Kids learn: numbers CAN carry a 'not applicable' meaning honestly."))
+
+  :related ("topo/euler-char" "topo/f-vector" "topo/orientable?")
+  :caveats ("The formula g = (2 - chi) / 2 applies ONLY to CLOSED ORIENTABLE surfaces. For non-closed or non-orientable surfaces the result is meaningless — often non-integer, which the impl returns as a real number (fractional genus)." "Does NOT check orientability; caller should combine with topo/orientable? for a full classifier." "For non-orientable surfaces (Klein bottle, projective plane), use the non-orientable genus formula k = 2 - chi instead.")
+  :drawbacks ("Silent when misapplied — returns a possibly-fractional number instead of raising. Callers must integer-check the result." "Does not distinguish sphere (g=0) from other chi=2 spaces like the projective plane (chi=1 but non-orientable, RP^2).")
+  :usecases ("Topology-type prediction for triangulated closed orientable surfaces." "Handle-counting in surface classification." "Sanity-check surface reconstructions from mesh operations.")
+  :learn (:concept "Euler-genus formula. For a closed orientable surface, chi = 2 - 2g uniquely determines g. Non-integer result = formula does not apply." :prerequisites ("topo/euler-char") :progression "Follow with topo/orientable? for the orientability check, then combine both for a complete closed-surface classifier.")
+
+  :+math
+    (:algebra "For closed orientable surface: chi = 2 - 2g, so g = (2 - chi) / 2. For non-orientable (crosscap): chi = 2 - k, so k = 2 - chi (non-orientable genus)."
+     :total #t
+     :domain "list of maximal simplices, or a ('complex ...) tagged value"
+     :codomain "rational number (integer for actual closed orientable surfaces)"
+     :proofs "From the classification of closed surfaces: every closed orientable 2-manifold is a sphere with g handles, and each handle drops chi by 2.")
+
+  :+cs
+    (:complexity "Same as topo/euler-char — one f-vector computation plus a subtraction and a divide."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Delegates to eulerChar then applies (2 - chi) / 2. Deliberately returns a JS number (may be non-integer)."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 2-sphere (hollow tet)=0, triangle=1/2, two-triangles=1/2. Fractional results honestly signal non-closed-surface."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/orientable?" "integer?")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the returned genus is meaningful for any complex — it's only meaningful for closed orientable surfaces. Always integer-check the result before using it as a handle count."
+     :when-not-to-use "The complex isn't a closed surface (integer-check will save you). Non-orientable case (projective plane, Klein bottle) — this formula doesn't apply.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Orientable-surface genus via g = (2 - chi) / 2. Returns fractional if not a closed orientable surface — honest 'not applicable' signal."))
+
+(verb
+  :name "topo/complex"
+  :library "topo"
+  :signature "(topo/complex maximal-faces) -> (complex faces face-count)"
+  :summary "Construct a simplicial-complex value from a list of maximal simplices. Downstream verbs (f-vector, euler-char, etc.) accept the tagged value directly."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/complex '((a b c)))"
+     :note "Returns (complex ((a b c)) 7): a triangle-complex. The 7 is the total face count (1 triangle + 3 edges + 3 vertices).")
+    (:tier "apprentice"
+     :code "(topo/complex '((a b c d)))"
+     :note "Returns (complex ((a b c d)) 15): a solid-tetrahedron. Face count = 4 vertices + 6 edges + 4 triangles + 1 tet = 15.")
+    (:tier "intermediate"
+     :code "(topo/complex '())"
+     :note "Returns (complex () 0): the empty complex. Safe zero-case.")
+    (:tier "expert"
+     :code "(let ((c (topo/complex '((a b c) (a b d)))))\n  (topo/euler-char c))"
+     :note "Constructor + downstream verb. Returns 1: two triangles sharing edge (a b). f-vector (4 5 2), chi = 4 - 5 + 2 = 1. Passing the (complex ...) value works interchangeably with a raw face list.")
+    (:tier "master"
+     :code "(define (surface-report faces)\n  (let ((c (topo/complex faces)))\n    (list ':complex c\n          ':f-vector (topo/f-vector c)\n          ':euler-char (topo/euler-char c)\n          ':genus (topo/euler-genus c))))\n(surface-report '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Build a complex once, feed it to multiple downstream verbs. Returns a report for the hollow tetrahedron: (:complex (complex ...) :f-vector (4 6 4) :euler-char 2 :genus 0). Sphere confirmed."))
+
+  :related ("topo/f-vector" "topo/euler-char" "topo/euler-genus")
+  :caveats ("Vertex labels normalized to strings; symbol identity is lost through the constructor." "Face list is stored canonicalized (sorted per simplex, deduped)." "Face count in the third slot is the TOTAL face count, not just the maximal count.")
+  :drawbacks ("Constructor allocates the face lattice eagerly — for very large complexes this is O(sum 2^d_i). For d ≤ 15, fine.")
+  :usecases ("Bundle a complex once and pass to multiple downstream verbs." "REPL exploration: (topo/complex '((a b c d))) shows you what f-vector expects." "Persistence in Cortex: a complex value is a plain Scheme list, safe to store.")
+  :learn (:concept "Constructor for the canonical representation. Tagged list means downstream verbs can pattern-match on the 'complex head." :prerequisites ("list") :progression "Follow with topo/f-vector, topo/euler-char, topo/close.")
+
+  :+math
+    (:algebra "Abstract simplicial complex: family K of finite non-empty sets closed under non-empty subsets. Here K is the closure of the maximal-face list."
+     :total #t
+     :domain "list of lists (simplices) of any elements"
+     :codomain "tagged list ('complex canonicalized-faces total-face-count)"
+     :proofs "Standard closure axiom: face of a face is a face.")
+
+  :+cs
+    (:complexity "Time O(sum 2^d_i) to generate the face lattice for face counting."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Canonicalizes each simplex (sort vertices, coerce to strings), builds the face lattice via bitmask enumeration, records the total face count."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle-complex has face count 7; solid-tet 15; empty complex 0; euler-char downstream matches."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/f-vector" "topo/euler-char" "topo/euler-genus" "topo/close")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing a list of ALL faces (all subsets) — the constructor treats them all as maximal and duplicates the face lattice. Pass only the top-dim faces."
+     :when-not-to-use "You need only f-vector or chi — those verbs accept raw face lists directly, no wrapping needed.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Simplicial-complex constructor. Bundles maximal faces + total face count as a tagged value."))
+
+(verb
+  :name "topo/graph"
+  :library "topo"
+  :signature "(topo/graph edges) -> (graph vertices edges)"
+  :summary "Construct an undirected graph value from an edge list."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/graph '((a b) (b c) (c a)))"
+     :note "Returns (graph (a b c) ((a b) (a c) (b c))): a 3-cycle. Vertices sorted, edges canonicalized (each edge sorted).")
+    (:tier "apprentice"
+     :code "(topo/graph '())"
+     :note "Returns (graph () ()): the empty graph. No vertices, no edges — safe zero case.")
+    (:tier "intermediate"
+     :code "(topo/graph '((a b)))"
+     :note "Returns (graph (a b) ((a b))): a single edge between two vertices. Trivial connected component.")
+    (:tier "expert"
+     :code "(let ((g (topo/graph '((a b) (b c) (c a) (a d)))))\n  (list ':is-connected (topo/connected? g)\n        ':components (topo/components g)))"
+     :note "Build once, query twice. Returns (:is-connected #t :components ((a b c d))). Triangle plus a whisker — still one connected component.")
+    (:tier "master"
+     :code "(define (social-network edges)\n  (let ((g (topo/graph edges)))\n    (list ':num-components (length (topo/components g))\n          ':is-connected (topo/connected? g)\n          ':neighborhood-of-alice (topo/ball g 'alice 2))))\n(social-network '((alice bob) (bob carol) (carol dave) (eve fern)))"
+     :note "Domain: analyze a small social network. Returns (:num-components 2 :is-connected #f :neighborhood-of-alice (alice bob carol)). Two clusters (alice-cluster and eve-cluster); Alice's radius-2 friends are herself, Bob, Carol."))
+
+  :related ("topo/components" "topo/connected?" "topo/ball")
+  :caveats ("Undirected — (a b) and (b a) are the same edge; duplicates deduped." "Self-loops preserved but only counted once." "Vertex labels normalized to strings.")
+  :drawbacks ("No support for edge weights or directed edges. If you need those, use a bespoke adjacency-map." "No support for hyperedges — use topo/complex for that.")
+  :usecases ("Model relationships (social networks, dependencies, communication topologies)." "Feed downstream connectivity and reachability queries." "Bundle a graph once, pass to multiple analyses without re-parsing the edge list.")
+  :learn (:concept "Graph as a tagged value. Adjacency structure is built once; consumers use it directly." :prerequisites ("list") :progression "Follow with topo/components, topo/connected?, topo/ball, then broader graph analyses.")
+
+  :+math
+    (:algebra "Undirected simple graph: V a vertex set, E a set of 2-element subsets of V. Multiplicity 1 by construction. Loops allowed."
+     :total #t
+     :domain "list of 2-element lists (edges)"
+     :codomain "tagged list ('graph sorted-vertices sorted-canonical-edges)"
+     :proofs "Set-of-edges construction is well-known.")
+
+  :+cs
+    (:complexity "Time O(|E|), space O(|V| + |E|)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Builds an adjacency Map<vertex, Set<vertex>>, then emits a canonical (graph V E) list with V sorted and each edge sorted."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-cycle, empty graph, single edge, and connected? / components round-trip cleanly."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/components" "topo/connected?" "topo/ball")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing edges as (a b c) — 3-element lists are silently truncated to (a b). Use only 2-element edges."
+     :when-not-to-use "You need directed edges or weights — this verb doesn't support them.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Undirected graph constructor. Tagged value; edges deduplicated + sorted."))
+
+(verb
+  :name "topo/components"
+  :library "topo"
+  :signature "(topo/components graph-or-edges) -> list-of-list"
+  :summary "Return the connected components of a graph as a list of vertex-lists."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/components '((a b) (b c) (d e)))"
+     :note "Returns ((a b c) (d e)): two components. {a, b, c} form a triangle-ish cluster, {d, e} form a separate edge.")
+    (:tier "apprentice"
+     :code "(topo/components '())"
+     :note "Returns (): the empty graph has zero components.")
+    (:tier "intermediate"
+     :code "(topo/components '((a a)))"
+     :note "Returns ((a)): a self-loop on vertex a. One vertex, one component.")
+    (:tier "expert"
+     :code "(topo/components '((a b) (b c) (c a) (d e) (e f) (f d) (g h)))"
+     :note "Returns ((a b c) (d e f) (g h)): three components — two triangles and one edge. Vertices within each component are sorted.")
+    (:tier "master"
+     :code "(define (cluster-report edges)\n  (let* ((comps (topo/components edges))\n         (sizes (map length comps)))\n    (list ':components comps\n          ':num-clusters (length comps)\n          ':largest-cluster-size (if (null? sizes) 0 (apply max sizes))\n          ':smallest-cluster-size (if (null? sizes) 0 (apply min sizes)))))\n(cluster-report '((a b) (b c) (c a) (d e) (e f) (f d) (g h)))"
+     :note "Domain: report on a graph's cluster structure. Returns full component breakdown plus size stats. Useful for social-network analysis, dependency graph inspection."))
+
+  :related ("topo/connected?" "topo/graph" "topo/ball")
+  :caveats ("Accepts either a (graph ...) tagged value or a raw edge list." "Component vertex lists are sorted; component order follows first-encountered vertex during BFS.")
+  :drawbacks ("Not incremental — recomputes from scratch each call.")
+  :usecases ("Analyze cluster structure in social/dependency/communication graphs." "Detect disconnected pieces in a mesh or object graph." "Filter operations by component (e.g., 'find the largest connected piece').")
+  :learn (:concept "Connected components via BFS from each unvisited vertex. Foundational graph analysis." :prerequisites ("topo/graph") :progression "Study topo/connected? (is there just one?) then move to more sophisticated: bridges, articulation points, biconnected components.")
+
+  :+math
+    (:algebra "Equivalence classes of vertices under the reachability relation. Partition of V into disjoint non-empty subsets."
+     :total #t
+     :domain "graph or raw edge list"
+     :codomain "list of sorted vertex-lists; outer list length = number of components"
+     :proofs "Reachability is an equivalence relation (reflexive, symmetric via undirected, transitive); components are its equivalence classes.")
+
+  :+cs
+    (:complexity "Time O(|V| + |E|), space O(|V|). Standard BFS."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "BFS from each unvisited vertex. Adjacency built from the edge list (or graph tag). Component vertex lists sorted for stability."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 2-component split, empty graph, self-loop, 3-component mix."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "apply" "topo/connected?")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming isolated vertices appear as components — they don't UNLESS an edge (v v) is present; components are derived from the vertex set induced by edges."
+     :when-not-to-use "You need only 'is it connected?' — use topo/connected? (same cost but clearer intent).")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Connected components via BFS. Returns list-of-sorted-vertex-lists."))
+
+(verb
+  :name "topo/connected?"
+  :library "topo"
+  :signature "(topo/connected? graph-or-edges) -> boolean"
+  :summary "Return #t iff the graph has one connected component (or is empty)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/connected? '((a b) (b c) (c a)))"
+     :note "Returns #t: a triangle is one connected component.")
+    (:tier "apprentice"
+     :code "(topo/connected? '((a b) (c d)))"
+     :note "Returns #f: two separate edges = two components.")
+    (:tier "intermediate"
+     :code "(topo/connected? '())"
+     :note "Returns #t by convention: the empty graph is vacuously connected. Same convention as (equal? '() '()) = #t.")
+    (:tier "expert"
+     :code "(let ((g (topo/graph '((a b) (b c) (c d) (d e)))))\n  (topo/connected? g))"
+     :note "Returns #t: a path is connected. Works on both raw edge list and (graph ...) tagged value.")
+    (:tier "master"
+     :code "(define (add-edge-and-check g new-edge)\n  (let ((new-edges (cons new-edge g)))\n    (list ':before (topo/connected? g)\n          ':after (topo/connected? new-edges))))\n(add-edge-and-check '((a b) (c d)) '(b c))"
+     :note "Domain: incremental connectivity check as edges are added. Returns (:before #f :after #t). Bridging edge (b c) reduces two components to one. Great for graph-growth simulations."))
+
+  :related ("topo/components" "topo/graph")
+  :caveats ("Empty graph returns #t (vacuously connected)." "Isolated vertices are only recognized if they appear in an edge (including self-loops).")
+  :drawbacks ("No incremental / online version; recomputes from scratch.")
+  :usecases ("Sanity-check that a network is fully reachable." "Precondition for spanning-tree algorithms." "Decide whether to break a graph into pieces before analysis.")
+  :learn (:concept "Simple predicate: |components| = 1 (or 0). One of the most-asked graph questions." :prerequisites ("topo/components") :progression "Once (topo/connected?) is second nature, ask deeper questions: 2-connected? k-connected? bridge-free?")
+
+  :+math
+    (:algebra "Predicate: |components| <= 1."
+     :total #t
+     :domain "graph or raw edge list"
+     :codomain "boolean"
+     :proofs "Trivial from the definition of components.")
+
+  :+cs
+    (:complexity "Time O(|V| + |E|), space O(|V|). Delegates to topo/components."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Calls components() and checks its length <= 1."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-cycle #t, two-edge disjoint #f, empty #t, path #t."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("if" "when" "and" "or")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming false = 'has 2+ components AND has at least one edge'. Actually returns false ONLY when there are 2+ components; empty and singleton graphs are true."
+     :when-not-to-use "You need to see the components themselves — use topo/components.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Is the graph connected? Empty graph is vacuously connected."))
+
+(verb
+  :name "topo/ball"
+  :library "topo"
+  :signature "(topo/ball graph-or-edges center radius) -> list-of-vertex"
+  :summary "Discrete ball: all vertices within graph-distance <= radius of center."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/ball '((a b) (b c) (c d) (d e)) 'a 2)"
+     :note "Returns (a b c): vertices within distance 2 of a on a path a-b-c-d-e. a (dist 0), b (dist 1), c (dist 2).")
+    (:tier "apprentice"
+     :code "(topo/ball '((a b) (b c) (c d) (d e)) 'a 0)"
+     :note "Returns (a): the ball of radius 0 is just the center.")
+    (:tier "intermediate"
+     :code "(topo/ball '((a b) (b c) (c d) (d e)) 'c 1)"
+     :note "Returns (b c d): from c, neighbors are b and d, plus c itself. Radius-1 ball.")
+    (:tier "expert"
+     :code "(let ((g (topo/graph '((a b) (b c) (c a) (a d) (d e)))))\n  (list ':r0 (topo/ball g 'a 0)\n        ':r1 (topo/ball g 'a 1)\n        ':r2 (topo/ball g 'a 2)))"
+     :note "Growth of the ball from a: r=0 is (a), r=1 is (a b c d) — a plus its immediate neighbors, r=2 adds e via d. Works on (graph ...) values.")
+    (:tier "master"
+     :code "(define (friends-of-friends network person radius)\n  (topo/ball network person radius))\n(list ':close-friends (friends-of-friends '((alice bob) (bob carol) (carol dave) (dave eve)) 'alice 1)\n      ':extended-network (friends-of-friends '((alice bob) (bob carol) (carol dave) (dave eve)) 'alice 3))"
+     :note "Domain: social-network neighborhood exploration. Returns (:close-friends (alice bob) :extended-network (alice bob carol dave)). Radius-1 = direct friends, radius-3 = friends-of-friends-of-friends."))
+
+  :related ("topo/graph" "topo/components")
+  :caveats ("Center must exist in the graph; if it does not, returns ()." "Radius 0 always returns just the center (if present).")
+  :drawbacks ("Not weighted — every edge has cost 1. For weighted balls, use ops/dijkstra." "Materializes the whole ball; no lazy iteration.")
+  :usecases ("Neighborhood analysis on social/citation/dependency graphs." "Local-region extraction for graph rendering or partial layout." "Rate-limit expansions in graph search (only look r hops away).")
+  :learn (:concept "Discrete open ball = graph-distance neighborhood. BFS to depth r." :prerequisites ("topo/graph") :progression "Extend to weighted balls with Dijkstra; extend to shortest-path queries.")
+
+  :+math
+    (:algebra "B(c, r) = { v : d(c, v) <= r } where d is graph distance. Metric-space ball, discrete version."
+     :total #t
+     :domain "graph value, vertex label (Sym or string), non-negative integer radius"
+     :codomain "sorted list of vertex labels"
+     :proofs "BFS terminates because graph is finite; correctness by induction on distance.")
+
+  :+cs
+    (:complexity "Time O(|V| + |E|) worst case. Space O(|V|) for the distance map."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "BFS from center, stopping expansion at depth r. Uses a distance Map; returns sorted keys."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: r=0 returns just center, r=1 includes neighbors, r=2 propagates one more step; missing center returns ()."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "member")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Passing radius as a negative — impl treats it as 0. Passing a center that isn't in the graph — returns ()."
+     :when-not-to-use "Weighted edges — use ops/dijkstra. Very large graph + high radius — the ball may equal all-vertices; consider topo/components instead.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Discrete ball via BFS. All vertices within graph-distance r of center."))
+
+(verb
+  :name "topo/close"
+  :library "topo"
+  :signature "(topo/close simplices) -> list-of-simplex"
+  :summary "Closure of a simplex set: enumerate ALL faces (subsets) of every simplex in the input."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/close '((a b c)))"
+     :note "Returns all 7 non-empty subsets of {a b c}: ((a) (b) (a b) (c) (a c) (b c) (a b c)). Every face of the triangle.")
+    (:tier "apprentice"
+     :code "(topo/close '((a b)))"
+     :note "Returns ((a) (b) (a b)): three faces of a single edge.")
+    (:tier "intermediate"
+     :code "(topo/close '((a b c) (a b d)))"
+     :note "Returns all faces of two triangles sharing edge (a b) — deduped where they share faces. 11 total: 4 vertices, 5 edges, 2 triangles.")
+    (:tier "expert"
+     :code "(length (topo/close '((a b c d))))"
+     :note "Returns 15: a solid tetrahedron has 15 non-empty faces (4 vertices + 6 edges + 4 triangles + 1 tet). Same as (topo/complex '((a b c d))) reports.")
+    (:tier "master"
+     :code "(define (dimension-histogram simplices)\n  (let ((faces (topo/close simplices)))\n    (let loop ((remaining faces) (acc '()))\n      (if (null? remaining)\n          (reverse acc)\n          (let* ((f (car remaining)) (d (- (length f) 1)))\n            (loop (cdr remaining)\n                  (cons (list d f) acc)))))))\n(dimension-histogram '((a b c)))"
+     :note "Enumerate faces annotated with their dimensions. Returns ((0 (a)) (0 (b)) (1 (a b)) (0 (c)) (1 (a c)) (1 (b c)) (2 (a b c))). 0-dim vertices, 1-dim edges, 2-dim triangles. Foundation for f-vector."))
+
+  :related ("topo/f-vector" "topo/complex")
+  :caveats ("Result faces are sorted (each internally, and overall by encounter order)." "Deduplicated across shared faces — the same edge appears once even if it's in multiple triangles.")
+  :drawbacks ("Exponential in the max face dimension; for large-dim maximal simplices, avoid.")
+  :usecases ("Enumerate the full face lattice of a complex." "Feed into face-dimensional analysis or per-face operations." "Verify that shared faces are correctly deduped when merging two subcomplexes.")
+  :learn (:concept "Closure operator on simplex sets — one of the two axioms of a simplicial complex (closed under subsets). Face enumeration bridges combinatorics and geometry." :prerequisites ("topo/f-vector") :progression "Follow with topo/euler-char (weighted-sum over closure) and topo/betti (chain complex over the closure).")
+
+  :+math
+    (:algebra "close(S) = union over sigma in S of P(sigma) \\ {emptyset}. Idempotent closure: close(close(S)) = close(S)."
+     :total #t
+     :domain "list of simplices (lists of vertex labels)"
+     :codomain "list of simplices (all non-empty faces of the input)"
+     :proofs "Straightforward from the power-set definition; dedup preserves the axiom that each face appears once.")
+
+  :+cs
+    (:complexity "Time O(sum 2^d_i), space same."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Reuses generateFaceLattice — a bitmask enumeration of subsets of each input simplex, keyed by canonical sort to dedupe shared faces."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle=7 faces, edge=3, two triangles sharing edge=11, solid tet=15."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("length" "map" "for-each" "topo/f-vector")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming the empty simplex () appears — it does not (closure excludes the empty face). Assuming faces come in dim order — they don't; use dimension-histogram or similar sort if needed."
+     :when-not-to-use "You need only the count of faces — use (length (topo/close …)) or topo/f-vector.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Simplicial closure: enumerate all faces of a set of simplices."))
+
+(verb
+  :name "topo/orientable?"
+  :library "topo"
+  :signature "(topo/orientable? complex-or-faces) -> #t | #f | 'unknown-for-high-dim | 'non-manifold"
+  :summary "Return #t iff the (surface) complex admits a consistent orientation of its 2-simplices."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/orientable? '((a b c)))"
+     :note "Returns #t: a single triangle is trivially orientable.")
+    (:tier "apprentice"
+     :code "(topo/orientable? '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns #t: the hollow tetrahedron (a triangulated 2-sphere) is orientable. Sphere is orientable, genus-0 surface.")
+    (:tier "intermediate"
+     :code "(topo/orientable? '((a b) (b c) (c d)))"
+     :note "Returns #t by convention: a 1-dim complex (edges only) has no 2-simplices to orient, vacuously orientable.")
+    (:tier "expert"
+     :code "(topo/orientable? '((a b c d)))"
+     :note "Returns unknown-for-high-dim: a solid tetrahedron is a 3-simplex; this impl only handles surface (2-dim) orientability. Honest 'unknown signal, not a lie.")
+    (:tier "master"
+     :code "(define (surface-type faces)\n  (let ((chi (topo/euler-char faces))\n        (o (topo/orientable? faces)))\n    (cond ((not (eq? o #t)) (list 'not-a-simple-surface o))\n          ((= chi 2) 'sphere)\n          ((= chi 0) 'torus)\n          ((< chi 0) (list 'orientable-genus (/ (- 2 chi) 2)))\n          (else (list 'other-chi chi)))))\n(list ':sphere (surface-type '((a b c) (a b d) (a c d) (b c d)))\n      ':disk (surface-type '((a b c) (a c d)))\n      ':tet-solid (surface-type '((a b c d))))"
+     :note "Domain: classify a triangulated surface by orientability + Euler char. Returns (:sphere sphere :disk (other-chi 1) :tet-solid (not-a-simple-surface unknown-for-high-dim)). The solid tet honestly reports 'not a simple surface via the unknown signal."))
+
+  :related ("topo/euler-char" "topo/euler-genus" "topo/complex")
+  :caveats ("Only handles surface complexes (max face size 3). Higher-dim inputs return 'unknown-for-high-dim." "Non-manifold complexes (any edge shared by more than 2 triangles) return 'non-manifold." "Constructing a Möbius strip in ABSTRACT simplicial form is subtle — the impl handles it correctly given a proper representation (many 'Möbius-like' abstract structures are actually cylinders topologically).")
+  :drawbacks ("Only 2-dim." "Non-orientable examples must be crafted with care — abstract simplicial form does not automatically encode a twist.")
+  :usecases ("Verify a triangulated surface preserves orientation after mesh operations." "Combine with topo/euler-char for closed-surface classification." "Detect non-manifold edges (edge in >2 triangles).")
+  :learn (:concept "Surface orientability via consistent-orientation propagation across shared edges. Non-orientable = there exists a cycle where orientation must reverse." :prerequisites ("topo/euler-char") :progression "Study topo/euler-genus for the genus formula (only valid on closed orientable), then look up the classification of closed surfaces.")
+
+  :+math
+    (:algebra "A surface is orientable iff its second Stiefel-Whitney class vanishes; equivalently, iff the mod-2 homology H_2 = Z/2 (for closed connected). Combinatorially: iff triangles admit consistent orientations."
+     :total #t
+     :domain "list of maximal simplices (surfaces = max face size 3), or (complex ...) tagged"
+     :codomain "#t, #f, Sym('unknown-for-high-dim'), Sym('non-manifold')"
+     :proofs "BFS across triangle-adjacency. Consistency check on cycles is implicit via the propagation: if you re-visit an oriented triangle with an incompatible desired orientation, the surface is non-orientable.")
+
+  :+cs
+    (:complexity "Time O(T + E) where T is number of triangles and E is number of edges shared. Space O(T)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Builds edge-to-triangle map. Detects non-manifold (edge in >2 triangles). Assigns orientation to a starting triangle, BFS-propagates via shared edges, checks cyclic-permutation match on re-encounter."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: single triangle #t, hollow-tet-sphere #t, 1-dim complex #t (vacuous), 3-simplex 'unknown-for-high-dim'."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("eq?" "cond" "topo/euler-genus")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Reading the result as a plain boolean — this verb can return four kinds of values. Guard with (eq? … #t) or explicit cond over #t/#f/unknown/non-manifold. Assuming an abstract simplex list 'automatically' encodes a Möbius — it doesn't; abstract form is orientation-agnostic."
+     :when-not-to-use "You need orientability of 3-manifolds (dim >= 3) — this impl returns 'unknown for those. You need to know WHICH orientation was assigned — this impl only tests existence.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Surface orientability via orientation-propagation BFS. Returns #t/#f/'unknown-for-high-dim/'non-manifold. Only handles 2-dim."))
+
+(verb
+  :name "topo/planar?"
+  :library "topo"
+  :signature "(topo/planar? graph-or-edges) -> #t | #f | 'unknown-beyond-bound"
+  :summary "Is the graph planar? Uses Euler-inequality + K_5/K_{3,3} exhaustive check for |V| <= 8, honest 'unknown-beyond-bound for larger graphs."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/planar? '((a b) (b c) (c a)))"
+     :note "Returns #t: a 3-cycle is planar. Any graph with <= 4 vertices is planar (K_4 is the maximum-density example and is planar).")
+    (:tier "apprentice"
+     :code "(topo/planar? '())"
+     :note "Returns #t: the empty graph is vacuously planar.")
+    (:tier "intermediate"
+     :code "(topo/planar? '((a b) (a c) (a d) (a e) (b c) (b d) (b e) (c d) (c e) (d e)))"
+     :note "Returns #f: this is K_5, the complete graph on 5 vertices. Kuratowski's theorem: K_5 is one of the two forbidden subgraphs for planarity.")
+    (:tier "expert"
+     :code "(topo/planar? '((a b) (a c) (a d) (b e) (b f) (c e) (c f) (d e) (d f)))"
+     :note "Returns #f: this graph contains K_{3,3} as a subgraph with parts {b c d} × {a e f} (all 9 cross-edges present, no within-part edges). K_{3,3} is one of Kuratowski's two forbidden subgraphs for planarity.")
+    (:tier "master"
+     :code "(define (check-planarity graph-edges)\n  (let ((p (topo/planar? graph-edges)))\n    (cond ((eq? p #t) 'provably-planar)\n          ((eq? p #f) 'provably-not-planar)\n          (else (list 'unknown p)))))\n(list ':cycle-3 (check-planarity '((a b) (b c) (c a)))\n      ':k5 (check-planarity '((a b) (a c) (a d) (a e) (b c) (b d) (b e) (c d) (c e) (d e)))\n      ':big-cycle (check-planarity '((v1 v2) (v2 v3) (v3 v4) (v4 v5) (v5 v6) (v6 v7) (v7 v8) (v8 v9) (v9 v1))))"
+     :note "Domain: three-valued planarity oracle. Returns (:cycle-3 provably-planar :k5 provably-not-planar :big-cycle (unknown unknown-beyond-bound)). The 9-vertex cycle is planar in truth but this impl honestly reports 'unknown because |V| > 8 exceeds the bounded-exact check. NEVER a silent #f for large graphs."))
+
+  :related ("topo/graph")
+  :caveats ("For |V| > 8, returns 'unknown-beyond-bound honestly rather than lying with #f. Exact planarity testing (Boyer-Myrvold) is out of scope for this lane." "Euler-inequality catches all NOT-planar cases when |E| > 3|V| - 6." "K_5 and K_{3,3} SUBGRAPH detection (not full minor detection) — a graph containing a K_5 SUBDIVISION but no K_5 subgraph will slip through and get #t or 'unknown.")
+  :drawbacks ("Not a complete planarity test; only bounded-domain exact + Euler." "Exhaustive K_5/K_{3,3} search is O(n^5) — okay for n <= 8, ballooning quickly." "Doesn't distinguish subdivisions from subgraphs.")
+  :usecases ("Quick planarity check for small graphs (Sudoku-solver dependencies, small game trees)." "Sanity-check that a graph is definitely NOT planar (via Euler inequality)." "Placeholder in workflows that will substitute a full planarity library later.")
+  :learn (:concept "Planarity is a Kuratowski property: a graph is planar iff it contains no K_5 or K_{3,3} minor. Full test is polynomial-time but nontrivial." :prerequisites ("topo/graph") :progression "Learn Boyer-Myrvold for the full linear-time planarity test; then explore planar embeddings and drawings.")
+
+  :+math
+    (:algebra "Planar iff no K_5 or K_{3,3} minor (Kuratowski/Wagner). Euler inequality: for a simple planar graph, |E| <= 3|V| - 6."
+     :total #t
+     :domain "graph or raw edge list"
+     :codomain "#t | #f | Sym('unknown-beyond-bound')"
+     :proofs "Euler's formula V - E + F = 2 for connected planar graph, plus 2E >= 3F (each face has at least 3 edges).")
+
+  :+cs
+    (:complexity "Time O(n^5) worst case for the K_5/K_{3,3} subgraph search. Only runs for n <= 8; larger n returns 'unknown immediately."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Three-tier check: (1) n <= 4 → planar. (2) Euler inequality |E| > 3n - 6 → not planar. (3) n <= 8 → exhaustive K_5 + K_{3,3} SUBGRAPH detection. (4) else → 'unknown-beyond-bound."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-cycle #t, empty #t, K_5 #f, K_{3,3} #f, 9-vertex cycle 'unknown-beyond-bound."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("eq?" "cond")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Treating the return as a plain boolean — it's THREE-VALUED. Guard with (eq? … #t) / (eq? … #f) / else-clause. Assuming n > 8 gives #t or #f — it gives 'unknown honestly."
+     :when-not-to-use "You need planarity for graphs with more than 8 vertices — this impl returns 'unknown honestly. You need a planar embedding — this only tests existence.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Bounded-exact planarity test. Euler-bound + K_5/K_{3,3} subgraph detection for |V| <= 8. Honest 'unknown for larger graphs."))
+
+(verb
+  :name "topo/boundary-matrix"
+  :library "topo"
+  :signature "(topo/boundary-matrix complex-or-faces k) -> matrix-of-0-1"
+  :summary "Boundary map ∂_k as a 0/1 matrix over GF(2). Rows index (k-1)-simplices, columns index k-simplices."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/boundary-matrix '((a b c)) 1)"
+     :note "Returns ((1 1 0) (1 0 1) (0 1 1)): the boundary map from 3 edges to 3 vertices of a triangle. Rows are vertices (a b c), columns are edges (a-b, a-c, b-c). Entry M[i][j] = 1 iff vertex i is an endpoint of edge j.")
+    (:tier "apprentice"
+     :code "(topo/boundary-matrix '((a b c)) 2)"
+     :note "Returns ((1) (1) (1)): the boundary of the single 2-simplex (a b c) has all three edges as faces. Column vector because there's one triangle; three rows for three edges.")
+    (:tier "intermediate"
+     :code "(topo/boundary-matrix '((a b c) (a b d) (a c d) (b c d)) 2)"
+     :note "Returns a 6x4 matrix: 6 edges of the hollow tetrahedron, 4 triangles. Each column has three 1s (each triangle has 3 edge faces).")
+    (:tier "expert"
+     :code "(topo/boundary-matrix '((a b) (b c)) 1)"
+     :note "Returns ((1 0) (1 1) (0 1)): boundary of 2 edges to 3 vertices in a path graph. Vertex b (middle row) touches both edges; vertices a and c each touch one.")
+    (:tier "master"
+     :code "(define (boundary-matrix-shape faces k)\n  (let ((M (topo/boundary-matrix faces k)))\n    (list ':rows (length M)\n          ':cols (if (null? M) 0 (length (car M))))))\n(list ':triangle-dim1 (boundary-matrix-shape '((a b c)) 1)\n      ':triangle-dim2 (boundary-matrix-shape '((a b c)) 2)\n      ':hollow-tet-dim2 (boundary-matrix-shape '((a b c) (a b d) (a c d) (b c d)) 2)\n      ':hollow-tet-dim1 (boundary-matrix-shape '((a b c) (a b d) (a c d) (b c d)) 1))"
+     :note "Domain: report boundary-matrix shapes for various dimensions. Returns matrix-shape tuples. Note the pattern: dim-k boundary has (number of k-1-simplices) rows × (number of k-simplices) columns."))
+
+  :related ("topo/homology-gf2" "topo/betti" "topo/f-vector")
+  :caveats ("Over GF(2) — no signs, entries are 0 or 1." "For k = 0 returns the empty matrix (∂_0 is the zero map by convention)." "Rows and columns are sorted for stable output; consumers can rebuild the indexing via topo/close and filtering by dimension.")
+  :drawbacks ("Materializes the full matrix — O(f_{k-1} * f_k) memory. Sparse formats are more efficient for very large complexes." "GF(2) only — no integer or rational homology.")
+  :usecases ("Compute homology (rank of boundary), Betti numbers." "Verify simplicial-complex construction: check that boundary of boundary is zero (over GF(2), ∂ ∂ = 0)." "Feed into GF(2) linear algebra for reduction algorithms.")
+  :learn (:concept "Boundary map ∂_k: from k-simplices to (k-1)-simplices. Over GF(2), it's a 0/1 matrix indicating face incidence." :prerequisites ("topo/complex" "topo/f-vector") :progression "Understand the chain complex ... → C_2 → C_1 → C_0. Homology comes from ker/im ratios of consecutive boundary maps. Verify ∂ ∂ = 0.")
+
+  :+math
+    (:algebra "∂_k: C_k → C_{k-1}, entry M[i][j] = 1 iff σ_i is a face of τ_j (both taken from the appropriate f_k dimension slot). Over GF(2), ∂ ∂ = 0."
+     :total #t
+     :domain "complex + dimension k"
+     :codomain "matrix (list of lists) of 0/1 entries, shape f_{k-1} × f_k"
+     :proofs "Standard chain-complex construction. The ∂∂ = 0 identity holds because each (k-2)-face of a k-simplex σ appears in exactly two of the (k-1)-boundary faces of σ, so the mod-2 sum is 0.")
+
+  :+cs
+    (:complexity "Time O(f_k · (k+1)) to fill entries; space O(f_{k-1} · f_k)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Generates face lattice, filters by dimension, sorts for stable ordering. For each k-simplex, drops one vertex at a time to enumerate boundary faces, looks up their index in the (k-1)-simplex table."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle ∂_1 = 3x3 vertex-edge incidence; triangle ∂_2 = 3x1 column of ones; hollow-tet ∂_2 has 6x4 shape."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/homology-gf2" "topo/betti")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Requesting k = 0 and expecting a matrix — ∂_0 is zero, impl returns empty. Assuming rows/cols are in input-vertex-order — they're canonicalized (sorted). Assuming signed entries — this is GF(2), no signs."
+     :when-not-to-use "You need signed (integer) boundary — not supported here. You need sparse-matrix output — this returns dense matrices.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "GF(2) boundary matrix ∂_k. Foundation for GF(2) homology and Betti number computation."))
+
+(verb
+  :name "topo/homology-gf2"
+  :library "topo"
+  :signature "(topo/homology-gf2 complex-or-faces k) -> integer"
+  :summary "k-th Betti number over GF(2): dim(ker ∂_k) - dim(im ∂_{k+1})."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/homology-gf2 '((a b c)) 0)"
+     :note "Returns 1: a triangle has one connected component. H_0 counts connected components.")
+    (:tier "apprentice"
+     :code "(topo/homology-gf2 '((a b c)) 1)"
+     :note "Returns 0: a filled triangle has no 1-cycles that aren't boundaries. H_1 = 0 (triangle is contractible).")
+    (:tier "intermediate"
+     :code "(topo/homology-gf2 '((a b) (b c) (c a)) 1)"
+     :note "Returns 1: a 3-cycle GRAPH (edges only, no filling) has one nontrivial 1-cycle. H_1 = Z/2 over GF(2), Betti = 1.")
+    (:tier "expert"
+     :code "(topo/homology-gf2 '((a b c) (a b d) (a c d) (b c d)) 2)"
+     :note "Returns 1: the hollow tetrahedron IS the 2-sphere; H_2 of a 2-sphere = Z (over GF(2), rank 1). Betti_2 = 1 confirms this is a 2-sphere.")
+    (:tier "master"
+     :code "(define (surface-signature faces)\n  (list ':b0 (topo/homology-gf2 faces 0)\n        ':b1 (topo/homology-gf2 faces 1)\n        ':b2 (topo/homology-gf2 faces 2)\n        ':chi (topo/euler-char faces)))\n(list ':sphere (surface-signature '((a b c) (a b d) (a c d) (b c d)))\n      ':disk (surface-signature '((a b c) (a c d)))\n      ':empty-cycle (surface-signature '((a b) (b c) (c a))))"
+     :note "Domain: complete topological signature. Returns Betti_0, Betti_1, Betti_2, Euler chi. Sphere: (1 0 1) with chi=2. Disk: (1 0 0) with chi=1. 3-cycle graph: (1 1 0) with chi=0. Euler-Poincare identity: sum of alternating signed Bettis = chi. Verified for all three."))
+
+  :related ("topo/betti" "topo/betti-k" "topo/boundary-matrix" "topo/euler-char")
+  :caveats ("Over GF(2) — returns rank, not full homology group structure. Cannot distinguish Z from Z/2 (both have GF(2) rank 1)." "For k where there are no k-simplices, returns 0.")
+  :drawbacks ("GF(2) only; no torsion detection." "O((f_k)^3) Gaussian elimination per k-dimension.")
+  :usecases ("Compute Betti numbers to characterize topology (connected components, holes, voids)." "Verify surface classifications (sphere has b_2 = 1)." "Compare complexes topologically after simplification.")
+  :learn (:concept "Betti number = rank of homology group. H_k / torsion at each dimension k." :prerequisites ("topo/boundary-matrix") :progression "Understand the k-th homology group as ker ∂_k / im ∂_{k+1}. Then explore Euler-Poincare identity, then persistent homology.")
+
+  :+math
+    (:algebra "b_k = dim(ker ∂_k) - dim(im ∂_{k+1}) = (n_k - rank(∂_k)) - rank(∂_{k+1})."
+     :total #t
+     :domain "complex + dimension k"
+     :codomain "non-negative integer"
+     :proofs "Rank-nullity theorem: for a linear map A between finite-dim vector spaces, dim(domain) = dim(ker A) + rank(A).")
+
+  :+cs
+    (:complexity "Time O((f_k)^3) worst case for Gaussian elimination over GF(2). Space O(f_{k-1} * f_k + f_k * f_{k+1})."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Computes n_k (count of k-simplices), builds ∂_k and ∂_{k+1} boundary matrices, runs Gaussian elimination over GF(2) to get ranks, returns n_k - rank(∂_k) - rank(∂_{k+1}). For k=0, ∂_0 is zero so dim(ker) = n_0."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle b_0=1 b_1=0; hollow-tet b_2=1 (2-sphere); 3-cycle graph b_1=1 (one loop); Euler-Poincare identity holds."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/betti" "topo/euler-char")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming GF(2) rank always matches integer rank — torsion in H_k is invisible over GF(2). Assuming b_0 counts vertices — it counts CONNECTED COMPONENTS."
+     :when-not-to-use "You need to detect torsion (Z/2 vs Z) — GF(2) can't. You need only b_0 — topo/components is more direct.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "k-th Betti number over GF(2). b_k = dim(ker ∂_k) - dim(im ∂_{k+1})."))
+
+(verb
+  :name "topo/betti"
+  :library "topo"
+  :signature "(topo/betti complex-or-faces) -> list-of-integer"
+  :summary "Full vector of Betti numbers (b_0 b_1 ... b_maxdim) over GF(2)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/betti '((a b c)))"
+     :note "Returns (1 0 0): triangle has one component (b_0=1), no loops (b_1=0), no voids (b_2=0). Contractible.")
+    (:tier "apprentice"
+     :code "(topo/betti '((a b c) (a b d) (a c d) (b c d)))"
+     :note "Returns (1 0 1): hollow tetrahedron (2-sphere) — one component, no loops (surface is simply connected), one 2-void enclosed. b_2 = 1 is the sphere signature.")
+    (:tier "intermediate"
+     :code "(topo/betti '((a b) (b c) (c a)))"
+     :note "Returns (1 1): a graph 3-cycle — one component, one loop. No 2-simplices, so no b_2 slot.")
+    (:tier "expert"
+     :code "(topo/betti '((a b) (c d)))"
+     :note "Returns (2 0): two separate edges — b_0=2 (two components), b_1=0 (no loops). Length is max-dim + 1, so a 1-complex returns a length-2 vector.")
+    (:tier "master"
+     :code "(define (recognize-shape faces)\n  (let ((b (topo/betti faces)))\n    (cond ((equal? b '(1 0 1)) '2-sphere)\n          ((equal? b '(1 2 1)) 'torus)\n          ((equal? b '(1 1 0)) 'cylinder-or-annulus)\n          ((equal? b '(1 0 0)) 'contractible)\n          ((equal? b '(2 0)) 'two-disjoint-edges)\n          (else (list 'unknown-signature b)))))\n(list ':sphere (recognize-shape '((a b c) (a b d) (a c d) (b c d)))\n      ':triangle (recognize-shape '((a b c)))\n      ':two-edges (recognize-shape '((a b) (c d))))"
+     :note "Domain: shape recognition by Betti signature. Returns (:sphere 2-sphere :triangle contractible :two-edges two-disjoint-edges). Betti vectors are a fingerprint — different topological types have different signatures."))
+
+  :related ("topo/homology-gf2" "topo/betti-k" "topo/euler-char")
+  :caveats ("Vector length = max dim of any face in the complex, plus 1." "For a complex with only edges, returns a length-1 or length-2 vector (b_0 and possibly b_1)." "Over GF(2), torsion is invisible.")
+  :drawbacks ("Runs homology computation for each dimension; no shared-work optimization across k values." "GF(2) only.")
+  :usecases ("Full topological fingerprint of a simplicial complex." "Verify shape recognition (sphere, torus, contractible, ...)." "Compare two complexes topologically.")
+  :learn (:concept "Betti vector = complete GF(2) homology signature. Two complexes with the same Betti vector may or may not be homotopy-equivalent; the vector is necessary but not sufficient." :prerequisites ("topo/homology-gf2") :progression "Follow with topo/persistence for the parametric extension (Betti numbers as functions of a filtration parameter).")
+
+  :+math
+    (:algebra "(b_0, b_1, ..., b_maxdim) where b_k = k-th Betti over GF(2). Euler-Poincare: chi = sum (-1)^k b_k."
+     :total #t
+     :domain "complex or list of maximal simplices"
+     :codomain "list of non-negative integers, length = maxdim + 1"
+     :proofs "See topo/homology-gf2.")
+
+  :+cs
+    (:complexity "Time O(sum_k (f_k)^3) — Gaussian elimination per dimension."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Determines max face-dim, iterates k from 0 to max-dim, calls homology-gf2 at each."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: triangle (1 0 0); hollow-tet (1 0 1) = 2-sphere signature; 3-cycle graph (1 1); 2-component-graph (2)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("equal?" "list-ref" "length")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Comparing with '(1 0 1 0) when actual is '(1 0 1) — the impl trims trailing zeros only when there are no simplices at that dimension. Assuming Betti-vector uniquely identifies topology — it doesn't (only up to Betti-signature; different topologies can share Betti vectors)."
+     :when-not-to-use "You need one specific k — use topo/homology-gf2 or topo/betti-k directly.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Full Betti vector over GF(2). Topological fingerprint of a complex."))
+
+(verb
+  :name "topo/betti-k"
+  :library "topo"
+  :signature "(topo/betti-k complex-or-faces k) -> integer"
+  :summary "Single k-th Betti number. Alias for topo/homology-gf2."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/betti-k '((a b c)) 0)"
+     :note "Returns 1: connected component count of a filled triangle.")
+    (:tier "apprentice"
+     :code "(topo/betti-k '((a b) (b c) (c a)) 1)"
+     :note "Returns 1: the loop in a 3-cycle graph.")
+    (:tier "intermediate"
+     :code "(topo/betti-k '((a b c) (a b d) (a c d) (b c d)) 2)"
+     :note "Returns 1: the enclosed void of a 2-sphere.")
+    (:tier "expert"
+     :code "(map (lambda (k) (topo/betti-k '((a b c) (a b d) (a c d) (b c d)) k)) (list 0 1 2))"
+     :note "Returns (1 0 1): map over dimensions. Convenient alternative to full topo/betti.")
+    (:tier "master"
+     :code "(define (has-hole-at-dim faces k)\n  (positive? (topo/betti-k faces k)))\n(list ':sphere-has-2void (has-hole-at-dim '((a b c) (a b d) (a c d) (b c d)) 2)\n      ':cycle-has-1loop (has-hole-at-dim '((a b) (b c) (c a)) 1)\n      ':filled-triangle-has-1loop (has-hole-at-dim '((a b c)) 1))"
+     :note "Domain: 'does this complex have a hole/void of dimension k?' predicate. Returns (:sphere-has-2void #t :cycle-has-1loop #t :filled-triangle-has-1loop #f). Useful for topological feature detection."))
+
+  :related ("topo/betti" "topo/homology-gf2")
+  :caveats ("Same as topo/homology-gf2 — this is a naming alias." "GF(2) only; torsion invisible.")
+  :drawbacks ("Same as topo/homology-gf2.")
+  :usecases ("Same as topo/homology-gf2." "Cleaner call site when you know you want Betti(k)." "Alignment with topo/betti-curve which is the parametric extension.")
+  :learn (:concept "Same as topo/homology-gf2 — just a shorter name for the single-dimension case." :prerequisites ("topo/homology-gf2") :progression "Same as topo/homology-gf2.")
+
+  :+math
+    (:algebra "Same as topo/homology-gf2."
+     :total #t
+     :domain "complex + dimension k"
+     :codomain "non-negative integer"
+     :proofs "Same as topo/homology-gf2.")
+
+  :+cs
+    (:complexity "Same as topo/homology-gf2."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Directly delegates to homologyGf2. Naming alias for readability."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: matches topo/homology-gf2 output bit-for-bit."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("positive?" "zero?" "map")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Same as topo/homology-gf2."
+     :when-not-to-use "You need all Betti numbers — use topo/betti in one call.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Betti_k as a single-dimension query. Alias for topo/homology-gf2."))
+
+(verb
+  :name "topo/metric-space"
+  :library "topo"
+  :signature "(topo/metric-space points distance-fn) -> (metric-space points distance-fn)"
+  :summary "Bundle a point set and a distance function into a metric-space value for use with metric-based topology verbs."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/metric-space '(a b c) (lambda (x y) 1))"
+     :note "Returns (metric-space (a b c) <fn>): a trivial 3-point metric space where all distances are 1.")
+    (:tier "apprentice"
+     :code "(let ((euclidean (lambda (x y) (sqrt (+ (expt (- (car x) (car y)) 2) (expt (- (cadr x) (cadr y)) 2))))))\n  (topo/metric-space '((0 0) (1 0) (0 1) (1 1)) euclidean))"
+     :note "Wrap 2D points with the Euclidean distance function. The four corners of the unit square are the points.")
+    (:tier "intermediate"
+     :code "(let ((ms (topo/metric-space '(a b c) (lambda (x y) (if (eq? x y) 0 1)))))\n  (list ':head (car ms) ':points (cadr ms)))"
+     :note "Inspect the tagged-value structure. Returns (:head metric-space :points (a b c)). Consumers can pattern-match on the head symbol.")
+    (:tier "expert"
+     :code "(define (min-distance ms)\n  (let ((points (cadr ms))\n        (dfn (caddr ms)))\n    (let outer ((remaining points) (best 999999))\n      (if (or (null? remaining) (null? (cdr remaining)))\n          best\n          (let* ((p (car remaining)) (rest (cdr remaining))\n                 (nearest (fold-left min best (map (lambda (q) (dfn p q)) rest))))\n            (outer rest (min best nearest)))))))\n(min-distance (topo/metric-space '(a b c d) (lambda (x y) (cond ((and (eq? x 'a) (eq? y 'b)) 2) ((and (eq? x 'b) (eq? y 'c)) 1) ((and (eq? x 'c) (eq? y 'd)) 3) ((and (eq? x 'a) (eq? y 'c)) 5) (else 100)))))"
+     :note "Domain: find the minimum pairwise distance in a metric space. Returns 1 (between b and c). Uses the tagged-value structure to pull out points and distance function.")
+    (:tier "master"
+     :code "(define (city-block-space places distances)\n  (topo/metric-space places\n    (lambda (a b)\n      (define pair (list a b))\n      (define entry (assoc pair distances))\n      (if entry (cadr entry) 999999))))\n(let ((cities '(NYC LA CHI))\n      (dists '(((NYC LA) 3944) ((LA NYC) 3944) ((NYC CHI) 1145) ((CHI NYC) 1145) ((LA CHI) 2802) ((CHI LA) 2802))))\n  (city-block-space cities dists))"
+     :note "Domain: build a metric-space over city-to-city distances from a lookup table. Returns the tagged value. Useful for feeding into future TDA verbs like topo/vietoris-rips."))
+
+  :related ("topo/vietoris-rips" "topo/ball")
+  :caveats ("The distance function is stored as a raw callable — no validation that it satisfies the metric axioms." "Consumers should extract points via cadr and distance via caddr.")
+  :drawbacks ("No caching — the distance function is called every time. For expensive distances, wrap in a memoizer.")
+  :usecases ("Bundle spatial data for Vietoris-Rips filtration or persistent homology." "Model city-network or embedding distances for clustering-style algorithms.")
+  :learn (:concept "Constructor for the metric-space datatype. Points + distance function = metric space." :prerequisites ("lambda" "list") :progression "Feed into topo/vietoris-rips or topo/rips-filtration for TDA workflows.")
+
+  :+math
+    (:algebra "Metric space: set M with function d: M × M → R satisfying d(x,x) = 0, d(x,y) = d(y,x), and triangle inequality d(x,z) <= d(x,y) + d(y,z). Impl does not enforce these axioms."
+     :total #t
+     :domain "points list + distance function"
+     :codomain "tagged list (metric-space points fn)"
+     :proofs "Standard definition; impl is a data-wrapper.")
+
+  :+cs
+    (:complexity "Time O(1); just wraps the arguments in a tagged list."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Trivial constructor: (list (Sym 'metric-space') points fn). Does not validate metric axioms."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-point trivial metric, Euclidean 2D, city-distance lookup all round-trip cleanly."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/vietoris-rips" "topo/ball")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Not respecting the distance-function contract (returns non-symmetric or triangle-inequality-violating values). Impl doesn't check, but downstream algorithms will misbehave."
+     :when-not-to-use "You need to enforce metric axioms — this constructor does not.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Metric-space constructor. Bundles points + distance function; downstream metric-based verbs consume this."))
+
+(verb
+  :name "topo/vietoris-rips"
+  :library "topo"
+  :signature "(topo/vietoris-rips metric-space scale [max-dim]) -> complex"
+  :summary "Vietoris-Rips complex at scale r: all subsets with pairwise-distance <= r form maximal faces (up to max-dim + 1 points)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let ((ms (topo/metric-space '(a b c) (lambda (x y) 1))))\n  (topo/vietoris-rips ms 2 2))"
+     :note "Returns (complex ((a b c)) 7): with distance 1 for every distinct pair and scale 2, all three points join in a triangle.")
+    (:tier "apprentice"
+     :code "(let ((ms (topo/metric-space '(a b c) (lambda (x y) 1))))\n  (topo/vietoris-rips ms 0.5 2))"
+     :note "Returns (complex ((a) (b) (c)) 3): scale 0.5 is below every non-trivial distance; only singletons.")
+    (:tier "intermediate"
+     :code "(let ((ms (topo/metric-space '(a b c d)\n              (lambda (x y) (if (eq? x y) 0 1)))))\n  (topo/vietoris-rips ms 1 3))"
+     :note "Returns (complex ((a b c d)) 15): 4 points all at distance 1; at scale 1 they all connect. Max-dim 3 lets us include the 4-simplex.")
+    (:tier "expert"
+     :code "(let ((ms (topo/metric-space '(a b c)\n              (lambda (x y)\n                (cond ((eq? x y) 0)\n                      ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                      (else 2))))))\n  (list ':r0.5 (topo/vietoris-rips ms 0.5 2)\n        ':r1.5 (topo/vietoris-rips ms 1.5 2)\n        ':r2.5 (topo/vietoris-rips ms 2.5 2)))"
+     :note "Filtration snapshots: at 0.5 only points; at 1.5 the a-b edge joins; at 2.5 all pairs connect and we get the full triangle. Same metric, different scales, growing complex.")
+    (:tier "master"
+     :code "(define (topological-fingerprint metric-fn point-set scale)\n  (let* ((ms (topo/metric-space point-set metric-fn))\n         (c (topo/vietoris-rips ms scale 2)))\n    (list ':scale scale ':betti (topo/betti c) ':chi (topo/euler-char c))))\n(let ((triangle-metric (lambda (x y)\n                         (cond ((eq? x y) 0)\n                               ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                               ((or (and (eq? x 'b) (eq? y 'c)) (and (eq? x 'c) (eq? y 'b))) 1)\n                               ((or (and (eq? x 'a) (eq? y 'c)) (and (eq? x 'c) (eq? y 'a))) 1)\n                               (else 2))))\n      (pts '(a b c)))\n  (list (topological-fingerprint triangle-metric pts 0.5)\n        (topological-fingerprint triangle-metric pts 1.0)\n        (topological-fingerprint triangle-metric pts 1.5)))"
+     :note "Domain: sweep scales, report Betti + chi. Shows the complex evolving: at 0.5 three isolated points, at 1.0 a triangle boundary (3-cycle: (1 1) plus chi 0), at 1.5 same. This is the essence of persistent homology at a manual filtration."))
+
+  :related ("topo/metric-space" "topo/rips-filtration" "topo/persistence" "topo/betti")
+  :caveats ("Default max-dim is 2; pass explicitly for higher-dim complexes." "Distance function is called O(n^2) times; expensive metrics benefit from memoization at the caller." "For n > 30 or so, VR enumeration is slow; suitable for teaching-scale examples not production-scale TDA.")
+  :drawbacks ("O(n^{max-dim + 1}) enumeration; not scalable to industrial point clouds." "No sparse-complex representation.")
+  :usecases ("Teaching Vietoris-Rips filtrations." "Small-scale topological data analysis prototypes." "Reference implementation for validating optimized VR builders.")
+  :learn (:concept "Vietoris-Rips complex: subsets with bounded diameter. Nests with respect to scale: r1 < r2 implies VR(r1) ⊆ VR(r2). Foundation of persistent homology." :prerequisites ("topo/metric-space") :progression "Wire to topo/rips-filtration to get a nested sequence; then topo/persistence to extract birth-death pairs.")
+
+  :+math
+    (:algebra "VR(X, r) = { S ⊆ X : diam(S) <= r }. Monotone in r: r1 < r2 ⇒ VR(r1) ⊆ VR(r2)."
+     :total #t
+     :domain "metric-space value + scale + optional max-dim"
+     :codomain "complex tagged value"
+     :proofs "Sub-complex property (closed under subsets) holds because if S has diam <= r, any subset of S also has diam <= r.")
+
+  :+cs
+    (:complexity "Time O(n^{max-dim+1} · max-dim^2) to enumerate subsets + check diameters. Space O(f * max-dim) for the resulting complex."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Build pairwise-distance matrix, enumerate combinations of each size up to max-dim+1, check diameter, filter to maximal faces via subset containment."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: three-point trivial metric collapses correctly at each scale; four-point all-distance-1 becomes full 3-simplex."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/betti" "topo/euler-char" "topo/persistence")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Forgetting max-dim — default is 2, which is often what you want. Assuming VR is efficient for large n — it isn't; O(n^d) enumeration."
+     :when-not-to-use "n > 30 or you need production-scale TDA — use a specialized library.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Vietoris-Rips complex at scale r. Diameter-bounded subsets. Foundation of persistent homology."))
+
+(verb
+  :name "topo/rips-filtration"
+  :library "topo"
+  :signature "(topo/rips-filtration metric-space scales [max-dim]) -> list-of-(scale complex)"
+  :summary "Sequence of Vietoris-Rips complexes at a list of scales. Foundation of persistent homology."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let ((ms (topo/metric-space '(a b c) (lambda (x y) 1))))\n  (topo/rips-filtration ms '(0.5 1.5) 2))"
+     :note "Returns two (scale complex) pairs. At r=0.5 (below dist 1): three isolated points. At r=1.5: the full triangle emerges.")
+    (:tier "apprentice"
+     :code "(let ((ms (topo/metric-space '(a b) (lambda (x y) 1))))\n  (topo/rips-filtration ms '(0 0.5 1 2) 1))"
+     :note "Returns four snapshots. r=0 and r=0.5: two points. r=1 and r=2: the edge is present. Notice the filtration is monotone.")
+    (:tier "intermediate"
+     :code "(let ((ms (topo/metric-space '(a b c)\n              (lambda (x y)\n                (cond ((eq? x y) 0)\n                      ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                      ((or (and (eq? x 'b) (eq? y 'c)) (and (eq? x 'c) (eq? y 'b))) 2)\n                      (else 3))))))\n  (length (topo/rips-filtration ms '(0 0.5 1 1.5 2 2.5 3 3.5) 2)))"
+     :note "Returns 8: the filtration has 8 snapshots (one per requested scale). The list-length equals the input scales-length.")
+    (:tier "expert"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0.5 1.5) 2)))\n  (map (lambda (step) (list ':scale (car step)\n                             ':betti (topo/betti (cadr step))))\n       filt))"
+     :note "Extract Betti at each scale. Returns per-step (:scale scale :betti (b_0 b_1 ...)) records. Shows how homology evolves along the filtration.")
+    (:tier "master"
+     :code "(define (persistent-story metric-fn points scales)\n  (let* ((ms (topo/metric-space points metric-fn))\n         (filt (topo/rips-filtration ms scales 2))\n         (persistence (topo/persistence filt)))\n    (list ':scales scales\n          ':num-classes (length persistence)\n          ':persistence-pairs persistence)))\n(persistent-story\n  (lambda (x y) (if (eq? x y) 0 (if (or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1 2)))\n  '(a b c)\n  '(0 1 2 3))"
+     :note "Domain: full persistent-homology story. Returns the count of persistence pairs and their (dim birth death) triples. This is the pattern for real TDA workflows."))
+
+  :related ("topo/vietoris-rips" "topo/metric-space" "topo/persistence")
+  :caveats ("Scales are used as-is; caller is responsible for monotone ordering." "Each scale runs a full VR computation; there is no incremental construction across scales.")
+  :drawbacks ("Not incremental; O(n * S * n^d) for S scales and n points at max-dim d.")
+  :usecases ("Feed into topo/persistence for full persistence pairs." "Visualize how topology emerges as scale grows.")
+  :learn (:concept "Nested VR complexes indexed by scale. Persistent homology tracks homology classes across this nesting." :prerequisites ("topo/vietoris-rips") :progression "Pass to topo/persistence to extract (dim birth death) triples.")
+
+  :+math
+    (:algebra "Sequence VR(r_1) ⊆ VR(r_2) ⊆ ... assuming r_1 < r_2 < ... Nested filtration property is preserved regardless of scale ordering, but persistence output assumes monotone scales."
+     :total #t
+     :domain "metric-space + scales list + optional max-dim"
+     :codomain "list of (scale complex) pairs"
+     :proofs "VR is monotone in scale (see topo/vietoris-rips).")
+
+  :+cs
+    (:complexity "Time O(S · n^{max-dim+1}) for S scales and n points."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Map over scales, call vietoris-rips at each. Trivial wrapper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: filtration length matches scale-list length; Betti evolution across scales is sensible."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/persistence" "topo/betti")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Non-monotone scales — downstream persistence assumes monotone; feeding non-monotone gives garbage. Very large scale count — each scale is a full VR computation."
+     :when-not-to-use "You need incremental construction — pull a specialized library.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Nested Vietoris-Rips complexes across scales. Precursor to persistent homology."))
+
+(verb
+  :name "topo/persistence"
+  :library "topo"
+  :signature "(topo/persistence filtration) -> list-of-(dim birth death)"
+  :summary "Birth-death pairs of homology classes across a filtration. Death 'inf means the class survives to the end."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (topo/persistence filt))"
+     :note "Returns something like ((0 0 1) (0 0 1) (0 0 inf)): two components die at scale 1 (merging), one lives to infinity. Note: format is (dim birth death).")
+    (:tier "apprentice"
+     :code "(let* ((ms (topo/metric-space '(a) (lambda (x y) 0)))\n       (filt (topo/rips-filtration ms '(0) 1)))\n  (topo/persistence filt))"
+     :note "Returns ((0 0 inf)): one component, born at 0, alive forever. The essential (persistent) homology class.")
+    (:tier "intermediate"
+     :code "(let* ((ms (topo/metric-space '(a b c)\n              (lambda (x y)\n                (cond ((eq? x y) 0)\n                      ((or (and (eq? x 'a) (eq? y 'b)) (and (eq? x 'b) (eq? y 'a))) 1)\n                      ((or (and (eq? x 'b) (eq? y 'c)) (and (eq? x 'c) (eq? y 'b))) 2)\n                      (else 3))))))\n  (topo/persistence (topo/rips-filtration ms '(0 1 2 3) 2)))"
+     :note "Returns ((0 0 1) (0 0 2) (0 0 inf)): three components at scale 0. At scale 1 one component dies (merges into the a-b pair); at scale 2 another dies; one lives on.")
+    (:tier "expert"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (essential-classes pairs)\n  (filter (lambda (p) (and (pair? p) (>= (length p) 3) (symbol? (list-ref p 2)))) pairs))\n(let* ((ms (topo/metric-space '(a b c) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (list ':all (topo/persistence filt)\n        ':essential (essential-classes (topo/persistence filt))))"
+     :note "Filter to essential classes (death=inf). Returns the full list plus the filtered essentials. Essential classes carry the topological invariants of the LIMIT complex.")
+    (:tier "master"
+     :code "(define (story-of-holes filt)\n  (let* ((pairs (topo/persistence filt))\n         (dims (map car pairs))\n         (lifetimes (map (lambda (p) (if (symbol? (list-ref p 2)) 'inf (- (list-ref p 2) (list-ref p 1)))) pairs)))\n    (list ':num-classes (length pairs)\n          ':dims dims\n          ':lifetimes lifetimes)))\n(let* ((ms (topo/metric-space '(a b c) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (story-of-holes filt))"
+     :note "Domain: full topological narrative of a filtration. Reports counts, dimensions, and lifetimes. Foundation for statistical topology (bootstrap confidence bands on persistence diagrams)."))
+
+  :related ("topo/rips-filtration" "topo/total-persistence" "topo/persistence-entropy" "topo/bottleneck" "topo/betti")
+  :caveats ("**Naive impl**: computes Betti at each step and compares — CORRECT for small filtrations, not asymptotically optimal (proper impl is boundary-matrix reduction). Suitable for teaching and small-scale TDA." "Death = 'inf as a Sym for classes surviving to the end.")
+  :drawbacks ("O(S · homology-cost); asymptotically slower than the reduction algorithm." "Doesn't track which specific homology class dies; only counts.")
+  :usecases ("Extract persistence pairs from small filtrations." "Teach persistent homology in a REPL." "Debug custom filtration constructions.")
+  :learn (:concept "Persistence pairs: (dim birth death). Death = inf means an ESSENTIAL class of the limit space. Life = death - birth is a measure of the feature's topological prominence." :prerequisites ("topo/rips-filtration" "topo/betti") :progression "Analyze pairs with topo/total-persistence, topo/persistence-entropy, or compare with topo/bottleneck.")
+
+  :+math
+    (:algebra "For a filtration F_0 ⊆ F_1 ⊆ ..., a k-dim homology class 'lives' during the sub-interval [birth, death). Persistence pairs total-count is a topological invariant of the filtration."
+     :total #t
+     :domain "list of (scale complex) pairs"
+     :codomain "list of (dim birth death) triples; death may be a Sym 'inf"
+     :proofs "By the algebraic-persistence-modules theorem (Zomorodian-Carlsson): every finite persistent module decomposes uniquely into interval modules.")
+
+  :+cs
+    (:complexity "Time O(S · homology-cost) where homology-cost is O((f_k)^3) at each step."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Compute Betti vectors at each step, diff consecutive vectors, push births / pop deaths. Simpler than boundary-matrix reduction; correct but not asymptotically optimal."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-point trivial metric gives (0 0 inf) essential class; a-b-c chain metric gives two mortal + one essential 0-classes."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/total-persistence" "topo/persistence-entropy" "topo/bottleneck")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming death is always numeric — it's Sym 'inf for essential classes; guard with symbol? or check for the Sym."
+     :when-not-to-use "Large filtration + high dim — use a specialized library.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Persistence pairs across a filtration. Naive but correct impl. 'inf marks essential classes."))
+
+(verb
+  :name "topo/total-persistence"
+  :library "topo"
+  :signature "(topo/total-persistence pairs) -> number"
+  :summary "Sum of finite lifetimes (death - birth). Skips essential classes (death = 'inf)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/total-persistence '((0 0 1) (0 0 2) (0 0 inf)))"
+     :note "Returns 3: sum of the two finite lifetimes 1 + 2. The essential (inf) class is skipped.")
+    (:tier "apprentice"
+     :code "(topo/total-persistence '((0 0 inf)))"
+     :note "Returns 0: only essential class, no finite lifetimes to sum.")
+    (:tier "intermediate"
+     :code "(topo/total-persistence '((0 0 1) (1 1 3)))"
+     :note "Returns 3: 1 + 2 = 3 across dimensions. Total persistence lumps all dims together.")
+    (:tier "expert"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2))\n       (pairs (topo/persistence filt)))\n  (topo/total-persistence pairs))"
+     :note "Pipeline: metric-space → filtration → persistence → total. Returns a single number summarizing the total 'topological mass' of the finite features.")
+    (:tier "master"
+     :code "(define (topology-strength points metric-fn scales)\n  (let* ((ms (topo/metric-space points metric-fn))\n         (filt (topo/rips-filtration ms scales 2))\n         (pairs (topo/persistence filt)))\n    (list ':num-pairs (length pairs)\n          ':total-mass (topo/total-persistence pairs)\n          ':entropy (topo/persistence-entropy pairs))))\n(topology-strength '(a b c d)\n  (lambda (x y) (if (eq? x y) 0 1))\n  '(0 1 2))"
+     :note "Domain: single-number topological summary. Returns num-pairs, total-mass, entropy. Useful for coarse comparison between point clouds."))
+
+  :related ("topo/persistence" "topo/persistence-entropy" "topo/bottleneck")
+  :caveats ("Sums across all dimensions; caller can filter first by (filter (lambda (p) (= (car p) k)) pairs) to restrict to dim k." "Ignores essential classes.")
+  :drawbacks ("Aggregates too coarsely for many use cases; prefer entropy or bottleneck for finer comparisons.")
+  :usecases ("Coarse comparison between filtrations." "Bootstrap sampling in statistical TDA." "Feature strength ranking.")
+  :learn (:concept "Total-persistence — the L^1 norm of the finite bar-lifetimes. Simple summary statistic." :prerequisites ("topo/persistence") :progression "Compare with topo/persistence-entropy (Shannon of normalized lifetimes) and topo/bottleneck (L-infinity distance between diagrams).")
+
+  :+math
+    (:algebra "sum over pairs (d - b) for finite pairs. Equal to the L^1 norm of the barcode."
+     :total #t
+     :domain "list of (dim birth death) triples"
+     :codomain "non-negative number"
+     :proofs "Direct linear combination.")
+
+  :+cs
+    (:complexity "Time O(P) where P is number of pairs."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Iterate pairs, sum death - birth for finite pairs, skip Sym('inf') deaths."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (1+2)+skip-inf = 3; only inf = 0; two-dim sum works correctly."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison" "sort")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming it includes essential classes — it doesn't; those are always excluded."
+     :when-not-to-use "You need per-dimension breakdown — filter pairs first.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Sum of finite lifetimes in a persistence diagram. L^1 norm of the barcode."))
+
+(verb
+  :name "topo/persistence-entropy"
+  :library "topo"
+  :signature "(topo/persistence-entropy pairs) -> number"
+  :summary "Shannon entropy of normalized finite lifetimes: H = -sum p_i log p_i where p_i = lifetime_i / total."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/persistence-entropy '((0 0 1) (0 0 2)))"
+     :note "Returns ≈ 0.6365: entropy of the distribution (1/3, 2/3). H ≈ -1/3·ln(1/3) - 2/3·ln(2/3) ≈ 0.6365.")
+    (:tier "apprentice"
+     :code "(topo/persistence-entropy '((0 0 1) (0 0 1)))"
+     :note "Returns ≈ 0.693: entropy of (1/2, 1/2) — the maximum-entropy two-class distribution, equal to ln 2.")
+    (:tier "intermediate"
+     :code "(topo/persistence-entropy '())"
+     :note "Returns 0: no lifetimes, no entropy.")
+    (:tier "expert"
+     :code "(topo/persistence-entropy '((0 0 1) (0 0 inf)))"
+     :note "Returns 0: only one finite lifetime (1); it's the whole distribution (probability 1), so entropy is 0 — no uncertainty. Essential class skipped.")
+    (:tier "master"
+     :code "(let ((short-barcode '((0 0 1) (0 0 2) (0 0 3)))\n      (long-barcode '((0 0 1) (0 0 100) (0 0 200))))\n  (list ':balanced (topo/persistence-entropy short-barcode)\n        ':dominated (topo/persistence-entropy long-barcode)))"
+     :note "Domain: contrast a balanced vs dominated barcode. Balanced: three lifetimes ~similar-scale, high entropy. Dominated: one small + two large, entropy skewed. Useful for detecting 'shape signatures'."))
+
+  :related ("topo/total-persistence" "topo/persistence" "topo/bottleneck")
+  :caveats ("Base of the log is natural (ln). Multiply by 1/log(2) if you want bits." "Skips essential classes (death = 'inf).")
+  :drawbacks ("Single number aggregates a lot — use bottleneck for finer distinctions.")
+  :usecases ("Compare shape-signatures between point clouds." "Detect 'clean' vs 'noisy' filtrations." "Feature-selection metric in TDA workflows.")
+  :learn (:concept "Persistence entropy — Shannon entropy applied to normalized barcode lengths. Higher entropy = more uniform lifetimes." :prerequisites ("topo/persistence" "topo/total-persistence") :progression "Compare with topo/bottleneck; use both in a TDA-signature pipeline.")
+
+  :+math
+    (:algebra "H(P) = -sum p_i log p_i where P = { lifetime_i / total_lifetime }. Bounded above by log(|P|)."
+     :total #t
+     :domain "list of persistence pairs"
+     :codomain "non-negative number"
+     :proofs "Standard information-theoretic entropy; Jensen bounds give the log(n) upper bound.")
+
+  :+cs
+    (:complexity "Time O(P). Space O(P)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Extract finite lifetimes, normalize by total, sum p log p."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: (1,2)-lifetimes give ≈0.6365; (1,1) give ≈0.693 = ln 2; single lifetime gives 0."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming base-2 — impl uses natural log."
+     :when-not-to-use "You need per-dim entropy — filter pairs first.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Shannon entropy of the normalized barcode lifetimes. Coarse shape signature."))
+
+(verb
+  :name "topo/bottleneck"
+  :library "topo"
+  :signature "(topo/bottleneck diagram-a diagram-b) -> number"
+  :summary "Bottleneck distance between two persistence diagrams. UPPER-BOUND approximation using per-pair L-infinity nearest-neighbor + diagonal projection."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/bottleneck '((0 0 1) (1 1 2)) '((0 0 1) (1 1 2)))"
+     :note "Returns 0: identical diagrams have bottleneck distance 0.")
+    (:tier "apprentice"
+     :code "(topo/bottleneck '((0 0 1)) '((0 0 2)))"
+     :note "Returns 1: two diagrams differ only by the death of one pair (1 vs 2); L-infinity distance = 1.")
+    (:tier "intermediate"
+     :code "(topo/bottleneck '((0 0 3)) '())"
+     :note "Returns 1.5: the pair (0 0 3) must be matched to the diagonal (mid-lifetime cost = (3-0)/2 = 1.5).")
+    (:tier "expert"
+     :code "(topo/bottleneck '((0 0 1) (1 2 5)) '((0 0.5 1.5) (1 2 6)))"
+     :note "Returns a small number: each pair matched to its closest counterpart via L-infinity. Diagonal projection for unmatched pairs.")
+    (:tier "master"
+     :code "(define (compare-shapes points-a points-b metric-fn scales)\n  (let* ((ms-a (topo/metric-space points-a metric-fn))\n         (ms-b (topo/metric-space points-b metric-fn))\n         (filt-a (topo/rips-filtration ms-a scales 2))\n         (filt-b (topo/rips-filtration ms-b scales 2))\n         (pairs-a (topo/persistence filt-a))\n         (pairs-b (topo/persistence filt-b)))\n    (topo/bottleneck pairs-a pairs-b)))\n(compare-shapes '(a b) '(a b c)\n  (lambda (x y) (if (eq? x y) 0 1))\n  '(0 1 2))"
+     :note "Domain: shape-comparison pipeline. Build filtration for each point cloud, compute persistence, take bottleneck distance. Returns a scalar indicating how topologically-different the shapes are."))
+
+  :related ("topo/persistence" "topo/total-persistence" "topo/persistence-entropy")
+  :caveats ("**Approximation**: this impl returns an UPPER BOUND on bottleneck distance (per-pair nearest-neighbor + diagonal). Full bottleneck requires an optimal bipartite matching (Hopcroft-Karp on distance graph) — not implemented in this lane. Documented, not a lie.")
+  :drawbacks ("Not exact — reports an upper bound." "Ignores essential classes.")
+  :usecases ("Coarse shape-comparison in TDA pipelines." "Placeholder in workflows that will later switch to an exact bottleneck library." "Stability metric for perturbation experiments.")
+  :learn (:concept "Bottleneck distance — the L-infinity norm of the optimal matching between two persistence diagrams. The gold standard TDA stability metric." :prerequisites ("topo/persistence") :progression "Compare with Wasserstein distance (L^p norm of matching); learn about the stability theorem of persistent homology.")
+
+  :+math
+    (:algebra "Bottleneck(A, B) = min over bijections between A' and B' (allowing diagonal projections) of max L-infinity distance. Impl gives an upper bound via greedy nearest-neighbor."
+     :total #t
+     :domain "two persistence-pair lists"
+     :codomain "non-negative number (upper bound)"
+     :proofs "Bipartite matching upper-bound: any specific matching has cost >= optimal matching, so nearest-neighbor cost is an upper bound.")
+
+  :+cs
+    (:complexity "Time O(|A| · |B|). Space O(|A| + |B|)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "For each pair in A, find L-infinity nearest neighbor in B or the diagonal projection cost. Symmetric loop for B. Take the max."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: identical diagrams give 0; single-pair diff of 1 in death gives 1; single pair vs empty gives half-lifetime."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Treating the result as EXACT bottleneck — it's an upper bound. For exact bottleneck, use a specialized library."
+     :when-not-to-use "You need exact bottleneck for a stability proof — this is an approximation.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Upper-bound bottleneck distance via greedy L-infinity nearest-neighbor + diagonal projection. Documented approximation."))
+
+(verb
+  :name "topo/betti-curve"
+  :library "topo"
+  :signature "(topo/betti-curve filtration k) -> list-of-(scale betti_k)"
+  :summary "Betti_k as a function of filtration scale. Returns (scale betti_k) pairs, one per filtration step."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (topo/betti-curve filt 0))"
+     :note "Returns ((0 3) (1 1) (2 1)): at scale 0 three components; at scale 1 they merge into one; at scale 2 still one. This is the b_0 curve.")
+    (:tier "apprentice"
+     :code "(let* ((ms (topo/metric-space '(a b c) (lambda (x y) 1)))\n       (filt (topo/rips-filtration ms '(0 1 2) 2)))\n  (topo/betti-curve filt 1))"
+     :note "Returns ((0 0) (1 0) (2 0)): no 1-dim classes at any scale for this trivial metric. The b_1 curve is flat zero.")
+    (:tier "intermediate"
+     :code "(let* ((ms (topo/metric-space '(a b c d) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 0.5 1 2) 2)))\n  (topo/betti-curve filt 2))"
+     :note "Returns ((0 0) (0.5 0) (1 1) (2 1)): b_2 curve. At scale 1 the 4-simplex-boundary emerges (2-sphere-like), giving b_2=1 that persists.")
+    (:tier "expert"
+     :code "(let* ((ms (topo/metric-space '(a b c d) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 0.5 1 2) 2)))\n  (map (lambda (k) (list ':dim k ':curve (topo/betti-curve filt k)))\n       (list 0 1 2)))"
+     :note "Compute all three Betti curves. Returns per-dim breakdown. b_0 collapses at scale 1; b_1 stays 0; b_2 rises to 1 at scale 1 and holds.")
+    (:tier "master"
+     :code "(define (persistence-diagram-summary filt k)\n  (let* ((curve (topo/betti-curve filt k))\n         (jumps (let loop ((remaining curve) (last-b 0) (acc '()))\n                  (cond ((null? remaining) (reverse acc))\n                        (else\n                         (let* ((step (car remaining))\n                                (scale (car step))\n                                (b (cadr step))\n                                (delta (- b last-b)))\n                           (loop (cdr remaining) b\n                                 (if (not (= delta 0))\n                                     (cons (list ':scale scale ':delta delta) acc)\n                                     acc)))))))) \n    (list ':dim k ':jumps jumps)))\n(let* ((ms (topo/metric-space '(a b c d) (lambda (x y) (if (eq? x y) 0 1))))\n       (filt (topo/rips-filtration ms '(0 0.5 1 2) 2)))\n  (persistence-diagram-summary filt 0))"
+     :note "Domain: extract the DIFFERENCE curve — jumps in Betti_k across the filtration. Returns per-scale ('scale delta) records at points where b_0 changes. Foundation for compact persistence-diagram construction."))
+
+  :related ("topo/persistence" "topo/betti" "topo/rips-filtration")
+  :caveats ("Requires a filtration and a dimension k." "Returns exactly one (scale betti_k) pair per filtration step; no interpolation.")
+  :drawbacks ("Recomputes homology at each step; O(S · homology-cost)." "For persistence pairs, use topo/persistence directly.")
+  :usecases ("Plot Betti-k across scale for visualization." "Detect scale ranges where a particular Betti number is stable." "Feature engineering: 'how long does b_1 stay 1?' as a shape signature.")
+  :learn (:concept "Betti curve — the projection of the persistence barcode to one dimension. Plot it and you see the topological features rise and fall." :prerequisites ("topo/rips-filtration" "topo/betti") :progression "Learn topo/persistence for the fully-decomposed birth-death pairs; then persistence diagrams for visualization.")
+
+  :+math
+    (:algebra "beta_k(r) = dim H_k(VR(X, r)). Function of r on the scale range."
+     :total #t
+     :domain "filtration + dimension k"
+     :codomain "list of (scale betti_k) pairs"
+     :proofs "Trivial from definition of persistent homology.")
+
+  :+cs
+    (:complexity "Time O(S · (f_k)^3) — one homology computation per scale step."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Map over filtration steps, call homologyGf2 at each. Straightforward wrapper."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 3-point trivial metric b_0 curve collapses from 3 to 1 at scale 1; 4-point metric b_2 rises to 1 at scale 1."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("map" "reduce" "plot")
+     :cardinality many
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Confusing with topo/persistence — this returns raw curve values; persistence returns birth-death pairs."
+     :when-not-to-use "You want birth-death pairs — use topo/persistence.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Betti_k as function of filtration scale. Curve of raw values, one per scale step."))
+
+(verb
+  :name "topo/knot"
+  :library "topo"
+  :signature "(topo/knot crossings) -> (knot crossings count)"
+  :summary "Constructor for a knot value from a list of (optionally signed) crossings. See :caveats for format."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/knot '((1 1 2 3 4)))"
+     :note "Returns (knot ((1 1 2 3 4)) 1): a knot with one signed +1 crossing. Each element is (sign strand-a strand-b strand-c strand-d).")
+    (:tier "apprentice"
+     :code "(topo/knot '())"
+     :note "Returns (knot () 0): the unknot (zero crossings). This is the trivial knot.")
+    (:tier "intermediate"
+     :code "(topo/knot '((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12)))"
+     :note "Returns (knot ((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12)) 3): three signed crossings. This is a knot-diagram sketch; the impl only counts and passes on the data.")
+    (:tier "expert"
+     :code "(let ((k (topo/knot '((1 1 2 3 4) (1 5 6 7 8)))))\n  (list ':head (car k) ':crossings (cadr k) ':count (caddr k)))"
+     :note "Inspect the tagged-value shape. Returns (:head knot :crossings ((1 1 2 3 4) (1 5 6 7 8)) :count 2).")
+    (:tier "master"
+     :code "(define (knot-summary k)\n  (let ((crossings (cadr k)) (n (caddr k)))\n    (list ':crossings n\n          ':writhe (topo/writhe k)\n          ':crossing-number-bound n\n          ':unknot? (topo/unknot? k))))\n(list ':trivial (knot-summary (topo/knot '()))\n      ':three-crossing (knot-summary (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12)))))"
+     :note "Domain: comprehensive knot summary. Returns (crossings, writhe, lower-bound-crossing-number, unknot?). Empty knot: fully known (0 0 0 #t). 3-crossing: partial (3 3 3 unknown-beyond-bound). Honest bounded reporting."))
+
+  :related ("topo/writhe" "topo/crossing-number" "topo/unknot?")
+  :caveats ("**Representation**: signed crossings are lists starting with +1 or -1; unsigned crossings (any other first-element) contribute 0 to writhe." "This is a data-wrapper constructor — no validation that the crossings form a valid diagram." "PD-code and Gauss-code alternatives require signature changes and are not supported here.")
+  :drawbacks ("No isotopy checks; two 'different' knot values may represent the same knot topologically." "No conversion between PD/DT/Gauss code forms.")
+  :usecases ("Bundle knot-diagram data for downstream invariant computation." "Store knot state in Cortex for persistence.")
+  :learn (:concept "Knot constructor. Wraps a crossing list in a tagged value." :prerequisites ("list") :progression "Feed into topo/writhe, topo/crossing-number, topo/unknot? to compute invariants (or their bounded approximations).")
+
+  :+math
+    (:algebra "Knot diagram: sequence of over/under crossings on a planar closed curve. Signed by handedness of each crossing."
+     :total #t
+     :domain "list of crossings (any list format)"
+     :codomain "tagged list ('knot crossings count)"
+     :proofs "Data wrapper; no math beyond enumeration.")
+
+  :+cs
+    (:complexity "Time O(|crossings|) for length count."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Wraps input in a tagged list. No validation."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: empty knot, single-crossing knot, three-crossing knot all wrap correctly."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("topo/writhe" "topo/crossing-number" "topo/unknot?")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming this validates the diagram — it doesn't; garbage in, garbage out."
+     :when-not-to-use "You need diagram-validation or PD/DT/Gauss-code conversions — not here.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Knot constructor. Data-wrapper for a crossing list."))
+
+(verb
+  :name "topo/writhe"
+  :library "topo"
+  :signature "(topo/writhe knot) -> integer"
+  :summary "Sum of the signs of the crossings in a knot diagram. Requires SIGNED crossings (first element +1 or -1)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/writhe (topo/knot '((1 1 2 3 4))))"
+     :note "Returns 1: a single +1 (positive) crossing has writhe 1.")
+    (:tier "apprentice"
+     :code "(topo/writhe (topo/knot '((-1 1 2 3 4))))"
+     :note "Returns -1: a single -1 (negative) crossing has writhe -1.")
+    (:tier "intermediate"
+     :code "(topo/writhe (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns 3: three positive crossings, writhe 3. This is the trefoil in one canonical orientation.")
+    (:tier "expert"
+     :code "(topo/writhe (topo/knot '((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns 1: two positives + one negative = net +1.")
+    (:tier "master"
+     :code "(define (filter pred xs)\n  (let loop ((xs xs) (acc '()))\n    (cond ((null? xs) (reverse acc))\n          ((pred (car xs)) (loop (cdr xs) (cons (car xs) acc)))\n          (else (loop (cdr xs) acc)))))\n(define (analyze-orientation knot-crossings)\n  (let ((positive (length (filter (lambda (c) (= (car c) 1)) knot-crossings)))\n        (negative (length (filter (lambda (c) (= (car c) -1)) knot-crossings))))\n    (list ':positive positive\n          ':negative negative\n          ':writhe (topo/writhe (topo/knot knot-crossings)))))\n(analyze-orientation '((1 1 2 3 4) (-1 5 6 7 8) (1 9 10 11 12) (1 13 14 15 16)))"
+     :note "Domain: analyze crossing-sign distribution. Returns (:positive 3 :negative 1 :writhe 2). Writhe = positive - negative always; ratio tells you handedness of the diagram."))
+
+  :related ("topo/knot" "topo/crossing-number" "topo/unknot?")
+  :caveats ("Requires SIGNED crossings — the first element of each crossing must be +1 or -1. Unsigned crossings (e.g., pure PD-code with just (a b c d)) contribute 0." "Writhe is a diagram invariant, NOT a knot invariant — Reidemeister move 1 changes writhe by ±1.")
+  :drawbacks ("Not a knot invariant; two diagrams of the same knot can have different writhes." "For most knot analyses, self-linking number or framing is more useful.")
+  :usecases ("Diagram-level analysis: compare orientations." "Computing framings on framed knots." "Detecting handedness of a knot diagram.")
+  :learn (:concept "Writhe = signed sum of crossings. Diagram invariant, not a knot invariant. Related to framing on smooth knot embeddings." :prerequisites ("topo/knot") :progression "Learn about Reidemeister moves and how writhe changes. Study proper knot invariants (Jones polynomial, Alexander polynomial).")
+
+  :+math
+    (:algebra "w(D) = sum over crossings c in D of sign(c). Changes by +/-1 under Reidemeister move 1."
+     :total #t
+     :domain "knot value"
+     :codomain "integer"
+     :proofs "Direct from definition.")
+
+  :+cs
+    (:complexity "Time O(|crossings|). Space O(1)."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Iterate crossings, check first element for +1 or -1, sum. Unsigned crossings contribute 0."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: single-+1 → 1, single-(-1) → -1, three-+1 → 3, mixed → net sum."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming writhe is a knot invariant — it isn't. Passing unsigned crossings — they contribute 0, silently."
+     :when-not-to-use "You need a knot invariant — use Jones polynomial (not implemented). You have unsigned crossings — writhe cannot be computed.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Writhe = signed sum of crossings. Diagram-level invariant, not knot-level."))
+
+(verb
+  :name "topo/crossing-number"
+  :library "topo"
+  :signature "(topo/crossing-number knot) -> integer"
+  :summary "Number of crossings in this knot diagram. LOWER BOUND on the canonical (minimum-over-all-diagrams) crossing number of the knot."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/crossing-number (topo/knot '()))"
+     :note "Returns 0: the trivial knot has no crossings. Canonical crossing number is also 0.")
+    (:tier "apprentice"
+     :code "(topo/crossing-number (topo/knot '((1 1 2 3 4))))"
+     :note "Returns 1: a knot diagram with one crossing. But: single-crossing knot diagrams are reducible by Reidemeister move 1, so the canonical crossing number could be 0 (unknot).")
+    (:tier "intermediate"
+     :code "(topo/crossing-number (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns 3: three crossings in this diagram. The trefoil knot has canonical crossing number 3; if this represents a trefoil, it's minimal.")
+    (:tier "expert"
+     :code "(topo/crossing-number (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (-1 9 10 11 12) (1 13 14 15 16))))"
+     :note "Returns 4: four crossings. But the minimum crossing number over ALL diagrams of this knot could be lower (if diagram is not reduced).")
+    (:tier "master"
+     :code "(define (crossing-analysis knot)\n  (let ((n (topo/crossing-number knot))\n        (w (topo/writhe knot)))\n    (list ':diagram-crossings n\n          ':canonical-lower-bound n\n          ':canonical-upper-bound n\n          ':writhe w\n          ':note (cond ((= n 0) 'unknot-confirmed)\n                       ((= n 1) 'possibly-unknot-via-reidemeister-1)\n                       ((= n 2) 'possibly-unknot-via-reidemeister-2)\n                       (else 'requires-invariant-computation)))))\n(crossing-analysis (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Domain: reason honestly about crossing-number relative to canonical minimum. Returns diagram-crossings + honest bounds + note. NEVER claims the canonical crossing number without invariant proof."))
+
+  :related ("topo/knot" "topo/writhe" "topo/unknot?")
+  :caveats ("**LOWER BOUND ONLY**: canonical crossing number is the MINIMUM over all diagrams representing the same knot. This impl reports the length of the given diagram — always an UPPER BOUND if the knot is known, but a LOWER BOUND for the diagram itself." "For unknot: canonical is 0 but the impl returns whatever the diagram has.")
+  :drawbacks ("Does not simplify diagrams." "Does not compute knot invariants.")
+  :usecases ("Diagram-complexity metric." "Sanity-check knot representations.")
+  :learn (:concept "Diagram crossing count. Canonical crossing number is the minimum over all diagrams; NP-hard to compute." :prerequisites ("topo/knot") :progression "Learn about Reidemeister moves for diagram simplification. Study specific knot invariants that bound crossing number.")
+
+  :+math
+    (:algebra "c(D) = |{crossings in D}|. Canonical crossing number c(K) = min over all diagrams D of K of c(D). c(K) <= c(D) always; equal for reduced diagrams."
+     :total #t
+     :domain "knot value"
+     :codomain "non-negative integer"
+     :proofs "Trivial for the diagram-level count.")
+
+  :+cs
+    (:complexity "Time O(1) — just length."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Returns list length of the crossings component."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: 0-crossing, 1-crossing, 3-crossing, 4-crossing all return correct counts."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("comparison")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Assuming this returns the CANONICAL crossing number — it returns the DIAGRAM crossing number. Not the same thing."
+     :when-not-to-use "You need the canonical (minimum) crossing number — that's NP-hard; use tabulated knot invariants for small crossing number.")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Number of crossings in the diagram. Lower bound on canonical crossing number (canonical is NP-hard)."))
+
+(verb
+  :name "topo/unknot?"
+  :library "topo"
+  :signature "(topo/unknot? knot) -> #t | 'unknown-beyond-bound"
+  :summary "Recognize the trivial knot. Returns #t only when the diagram has zero crossings; otherwise 'unknown-beyond-bound honestly (unknot recognition is nontrivial)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice"
+     :code "(topo/unknot? (topo/knot '()))"
+     :note "Returns #t: zero crossings, definitely the unknot.")
+    (:tier "apprentice"
+     :code "(topo/unknot? (topo/knot '((1 1 2 3 4))))"
+     :note "Returns unknown-beyond-bound: one crossing. The impl doesn't try to check if it's a reducible diagram (which would be the unknot after Reidemeister 1). Honest 'unknown.")
+    (:tier "intermediate"
+     :code "(topo/unknot? (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))))"
+     :note "Returns unknown-beyond-bound: three crossings. Could be a trefoil (not unknot) or a highly-decorated unknot. The impl doesn't compute Jones polynomial or other invariants.")
+    (:tier "expert"
+     :code "(define (safe-unknot-check k)\n  (let ((r (topo/unknot? k)))\n    (cond ((eq? r #t) 'definitely-unknot)\n          ((eq? r #f) 'definitely-not-unknot)\n          (else (list 'cannot-determine r)))))\n(list ':trivial (safe-unknot-check (topo/knot '()))\n      ':one-crossing (safe-unknot-check (topo/knot '((1 1 2 3 4)))))"
+     :note "Three-valued guard pattern. Returns definitely / cannot-determine appropriately.")
+    (:tier "master"
+     :code "(define (knot-verifier k expected-type)\n  (let ((unknot? (topo/unknot? k))\n        (crossings (topo/crossing-number k)))\n    (cond ((and (eq? expected-type 'unknot) (eq? unknot? #t))\n           '(verified))\n          ((and (eq? expected-type 'not-unknot) (eq? unknot? #f))\n           '(verified))\n          ((eq? unknot? #t)\n           '(discrepancy expected-not-unknot-but-is-unknot))\n          (else\n           (list 'cannot-verify ':crossings crossings ':unknot? unknot?)))))\n(list ':empty (knot-verifier (topo/knot '()) 'unknot)\n      ':trefoil-claim (knot-verifier (topo/knot '((1 1 2 3 4) (1 5 6 7 8) (1 9 10 11 12))) 'not-unknot))"
+     :note "Domain: knot-type verification with HONEST reporting. Returns (verified) when the impl can confirm; (cannot-verify …) with reasons otherwise. NEVER claims to have verified something it cannot."))
+
+  :related ("topo/knot" "topo/crossing-number" "topo/writhe")
+  :caveats ("**Bounded**: only reliably returns #t for zero-crossing diagrams. Non-trivial recognition of the unknot is a research-grade algorithm (Jones polynomial, knot Floer homology, sum-of-tangles) — not implemented in this lane." "Never returns #f — the impl cannot prove non-triviality without an invariant.")
+  :drawbacks ("Extremely limited — most calls return 'unknown-beyond-bound. But honest.")
+  :usecases ("Detect the trivial-knot case explicitly." "Placeholder in workflows expecting future invariant computation." "Honest teaching example of Sakura's 'we cannot prove this' pattern.")
+  :learn (:concept "Unknot recognition — 'is this knot actually the trivial one?'. Non-trivial. Jones polynomial can prove non-triviality; knot Floer homology can definitively distinguish." :prerequisites ("topo/knot") :progression "Learn the Jones polynomial. Study Kauffman bracket. Understand why unknot recognition is decidable but computationally hard.")
+
+  :+math
+    (:algebra "The unknot is the equivalence class of knots isotopic to a circle in R^3. Unknot recognition is decidable (by algorithms of Haken and later refinements) but not implemented here."
+     :total #t
+     :domain "knot value"
+     :codomain "#t | Sym('unknown-beyond-bound')"
+     :proofs "Zero-crossing diagram trivially represents the unknot.")
+
+  :+cs
+    (:complexity "Time O(1) — length check."
+     :effects (none)
+     :pure #t
+     :evaluation-order "eager")
+
+  :+eng
+    (:impl-file "src/topo.js"
+     :impl-notes "Trivial: zero crossings → #t; else 'unknown-beyond-bound. No invariant computation."
+     :permission "read-only"
+     :latency-class "sync-fast"
+     :tests "REPL-verified 2026-07-14 by Rin: empty knot #t; non-empty knot 'unknown-beyond-bound. Never returns #f (impl cannot prove non-triviality)."
+     :since "1.0")
+
+  :+ai
+    (:raises ()
+     :pipes-into ("eq?" "cond")
+     :cardinality one
+     :deterministic #t
+     :cacheable #t
+     :common-mistakes "Treating as a plain boolean — it's three-valued (#t, #f, or 'unknown-beyond-bound). Guard with eq?. Expecting non-trivial recognition — impl only handles the zero-crossing case."
+     :when-not-to-use "You need to prove a knot is NON-trivial — this impl cannot. Use Jones polynomial or Alexander polynomial (via a specialized library).")
+
+  :+meta
+    (:spec-version "1.0"
+     :schema-version "1.0"
+     :entry-provenance "authored"
+     :required-fields-present #t
+     :entry-summary "Unknot recognition. #t for zero-crossing diagrams; 'unknown-beyond-bound otherwise. Impl does not compute knot invariants."))

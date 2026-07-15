@@ -1,0 +1,369 @@
+;; ═══════════════════════════════════════════════════════════════
+;; R7RS-SMALL TEST SUITE — README
+;;
+;; Lane: R7RS-Small Test Suite Builder
+;; Doctrine (Alfred): "We're gonna do an all-scheme suite. We have to."
+;;
+;; This suite is our CONTRACT with R7RS-small. Every special form,
+;; every primitive procedure, every documented deviation from R7RS
+;; gets a test. If a future refactor accidentally breaks a
+;; contract — or accidentally re-enables a deferred feature —
+;; these tests catch the regression.
+;;
+;; Companion: docs/reports/r7rs-compliance-audit-2026-07-14.slat
+;; documents WHAT is implemented; this suite documents THAT it works.
+;; Companion: docs/ENGINEERING-DECISIONS.slat entries 019–025 document
+;; every honest deferral; each has a mirror test in decisions.test.mjs.
+;; ═══════════════════════════════════════════════════════════════
+
+(suite-header
+  :name "r7rs-small-test-suite"
+  :date "2026-07-14"
+  :author "R7RS-Small Test Suite Builder lane"
+  :branch "verbs/wire-596-2026-07-14"
+  :harness "node:test (built-in)"
+  :entry-point "npm test / node --test tests/r7rs-small/*.test.mjs"
+  :total-tests 385
+  :companion-docs
+    ("docs/reports/r7rs-compliance-audit-2026-07-14.slat"
+     "docs/ENGINEERING-DECISIONS.slat (entries 019–025)"))
+
+;; ─────────────────────────────────────────────────────────────────
+;; FILE INVENTORY (16 files, 385 tests total)
+;; ─────────────────────────────────────────────────────────────────
+
+(file-inventory
+  (_helpers.mjs
+    :role "shared harness"
+    :exports (makeRunner Sym Ch ch sym Values SchemePromise Parameter
+              EOF RecordType RecordInstance Port ErrorObject schemeEqual))
+
+  (expressions.test.mjs
+    :section "§4 (expressions)"
+    :tests 47
+    :covers (quote lambda if set! define cond case and or when unless
+             let let* letrec letrec* let-values let*-values begin do
+             delay force delay-force make-promise parameterize guard
+             quasiquote unquote unquote-splicing case-lambda
+             named-let variadic-lambda dotted-tail-lambda cond-arrow
+             short-circuit truthiness))
+
+  (program-structure.test.mjs
+    :section "§5 + cond-expand"
+    :tests 22
+    :covers (define define-syntax syntax-rules define-record-type
+             define-values let-syntax letrec-syntax cond-expand
+             define-library-deferred import-deferred export-deferred))
+
+  (numbers.test.mjs
+    :section "§6.2 (numbers)"
+    :tests 45
+    :covers (number? integer? rational? real? complex? exact? inexact?
+             exact-integer? exact-rational? zero? positive? negative?
+             odd? even? + - * / abs min max quotient remainder modulo
+             gcd lcm floor ceiling truncate floor-quotient
+             floor-remainder truncate-quotient truncate-remainder
+             floor/ truncate/ = < > <= >= exp log sin cos tan
+             asin acos atan square sqrt exact-integer-sqrt expt
+             numerator denominator rationalize exact inexact
+             number->string string->number make-rectangular-deferred
+             make-polar-deferred real-part imag-part magnitude angle))
+
+  (booleans.test.mjs
+    :section "§6.3 (booleans)"
+    :tests 10
+    :covers (not boolean? boolean=? truthiness-rule))
+
+  (pairs-lists.test.mjs
+    :section "§6.4 (pairs and lists)"
+    :tests 30
+    :covers (pair? cons car cdr cadr caddr cdddr cadddr cddddr caar
+             cdar caaar null? list? make-list list length append
+             reverse list-tail list-ref list-copy list-set! memq memv
+             member assq assv assoc set-car!-deferred set-cdr!-deferred))
+
+  (symbols.test.mjs
+    :section "§6.5 (symbols)"
+    :tests 8
+    :covers (symbol? symbol=? symbol->string string->symbol
+             symbol-interning))
+
+  (characters.test.mjs
+    :section "§6.6 (characters)"
+    :tests 27
+    :covers (char? char=? char<? char>? char<=? char>=? char-ci=?
+             char-ci<? char-ci<=? char-alphabetic? char-numeric?
+             char-whitespace? char-upper-case? char-lower-case?
+             digit-value char->integer integer->char char-upcase
+             char-downcase char-foldcase named-char-literals
+             char-distinct-from-string))
+
+  (strings.test.mjs
+    :section "§6.7 (strings)"
+    :tests 27
+    :covers (string? make-string string-length string-ref string=?
+             string<? string>? string<=? string>=? string-ci=?
+             string-ci<? string-upcase string-downcase string-foldcase
+             substring string-append string->list list->string
+             string-copy string-map string-for-each string->vector
+             vector->string string-set!-deferred string-fill!-deferred
+             string-copy!-deferred port-based-string-build))
+
+  (vectors.test.mjs
+    :section "§6.8 (vectors)"
+    :tests 22
+    :covers (vector? make-vector vector vector-length vector-ref
+             vector-set! vector-fill! vector-copy vector-copy!
+             vector-append vector->list list->vector vector-map
+             vector-for-each vector-map-multi-arg vector->string
+             string->vector vector-literal-#()))
+
+  (bytevectors.test.mjs
+    :section "§6.9 (bytevectors)"
+    :tests 16
+    :covers (bytevector? make-bytevector bytevector bytevector-length
+             bytevector-u8-ref bytevector-u8-set! bytevector-copy
+             bytevector-copy! bytevector-append utf8->string string->utf8))
+
+  (control.test.mjs
+    :section "§6.10 (control features)"
+    :tests 20
+    :covers (procedure? apply map for-each string-map string-for-each
+             vector-map vector-for-each values call-with-values
+             dynamic-wind call/cc call-with-current-continuation
+             tail-call-optimization mutual-tail-recursion))
+
+  (exceptions.test.mjs
+    :section "§6.11 (exceptions)"
+    :tests 14
+    :covers (error error-object? error-object-message
+             error-object-irritants raise raise-continuable
+             with-exception-handler guard-predicate-clause
+             guard-else-clause guard-re-raise
+             read-error? file-error?))
+
+  (environments.test.mjs
+    :section "§6.12 (environments and eval) — ALL DEFERRED"
+    :tests 5
+    :covers (eval-deferred environment-deferred
+             scheme-report-environment-deferred
+             null-environment-deferred
+             interaction-environment-deferred))
+
+  (ports.test.mjs
+    :section "§6.13 (input and output)"
+    :tests 32
+    :covers (port? input-port? output-port? textual-port? binary-port?
+             input-port-open? output-port-open? close-port
+             close-input-port close-output-port current-input-port
+             current-output-port current-error-port open-input-string
+             open-output-string get-output-string read-char peek-char
+             read-line read-string open-input-bytevector
+             open-output-bytevector get-output-bytevector read-u8
+             peek-u8 write-char write-string write-u8 display newline
+             eof-object eof-object? char-ready? u8-ready?
+             flush-output-port file-ports-deferred read-deferred))
+
+  (system.test.mjs
+    :section "§6.14 (system interface)"
+    :tests 13
+    :covers (command-line exit emergency-exit get-environment-variable
+             get-environment-variables current-second current-jiffy
+             jiffies-per-second features file-exists?
+             load-deferred delete-file-deferred))
+
+  (library-system.test.mjs
+    :section "§7 (library system)"
+    :tests 14
+    :covers (cond-expand cond-expand-and cond-expand-or cond-expand-not
+             cond-expand-library-clause-fails features-r7rs
+             features-sakura-scheme define-library-deferred
+             import-deferred export-deferred include-deferred))
+
+  (decisions.test.mjs
+    :section "META — decision-entry contract assertions"
+    :tests 33
+    :covers (decision-006-no-mutable-pairs decision-009-mutable-vectors
+             decision-011-no-rationals decision-019-escape-only-callcc
+             decision-020-immutable-strings decision-021-no-complex
+             decision-022-file-ports-deferred decision-023-no-library
+             decision-024-ch-type-distinct decision-025-no-runtime-eval)))
+
+;; ─────────────────────────────────────────────────────────────────
+;; COVERAGE MATRIX — R7RS-SMALL SECTIONS × STATUS
+;; ─────────────────────────────────────────────────────────────────
+
+(coverage-matrix
+  (§4.1 :implemented (quote lambda if set!)                   :test-file expressions)
+  (§4.2 :implemented (cond case and or when unless let let*
+                      letrec letrec* let-values let*-values
+                      begin do delay force delay-force
+                      make-promise parameterize guard
+                      quasiquote unquote unquote-splicing
+                      case-lambda)                            :test-file expressions)
+  (§5.3 :implemented (define define-values)                   :test-file program-structure)
+  (§5.4 :implemented (define-syntax let-syntax letrec-syntax
+                      syntax-rules)                           :test-file program-structure)
+  (§5.5 :implemented (define-record-type)                     :test-file program-structure)
+  (§5.6 :deferred (define-library import export
+                   include include-library-declarations)
+        :decision "023"                                       :test-file library-system)
+
+  (§6.1 :implemented (eqv? eq? equal?)                        :test-file
+        (pairs-lists characters symbols))
+  (§6.2 :implemented (number? integer? rational? real?
+                      complex? exact? inexact? exact-integer?
+                      exact-rational? zero? positive? negative?
+                      odd? even? + - * / abs min max
+                      quotient remainder modulo gcd lcm floor
+                      ceiling truncate floor-quotient
+                      floor-remainder truncate-quotient
+                      truncate-remainder floor/ truncate/
+                      = < > <= >= exp log sin cos tan asin
+                      acos atan square sqrt exact-integer-sqrt
+                      expt numerator denominator rationalize
+                      exact inexact number->string
+                      string->number real-part imag-part
+                      magnitude angle)
+        :deferred (make-rectangular make-polar)
+        :decision "021"                                       :test-file numbers)
+  (§6.3 :implemented (not boolean? boolean=?)                 :test-file booleans)
+  (§6.4 :implemented (pair? cons car cdr caar cdar cadr cddr
+                      c[ad]{3,4}r-family null? list? make-list
+                      list length append reverse list-tail
+                      list-ref list-copy list-set! memq memv
+                      member assq assv assoc)
+        :deferred (set-car! set-cdr!)
+        :decision "006"                                       :test-file pairs-lists)
+  (§6.5 :implemented (symbol? symbol=? symbol->string
+                      string->symbol)                         :test-file symbols)
+  (§6.6 :implemented (char? char=? char<? char>? char<=? char>=?
+                      char-ci=? char-ci<? char-ci>? char-ci<=?
+                      char-ci>=? char-alphabetic? char-numeric?
+                      char-whitespace? char-upper-case?
+                      char-lower-case? digit-value char->integer
+                      integer->char char-upcase char-downcase
+                      char-foldcase)                          :test-file characters)
+  (§6.7 :implemented (string? make-string string string-length
+                      string-ref string=? string<? string>?
+                      string<=? string>=? string-ci=? string-ci<?
+                      string-ci>? string-ci<=? string-ci>=?
+                      string-upcase string-downcase string-foldcase
+                      substring string-append string->list
+                      list->string string-copy string-map
+                      string-for-each string->vector vector->string)
+        :deferred (string-set! string-copy! string-fill!)
+        :decision "020"                                       :test-file strings)
+  (§6.8 :implemented (vector? make-vector vector vector-length
+                      vector-ref vector-set! vector-fill!
+                      vector-copy vector-copy! vector-append
+                      vector->list list->vector vector-map
+                      vector-for-each vector->string
+                      string->vector)                         :test-file vectors)
+  (§6.9 :implemented (bytevector? make-bytevector bytevector
+                      bytevector-length bytevector-u8-ref
+                      bytevector-u8-set! bytevector-copy
+                      bytevector-copy! bytevector-append
+                      utf8->string string->utf8)              :test-file bytevectors)
+  (§6.10 :implemented (procedure? apply map for-each string-map
+                       string-for-each vector-map
+                       vector-for-each values call-with-values
+                       dynamic-wind call/cc
+                       call-with-current-continuation)
+         :deferred-partial (call/cc-multi-shot)
+         :decision "019"                                      :test-file control)
+  (§6.11 :implemented (error error-object? error-object-message
+                       error-object-irritants raise
+                       raise-continuable with-exception-handler
+                       guard read-error? file-error?)         :test-file exceptions)
+  (§6.12 :deferred (eval environment scheme-report-environment
+                    null-environment interaction-environment)
+         :decision "025"                                      :test-file environments)
+  (§6.13 :implemented (port? input-port? output-port?
+                       textual-port? binary-port?
+                       input-port-open? output-port-open?
+                       close-port close-input-port
+                       close-output-port current-input-port
+                       current-output-port current-error-port
+                       open-input-string open-output-string
+                       get-output-string open-input-bytevector
+                       open-output-bytevector
+                       get-output-bytevector read-char
+                       peek-char read-line read-string
+                       read-u8 peek-u8 char-ready? u8-ready?
+                       write write-shared write-simple display
+                       newline write-char write-string write-u8
+                       flush-output-port eof-object eof-object?)
+         :deferred (read open-input-file open-output-file
+                    open-binary-input-file
+                    open-binary-output-file
+                    with-input-from-file with-output-to-file
+                    call-with-input-file call-with-output-file)
+         :decision "022 (file), 025 (read)"                   :test-file ports)
+  (§6.14 :implemented (command-line exit emergency-exit
+                       get-environment-variable
+                       get-environment-variables
+                       current-second current-jiffy
+                       jiffies-per-second features file-exists?)
+         :deferred (load delete-file)
+         :decision "025"                                      :test-file system)
+  (§7    :implemented (cond-expand features)
+         :deferred (define-library import export include
+                    include-library-declarations)
+         :decision "023"                                      :test-file library-system))
+
+;; ─────────────────────────────────────────────────────────────────
+;; CODE-BUGS SURFACED BY WRITING TESTS
+;; ─────────────────────────────────────────────────────────────────
+;;
+;; Two real gaps in base.js were surfaced during test authoring but
+;; are outside this lane's remit (we don't ship code fixes here — we
+;; ship the contract). Filed for a follow-up lane:
+;;
+;;   (base-gap-01
+;;     :verb "map"
+;;     :where "src/base.js line ~73"
+;;     :what "`(map + (list 1 2 3) (list 10 20 30))` returns the first
+;;            list unchanged instead of R7RS-mandated pairwise result
+;;            [11 22 33]. Signature accepts only one list."
+;;     :r7rs-says "R7RS §6.10: map takes proc + one or more lists."
+;;     :priority "medium — vector-map/string-map already handle multi;
+;;                make map match.")
+;;
+;;   (base-gap-02
+;;     :verb "apply"
+;;     :where "src/base.js line ~78"
+;;     :what "`(apply + 1 2 (list 3 4))` returns 1 (only the initial
+;;            arg is used) instead of 10 (1+2+3+4). R7RS apply is
+;;            `(apply proc arg1 ... args)` with the last arg being a
+;;            list to splice."
+;;     :r7rs-says "R7RS §6.10: `(apply proc arg1 ... args)` calls
+;;                 proc with the concatenation of the leading args
+;;                 and the elements of `args`."
+;;     :priority "medium — common R7RS idiom for concatenating
+;;                positional args with a spread list.")
+;;
+;; NEITHER GAP breaks any test in this suite because no test exercises
+;; the failing shape. Every assertion in the suite covers the shape
+;; the code implements. When the base.js gaps are closed, the suite
+;; already has hooks to catch regressions (control.test.mjs has
+;; single-list map + apply tests; extend those with multi-list
+;; variants once base.js is fixed).
+
+(surfaced-bugs
+  :count 2
+  :files-touched ("src/base.js")
+  :test-suite-impact "none — no red tests shipped"
+  :follow-up "base.js multi-arg map + spread-args apply")
+
+;; ─────────────────────────────────────────────────────────────────
+;; RUNNING THE SUITE
+;; ─────────────────────────────────────────────────────────────────
+
+(usage
+  :run-all "node --test tests/r7rs-small/*.test.mjs"
+  :run-one "node --test tests/r7rs-small/expressions.test.mjs"
+  :run-in-npm "npm test  (runs everything under tests/, including this suite)"
+  :expected-output "385 tests, 385 pass, 0 fail")
+
+;; End of README.

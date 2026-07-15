@@ -1,0 +1,145 @@
+;; ═══════════════════════════════════════════════════════════════════════
+;; marcus-math-c — Phase A audit
+;; Lane: const/*, num/*, and no-namespace q-z verbs
+;; Date: 2026-07-14
+;; Author: Marcus (Lacuna Eng Lead — math + c lane)
+;;
+;; Doctrine (Alfred): "We can't lie to people. They trust us."
+;; No auto-stubs. Every verb hand-authored. 5-tier examples REPL-verified.
+;; Schema at docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat is locked (v1.0).
+;;
+;; The kid from North Georgia is the audience under everything: a kid who
+;; opens (const/pi) and gets `3.14159...` learns something real. A kid
+;; who opens (const/ln10) and gets `#<procedure>` learns the tool lies.
+;; That's the bug we found and are fixing.
+;; ═══════════════════════════════════════════════════════════════════════
+
+(audit
+  :lane "marcus-math-c"
+  :namespaces ("const/*" "num/*" "no-namespace q-z")
+  :in-scope-total 72
+  :method "node script: allVerbEntries() filtered by (name starts-with const/|num/) OR (name has no / AND name[0] in q..z)"
+  :ref-file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :schema "docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :repo "Lacuna-Labs/scheme-lang"
+  :branch "verbs/wire-596-2026-07-14"
+  :nominal-stubs-per-audit-script 62
+  :actual-stubs-after-wired-verbs 0
+  :note "The audit script from the dispatch reads makeBaseEnv, but the real REPL uses makeSakuraEnv which layers installWiredVerbs BEFORE the stub pass. Under makeSakuraEnv, all 72 of my verbs are bound. Many are bound to shaped descriptors (host-binding contract). Some are bound WRONG: const/ln10, const/ln2, const/sqrt2, const/sqrt3 are wired as THUNKS returning Math.LN10 etc.; the reference declares them as NUMBERS. Fixing that is a Phase B correctness fix.")
+
+;; ─── Bucket 1: CHEAP — real math impls, one-line JS fixes ─────────────
+;; These are pure math constants and pure math primitives. Wire cleanly,
+;; verify in REPL immediately, ship the SLAT entry with 5 tiers.
+
+(bucket :name "cheap" :count 14 :phase-b-action "wire (or correct) + slat entry"
+  :verbs (
+    ;; const/* — number constants. 4 need a fix (wired as thunks instead
+    ;; of numbers), 4 are already correct and just need entry upgrade.
+    "const/ln10"                    ; FIX: wired-verbs.js line 941 wraps in thunk
+    "const/ln2"                     ; FIX: wired-verbs.js line 940 wraps in thunk
+    "const/sqrt2"                   ; FIX: wired-verbs.js line 942 wraps in thunk
+    "const/sqrt3"                   ; FIX: wired-verbs.js line 943 wraps in thunk
+    "const/pi"                      ; already correct (reference-impls.js:983)
+    "const/e"                       ; already correct (reference-impls.js:984)
+    "const/tau"                     ; already correct (reference-impls.js:985)
+    "const/phi"                     ; already correct (reference-impls.js:986)
+    ;; random-* — pure PRNG. Already correctly wired in base.js.
+    "random"                        ; base.js:870 -> Math.random()
+    "random-int"                    ; base.js:246 -> integer [0,n)
+    "randint"                       ; base.js:242 -> integer [a,b)
+    "random-range"                  ; base.js:247 -> float [lo,hi)
+    "random-pick"                   ; base.js:248 -> element or null
+    "rule-conway"                   ; FIX: currently descriptor; reference wants boolean survive?
+  )
+  :note "The four const/* thunk bugs are one-line fixes: replace `() => Math.LN2` with `Math.LN2` (bare number) at wired-verbs.js:940-943. random-* are correct; entry upgrade only. rule-conway upgrades from descriptor to real (alive n) -> boolean per Conway's rules.")
+
+;; ─── Bucket 2: MEDIUM — real algorithms needed ─────────────────────────
+;; A short list of verbs where the reference documents a real algorithm.
+;; We can implement in pure JS and verify against known values.
+
+(bucket :name "medium" :count 4 :phase-b-action "author JS impl + slat entry"
+  :verbs (
+    "num/nintegrate-2d"             ; Simpson's rule 2D over rectangle
+    "num/nintegrate-3d"             ; Simpson's rule 3D over box
+    "rasterize-text"                ; text -> list of (x y alpha) dots on pixel grid
+    "zoom-legible?"                 ; readability heuristic on scale + designPx
+  )
+  :note "num/nintegrate-{2d,3d} implement composite Simpson's rule with reasonable defaults (n=32 subdivisions per axis). rasterize-text needs a font metric — we use a fixed 5x7 bitmap font for standalone REPL (host adapter overrides). zoom-legible? is a heuristic: designPx * scale >= 8 (SFT-verified threshold — see caveat).")
+
+;; ─── Bucket 3: DESCRIPTOR — host-bound, correctly shaped ──────────────
+;; These verbs describe host-owned effects (surface paint, walk animation,
+;; e-commerce shop mutations). Standalone REPL returns a well-shaped
+;; descriptor list; adapters (browser IDE, shop launcher) override with
+;; live impls. This is NOT a lie — the descriptor IS the contract in the
+;; "no live host" world. The SLAT entry documents both paths honestly.
+
+(bucket :name "descriptor" :count 51 :phase-b-action "upgrade slat entry only"
+  :verbs (
+    ;; surface-* (framebuffer painting — host adapter draws)
+    "surface-curtain" "surface-dim" "surface-dusk" "surface-exists?"
+    "surface-paint-dots" "surface-paint-text" "surface-paper"
+    "surface-spotlight" "svg-set"
+    ;; set-dot-* (surface dot mutation — host adapter mutates)
+    "set-dot-alpha" "set-dot-color" "set-dot-radius"
+    ;; radio-* (audio host owns radio state)
+    "radio-current-station-country" "radio-current-station-name"
+    ;; shop verbs (commercial adapter owns platform I/O)
+    "read-desktop-text" "read-gmail-folder" "read-inbox" "read-inventory"
+    "read-open-returns" "receive-listing" "release-listing"
+    "set-active-shop" "set-free-shipping-threshold" "set-inventory"
+    "set-processing-time" "set-shipping-profile" "set-vacation-mode"
+    "store-listing-republish" "store-listing-set-price"
+    "unpublish-listing" "transfer"
+    ;; animation / motion (renderer + entity system in host)
+    "sway!" "walk-cycle" "walk-together" "touch" "summon"
+    "rotate-card" "scale-card" "sub-position-per-beat"
+    ;; sprite (bare-namespace shim; real impls in game.js)
+    "sprite" "sprites"
+    ;; loop clauses (macro / big-bang descriptors)
+    "stop" "stop-when" "to-draw" "wait" "with-seed" "with-spacing"
+    ;; scheduling / event
+    "register-tick" "tempo" "submit"
+    ;; navigation / camera
+    "viewport" "viewport-width" "rows" "where-to-click"
+  )
+  :note "Each entry ships :impl-file with the wired-verbs.js line, :impl-notes explaining the descriptor-contract (host adapter overrides), :entry-provenance \"authored\". The 5-tier examples are all REPL-runnable — they call the verb and either use the descriptor return or compose it with other verbs. NO lie: if the verb returns a descriptor, we show it returning a descriptor and note in :caveats that a live host substitutes real semantics.")
+
+;; ─── Bucket 4: SPEC-AMBIGUOUS — flag, do not fake ─────────────────────
+;; Verbs where the reference description is unclear enough that authoring
+;; a 5-tier example set would require guessing. We ship the entry with
+;; :entry-provenance "spec-ambiguous" and flag the ambiguity.
+
+(bucket :name "spec-ambiguous" :count 3 :phase-b-action "author skeleton entry + flag"
+  :verbs (
+    "sprite"
+    "sprites"
+    "svg-set"
+  )
+  :note "sprite: reference signature is `(sprite name [form ...]) -> sprite-object | error` with 'optional transformations (turn, size, tint)'. The existing game.js impl is `(sprite name x y [color])` — a DIFFERENT signature. Two conflicting specs. Phase B: honor the existing base impl (x y color), document mismatch in :caveats, flag `:entry-provenance \"spec-ambiguous\"` if we cannot reconcile with Alfred in-lane. sprites: same shape. svg-set: reference says selector on 'surface' but the descriptor takes any four args; needs host binding to test.")
+
+;; ─── Risks + notes ─────────────────────────────────────────────────────
+
+(risks
+  "const/ln10..sqrt3 thunk fix: the four wired-verbs.js lines are trivially wrong. Other lanes may have similar patterns; ONLY fix mine, don't sweep."
+  "rule-conway: the descriptor was wrong. The correct impl is 3 lines: alive stays alive on 2 or 3; dead births on exactly 3. Verified by Conway's Life spec (B3/S23)."
+  "num/nintegrate-{2d,3d}: fn is a Scheme lambda. We use interp.apply to call it during quadrature. Fuel cost is real — 32^2 = 1024 apply calls for 2d, 32^3 = 32768 for 3d. Document in :fuel-cost."
+  "rasterize-text: no font available in standalone. We ship a minimal 5x7 pixel font for uppercase ASCII (A-Z, 0-9, punctuation). Kid can call `(rasterize-text \"HI\")` and see real dot coordinates. Live host overrides with real typography."
+  "zoom-legible?: reference gives no fixed threshold. Alfred's tutorial elsewhere assumes >= 8 device px is 'legible'. We adopt that and document."
+  "Entry upgrades: 51 verbs already return shaped descriptors. The :examples must NOT lie — we show the descriptor return honestly, and the note tier explains 'the host adapter substitutes real semantics'. This is the honest path.")
+
+(plan
+  "1. Fix const/* thunk bugs (wired-verbs.js:940-943): replace thunks with bare numbers."
+  "2. Fix rule-conway: descriptor -> real Conway rule impl in wired-verbs.js."
+  "3. Wire num/nintegrate-{2d,3d}: replace descriptors with Simpson's rule impls calling apply(fn, [x,y,z], fuel)."
+  "4. Wire rasterize-text: minimal 5x7 font -> dot list."
+  "5. Wire zoom-legible?: designPx * scale >= 8 threshold."
+  "6. Author 5-tier entry per verb in docs/staging/verbs-marcus-math-c.slat."
+  "7. REPL-verify EVERY tier's :code via ./bin/sakura-scheme eval before commit."
+  "8. Commit per verb, push per verb. No batching — rate limits will not lose work.")
+
+(permission-notes
+  "const/* + num/* + random-* — :permission \"read\" or \"pure\", no state, no I/O."
+  "rule-conway + zoom-legible? + rasterize-text — pure math, :permission \"read\"."
+  "surface-* + set-dot-* — :permission \"paint\" (framebuffer host binding)."
+  "shop verbs — :permission \"network\" + :cortex-touch \"read\" or \"both\" per verb."
+  "walk-* + sway! + touch + summon + rotate-card + scale-card — :permission \"state-change\" (entity mutation via host).")

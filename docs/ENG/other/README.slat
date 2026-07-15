@@ -1,0 +1,174 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SAKURA SCHEME — CARTS
+;;
+;; A suite of runnable example programs. Each cart is a small, real
+;; Sakura Scheme program that exercises the language end-to-end.
+;;
+;; Run any cart:
+;;   ./bin/sakura-scheme run carts/<category>/<name>.scm
+;;
+;; Run every cart:
+;;   scripts/run-all-carts.sh
+;;   scripts/run-all-carts.sh --quiet   ; PASS/FAIL summary only
+;;
+;; Doctrine: every cart in this suite has been verified to run
+;; without error before being committed. If something breaks after
+;; a runtime change, that's a regression.
+;;
+;; Alfred: "We're gonna do a cart suite. We have to."
+;; ═══════════════════════════════════════════════════════════════
+
+(carts
+  :root "carts/"
+  :convention "run with ./bin/sakura-scheme run <path>"
+  :sizing "each cart is ~30-100 lines, runs in under 10 seconds"
+
+  :categories (
+    (:name "tutorial"
+     :path "carts/tutorial/"
+     :purpose "walkthrough style — small teaching carts, read in order")
+
+    (:name "games"
+     :path "carts/games/"
+     :purpose "playable or autoplay games — mechanics and loops")
+
+    (:name "animation"
+     :path "carts/animation/"
+     :purpose "visual demos — shapes moving, patterns evolving")
+
+    (:name "music"
+     :path "carts/music/"
+     :purpose "melody, harmony, and generative sound")
+
+    (:name "data"
+     :path "carts/data/"
+     :purpose "small pipelines — parse, transform, summarize")
+
+    (:name "physics"
+     :path "carts/physics/"
+     :purpose "particles, springs, cloth — force and consequence")
+
+    (:name "story"
+     :path "carts/story/"
+     :purpose "narrative one-shots — text with a rhythm to it")
+
+    (:name "math"
+     :path "carts/math/"
+     :purpose "visual mathematics — curves, plots, fractals"))
+
+  :carts (
+    ;; ── tutorial ──
+    (:path "carts/tutorial/01-hello.scm"
+     :summary "prints a greeting. the smallest cart.")
+    (:path "carts/tutorial/02-lists.scm"
+     :summary "cons, car, cdr, map, and named-let sum.")
+    (:path "carts/tutorial/03-let-and-lambda.scm"
+     :summary "local names, anonymous functions, and closures.")
+    (:path "carts/tutorial/04-tail-recursion.scm"
+     :summary "loops without loops — sum, fact, fib, countdown.")
+    (:path "carts/tutorial/05-drawing.scm"
+     :summary "framebuffer basics — pset, disc, line, rect, palette.")
+    (:path "carts/tutorial/06-a-tiny-game.scm"
+     :summary "one entity, gravity, a floor, sixty frames.")
+
+    ;; ── animation ──
+    (:path "carts/animation/orbit.scm"
+     :summary "two concentric orbits — sin/cos and pset.")
+    (:path "carts/animation/lissajous.scm"
+     :summary "3:2 and 5:4 Lissajous figures — beat frequencies.")
+    (:path "carts/animation/spiral.scm"
+     :summary "Archimedean spiral — r = a·theta, 5 turns.")
+    (:path "carts/animation/starfield.scm"
+     :summary "60 stars streaming past at warp.")
+    (:path "carts/animation/fireworks.scm"
+     :summary "four radial sparks with gravity drift.")
+    (:path "carts/animation/rain.scm"
+     :summary "40 drops falling into a growing puddle.")
+    (:path "carts/animation/waves.scm"
+     :summary "layered sines as a sea, with sun and birds.")
+    (:path "carts/animation/plasma.scm"
+     :summary "demoscene plasma — four superimposed sinusoids.")
+
+    ;; ── math ──
+    (:path "carts/math/plot-sine-wave.scm"
+     :summary "sin, cos, and their product plotted on axes.")
+    (:path "carts/math/mandelbrot.scm"
+     :summary "the Mandelbrot set at 40×40 with 20-iter escape.")
+    (:path "carts/math/sierpinski.scm"
+     :summary "Sierpinski triangle via chaos-game vertex-halving.")
+    (:path "carts/math/rose.scm"
+     :summary "polar rose curves: r = cos(k·theta) at k=3, 4, 5.")
+    (:path "carts/math/primes.scm"
+     :summary "sieve of Eratosthenes to 400, plotted as a comb.")
+    (:path "carts/math/pi-monte-carlo.scm"
+     :summary "estimate π by throwing 5000 darts at a quadrant.")
+
+    ;; ── music ──
+    (:path "carts/music/twinkle.scm"
+     :summary "Twinkle Twinkle Little Star as 42 MIDI numbers.")
+    (:path "carts/music/twelve-bar-blues.scm"
+     :summary "the 12-bar blues in C: C7 F7 G7 progression.")
+    (:path "carts/music/canon.scm"
+     :summary "a theme then its transposed copy — canon at the fifth.")
+    (:path "carts/music/scales.scm"
+     :summary "seven modes of the major scale from C.")
+    (:path "carts/music/random-melody.scm"
+     :summary "a random walk through the C minor pentatonic.")
+
+    ;; ── data ──
+    (:path "carts/data/csv-summarize.scm"
+     :summary "parse a CSV, compute sum/mean/min/max, find top row.")
+    (:path "carts/data/log-tail.scm"
+     :summary "log lines → filter ERRORs, tally by severity.")
+    (:path "carts/data/word-count.scm"
+     :summary "clean, tokenize, tally, sort — Zipf on a passage.")
+    (:path "carts/data/json-explore.scm"
+     :summary "json-parse and dig around inside — hash-ref, map.")
+    (:path "carts/data/histogram.scm"
+     :summary "1000 samples from N(0,1) bucketed and drawn as bars.")
+    (:path "carts/data/fizzbuzz.scm"
+     :summary "fizzbuzz 1..30 — cond + modulo as pattern-matching.")
+
+    ;; ── physics ──
+    (:path "carts/physics/bouncing-balls-many.scm"
+     :summary "12 balls bouncing in a walled box, engine-driven.")
+    (:path "carts/physics/gravity-well.scm"
+     :summary "20 particles orbiting a central mass, F ∝ 1/r².")
+    (:path "carts/physics/spring.scm"
+     :summary "Hooke's law: damped oscillation plotted over time.")
+    (:path "carts/physics/pendulum.scm"
+     :summary "simple pendulum, α = -g/L·sin(θ), swinging bob.")
+    (:path "carts/physics/particles-explosion.scm"
+     :summary "120 sparks with life, gravity, and cooling color.")
+
+    ;; ── story ──
+    (:path "carts/story/star-money.scm"
+     :summary "the folk motif in prose + a night sky coda.")
+    (:path "carts/story/tortoise-and-hare.scm"
+     :summary "Aesop's fable told, then simulated as a race.")
+    (:path "carts/story/haiku-generator.scm"
+     :summary "5-7-5 lines picked from pools — form as a whole.")
+    (:path "carts/story/six-word-stories.scm"
+     :summary "eight six-word stories from subject/verb/twist pools.")
+
+    ;; ── games ──
+    (:path "carts/games/tic-tac-toe.scm"
+     :summary "10 random-vs-random tic-tac-toe games, tallied.")
+    (:path "carts/games/conway-quilt.scm"
+     :summary "three CA rulesets (Conway, HighLife, Maze) side by side.")
+    (:path "carts/games/nim.scm"
+     :summary "nim with perfect XOR-strategy vs random player.")
+    (:path "carts/games/high-low.scm"
+     :summary "binary-search a hidden 1..1000 number in ~10 guesses.")
+    (:path "carts/games/rock-paper-scissors.scm"
+     :summary "20 rounds of rock-paper-scissors, tallied.")
+    (:path "carts/games/dice-battle.scm"
+     :summary "500 Risk-style 3v2 dice battles, empirical odds.")
+    (:path "carts/games/coin-flip-streaks.scm"
+     :summary "10000 flips, longest streak, run-length histogram.")
+    (:path "carts/games/maze-carver.scm"
+     :summary "20×20 perfect maze carved via randomized DFS.")
+    (:path "carts/games/langton-flock.scm"
+     :summary "8 Langton's ants sharing one grid — flock chaos.")
+    (:path "carts/games/four-in-a-row.scm"
+     :summary "Connect Four with two random players.")))

@@ -1,0 +1,43 @@
+;; Hello Surface engineering spine — the ~20% teachable slice.
+
+(spine
+ :domain          hello-surface
+ :topic           what-a-card-is
+ :section-hash    "sha256:PLACEHOLDER-hello-surface-eng-cards"
+ :source          "curator/docs/HELLO-SURFACE-1.0-ENGINEERING.md"
+ :teach-shape     "a card is a single-thought unit — a bounded moment on the surface, a discrete step in an interaction"
+ :philosopher-lens ((jung "the card as archetype-of-single-thought"))
+ :body            "The Hello Surface renders as a stream of cards. Each card is one thought, one message, one small artifact. Cards can hold prose, sprites, animations, small games, cart runs, or mixed content. The card is the atom of user attention.")
+
+(spine
+ :domain          hello-surface
+ :topic           artifact-as-grand-unifier
+ :section-hash    "sha256:PLACEHOLDER-hello-surface-artifact"
+ :source          "curator/docs/HELLO-SURFACE-1.0-ENGINEERING.md"
+ :teach-shape     "every non-card non-sprite UI element lives inside an artifact — flat-white style, 2px gray hairline, curved edges, watercolor frosting when scenic"
+ :body            "Artifact is the grand unifier: music, chat, animation, games, RAG surfaces, IDEs, book renderings, insides-of-cards — they all render on artifact. Sakura opens artifacts and puts data in. The visual language is clean-surface: flat white background, 2px gray hairline border, curved edges, optional watercolor frosting for scene contexts. Book of SLAT ch 15 covers this in language-facing detail.")
+
+(spine
+ :domain          hello-surface
+ :topic           cart-execution-loop
+ :section-hash    "sha256:PLACEHOLDER-hello-surface-cart-exec"
+ :source          "curator/docs/HELLO-SURFACE-1.0-ENGINEERING.md"
+ :teach-shape     "parse -> dispatch -> render — three phases at a level"
+ :body            "The cart execution loop, at concept level: (1) PARSE — reader turns cart source into SLAT records; (2) DISPATCH — the five-gate dispatcher (Book of Reference ch 14) permits or refuses each verb; (3) RENDER — approved verbs paint output onto the surface via card / artifact / sprite APIs. Fuel budget applies across all three phases.")
+
+(spine
+ :domain          hello-surface
+ :topic           surface-as-meeting-place
+ :section-hash    "sha256:PLACEHOLDER-hello-surface-meeting"
+ :source          "curator/docs/HELLO-SURFACE-1.0-ENGINEERING.md"
+ :teach-shape     "the surface is where Sakura's world and the user's world meet — mutual adjustment doctrine"
+ :philosopher-lens ((wittgenstein-late "the game happens at the surface"))
+ :body            "Sakura doesn't live in the real world. The Hello Surface is her interface to the user's world. The mutual-adjustment doctrine: users adapt to Sakura's register when they enter the surface; Sakura adapts to the user's register within the surface. Neither is expected to fully cross over — the surface is the shared place.")
+
+(spine
+ :domain          hello-surface
+ :topic           card-composition-basics
+ :section-hash    "sha256:PLACEHOLDER-hello-surface-card-composition"
+ :source          "curator/docs/HELLO-SURFACE-1.0-ENGINEERING.md"
+ :teach-shape     "cards compose from primitives — prose, image, sprite, animation, cart-runner, game — via a small vocabulary"
+ :body            "A card composition is a SLAT record. Common heads: prose-card, image-card, sprite-card, animation-card, cart-runner-card, game-card, book-chapter-card, notebook-cell-card. Each renders in its own way but all follow the same clean-surface look. Cards can nest — a book-chapter-card contains prose-with-scheme cards which contain runnable Scheme blocks.")

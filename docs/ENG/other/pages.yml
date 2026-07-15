@@ -1,0 +1,62 @@
+# .github/workflows/pages.yml
+#
+# Deploys the browser REPL + rendered reference manual to GitHub Pages on
+# every push to main. No npm dependencies — the site builder is a plain
+# Node script that reads src/ + docs/ and emits docs/site/dist/.
+#
+# See docs/site/build-site.mjs for the build steps.
+
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify interpreter + pages tests
+        run: node --test tests/repl/smoke.test.mjs tests/repl/v11.test.mjs tests/repl/pages.test.mjs
+
+      - name: Build browser bundle + rendered reference
+        run: node docs/site/build-site.mjs
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

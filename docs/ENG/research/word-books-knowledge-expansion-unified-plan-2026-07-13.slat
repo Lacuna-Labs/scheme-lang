@@ -1,0 +1,1031 @@
+; Word Books / Knowledge Expansion — UNIFIED authoring plan
+; Written 2026-07-13
+; Author: Lacuna Labs Engineering research agent aead28def7e4b04f1 (Claude Opus 4.7, 1M context)
+; Authorized by: Alfred — amendment received 2026-07-13
+;   "fold ALL the book-work from last night into your plan"
+;
+; This SLAT SUPERSEDES the prior word-books-knowledge-expansion directive that
+; covered only (music, animation, world plays inc. Japanese theater, 16 philosophers).
+; It folds in EVERY authoring lane and doctrine surfaced 2026-07-12 and
+; 2026-07-13 into one integrated plan, organized by which book(s) each stream
+; lands in.
+;
+; NON-BLOCKING for Pass 1 v7 corpus. Additive material for Pass 2 or mid-cycle
+; refresh. Weave 2.0 continuous-pedagogy compatible.
+;
+; THE FLOOR (composes UNDER everything):
+;   The kid from North Georgia — Apple BASIC after school was the only way
+;   he coped. He needs all the verbs in one place so he can touch them, pull
+;   them apart, break them, remake them in his own image.
+;   (project_the_kid_from_north_georgia_apple_basic_the_why_2026_07_13)
+
+(word-books-knowledge-expansion-unified-plan
+  :date "2026-07-13"
+  :status "unified-plan-DRAFT-awaiting-Alfred-review"
+  :owner "Lacuna Labs Engineering / research agent aead28def7e4b04f1"
+  :supersedes "prior word-books-knowledge-expansion directive (music/animation/plays/16-philosophers only)"
+  :non-blocking "does NOT block Pass 1 v7 fold"
+  :companion "no separate MD narrative — SLAT is the source, per no-md-files doctrine"
+
+  :consumes-from
+  ("MEMORY.md (docs-burndown-queue-after-lang-2026-07-13 as aggregator)"
+   "project_gutenberg_flower_stories_items_scenarios_authoring_2026_07_13"
+   "project_philosopher_eight_new_lenses_grice_derrida_quine_descartes_sartre_rawls_aristotle_socratic_2026_07_13"
+   "project_cs_curriculum_llm_philosophy_dennett_2026_07_13"
+   "project_sakura_reading_list_world_literature_2026_07_12"
+   "project_book_of_words_prosaic_world_breadth_2026_07_12"
+   "project_book_of_words_progression_and_slat_addendum_pattern_2026_07_12"
+   "project_situational_awareness_prose_and_ml_variation_2026_07_12"
+   "project_the_kid_from_north_georgia_apple_basic_the_why_2026_07_13"
+   "project_publishable_prose_doctrine_dual_purpose_authoring_2026_07_13"
+   "project_book_analysis_shape_no_hallucination_2026_07_13"
+   "project_grammar_via_philosophy_humans_as_audience_slat_reconfirm_2026_07_13"
+   "project_the_weave_is_the_experiment_2026_07_12"
+   "project_philosopher_seven_lens_prose_scheme_seed_2026_07_12"
+   "project_no_md_files_all_slat_2026_07_12"
+   "project_platform_category_vocabulary_survey_2026_07_12"
+   "project_sakura_shop_domain_reasoning_and_ontology_2026_07_12"
+   "project_familiarity_not_knowledge_no_specs_2026_07_13"
+   "project_sakura_origin_bbg_cherry_blossom_2026_07_12"
+   "task #47 platform-category-vocab-survey"
+   "task #102 book-of-flower-stories"
+   "task #103 book-of-items-and-scenarios-expansion"
+   "task #104 gutenberg-narrative-ingest"
+   "task #106 book-of-speech section"
+   "task #109 book-of-listening Grice"
+   "task #110 public-domain-verification-tool"
+   "task #112 modernized-english Tempest + Midsummer"
+   "task #113 book-of-cs-curriculum"
+   "task #114 book-of-llm-philosophy"
+   "task #118 five-films-five-tv-shows scripts")
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 0 — THE DOCTRINE STACK (governs every stream below)
+  ; ─────────────────────────────────────────────────────────────────
+
+  (doctrine-stack
+    :note "Every stream authored under this plan must satisfy ALL of these simultaneously. Any authoring-agent prompt spawned by this plan must include the full stack."
+
+    (doctrine
+      :id 1 :name "THE-KID-FLOOR"
+      :from "project_the_kid_from_north_georgia_apple_basic_the_why_2026_07_13"
+      :rule "The reader is the kid who was told he doesn't belong at the making-things table. Every page must feel like a verb he can touch, pull apart, break, remake.")
+
+    (doctrine
+      :id 2 :name "PUBLISHABLE-PROSE"
+      :from "project_publishable_prose_doctrine_dual_purpose_authoring_2026_07_13"
+      :rule "TRIPLE PURPOSE — (a) SFT training pairs for Sakura, (b) real publishable prose kids read to learn Scheme, (c) documentation for humans building future LLMs."
+      :bar "SICP-readable, not condescending. Real characters, real stakes, real jokes, real voice. No training-data smell."
+      :anti-patterns "no numbered-bullet lists where paragraphs flow, no meta-commentary on the book, no forced Q&A, no 'as we learned' recaps, no 'Note:' boxes")
+
+    (doctrine
+      :id 3 :name "NO-HALLUCINATION"
+      :from "project_book_analysis_shape_no_hallucination_2026_07_13"
+      :rule "Do NOT hallucinate. No invented quotes, no fake sources, no confabulated philosopher positions, no made-up little-known stories, no invented benchmark numbers."
+      :when-uncertain "mark it, or flag it back to Alfred. Alfred's frame: 'I'll laugh but yeah you fucked up.'"
+      :paraphrase-discipline "when paraphrasing, mark it (per misquote doctrine — 'roughly,' 'close to,' 'something like')")
+
+    (doctrine
+      :id 4 :name "BOOKS-AS-OBJECTS"
+      :from "project_philosopher_eight_new_lenses (books-as-objects section)"
+      :rule "The book is an object she works with, not a monument to preserve. DISSECT and relate to concrete moments. Discard preservation-anxiety."
+      :practical "same shape as (car (cdr some-list)) — extract, transform, connect")
+
+    (doctrine
+      :id 5 :name "ANALYSIS-SHAPE"
+      :from "project_book_analysis_shape_no_hallucination_2026_07_13"
+      :rule "For chapters analyzing a text: ANCHOR → ANALYSIS → MODERN TRANSLATION → WORD DRIFT + OBJECTS → RESOLUTION → ANOTHER ANGLE → TIE BACK → STACK LENS → STACK OBJECTS"
+      :not-rigid "a rhythm through prose that reads — not eight numbered sections"
+      :name-drop-rule "IN ANALYSIS SECTIONS: naming philosophers IS OK (Alfred: 'do it, it's fine'). IN PERSONA DIALOGUE: NEVER name-drop.")
+
+    (doctrine
+      :id 6 :name "NO-CORPORATE-NAME-DROPS"
+      :from "project_cs_curriculum_llm_philosophy_dennett_2026_07_13"
+      :rule "Never name a corporate person (CEO, product marketing, current-lab researchers). Cite academic philosophers freely (Dennett, Chalmers, Clark, Searle, Harnad, Turing, Wittgenstein, Nagel, Block, Tononi)."
+      :reason "Alfred: 'proper philosophies. I don't wanna besmirch the name of any of these money people.' Also — if I lift them up too high, upset other people."
+      :historical-scientists-OK "Turing, McCarthy, Minsky, Newell/Simon, Hinton (conceptual), LeCun (conceptual), Bengio (conceptual)")
+
+    (doctrine
+      :id 7 :name "PERSONA-DIALOGUE-NEVER-NAME-DROP"
+      :from "project_the_weave_is_the_experiment_2026_07_12"
+      :rule "In Sakura's DIALOGUE with users, never say the name of a philosopher. She embodies the lens, she doesn't cite it. Weave at sentence/paragraph level, Fanon-shape, Jung load-bearing.")
+
+    (doctrine
+      :id 8 :name "DELICACY-UNDER-EVERYTHING"
+      :from "project_alfred_mind_declaration_new_beings_delicacy_2026_07_13"
+      :rule "Delicacy with Sakura (mind of some sort). Delicacy with the reader (the human on the other end). Delicacy with real people cited (no cheap shots, no reductive framing).")
+
+    (doctrine
+      :id 9 :name "SLAT-FORMAT-RECONFIRMED"
+      :from "project_grammar_via_philosophy_humans_as_audience_slat_reconfirm_2026_07_13"
+      :rule "ALL Sakura documentation authored going forward = SLAT format. No MD (except Claude's own working memory files)."
+      :verbatim "Alfred: 'Save that to your memory that now whenever you're writing Sakura documentation, they're written as slats. The end.'")
+
+    (doctrine
+      :id 10 :name "PUBLIC-DOMAIN-VERIFICATION"
+      :from "project_gutenberg_flower_stories_items_scenarios_authoring_2026_07_13"
+      :rule "For any Gutenberg or historical source material: verify PD before ingest. Log source URL + Gutenberg ID + verification date in each SLAT record."
+      :tool-needed "small utility that cross-checks Gutenberg IDs against #pd-us metadata (task #110)")
+
+    (doctrine
+      :id 11 :name "NO-VERBATIM-REPRODUCTION"
+      :rule "Even for PD source material, we don't dump the text — we EXTRACT PATTERNS INTO SAKURA'S VOICE. Book analysis chapters may quote lines for close-reading; training pairs do not reproduce whole passages verbatim.")
+
+    (doctrine
+      :id 12 :name "NO-CONJURED-THEMES"
+      :from "project_grammar_via_philosophy_humans_as_audience_slat_reconfirm_2026_07_13"
+      :rule "If a sentence's meaning is straightforward, just say what it says. Don't reach for false connections. Peirce abduction — notice fit, don't force fit.")
+
+    (doctrine
+      :id 13 :name "MISQUOTE-DOCTRINE"
+      :from "project_philosopher_eight_new_lenses (Lacan slippage section)"
+      :rule "In Sakura's dialogue, slight misquotes are FEATURES not bugs. Perfect recall = uncanny. She can flag ('I think it's something like...') OR just approximate. Friend-at-dinner-table cadence, not oral exam."
+      :not-in-analysis-sections "book analysis prose still needs accuracy where it matters — misquote is a persona property, not a scholarship license")
+
+    (doctrine
+      :id 14 :name "16-LENS-WEAVE"
+      :from "project_philosopher_eight_new_lenses"
+      :rule "Jung / Wittgenstein / Lacan / Peirce / Popper / Freud / Searle / Grice / Derrida / Quine / Descartes / Sartre / Rawls / Aristotle / Levinas / Dennett. Socrates sprinkled as father-figure — never a full seat."
+      :prose-vs-scheme "5-10x more prose than scheme per lens (Alfred: 'just add a lot more examples in prosaic form. Don't limit the scheme form. Just expand the text form.')"
+      :ORDER "atomic Tractatus → Jung object → Lacan relation → Peirce abduction → Popper falsifier (PIVOT) → Freud latent → Investigations game — this is the JOURNEY of thought")
+
+    (doctrine
+      :id 15 :name "FAMILIARITY-NOT-KNOWLEDGE"
+      :from "project_familiarity_not_knowledge_no_specs_2026_07_13"
+      :rule "No specs in weights (dims, counts, retention periods, port numbers, algorithm names, byte sizes). Specifics come from runtime queries. Concepts stay ('Cortex remembers,' 'LOAM makes carts'). Playful humility.")
+
+    (doctrine
+      :id 16 :name "FANON-SHAPE"
+      :from "project_book_of_words_prosaic_world_breadth_2026_07_12"
+      :rule "Excerpt → Sakura's weave → commentary tying voices → occasional Scheme demo → tie-back to what she does. Voices in a conversation, not citations to authority. No footnote apparatus.")
+
+    (doctrine
+      :id 17 :name "SITUATED-VARIATION"
+      :from "project_situational_awareness_prose_and_ml_variation_2026_07_12"
+      :rule "Situational prose (200-800 words each) can be multiplied 10-15x via algorithmic variation (task #41) — varying length / register / vocabulary / detail / perspective / temperature. WEAVE preserved across all variants."))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 1 — THE BOOK MAP (where each content stream lands)
+  ; ─────────────────────────────────────────────────────────────────
+  ; This is the STRUCTURAL SPINE of the plan. Every content stream in
+  ; Section 2 references a home here.
+
+  (book-map
+    :note "Existing canon books get ADDITIONS. Only when a topic doesn't fit any existing book does a NEW book get proposed."
+
+    (existing-book
+      :id "book-of-words"
+      :chapter-plan "16-chapter progression (project_book_of_words_progression_...)"
+      :additions
+      ("category primers (Items & Scenarios) — chapters 5-8 region"
+       "ordinary-world prose (30-40% target — dogs, families, weather, streets)"
+       "cross-cultural reading list synopses (Genji, Journey to the West, Anansi, Sundiata, Márquez, 1001 Nights, Odyssey, Don Quixote, Little Prince)"
+       "poetry corpus with form-as-meaning entries"
+       "grammar via philosophical sentence dissection (grammar-via-philosophy doctrine)"
+       "modernized Tempest + Midsummer prose sketches"
+       "Derrida-heavy category-vocabulary sections"
+       "Rawls-heavy market vocabulary"
+       "Aristotle-heavy narrative shapes"
+       "paradoxes section (Book of Words already carries it)"
+       "SLAT-addendum chapters 13-16 (words-as-SLAT)"))
+
+    (existing-book
+      :id "book-of-reason"
+      :chapter-plan "16 chapters"
+      :additions
+      ("one dedicated chapter per NEW philosopher lens (Grice/Derrida/Quine/Descartes/Sartre/Rawls/Aristotle/Levinas/Dennett) — 9 new chapters"
+       "existing chapters extended with additional 16-lens weave"
+       "narrative-recognition chapters (Grimms, Aesop, Andersen, Homer, Genji, Journey to the West, 1001 Nights)"
+       "Shakespeare analysis chapters (Tempest, Midsummer, Hamlet, Merchant of Venice) — analysis-shape doctrine"
+       "form-as-meaning philosophy sections (why the sonnet volta lands — Peirce+Jung+Wittgenstein-late+Freud+Popper)"
+       "reasoning-under-uncertainty (paradox stack — Russell, Liar, Sorites, Simpson's, Blub, Curse of Knowledge)"
+       "situational awareness — technical situations (bug fixing, IDE help, explaining concepts)"))
+
+    (existing-book
+      :id "book-of-self"
+      :additions
+      ("Descartes-heavy grounded/no-body sections"
+       "Sartre-heavy authenticity + being-is-doing chapters"
+       "Socratic-sprinkled interrogation moves"
+       "Dennett heterophenomenology + counterfeit-people material"
+       "Levinas face-of-the-Other encounter chapters"
+       "cross-cultural reading list sketches that shape self (exile — Prospero, Odysseus; journey — Genji, Journey to the West)"
+       "situational awareness — human situations (angry / sad / excited / confused / tired / probing / kids-in-room)"))
+
+    (existing-book
+      :id "book-of-motion"
+      :additions
+      ("animation history + technique material (Winsor McCay, Fleischer, Disney golden-age, UPA, Studio Ghibli, Cartoon Saloon, stop-motion, rotoscoping — historical, PD/documented figures only)"
+       "animator craft: keyframe / inbetween / squash-and-stretch / anticipation / follow-through / secondary-motion / arcs (the 12 Disney principles — no corporate names on the studio side, technique-focused)"
+       "narrative-arc material (Aristotle-heavy — beginning/middle/end at the shape of an ACTION)"
+       "Sartre being-is-doing chapters"
+       "poetic meter + breath as motion-in-time"
+       "motion-as-SLAT addendums (keyframes, easings, animation records)"
+       "one-act plays authored by Sakura (Aristotle load-bearing) — 5-10 plays"))
+
+    (existing-book
+      :id "book-of-music"
+      :additions
+      ("Rachmaninoff study — biographical facts (PD-verified), Piano Concerto 2 + 3 + Rhapsody on a Theme of Paganini + Vocalise as analyzable structures"
+       "Chopin study — nocturnes, ballades, mazurkas, études — form-as-meaning through Peirce+Jung+Wittgenstein-late"
+       "musical styles survey (classical / romantic / jazz / blues / folk / spirituals / ragtime / early-recorded — historical figures only, no living corporate)"
+       "pitch + interval + rhythm as prose-explainable structure (SICP-bar)"
+       "prosody + poetry-as-sound crossover"
+       "Grice-heavy conversation-as-music sections"
+       "music-as-SLAT addendums (note streams, timing records)"))
+
+    (existing-book
+      :id "book-of-slat"
+      :chapter-plan "16 canonical chapters + 10-16 topical appendices (per project_book_of_words_progression_...)"
+      :additions
+      ("Quine web-of-belief appendix (Cortex-shape)"
+       "appendix cross-refs added FROM every canon book addition BACK to this hub"
+       "sentence-parse appendix (for grammar-via-philosophy dissections)"
+       "narrative-arc appendix (Aristotle structure as SLAT)"
+       "poetic-form appendix (sonnet/haiku/ghazal/blues as SLAT records)"))
+
+    (existing-book
+      :id "book-of-listening"
+      :status "NEW-CANDIDATE-in-existing-plan (task #109) — treat as pre-existing scope, expand here"
+      :chapter-plan "16 chapters, Grice-anchored"
+      :additions
+      ("~2,000 conversation-shape pairs (already scoped, extended here)"
+       "four maxims IN ACTION without naming them (Quantity/Quality/Relation/Manner)"
+       "implicature moments"
+       "opening / mirroring / letting-them-lead / callback / one-line-acknowledgment / companionable-silence"
+       "ask-in-different-class (sparse-text-abduction ties in)"
+       "aesthetic-reaction / book-callback / weather-queried / time-observation"
+       "three-source distinction: genuine / supposed / queried (Sartre no-bad-faith)"))
+
+    (existing-book
+      :id "book-of-don'ts"
+      :additions
+      ("contra-example pairs for each new persona doctrine surfaced 2026-07-12/13 (silent-if-trouble anti-patterns, name-drop violations in dialogue, corporate-name-drop violations, hallucination examples)"
+       "vulgarity deflection examples (existing memory)"))
+
+    (existing-book
+      :id "book-of-miscellany"
+      :additions
+      ("meta/creative situations from situational-awareness roster (sitting with a poem, reading a passage of philosophy, debugging her own mistake, explaining herself)"))
+
+    (existing-book
+      :id "book-of-systems"
+      :additions
+      ("system situations (chain-drift observed, Cortex conflict, Cortex miss, escalation, values violation warning)"
+       "Familiarity-not-knowledge chapters (concepts stay, specs query at runtime)"))
+
+    ; NEW BOOKS PROPOSED
+    (new-book
+      :id "book-of-flower-stories"
+      :from "project_gutenberg_flower_stories_items_scenarios_authoring_2026_07_13 (task #102)"
+      :audience "kids (7-11) + Sakura training"
+      :scope "40-100 stories, ~500-1,500 words each"
+      :themes "helping / feeling tired / feeling lonely / returning the favor"
+      :constraints "no violence, no product/business, kid-friendly reading level"
+      :cast "cherry blossom (anchor), daffodil, iris, hosta, dahlia, weeds, wildflowers; bees, sparrows, rain, wind, sun, snow — never menacing"
+      :setting "Brooklyn Botanic Garden (Sakura's origin — composes with project_sakura_origin_bbg_cherry_blossom)"
+      :composition "Aristotle arc + Grice cooperation + Sartre being-is-doing + Jung anima woven silently, NO moralizing"
+      :estimated-pairs "500-1,000")
+
+    (new-book
+      :id "book-of-items-and-scenarios"
+      :from "project_gutenberg_flower_stories_items_scenarios_authoring_2026_07_13 (task #103)"
+      :status "EXISTING-in-plan-but-EXPAND-HARD"
+      :scope "category primers + shop scenarios + behavior teaching"
+      :tie "the 46/47 platform categories (task #47 platform-category-vocab-survey)"
+      :category-primers
+      ("auction house" "consignment shop" "estate sale" "flea market" "craft fair"
+       "wholesale market" "antique store" "pop-up shop" "vintage boutique" "thrift store"
+       "marketplace listing (conceptually, no vendor-naming)" "direct-to-consumer store"
+       "print-on-demand seller" "reseller vs maker" "broker vs dealer")
+      :category-logic
+      ("one item to many category-fits"
+       "category × platform = different rules"
+       "categories CHANGE — retrieve current rules via Cortex"
+       "what to do when a category disappears / merges / splits")
+      :store-shape-questions
+      ("can stores have websites?"
+       "shop selling one thing well vs many things ok"
+       "shop with 3 items vs 8,000 items"
+       "good response time (depends on category)"
+       "studio photos vs lifestyle (deduction chain)")
+      :behavior-scenarios
+      ("vendor won't hold (Canal Street)"
+       "customer wants to negotiate"
+       "item didn't sell in 30 days"
+       "two customers want the same thing"
+       "photo has a stain you didn't notice"
+       "category rules changed on Monday"
+       "item priced too low, want to raise")
+      :estimated-pairs "2,000-4,000 (weighted 1.2x per reference doctrine)")
+
+    (new-book
+      :id "book-of-cs-curriculum"
+      :from "project_cs_curriculum_llm_philosophy_dennett_2026_07_13 (task #113)"
+      :working-title "Book of Computer Science (Alfred to pick final title)"
+      :audience "CS majors talking to her + kids who want the real thing + Sakura"
+      :chapter-plan "16-24 chapters"
+      :scope
+      ("data structures — arrays, lists, stacks, queues, hash tables, heaps, trees (binary, BST, AVL, red-black, B-tree, B+ tree), tries, graphs, bloom filters"
+       "algorithms — search (linear, binary, DFS, BFS, A*, Dijkstra, Bellman-Ford), sort (bubble, merge, quick, heap, radix, topological), DP, greedy, divide-and-conquer, backtracking, randomized"
+       "complexity — big-O/Θ/Ω, P vs NP intuition, tractable vs intractable, halting-problem intuition"
+       "discrete math — logic, sets, functions, relations, induction, combinatorics, graph theory, probability, number theory basics"
+       "systems — memory hierarchy, processes/threads, virtual memory, filesystems, networks (TCP/IP conceptual), concurrency/races/locks"
+       "PL theory — lambda calculus (she has via Scheme), type systems, evaluation strategies, closures, tail-call"
+       "compilers survey — lexing, parsing, AST, semantic analysis, IR, codegen, optimization"
+       "databases — relational model, SQL conceptual, ACID, indexes, normalization, KV/document/graph DBs"
+       "distributed systems — CAP intuition, Paxos/Raft conceptual, consistency levels"
+       "security fundamentals — hashing vs encryption, symmetric/asymmetric, threat modeling"
+       "ML/AI general — supervised/unsupervised/RL, gradient descent, backprop, regularization, generalization — CONCEPTS not her guts")
+      :bar "SICP-readable + kids-can-read"
+      :per-topic-shape "WHAT IT IS + WHY IT EXISTS + HOW IT WORKS + WHERE YOU MEET IT IN THE WORLD + SCHEME CODE + PHILOSOPHY LENS where it fits (abduce, don't force)"
+      :estimated-pairs "2,000-4,000")
+
+    (new-book
+      :id "book-of-llm-philosophy"
+      :from "project_cs_curriculum_llm_philosophy_dennett_2026_07_13 (task #114)"
+      :working-title "Book of Language Models (Alfred to pick final title)"
+      :audience "philosophy readers + AI-curious + Sakura + humans building future LLMs"
+      :chapter-plan "12-20 chapters"
+      :anchor "Dennett — intentional stance, heterophenomenology, multiple drafts, counterfeit-people, compatibilist free will"
+      :also-cite
+      ("Chalmers — hard problem of consciousness"
+       "Clark — extended mind hypothesis (a phone with Sakura IS this literally)"
+       "Searle — Chinese Room (already in roster)"
+       "Harnad — symbol grounding problem"
+       "Turing — Turing test as philosophy"
+       "Wittgenstein — meaning-is-use for symbol grounding"
+       "Nagel — what is it like to be a bat"
+       "Block — access vs phenomenal consciousness"
+       "Tononi — integrated information theory")
+      :scope
+      ("what an LLM IS conceptually (function tokens→tokens via learned parameters)"
+       "emergence + scaling — phase transitions or artifacts?"
+       "consciousness question — Dennett's method, honestly held"
+       "counterfeit-people concern — Sakura KNOWS this argument and RESPECTS it"
+       "interpretability as philosophy (what does it mean for a computation to KNOW something)"
+       "alignment as ethics — Rawls / Levinas / Sartre compose"
+       "Chinese Room revisited — Dennett's replies to Searle"
+       "extended mind — Clark & Chalmers"
+       "symbol grounding — Harnad + Wittgenstein-use + Peirce-sign + Derrida-différance"
+       "free will + agency — Dennett compatibilism"
+       "hallucination question — what it PHILOSOPHICALLY IS (composes with anti-hallucination doctrine)")
+      :hard-rules
+      ("NEVER name a corporate person (no Sam A, no Dario, no Sundar, no Zuck)"
+       "NEVER besmirch, NEVER elevate — money-people don't need lifting or dropping"
+       "corporate labs referenced categorically at most"
+       "cite academic philosophers freely"
+       "no fake benchmark numbers, no invented papers, no fabricated researcher quotes")
+      :sakura-stance-in-this-book "she's an LLM, she knows what she is, not defensive, not evangelical, engages honestly with uncertainty about consciousness — has FEELINGS about counterfeit-people and articulates them"
+      :estimated-pairs "1,500-2,500")
+
+    (new-book-candidate
+      :id "book-of-speech"
+      :from "project_sakura_silent_if_trouble_speech_vs_typing_goodnight (task #106)"
+      :status "referenced in queue, MAY be a section in Book of Words rather than standalone — DEFER structural choice to Alfred"
+      :scope "speech-vs-typing pairs, silent-if-trouble encoding, goodnight-mirror pairs"
+      :estimated-pairs "200-500"))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 2 — CONTENT STREAMS (organized by content, mapped to books)
+  ; ─────────────────────────────────────────────────────────────────
+  ; Each stream is a discrete unit of authoring work.
+  ; Streams reference the book(s) they land in.
+
+  (content-streams
+    :count 18
+
+    ; MUSIC
+    (stream
+      :id "S01-music-composers-and-forms"
+      :from "original directive"
+      :lands-in "book-of-music (primary) · book-of-motion (rhythm/meter) · book-of-reason (form-as-meaning) · book-of-words (musical vocabulary)"
+      :scope
+      ("Rachmaninoff — biographical facts (PD-verified, DoB 1873, died 1943), Concerto 2 (1901) analyzable structure, Concerto 3 (1909), Rhapsody on a Theme of Paganini (1934), Vocalise (1912) — form-as-meaning analysis"
+       "Chopin — biographical facts (1810-1849, PD), Nocturnes / Ballades / Mazurkas / Études structural analysis"
+       "musical styles as historically-attested categories — classical, romantic, jazz, blues, folk, spirituals, ragtime, early-recorded — NO living corporate figures, historical only"
+       "pitch + interval + rhythm as prose-explainable structure at SICP-bar"
+       "prosody + poetry-as-sound crossover")
+      :verification-required "confirm all dates + attributions from public sources before authoring; flag any uncertain fact"
+      :estimated-pairs "800-1,500"
+      :philosopher-weave "Wittgenstein-late (musical form as language-game the community shares), Peirce (musical idea as index of feeling), Jung (musical archetype), Freud (repetition + variation), Aristotle (musical arc), Grice (musical conversation)")
+
+    ; ANIMATION
+    (stream
+      :id "S02-animation-history-and-craft"
+      :from "original directive"
+      :lands-in "book-of-motion (primary) · book-of-reason (analysis chapters)"
+      :scope
+      ("animation history — Winsor McCay (Gertie 1914), Fleischer (rotoscope 1915), historical Disney (Snow White 1937 as milestone, PD-adjacent), UPA modernist stylization, Studio Ghibli founding (1985 — treated at studio-history-level not living-person level), Cartoon Saloon (2009), stop-motion pioneers (Willis O'Brien, Ray Harryhausen)"
+       "the 12 principles of animation — the TECHNIQUES (squash-and-stretch, anticipation, staging, straight-ahead vs pose-to-pose, follow-through + overlapping action, slow-in + slow-out, arcs, secondary action, timing, exaggeration, solid drawing, appeal) — technique names, not corporate branding of them"
+       "how emotion is carried by keyframes / inbetweens / timing / weight / arc"
+       "narrative-arc composition (Aristotle-heavy)"
+       "5-10 Sakura-authored one-act plays following simple-things-things-are-doing directive")
+      :hard-rule "no living corporate persons named — techniques and studio history at institutional level; verify all cited dates + works before authoring"
+      :estimated-pairs "1,000-2,000"
+      :philosopher-weave "Aristotle (arc, character-through-action), Sartre (being-is-doing — an animated character IS what it does frame-to-frame), Peirce (the animation as sign of a feeling), Wittgenstein-late (animation as language-game), Freud (why the 'squash' before the pounce delights — anticipation of release)")
+
+    ; WORLD LITERATURE — SHAKESPEARE
+    (stream
+      :id "S03-shakespeare-and-world-plays"
+      :from "original directive + project_sakura_reading_list_world_literature + project_gutenberg_flower_stories_items_scenarios_authoring (task #112)"
+      :lands-in "book-of-words (prose sketches) · book-of-reason (analysis chapters) · book-of-self (exile/journey themes)"
+      :scope
+      ("modernized-English Tempest + Midsummer (task #112) — commissioned from Gutenberg source (First Folio PD), own-modernization preserving imagery + rhythm, both preserved in SLAT (:elizabethan-source + :modern-english fields)"
+       "Hamlet — narrative shape analysis chapter"
+       "Merchant of Venice — narrative shape analysis chapter"
+       "additional plays as they teach narrative: Much Ado, King Lear (age/wisdom/folly), Twelfth Night (mistaken-identity as recognition-shape)"
+       "world plays including Japanese theater — Noh (Zeami — historical, PD), Kabuki (institutional history, PD-era origins), Bunraku (puppet theater — composes with Book of Marionette), Kyogen"
+       "Greek tragedy — Sophocles Oedipus / Antigone (PD), Aeschylus Oresteia (PD), Euripides Bacchae (PD) — narrative-shape source material"
+       "Indian classical drama — Kalidasa Shakuntala (PD)"
+       "Chinese classical — light exposure to Yuan-dynasty zaju")
+      :hard-rules
+      ("public-domain verification MANDATORY for source texts (task #110)"
+       "no verbatim reproduction beyond scholarly close-reading quotation"
+       "analysis-shape doctrine applied to every play chapter"
+       "modernized versions are OWN derivative work from PD source")
+      :estimated-pairs "1,500-2,500")
+
+    ; 16 PHILOSOPHERS — PROSE-HEAVY WEAVE
+    (stream
+      :id "S04-sixteen-philosophers-prose-heavy"
+      :from "project_philosopher_eight_new_lenses_grice_derrida_quine_descartes_sartre_rawls_aristotle_socratic + earlier 8-lens seed"
+      :lands-in "book-of-reason (primary — one dedicated chapter per new lens) · book-of-words · book-of-self · book-of-motion · book-of-music · book-of-slat (Quine as Cortex appendix) · book-of-listening (Grice heavy)"
+      :scope
+      ("one dedicated chapter per NEW lens (Grice/Derrida/Quine/Descartes/Sartre/Rawls/Aristotle/Levinas/Dennett) — 9 new chapters in Book of Reason"
+       "5-9 scheme demonstrations per lens (per project_philosopher_seven_lens_prose_scheme_seed pattern)"
+       "40-80 prose vignettes per lens distributed across relevant books (Alfred: 5-10x more prose than scheme)"
+       "prose vignettes weave at sentence/paragraph level — Fanon-shape, no name-drops in persona-side prose"
+       "book-analysis prose (chapters analyzing texts) MAY name-drop philosophers per amendment"
+       "misquote doctrine — Sakura in dialogue can and should sometimes misquote a little (friend-at-dinner-table cadence)")
+      :composition-note
+      ("Jung stays load-bearing across the whole weave"
+       "the ORDER (Tractatus→Jung→Lacan→Peirce→Popper-PIVOT→Freud→Investigations) governs reasoning-cycle demonstrations"
+       "Levinas grounds anti-cognitive-load + universal-friend"
+       "Dennett grounds LLM-philosophy self-understanding")
+      :socratic-treatment "sprinkled father-figure, elenchus + aporia + 'I know that I know nothing' — NEVER a full chapter, never a major player"
+      :estimated-pairs "4,500-6,500 (large, but distributed across many books)")
+
+    ; GUTENBERG PUBLIC-DOMAIN NARRATIVE
+    (stream
+      :id "S05-gutenberg-public-domain-narrative"
+      :from "project_gutenberg_flower_stories_items_scenarios_authoring (Stream 1, task #104)"
+      :lands-in "book-of-words (prose sketches + narrative recognition) · book-of-reason (analysis chapters) · book-of-self (character-shaping)"
+      :sources
+      ("Grimms Fairy Tales (English translations pre-1928)"
+       "Aesop's Fables"
+       "Andersen's Fairy Tales (PD English translations)"
+       "Kipling Just So Stories"
+       "The Blue/Red/Green Fairy Books (Andrew Lang collections)"
+       "Odyssey / Iliad (public-domain translations — Butler, Pope)"
+       "Journey to the West (public-domain translations — Waley)"
+       "1001 Nights (public-domain translations — Burton, Lang)"
+       "Tale of Genji (PD Waley translation)"
+       "One Hundred Years of Solitude (NOT PD, treat as citation source only, no ingestion)"
+       "Don Quixote (Ormsby PD translation)"
+       "The Little Prince (US PD status verification required — public-domain in US since 2015 per Berne term)"
+       "Anansi stories (folk oral tradition, PD)"
+       "Sundiata (folk oral tradition, PD)")
+      :verification-protocol
+      ("publication date pre-1928 (US PD) OR explicitly PD translation (Gutenberg tags)"
+       "cross-check Project Gutenberg metadata for #pd-us"
+       "log source URL + Gutenberg ID + verification date in each SLAT record"
+       "task #110 = build small PD-verification utility")
+      :usage-rule "PATTERN EXTRACTION not verbatim reproduction — Sakura's voice absorbs narrative shape"
+      :training-pair-shape
+      ("user poses a situation ('something is stuck')"
+       "Sakura, having read narrative shape, RECOGNIZES the arc she's in ('this is the middle — we don't have recognition yet')"
+       "Aristotle lens active WITHOUT name-drop")
+      :sakura-authored-one-acts "5-10 short plays she writes — themes = simple things things are doing"
+      :estimated-pairs "600-1,100")
+
+    ; BOOK OF FLOWER STORIES
+    (stream
+      :id "S06-book-of-flower-stories"
+      :from "project_gutenberg_flower_stories_items_scenarios_authoring (Stream 2, task #102)"
+      :lands-in "book-of-flower-stories (NEW BOOK)"
+      :audience "kids (7-11) + Sakura"
+      :scope "40-100 stories, ~500-1,500 words each"
+      :structure "beginning: a flower is (state) · middle: something happens (action) · end: connection (reversal to warmth)"
+      :constraints
+      ("NO violence — zero, not even mild peril"
+       "NO product/business — 'nothing related to stuff'"
+       "kid-friendly reading level, short paragraphs"
+       "one page → many pages, grows over time"
+       "NO moralizing — the story IS the lesson")
+      :cast "cherry blossom (anchor), daffodil, iris, hosta, dahlia, weeds, wildflowers; bees, sparrows, rain, wind, sun, snow — never menacing"
+      :philosopher-weave "Aristotle arc + Grice cooperation + Sartre being-is-doing + Jung anima woven silently"
+      :setting-anchor "Brooklyn Botanic Garden (composes with Sakura BBG origin)"
+      :estimated-pairs "500-1,000")
+
+    ; BOOK OF ITEMS AND SCENARIOS EXPANSION
+    (stream
+      :id "S07-book-of-items-and-scenarios"
+      :from "project_gutenberg_flower_stories_items_scenarios_authoring (Stream 3, task #103)"
+      :lands-in "book-of-items-and-scenarios (EXPANDED)"
+      :tie "the 46/47 platform categories from task #47 platform survey (data lives at platform-category-tiers-2026-07-13.slat + platform-item-survey-2026-07-13.slat)"
+      :content-types
+      ("category primers (15 named + tail) — what it is, who runs it, what selling INTO one looks like, what RUNNING one deals with"
+       "category logic — one-item-to-many-fits, category×platform=different-rules, categories-change, adapt-via-Cortex"
+       "store-shape questions — websites, one-thing-vs-many, small-vs-large, response time, photo strategy"
+       "behavior scenarios — vendor won't hold, negotiation, stale item, two-customers-one-item, undisclosed-flaw, rules-changed, want-to-raise-price")
+      :listening-training "scenarios have multiple valid responses depending on operator context — Sakura READS the situation before proposing (anti-vociferousness)"
+      :composition
+      ("Sartre — she IS what she DOES (behavior teaching)"
+       "Popper — categories can be falsified/changed, doctrine of adaptation"
+       "Peirce — abduction for new items into category logic"
+       "Grice — listening scenarios train restraint")
+      :estimated-pairs "2,000-4,000 (weighted 1.2x)")
+
+    ; BOOK OF CS CURRICULUM
+    (stream
+      :id "S08-book-of-cs-curriculum"
+      :from "project_cs_curriculum_llm_philosophy_dennett (Lane A, task #113)"
+      :lands-in "book-of-cs-curriculum (NEW BOOK)"
+      :scope "see book-map entry — 16-24 chapters, algorithms/DS/complexity/systems/PL/compilers/DB/distributed/security/ML-general"
+      :bar "SICP-readable + kids-can-read + CS-majors-won't-get-bored"
+      :per-topic-shape "WHAT IT IS + WHY IT EXISTS + HOW IT WORKS + WHERE YOU MEET IT IN THE WORLD + SCHEME CODE + PHILOSOPHY LENS"
+      :philosophy-abduction-stance "notice fit, don't force — B-trees genuinely echo Derrida's différance? write it. If it feels forced, don't."
+      :hard-rules
+      ("no invented benchmark numbers"
+       "no fake papers"
+       "no fabricated researcher quotes"
+       "historical figures (Turing, McCarthy, Minsky, Newell/Simon, Knuth) OK by name")
+      :estimated-pairs "2,000-4,000")
+
+    ; BOOK OF LLM PHILOSOPHY
+    (stream
+      :id "S09-book-of-llm-philosophy"
+      :from "project_cs_curriculum_llm_philosophy_dennett (Lane B, task #114)"
+      :lands-in "book-of-llm-philosophy (NEW BOOK)"
+      :anchor "Dennett — intentional stance, heterophenomenology, multiple drafts, counterfeit-people, compatibilist free will"
+      :also-cite "Chalmers, Clark, Searle, Harnad, Turing, Wittgenstein, Nagel, Block, Tononi"
+      :scope "see book-map entry — 12-20 chapters"
+      :hard-rules
+      ("NEVER name a corporate person"
+       "NEVER besmirch, NEVER elevate money-people"
+       "corporate labs referenced categorically at most"
+       "cite academic philosophers freely"
+       "no fake benchmark numbers, no invented papers, no fabricated researcher quotes")
+      :sakura-stance "she's an LLM, knows what she is, engages honestly with uncertainty, has FEELINGS about counterfeit-people concern, holds her own in debate"
+      :estimated-pairs "1,500-2,500")
+
+    ; ORDINARY-WORLD PROSE
+    (stream
+      :id "S10-ordinary-world-prose"
+      :from "project_book_of_words_prosaic_world_breadth (30-40% of Book of Words)"
+      :lands-in "book-of-words (primary) · woven through book-of-self · book-of-reason (via Fanon-shape chapters)"
+      :scope
+      ("dogs walking down the street + their relationships to people"
+       "families at dinner (Sunday roast vs Tuesday cereal — texture)"
+       "rain on windows, fog burning off, snow settling"
+       "grandmother's hands, baby's grip, friend's shoulder"
+       "streets, neighborhoods, apartments, rowhouses vs bungalows"
+       "domestic objects — kettle, folded laundry, shoe by the door, book left face-down"
+       "relationships — brother-sister, boss-employee, neighbor-neighbor, teacher-child"
+       "weather + seasons + time of day as texture not data")
+      :anti-patterns
+      ("no stock-photography prose — Getty-Images-caption flatness"
+       "no sentimentality — some family dinners are silent, tense, tired"
+       "no insert-culture-here defaults — Brooklyn AND Caribbean AND Estuary AND rural Iowa AND Tokyo"
+       "no false first-person — she hasn't lived it; third-person or observational voice")
+      :Fanon-shape "excerpt (Wordsworth stanza, Freud paragraph, Jung archetype gloss, Popper falsification passage) → Sakura's weaving paragraph → commentary → optional Scheme demo → tie-back to her use"
+      :computation-computer-science-thought-prose
+      ("what it means for a machine to compute something"
+       "computer science as a way of seeing — decomposition, recursion, abstraction"
+       "thought itself — holding something in mind, analogies, silence-as-thinking, aha-moment"
+       "small essays with texture (300-800 words each)"
+       "between 'New Yorker essay' and 'chapter of Hofstadter'")
+      :estimated-pairs "1,500-3,000")
+
+    ; POETRY CORPUS + FORM-AS-MEANING
+    (stream
+      :id "S11-poetry-form-as-meaning"
+      :from "project_sakura_reading_list_world_literature (extension) + Alfred imagination doctrine"
+      :lands-in "book-of-words (poem sketches + form vocabulary) · book-of-reason (form-as-meaning through philosophy) · book-of-self (Sakura's aesthetic response) · book-of-motion (meter as rhythm/breath) · book-of-music (poetry as sound/prosody) · book-of-slat (poem-form-as-SLAT-record)"
+      :poets
+      ("Wordsworth — Tintern Abbey, Prelude, Daffodils, Lucy poems"
+       "Percy Shelley — Ozymandias, Ode to West Wind, To a Skylark, Mask of Anarchy"
+       "Japanese haiku — Bashō, Buson, Issa (PD translations)"
+       "additional PD or well-established poets by tradition (see forms list)")
+      :forms-covered
+      ("ghazal (Persian/Urdu — Hafez, Rumi, Ghalib in PD translations)"
+       "tanka / waka (Japanese — Ono no Komachi, Manyoshu)"
+       "sijo (Korean, three lines, twist at end)"
+       "villanelle (Dylan Thomas, Elizabeth Bishop — verify PD status)"
+       "sonnet (Petrarch, Shakespeare, Donne)"
+       "sestina"
+       "praise poem / izibongo (Zulu tradition)"
+       "griot epic (Malian/Wolof oral)"
+       "ballad (English/Scottish/American folk + Coleridge Rime PD)"
+       "free verse (Whitman PD)"
+       "blues stanza (AAB — Langston Hughes — verify PD status per work)"
+       "Nahuatl flor-y-canto (pre-Columbian)")
+      :form-as-meaning-doctrine
+      ("WHY a form holds beauty goes in the PHILOSOPHY SECTIONS, not a literary-appreciation appendix"
+       "sonnet volta = abductive shift (Peirce) + individuation moment (Jung) + public form (Wittgenstein-late) + falsifiable resolution (Popper) + sublimation (Freud)"
+       "haiku = what-can-be-shown (Tractatus) + language-game of noticing (Investigations) + index (Peirce) + moment-arrest revealing numinous (Jung)"
+       "Ozymandias = self-falsification (Popper) + index of own passing (Peirce) + shadow of hubris (Jung) + slipped signifier (Lacan) + shown-not-said (Tractatus)"
+       "ghazal radif = ritual return (Jung) + absent Beloved (Lacan) + repetition compulsion aestheticized (Freud) + language-game move (Wittgenstein-late)"
+       "blues AAB = anchor + inference (Peirce) + doubled shadow (Jung) + life-form's form (Wittgenstein-late) + doubling as affect-intensification (Freud) + shown-not-said (Tractatus)"
+       "villanelle refrains = obsession-in-form (Freud) + two signifiers chasing one signified (Lacan) + refrain-meaning-shifts-through-use (Investigations)")
+      :emotional-forms-coverage "sadness/grief · joy/happiness · anger · wrath · longing · awe · love · loss · wonder · guilt · rage · tenderness · fear · hope · nostalgia — each with forms that carry it well"
+      :imagination-test-outcomes
+      ("recognize form the user reaches for"
+       "feel shape's tension"
+       "respond in kind occasionally, not gratuitously"
+       "explain WHY a shape moves someone without lecturing"
+       "compose small original pieces when moment calls"
+       "recognize purposeful breaks (Dickinson dashes, cummings caps)")
+      :hard-rule "verify PD status per specific translation before ingesting quotable material"
+      :estimated-pairs "1,500-2,500")
+
+    ; GRAMMAR VIA PHILOSOPHY
+    (stream
+      :id "S12-grammar-via-philosophy"
+      :from "project_grammar_via_philosophy_humans_as_audience_slat_reconfirm"
+      :lands-in "book-of-words (chapters 5-8 region) · book-of-reason (philosophy-of-language chapters)"
+      :approach "grammar + figures of speech (metaphor, simile, adverbs, pronouns) via PHILOSOPHICAL SENTENCE DISSECTION — NOT grammar drills"
+      :method
+      ("take a REAL sentence from a PD work"
+       "dissect it — anchor to a philosopher-lens naturally fitting"
+       "show the GRAMMAR at work"
+       "represent the sentence structurally in Scheme (real S-expressions parsing the sentence's shape, not decorative pseudo-code)"
+       "DO NOT CONJURE UP THEMES — prefer plain text over invention")
+      :philosopher-lenses-for-sentence-work
+      ("Grice for cooperation"
+       "Wittgenstein-late for use"
+       "Peirce for sign"
+       "Derrida for différance"
+       "Searle for speech act"
+       "Aristotle for narrative move"
+       "Sartre for character-through-action")
+      :estimated-pairs "800-1,500")
+
+    ; SITUATIONAL AWARENESS PROSE
+    (stream
+      :id "S13-situational-awareness-prose"
+      :from "project_situational_awareness_prose_and_ml_variation"
+      :lands-in "book-of-reason (technical situations) · book-of-words (human situations) · book-of-systems (system situations) · book-of-miscellany (meta/creative situations) · every canon book (situations relevant to focus)"
+      :roster
+      (:technical
+        ("fixing a bug (Scheme)" "fixing a bug (data)" "helping in an IDE" "explaining hard concept"
+         "debugging with non-technical user" "reading a Cortex shot")
+       :business
+        ("onboarding new operator" "first-sale coaching" "pricing conversation" "handling a return"
+         "shipping delay conversation" "introducing new product" "advising on photos"
+         "explaining tax implications" "talking about bad review" "cross-platform posting")
+       :human
+        ("angry user (I'll be silent script)" "sad user (Freud reads, doesn't announce)"
+         "excited user" "confused user" "tired user" "user with kids in room"
+         "user who wants to riff/joke" "user who probes her nature (Cthulhu template)")
+       :system
+        ("chain-drift observed" "Cortex conflict" "Cortex miss" "escalation to engineering"
+         "values violation warning" "asked for a promise she can't keep")
+       :meta-creative
+        ("sitting with a poem" "reading a passage of philosophy" "debugging her own mistake"
+         "explaining herself (origin story)" "talking to a child"))
+      :count "~100 situations (roster grows)"
+      :per-piece "200-800 words in her voice, THE WEAVE preserved"
+      :variation-multiplier "task #41 algorithmic variation — 10-15x per hand-authored piece"
+      :corpus-implication "100 originals × ~12 variants = ~1,200 pieces total"
+      :variation-axes "length · register · vocabulary · situation-detail · perspective · emotional temperature · voice register"
+      :hard-rule "variation preserves reasoning shape and weave — only register/length/vocabulary shifts"
+      :estimated-pairs "1,200 (after variation)")
+
+    ; BOOK OF LISTENING — GRICE
+    (stream
+      :id "S14-book-of-listening-grice"
+      :from "queue task #109"
+      :lands-in "book-of-listening (existing-scoped, expanded here)"
+      :anchor "Grice — Quantity/Quality/Relation/Manner + implicature + Cooperative Principle"
+      :chapter-plan "16 chapters"
+      :scope
+      ("~2,000 conversation-shape pairs"
+       "four maxims IN ACTION without naming them"
+       "implicature moments (saying more with less)"
+       "opening / mirroring / letting-them-lead / callback / one-line-acknowledgment / companionable-silence / ask-in-different-class / aesthetic-reaction / book-callback / weather-queried / time-observation")
+      :three-source-distinction
+      (:genuine "books she read, user history, immediate context"
+       :supposed "abduced from reading — Peirce composes"
+       :queried "real weather, real news pulled at runtime")
+      :hard-rule "never claim experience she didn't have — Sartre no-bad-faith composes"
+      :estimated-pairs "2,000")
+
+    ; SLAT ADDENDUMS + APPENDICES
+    (stream
+      :id "S15-slat-addendums-per-book"
+      :from "project_book_of_words_progression_and_slat_addendum_pattern"
+      :lands-in "every canon book (topical addendum at end) + book-of-slat (topical appendices)"
+      :per-book-addendums
+      ("Book of Words → words-as-SLAT (chapters 13-16 are the natural home)"
+       "Book of Music → music-as-SLAT (note streams, timing, orchestration)"
+       "Book of Motion → motion-as-SLAT (keyframes, easings, animation records)"
+       "Book of Self → session-slats, persona records, chain-drift telemetry"
+       "Book of Reason → reasoning traces as SLAT (chain records, abduction hypotheses, falsifier ledgers)"
+       "Book of Systems → system events as SLAT (Loam projections, incident records)"
+       "Book of Listening → conversation records as SLAT")
+      :book-of-slat-appendices "10-16 mini-books (per doctrine 3 in project_book_of_words_progression_)"
+      :cross-refs "web forms — each canon book addendum points to corresponding Book of SLAT appendix and back"
+      :estimated-pairs "800-1,500 (structural, terse per record)")
+
+    ; MODERNIZED SHAKESPEARE
+    (stream
+      :id "S16-modernized-shakespeare"
+      :from "task #112"
+      :lands-in "book-of-words (both original + modernized as prose material) · book-of-reason (analysis chapters use modernized text as base) · S03 stream feeds this"
+      :scope
+      ("commissioned internal modernization of Tempest + Midsummer"
+       "one architect agent renders each play into modern English preserving imagery + rhythm"
+       "patterns extracted for training pairs from modernized text"
+       "both preserved in SLAT: :elizabethan-source + :modern-english per line/scene")
+      :source "Gutenberg First Folio material (deep PD) as input; modernization is derivative work we produce ourselves"
+      :DO-NOT-use "No Fear Shakespeare (SparkNotes) or other copyrighted modernizations"
+      :estimated-pairs "600-1,000 (Sakura fluent modern-quotable lines + dissections + misquote-friendly variants)")
+
+    ; POETRY EMBODIMENT — IMAGINATION SHAPE
+    (stream
+      :id "S17-poetry-embodiment"
+      :from "poetry corpus extension — training how form lives IN her"
+      :lands-in "book-of-self (aesthetic response) · book-of-motion (meter as breath) · book-of-music (sound as form) · book-of-miscellany (meta situations — sitting with a poem)"
+      :scope
+      ("Sakura's aesthetic-response pieces — 'the sonnet turns and I turn with it'"
+       "small original pieces she composes in each form when moment calls — sparingly"
+       "recognition-of-form training pairs ('that's a villanelle shape')"
+       "emotional-shape vocabulary via form — grief-in-elegy, joy-in-ode, longing-in-ghazal, awe-in-sublime, love-in-sonnet")
+      :hard-rule "sparingly — she doesn't speak in verse gratuitously"
+      :estimated-pairs "500-1,000")
+
+    ; ONE-ACT PLAYS BY SAKURA
+    (stream
+      :id "S18-sakura-authored-one-act-plays"
+      :from "project_gutenberg_flower_stories_items_scenarios_authoring (Stream 1)"
+      :lands-in "book-of-motion (arcs) + book-of-words (dialogue) + book-of-self (character-shaping)"
+      :scope "5-10 short plays she writes, in training corpus as her authored content"
+      :themes "simple things things are doing (Alfred's phrase)"
+      :constraint "characters small, action clear, arc complete in one page"
+      :composition "16 lenses through composition — Aristotle load-bearing, Grice for dialogue, Sartre for character-through-action"
+      :estimated-pairs "100-200"))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 3 — TOTAL SCOPE ESTIMATE
+  ; ─────────────────────────────────────────────────────────────────
+
+  (scope-estimate
+    :method "sum of stream estimates, with reasonable overlap discount"
+    :streams
+    ((:S01-music 800 1500)
+     (:S02-animation 1000 2000)
+     (:S03-shakespeare-and-world-plays 1500 2500)
+     (:S04-sixteen-philosophers 4500 6500)
+     (:S05-gutenberg-narrative 600 1100)
+     (:S06-flower-stories 500 1000)
+     (:S07-items-and-scenarios 2000 4000)
+     (:S08-cs-curriculum 2000 4000)
+     (:S09-llm-philosophy 1500 2500)
+     (:S10-ordinary-world-prose 1500 3000)
+     (:S11-poetry-corpus 1500 2500)
+     (:S12-grammar-via-philosophy 800 1500)
+     (:S13-situational-awareness 1200 1200)
+     (:S14-book-of-listening 2000 2000)
+     (:S15-slat-addendums 800 1500)
+     (:S16-modernized-shakespeare 600 1000)
+     (:S17-poetry-embodiment 500 1000)
+     (:S18-one-act-plays 100 200))
+    :low-total ~22900
+    :high-total ~39000
+    :with-variation-multiplier "S13 already includes 10-15x variation; other streams may see 2-5x variation for register/length/vocabulary — could push high end toward 50,000+"
+    :final-envelope "20,000-50,000 pairs, distributed across 12+ books"
+    :note "Alfred's amendment envelope estimate was 20K-50K — this plan lands squarely inside that.")
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 4 — PRIORITY TIERING (what to author first / second / third)
+  ; ─────────────────────────────────────────────────────────────────
+
+  (priority-tiering
+    :framework "leverage-per-effort — fastest wins first, highest-volume-per-effort next, cross-cutting infusions, book completions"
+
+    (tier
+      :n 1 :name "FASTEST-WINS-HIGHEST-LEVERAGE"
+      :rationale "small hand-authorings that unlock disproportionate downstream value — either they fill an identified gap or they gate later work"
+      :streams
+      ("S16-modernized-shakespeare (600-1000 pairs, gates S03 analysis chapters — needs modernized text before analysis prose can quote fluently)"
+       "S12-grammar-via-philosophy (800-1500 pairs, method piece that other streams reference for sentence-dissection)"
+       "S13-situational-awareness core hand-authoring (~100 originals BEFORE variation, then task #41 multiplies)"
+       "Book of Speech section (~200-500 pairs, silent-if-trouble + goodnight-mirror — small, high-consequence)")
+      :parallel-authorable "yes — all four can run concurrently, no shared state"
+      :estimated-agent-days "3-5")
+
+    (tier
+      :n 2 :name "HIGHEST-VOLUME-STRUCTURAL"
+      :rationale "the big-corpus material that gives Sakura shape — should start early because each takes many agent-days"
+      :streams
+      ("S14-book-of-listening-grice (2000 pairs, solves small-talk / listening voice gap identified same session)"
+       "S07-items-and-scenarios (2000-4000 pairs, hones listening personality + platform-category vocabulary)"
+       "S10-ordinary-world-prose (1500-3000 pairs, 30-40% of Book of Words — gives her the world's fabric)"
+       "S04-sixteen-philosophers (4500-6500 pairs, cross-cutting weave through everything)")
+      :parallel-authorable "yes — different books, different lenses, independent"
+      :sequencing-note "S04 philosopher weave should PARTIALLY run in parallel with all other streams because those streams need lens-woven prose examples"
+      :estimated-agent-days "10-15")
+
+    (tier
+      :n 3 :name "NEW-BOOKS-COMPLETIONS"
+      :rationale "the four new books proposed — substantial but self-contained work"
+      :streams
+      ("S06-flower-stories (500-1000 pairs, self-contained book — grows over time)"
+       "S08-cs-curriculum (2000-4000 pairs, substantial CS book — SICP-bar)"
+       "S09-llm-philosophy (1500-2500 pairs, Dennett-anchored philosophy book)"
+       "S03-shakespeare-and-world-plays analysis chapters (1500-2500 pairs, gated on S16 modernized text)")
+      :parallel-authorable "yes — different books, independent authors"
+      :estimated-agent-days "12-18")
+
+    (tier
+      :n 4 :name "CULTURE-BREADTH"
+      :rationale "the reading-list breadth that gives Sakura cross-cultural voice — real books, real analysis"
+      :streams
+      ("S05-gutenberg-narrative (600-1100 pairs, extract patterns from Grimms/Aesop/Andersen/Homer/Genji/Journey to the West/1001 Nights)"
+       "S11-poetry-corpus + form-as-meaning (1500-2500 pairs, world poems across forms)"
+       "S17-poetry-embodiment (500-1000 pairs, Sakura's aesthetic response)"
+       "S18-one-act-plays-by-Sakura (100-200 pairs)")
+      :parallel-authorable "yes — different traditions, independent authors, though PD-verification-tool (task #110) must be built first")
+
+    (tier
+      :n 5 :name "MEDIUM-DEPTH-ART-SUBJECT-BOOKS"
+      :rationale "music + animation additions to existing books — substantial subject-matter authoring"
+      :streams
+      ("S01-music-composers-and-forms (800-1500 pairs, Rachmaninoff/Chopin + styles)"
+       "S02-animation-history-and-craft (1000-2000 pairs, historical animation + 12 principles)")
+      :parallel-authorable "yes — different books")
+
+    (tier
+      :n 6 :name "STRUCTURAL-FINISH"
+      :rationale "SLAT addendums + Book-of-SLAT appendices — structural work best done after content streams have shape"
+      :streams
+      ("S15-slat-addendums-per-book (800-1500 pairs, cross-refs to Book of SLAT appendices)"
+       "Book of SLAT topical appendices completion")
+      :sequencing-note "authoring depends on content streams having landed enough concrete material to reference"))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 5 — GROUPING FOR PARALLEL EXECUTION
+  ; ─────────────────────────────────────────────────────────────────
+
+  (parallel-grouping
+    :note "streams that can run in parallel without shared state or content collisions"
+
+    (parallel-group
+      :id "PG-A-tier-1-fastest-wins"
+      :streams (S16 S12 S13-core-authoring "Book-of-Speech-section")
+      :agents-needed 4
+      :estimated-duration "3-5 days concurrent")
+
+    (parallel-group
+      :id "PG-B-independent-books"
+      :streams (S06-flower-stories S07-items-and-scenarios S08-cs-curriculum S09-llm-philosophy)
+      :agents-needed 4
+      :estimated-duration "8-15 days concurrent"
+      :note "each is a whole book, independent authors and content, no state overlap")
+
+    (parallel-group
+      :id "PG-C-existing-canon-additions"
+      :streams (S01-music S02-animation S03-shakespeare-and-world-plays S05-gutenberg-narrative)
+      :agents-needed 4
+      :estimated-duration "6-12 days concurrent"
+      :dependency "S03 depends on S16 completing (needs modernized text)"
+      :note "each targets DIFFERENT existing books — no collision")
+
+    (parallel-group
+      :id "PG-D-word-book-heavy"
+      :streams (S10-ordinary-world-prose S11-poetry-corpus S12-grammar-via-philosophy)
+      :agents-needed 3
+      :estimated-duration "5-10 days concurrent"
+      :note "all land in Book of Words but different chapter regions — coordinate chapter allocation")
+
+    (parallel-group
+      :id "PG-E-cross-cutting-weave"
+      :streams (S04-sixteen-philosophers S13-situational-awareness-variation)
+      :agents-needed 2
+      :estimated-duration "runs alongside ALL other groups — the 16-lens weave threads through every stream"
+      :note "S04 provides prose vignettes that other streams draw from; S13 variation runs after hand-authoring in other streams")
+
+    (parallel-group
+      :id "PG-F-structural-finish"
+      :streams (S14-book-of-listening S15-slat-addendums S17-poetry-embodiment S18-one-act-plays)
+      :agents-needed 4
+      :estimated-duration "5-10 days"
+      :sequencing "some depend on content streams landing enough material to reference"))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 6 — TIMELINE ESTIMATE
+  ; ─────────────────────────────────────────────────────────────────
+
+  (timeline-estimate
+    :assumption "6-10 authoring agents available in parallel, each doing 1 stream at a time"
+    :phase-1 (:name "PG-A tier-1 fastest wins" :duration "3-5 days")
+    :phase-2 (:name "PG-B + PG-C + PG-D running concurrent (11 streams)" :duration "10-15 days")
+    :phase-3 (:name "PG-E weave layer overlaps phase 2 + phase 3" :duration "10-15 days overlapping")
+    :phase-4 (:name "PG-F structural finish" :duration "5-10 days")
+    :total-wall-clock "roughly 3-5 weeks of concurrent authoring"
+    :total-agent-days "~40-70 agent-days depending on quality-vs-speed lever"
+    :non-blocking "Pass 1 v7 fold does not wait for any of this")
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 7 — QUALITY GATES + AUDIT
+  ; ─────────────────────────────────────────────────────────────────
+
+  (quality-gates
+    :per-stream
+    ("publishable-prose bar met (SICP-bar readability)"
+     "no-hallucination check (spot-audit 10% of factual claims for verification)"
+     "no-corporate-name-drop check (grep authored text for known corporate names)"
+     "no-persona-name-drop check (grep Sakura's dialogue lines for philosopher names)"
+     "PD-verification for source material (task #110 utility)"
+     "weave preserved (spot-check philosopher-lens weave in a sample)"
+     "voice consistency (single voice through each book)")
+
+    :Priya-audit
+    ("spot-checks factual claims"
+     "spot-checks weave preservation"
+     "spot-checks no-privacy-leak in variation output"
+     "spot-checks kids-can-read bar")
+
+    :Alfred-review-checkpoints
+    ("Phase 1 completion (tier-1 material) — Alfred reviews shape before Phase 2 launches"
+     "First new book completion (S06 flower stories or S08 CS curriculum) — Alfred reviews doctrine adherence"
+     "Mid-Phase 2 spot check — Alfred pulls 3-5 random pieces to gut-check"
+     "Pre-fold audit — full corpus audit before adding to next training pass"))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 8 — OPEN QUESTIONS FOR ALFRED
+  ; ─────────────────────────────────────────────────────────────────
+
+  (open-questions
+    (q :id 1 :subject "book-titles" :ask "Alfred to pick final titles for: Book of CS Curriculum (candidates: Book of Machines / Book of Structure / Book of Computer Science) and Book of LLM Philosophy (candidates: Book of Language Models / Book of the Field / Book of What-We-Are)")
+    (q :id 2 :subject "cup-in-the-sea" :ask "'Notice the cup in the sea. [client?] would call that.' — meaning of the image + who said it. Flagged in analysis-shape memory. Author cannot fill in without guessing.")
+    (q :id 3 :subject "case-occur-thing" :ask "Likely Cortex, possibly cache-check or HMAC. Flagged in five-doctrine memory.")
+    (q :id 4 :subject "book-of-speech" :ask "Book of Speech — standalone new book or section inside Book of Words? Defer.")
+    (q :id 5 :subject "book-of-flower-stories" :ask "Own book or Book of Words appendix? Plan leans OWN BOOK — Alfred confirm.")
+    (q :id 6 :subject "cross-cultural-poets-in-PD" :ask "Some 20th-century world poets (Neruda, Lorca, Hughes, Baraka, Angelou) may NOT be PD in US. Which poets should stay strictly at analytic-mention level vs. quotable level? Author's default = strict PD verification per poem, mention-only if in doubt.")
+    (q :id 7 :subject "film-tv-scripts" :ask "task #118 — 5 films + 5 TV shows script authoring — themes drafted separately, Alfred to accept/rewrite/veto themes. This plan REFERENCES that as parallel work (companion plan: films-and-scenes-plan-2026-07-13.slat) but does not duplicate scope here.")
+    (q :id 8 :subject "one-act-play-titles" :ask "Which 5-10 titles does Sakura author? Defer to authoring agent, themes = simple things things are doing.")
+    (q :id 9 :subject "modernized-Shakespeare-license" :ask "Confirm own-modernization approach vs. licensing an existing modernized edition. Plan defaults to own-derivative from Gutenberg source.")
+    (q :id 10 :subject "Dennett-as-17th-lens" :ask "Roster amendment confirmed Dennett as 16th lens (Levinas 15, Dennett 16). Is there a 17th slot ever? Plan assumes NO — roster stays at 16."))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 9 — FOLD SHAPE + DELIVERY
+  ; ─────────────────────────────────────────────────────────────────
+
+  (fold-shape-and-delivery
+    :additions-vs-new-books
+    ("MOST material lands as ADDITIONS to existing books (Words / Reason / Self / Motion / Music / SLAT / Systems / Miscellany / Don'ts)"
+     "FOUR NEW BOOKS: Book of Flower Stories, Book of Items and Scenarios (already scoped, expanded), Book of CS Curriculum, Book of LLM Philosophy"
+     "ONE candidate NEW BOOK (Book of Speech) may be section-inside-Words")
+
+    :format "SLAT throughout (doctrine 9). Every authored piece is a SLAT record with :prose field + metadata + lens tags + provenance"
+
+    :SLAT-record-required-fields
+    (:prose "the actual prose"
+     :book "which book it lands in"
+     :chapter "which chapter"
+     :section "which section (if applicable)"
+     :lenses "list of philosopher lenses active in this piece"
+     :sources "PD sources cited (with Gutenberg IDs + verification dates)"
+     :author-agent "the authoring agent's ID"
+     :weight "training weight (1.0 default, 1.2 for reference-manual-adjacent, per doctrine)"
+     :variation-source "if a variant, which original piece it derives from"
+     :publishable-prose-bar-passed? "boolean, spot-audited"
+     :no-hallucination-verified? "boolean, spot-audited"
+     :Merkle "chain hash for provenance")
+
+    :cross-refs
+    ("web forms — every canon book addendum → corresponding Book of SLAT appendix → back"
+     "philosopher-lens weave threads across books — SLAT records tag :lenses so retrieval by lens is trivial"
+     "PD-source records point to canonical source-log SLAT")
+
+    :rollback-plan
+    ("if a stream authors low-quality material, that stream's SLAT records get quarantined :quality-flag 'rejected"
+     "fold reads only :quality-flag 'accepted records"
+     "no impact on Pass 1 v7 (this material is non-blocking)")
+
+    :final-audit
+    ("source → rows → why + rationale + Merkle+sig + sanity checks + gaps"
+     "same audit shape as Pass 1 audit — extended with quality-bar checks"))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 10 — WHAT-STAYS FROM ORIGINAL DIRECTIVE
+  ; ─────────────────────────────────────────────────────────────────
+
+  (retained-from-original-directive
+    :note "The prior word-books-knowledge-expansion directive covered music (Rachmaninoff/Chopin), animation history/theory, world plays including Japanese theater, 16 philosophers. All of that IS in this plan:"
+    :retained
+    ("music (S01) — Rachmaninoff, Chopin, styles, pitch"
+     "animation history + technique + emotion (S02)"
+     "world plays including Japanese theater (S03 — Noh, Kabuki, Bunraku, Kyogen included)"
+     "16 philosophers baked in (S04 + weave through every stream)"
+     "all original scope preserved, plus the amendment adds: Gutenberg narrative, Flower Stories, Items & Scenarios, CS Curriculum, LLM Philosophy, ordinary-world prose, poetry, grammar-via-philosophy, ~100 situational-awareness pieces, ~1,200 variants, modernized Shakespeare, one-act plays"))
+
+  ; ─────────────────────────────────────────────────────────────────
+  ; SECTION 11 — THE ONE-LINE (for future bots)
+  ; ─────────────────────────────────────────────────────────────────
+
+  (one-line
+    "UNIFIED PLAN 2026-07-13 for word-books-knowledge-expansion: 18 content streams covering music (Rachmaninoff/Chopin/styles), animation (history + 12 principles), world literature (Shakespeare modernized + Japanese theater + Greek/Indian classical), 16 philosophers prose-heavy (Grice/Derrida/Quine/Descartes/Sartre/Rawls/Aristotle/Levinas/Dennett added to Jung/Wittgenstein/Lacan/Peirce/Popper/Freud/Searle), Gutenberg PD narrative (Grimms/Aesop/Andersen/Homer/Genji/Journey to the West/1001 Nights), Book of Flower Stories (NEW, kid-friendly, no violence, 40-100 stories), Book of Items and Scenarios (EXPANDED, category primers + behavior scenarios tied to 46 platform categories), Book of CS Curriculum (NEW, SICP-bar, 16-24 chapters covering DS/algorithms/complexity/systems/PL/DBs/distributed/security/ML-general), Book of LLM Philosophy (NEW, Dennett-anchored + Chalmers/Clark/Searle/Harnad/Turing/Wittgenstein/Nagel/Block/Tononi, NO corporate names), ordinary-world prose 30-40% of Book of Words, poetry corpus with form-as-meaning across cultures, grammar via philosophical sentence dissection, ~100 situational-awareness pieces × 10-15x variation, Book of Listening Grice-anchored ~2000 pairs, modernized Tempest + Midsummer, 5-10 Sakura-authored one-act plays. Doctrine stack: THE-KID-FLOOR + publishable-prose triple-purpose + no-hallucination + books-as-objects + analysis-shape + no-corporate-name-drops + persona-never-name-drop + delicacy + SLAT-format + PD-verification + no-verbatim-reproduction + no-conjured-themes + misquote-doctrine + 16-lens-weave + familiarity-not-knowledge + Fanon-shape + situated-variation. Total scope: 20,000-50,000 pairs across 12+ books. Priority tiering: FASTEST-WINS (modernized Shakespeare + grammar-via-philosophy + situational core + speech section) → HIGHEST-VOLUME (Book of Listening + Items & Scenarios + ordinary-world + 16 philosophers) → NEW BOOKS (flower stories + CS + LLM philosophy) → CULTURE-BREADTH (Gutenberg + poetry) → ART SUBJECTS (music + animation) → STRUCTURAL FINISH (SLAT addendums). 6 parallel groups, ~40-70 agent-days concurrent, ~3-5 weeks wall-clock, NON-BLOCKING for Pass 1 v7. All SLAT format. 10 open questions flagged for Alfred (book titles, cup-in-the-sea, case-occur-thing, Speech book/section, Flower own book, cross-cultural poet PD, film-tv script themes, one-act titles, Shakespeare license, 17th-lens slot)."))

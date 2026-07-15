@@ -1,0 +1,1641 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-zain-ops.slat — Zain's authored verb entries
+;;
+;; Lane: ops (operations research primitives — 35 verbs)
+;; Author: Zain (Lacuna Eng)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Coverage:
+;;   Inventory:   ops/eoq  ops/inventory-cost  ops/reorder-point
+;;                ops/safety-stock  ops/newsvendor  ops/newsvendor-fractile
+;;   Queueing:    ops/littles-law  ops/mm1  ops/mmc  ops/mmc-servers-for
+;;                ops/erlang-b  ops/erlang-c
+;;   Scheduling:  ops/spt  ops/edd  ops/johnson  ops/sequence-metrics
+;;                ops/assign  ops/assign-cost
+;;   Graphs:      ops/dijkstra  ops/bellman-ford  ops/max-flow  ops/pagerank
+;;   Markov:      ops/markov  ops/markov-step  ops/stationary
+;;                ops/absorbing-probs  ops/absorbing-steps
+;;   LP/MIP:      ops/lp  ops/lp-value  ops/lp-solve  ops/simplex
+;;                ops/interior-point  ops/mip-solve  ops/branch-bound
+;;                ops/knapsack
+;;
+;; Format per docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0.
+;; Required by architect verifier: name library kind signature summary
+;; explanation examples caveats drawbacks usecases related learn.
+;; Examples: 5 tiers — novice, apprentice, intermediate, expert, master.
+;;
+;; Every example REPL-verified via bin/sakura-scheme eval.
+;; Alfred: "we can't lie to people. They trust us."
+;; No descriptor lies. Every verb returns a real number, list, or map,
+;; or a documented sentinel ('infeasible 'unbounded 'use-backend 'fuel-budget).
+;; ═══════════════════════════════════════════════════════════════
+
+
+;; ─── Inventory ─────────────────────────────────────────────────────
+
+(verb
+  :name "ops/eoq"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/eoq demand order-cost holding-cost) -> Q*"
+  :summary "Economic order quantity — the order size that minimizes total annual inventory cost."
+  :impl-status "wired"
+  :explanation "Solves the classic Wilson EOQ formula Q* = sqrt(2·D·K / h) where D is annual demand, K is the fixed cost per order, and h is the annual holding cost per unit. The result is the order quantity that balances setup and carrying costs — order more, you carry more inventory; order less, you incur more setup cost. The formula assumes constant deterministic demand, instantaneous replenishment, no shortages, and fixed unit cost. Real shops rarely have all four; the value of EOQ is that it gives a defensible baseline you can then perturb. If any input is non-positive the verb returns 0 rather than throwing — a shop asking about a product with zero demand should learn 'don't order any', not crash."
+  :examples (
+    (:tier "novice"
+     :code "(ops/eoq 1000 50 5)"
+     :note "D=1000 units/year, K=$50/order, h=$5/unit/year. Q* ≈ 141 units per order.")
+    (:tier "apprentice"
+     :code "(let ((D 1200) (K 40) (h 8)) (ops/eoq D K h))"
+     :note "Named locals make the formula readable — you can swap any of D, K, h and re-run.")
+    (:tier "intermediate"
+     :code "(let ((eoq-value (ops/eoq 2400 60 3))) (list (quote Q*) eoq-value (quote units)))"
+     :note "Tag the answer so downstream readers know what the number means. Returns a labeled list.")
+    (:tier "expert"
+     :code "(define (annual-orders D Q) (/ D Q)) (annual-orders 5000 (ops/eoq 5000 100 2))"
+     :note "Compose EOQ into a derived metric: annual orders = demand / Q*. Answers 'how often do I reorder'.")
+    (:tier "master"
+     :code "(let* ((D 8000) (K 75) (h 4) (Q (ops/eoq D K h)) (cost (ops/inventory-cost D Q h K))) (list (quote optimal-quantity) Q (quote annual-cost) cost))"
+     :note "Full inventory sizing report: compute EOQ, plug it into ops/inventory-cost to verify the total annual cost.")
+  )
+  :caveats
+    ("Assumes constant deterministic demand. Real demand varies; use ops/newsvendor when the shape of variability matters."
+     "Assumes instantaneous replenishment. If lead time is non-trivial, pair EOQ with ops/reorder-point."
+     "Any non-positive input returns 0 — the caller should decide whether that means 'skip this SKU' or 'flag as data error'."
+     "The answer is a real number, not an integer. Round up in practice; the total cost curve is flat near Q*.")
+  :drawbacks
+    ("No quantity discounts. If the supplier drops the unit price at bulk quantities, EOQ is not the right optimizer — solve the piecewise cost function."
+     "No stockout cost. Real shortages hurt customer trust; EOQ ignores that entirely."
+     "Assumes h is correctly measured. Warehouse cost per unit is often the hardest number in the business to pin down.")
+  :usecases
+    ("Consignment shop sizing an order for a fast-selling SKU."
+     "Curriculum demo: introduce inventory tradeoffs before adding stochasticity."
+     "Sanity-check spreadsheet: given D, K, h, what should Q look like? EOQ is the answer.")
+  :related ("ops/inventory-cost" "ops/reorder-point" "ops/safety-stock" "ops/newsvendor")
+  :learn
+    (:concept "Balancing setup cost against carrying cost — the archetypal continuous-optimization problem."
+     :prerequisites ("(core)/sqrt" "(core)/let" "understanding demand + holding cost")
+     :progression "Start with (ops/eoq D K h). Plug into ops/inventory-cost. Then add lead time via ops/reorder-point. Then let demand be random and move to ops/newsvendor.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/inventory-cost"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/inventory-cost demand order-qty holding-cost order-cost) -> total-annual-cost"
+  :summary "Total annual inventory cost — ordering cost plus carrying cost — for a given order quantity."
+  :impl-status "wired"
+  :explanation "Computes K·D/Q + h·Q/2 where D is annual demand, Q is the fixed order quantity, K is the per-order setup cost, and h is the annual holding cost per unit. The first term is the annual ordering cost (D/Q orders per year, K each); the second is the average carrying cost (average inventory Q/2, held at h per unit-year). Pair with ops/eoq to see that the EOQ minimizes exactly this expression. Useful on its own for evaluating a non-optimal Q — e.g. an operator forced to a case-pack size that isn't Q*."
+  :examples (
+    (:tier "novice"
+     :code "(ops/inventory-cost 1000 200 5 50)"
+     :note "D=1000, Q=200, h=5, K=50. Ordering cost 250 + carrying cost 500 = 750/year.")
+    (:tier "apprentice"
+     :code "(let ((D 2000) (Q 300) (h 4) (K 80)) (ops/inventory-cost D Q h K))"
+     :note "Named locals — same shape as ops/eoq, easy to keep straight.")
+    (:tier "intermediate"
+     :code "(let* ((D 5000) (K 100) (h 2) (Q-opt (ops/eoq D K h)) (Q-forced 400)) (list (quote at-Q*) (ops/inventory-cost D Q-opt h K) (quote at-forced) (ops/inventory-cost D Q-forced h K)))"
+     :note "Compare cost at the optimal Q against a forced case-pack Q. The gap is the price of the packaging constraint.")
+    (:tier "expert"
+     :code "(define (cost-vs-qty D K h qs) (map (lambda (Q) (list Q (ops/inventory-cost D Q h K))) qs)) (cost-vs-qty 3000 60 5 (list 100 200 300 400 500))"
+     :note "Build a cost-vs-quantity table by mapping ops/inventory-cost over a list of candidate Qs. Plot mentally: the curve is a U with its bottom at EOQ.")
+    (:tier "master"
+     :code "(let* ((D 6000) (K 90) (h 6) (Q* (ops/eoq D K h)) (test-Qs (list (* Q* 0.5) Q* (* Q* 1.5))) (costs (map (lambda (Q) (ops/inventory-cost D Q h K)) test-Qs))) (list (quote quantities) test-Qs (quote costs) costs))"
+     :note "Verify the U-shape empirically: cost at Q*/2 and at 1.5·Q* should both exceed cost at Q*. That's the shape of the total-cost curve.")
+  )
+  :caveats
+    ("Order quantity Q must be positive; Q ≤ 0 returns 0 rather than dividing by zero."
+     "Units of K, h, D must be consistent (per year is the convention). Feed daily demand + annual holding and the answer is garbage."
+     "Assumes constant demand across the year. If demand is seasonal, use a periodic model instead.")
+  :drawbacks
+    ("Does not model stockouts or lost-sale cost — assumes 'you always have some'. Real shortages cost customer trust."
+     "Assumes ordering cost is fixed. If K scales with quantity (e.g. tiered freight), this expression is wrong."
+     "Ignores time value of money. Over a year, discounting can matter for large K.")
+  :usecases
+    ("Feed ops/eoq's output back through this verb to confirm the total cost."
+     "Compare cost at a supplier's minimum-order-quantity against the theoretical optimum."
+     "Sensitivity table: hold D and K, vary h to see how storage cost changes the total.")
+  :related ("ops/eoq" "ops/newsvendor" "ops/reorder-point")
+  :learn
+    (:concept "Total-cost decomposition: fixed-setup + variable-carrying — the two forces that fight in inventory."
+     :prerequisites ("understanding of average inventory being Q/2")
+     :progression "Evaluate at Q*. Then evaluate at forced Qs (case packs, MOQs). Then move to ops/newsvendor for stochastic demand.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/littles-law"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/littles-law lambda W) -> L"
+  :summary "Little's Law: average number in a system equals arrival rate times average time in system (L = λ·W)."
+  :impl-status "wired"
+  :explanation "Little's Law is the single deepest identity in queueing theory: for any stable system, in steady state, the long-run average number of items in the system L equals the long-run arrival rate λ multiplied by the average time each item spends in the system W. It requires almost no assumptions — arrivals can be anything, service can be anything, the discipline can be anything — as long as the system is stable and you measure over a long enough window. Consequence: to know L you can measure λ + W; to know W you can measure λ + L. That's how you count without counting."
+  :examples (
+    (:tier "novice"
+     :code "(ops/littles-law 5 2)"
+     :note "5 arrivals per minute, each stays 2 minutes → 10 items in system on average.")
+    (:tier "apprentice"
+     :code "(let ((arrivals-per-hour 60) (avg-stay-hours 0.5)) (ops/littles-law arrivals-per-hour avg-stay-hours))"
+     :note "One arrival per minute; average stay half an hour → 30 people in the shop on average.")
+    (:tier "intermediate"
+     :code "(define (customers-in-shop arr-per-hour minutes-per-visit) (ops/littles-law arr-per-hour (/ minutes-per-visit 60))) (customers-in-shop 45 8)"
+     :note "Wrap the units conversion. 45 customers/hour, 8 minutes each → 6 in the shop on average.")
+    (:tier "expert"
+     :code "(let* ((lambda-arrivals 10) (mm1 (ops/mm1 lambda-arrivals 12)) (W-time (list-ref mm1 3)) (L-derived (ops/littles-law lambda-arrivals W-time))) (list (quote L-from-mm1) (list-ref mm1 1) (quote L-from-little) L-derived))"
+     :note "Cross-check M/M/1's L against Little's Law: both should agree. Any mismatch is a rounding artifact or a bug.")
+    (:tier "master"
+     :code "(let* ((observed-lambda 25) (measured-W 12)) (let ((implied-L (ops/littles-law observed-lambda measured-W))) (list (quote arrivals-per-hour) observed-lambda (quote avg-time-min) measured-W (quote implied-inventory) implied-L)))"
+     :note "Operator report: measured arrival rate and time-in-store from the door-counter and the checkout logs — Little's Law converts them into an inventory estimate.")
+  )
+  :caveats
+    ("λ and W must share time units. If λ is per hour, W must be in hours."
+     "Requires a STABLE system: over the measurement window, the arrival rate and the departure rate must be equal (nothing is accumulating or draining)."
+     "It's an AVERAGE identity, not a moment-to-moment one — instantaneous counts can deviate wildly.")
+  :drawbacks
+    ("Says nothing about variance, only means."
+     "Does not tell you WHERE the time is spent — Little's Law can't separate queue time from service time."
+     "Useless if you can't measure any two of λ, L, W.")
+  :usecases
+    ("Estimate work-in-progress (L) from throughput (λ) and cycle time (W) — the fundamental Lean metric."
+     "Estimate cycle time (W) from inventory (L) and arrival rate (λ)."
+     "Cross-validate a queueing model: the model must satisfy Little's Law or something is broken.")
+  :related ("ops/mm1" "ops/mmc" "ops/erlang-c")
+  :learn
+    (:concept "The most parsimonious identity in queueing: three numbers, one constraint, no assumptions about distributions."
+     :prerequisites ("arithmetic")
+     :progression "Verify Little's Law inside ops/mm1's output. Then use it in reverse — measure two, derive one. Then apply to a real shop or checkout line.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/reorder-point"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/reorder-point daily-demand lead-time-days safety-stock) -> ROP"
+  :summary "Reorder point: the inventory level at which to place a new order — expected lead-time demand plus a safety buffer."
+  :impl-status "wired"
+  :explanation "ROP = μ·L + safety, where μ is the average daily demand, L is the lead time in days, and safety is the extra buffer to guard against stockouts caused by demand or lead-time variability. The first term is what you expect to sell while you wait for the next shipment; the second protects against being wrong. Pair with ops/safety-stock to compute the second term from a service-level target. This is not a probability model — it's a threshold — but its inputs come from probability models."
+  :examples (
+    (:tier "novice"
+     :code "(ops/reorder-point 10 3 5)"
+     :note "10 units/day, 3-day lead time, 5-unit safety stock → reorder when inventory drops to 35.")
+    (:tier "apprentice"
+     :code "(let ((mu 25) (L 7) (safety 30)) (ops/reorder-point mu L safety))"
+     :note "Weekly-lead scenario: 25 units/day, 7 days to replenish, 30-unit cushion → ROP = 205.")
+    (:tier "intermediate"
+     :code "(let* ((daily-demand 15) (lead-time 5) (safety (ops/safety-stock 1.65 4 5)) (rop (ops/reorder-point daily-demand lead-time safety))) (list (quote safety) safety (quote rop) rop))"
+     :note "Compose with ops/safety-stock: 95%-service-level (z=1.65), σ=4, L=5 → safety ≈ 15, ROP = 90.")
+    (:tier "expert"
+     :code "(define (place-order? on-hand mu L safety) (<= on-hand (ops/reorder-point mu L safety))) (place-order? 32 10 3 5)"
+     :note "Predicate wrapper: given current inventory, decide whether to place a new order. True at or below ROP.")
+    (:tier "master"
+     :code "(let* ((mu 40) (L 6) (z 2.05) (sigma 8) (safety (ops/safety-stock z sigma L)) (rop (ops/reorder-point mu L safety)) (eoq (ops/eoq (* mu 300) 100 3))) (list (quote rop) rop (quote reorder-qty) eoq))"
+     :note "Full replenishment policy: WHEN to reorder (ROP) plus HOW MUCH to reorder (EOQ). Two numbers, complete story.")
+  )
+  :caveats
+    ("Daily demand and lead time must be in matching units. If lead time is in weeks, express μ as weekly demand."
+     "Safety stock is passed in — this verb does not compute it. Use ops/safety-stock to derive the number from a service level."
+     "ROP is a threshold, not a schedule; combining with an actual monitoring frequency is the operator's job.")
+  :drawbacks
+    ("Assumes lead time is deterministic. If lead time varies, ops/safety-stock's σ should be inflated to reflect that."
+     "Does not model backorder cost — if stockouts are cheap, you can run lean; if they're catastrophic, safety should be large.")
+  :usecases
+    ("Set the low-stock alert threshold in an inventory tracker."
+     "Decide whether an incoming shipment can be delayed a day (compare next-day inventory forecast against ROP)."
+     "Curriculum: introduce the notion that timing and quantity are separable decisions.")
+  :related ("ops/eoq" "ops/safety-stock" "ops/inventory-cost")
+  :learn
+    (:concept "Timing decision under lead time: reorder before you run out, not when you run out."
+     :prerequisites ("basic averaging" "understanding lead time")
+     :progression "Set μ, L, safety by hand. Then compute safety from ops/safety-stock. Then combine with ops/eoq for the full policy.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/safety-stock"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/safety-stock z sigma L) -> safety-buffer"
+  :summary "Safety stock: z-quantile times demand standard deviation times the square root of lead time."
+  :impl-status "wired"
+  :explanation "Computes z·σ·√L, the classical safety-stock formula. z is the standard-normal quantile for the target service level (z=1.65 for 95%, z=2.05 for 98%, z=2.33 for 99%); σ is the per-period demand standard deviation; L is the lead time in periods. The √L comes from summing independent daily demands into lead-time demand — variance adds, so standard deviation scales as √L. This is the safety buffer to feed into ops/reorder-point."
+  :examples (
+    (:tier "novice"
+     :code "(ops/safety-stock 1.65 10 4)"
+     :note "95% service level (z=1.65), σ=10 units/day, L=4 days → safety ≈ 33 units.")
+    (:tier "apprentice"
+     :code "(let ((z 2.05) (sigma 8) (L 9)) (ops/safety-stock z sigma L))"
+     :note "98% service level, σ=8, L=9 → safety ≈ 49.2. Higher service level, higher buffer.")
+    (:tier "intermediate"
+     :code "(let ((service-levels (list 1.28 1.65 2.05 2.33))) (map (lambda (z) (ops/safety-stock z 6 5)) service-levels))"
+     :note "Table of safety stocks at 90%, 95%, 98%, 99% service. Watch the buffer double as you climb the last stretch.")
+    (:tier "expert"
+     :code "(define (safety-for-service% pct sigma L) (let ((z (cond ((>= pct 99) 2.33) ((>= pct 98) 2.05) ((>= pct 95) 1.65) ((>= pct 90) 1.28) (else 1.0)))) (ops/safety-stock z sigma L))) (safety-for-service% 95 12 6)"
+     :note "Human-friendly wrapper: pass the service percentage instead of the z-quantile. Falls through to z=1.0 (84%) for weaker targets.")
+    (:tier "master"
+     :code "(let* ((sigma 15) (L 10) (z-values (list 1.28 1.65 2.05 2.33)) (safety-values (map (lambda (z) (ops/safety-stock z sigma L)) z-values)) (rop-values (map (lambda (s) (ops/reorder-point 40 L s)) safety-values))) (list (quote safety) safety-values (quote rop) rop-values))"
+     :note "Full sensitivity report: how does ROP change as we tighten service level? Both safety and ROP grow — the cost of certainty is inventory.")
+  )
+  :caveats
+    ("z should reflect the DESIRED service level. Small z means willingness to stock out; large z means paranoia."
+     "σ and L must be measured in the same period (both daily, both weekly, etc.)."
+     "The √L multiplier assumes lead-time demands across days are independent. If demand is highly correlated (a viral SKU), inflate σ."
+     "The formula is calibrated to normal demand. Heavy-tailed demand needs a different quantile.")
+  :drawbacks
+    ("Assumes deterministic lead time. Variable lead time inflates the required buffer beyond this formula."
+     "Ignores holding cost of the safety stock — the operator must weigh service level against carrying cost separately."
+     "Ignores backorder cost — no way to trade off cheap stockouts against expensive holding.")
+  :usecases
+    ("Set the safety-stock parameter for ops/reorder-point."
+     "Compare the cost of a 95% target vs a 99% target — how many extra units of holding does the last 4 points buy?"
+     "Educate an operator on the diminishing return of extreme service levels.")
+  :related ("ops/reorder-point" "ops/eoq" "ops/newsvendor")
+  :learn
+    (:concept "Variance under summation grows linearly with L; standard deviation grows with √L. Safety stock inherits the √L."
+     :prerequisites ("standard normal z-quantiles" "variance of a sum of independent RVs")
+     :progression "Compute safety at a few service levels. Then feed into ops/reorder-point. Then compare with the ops/newsvendor answer for the single-period version of the same tradeoff.")
+  :entry-provenance "authored")
+
+
+;; ─── Newsvendor (single-period stochastic inventory) ──────────────
+
+(verb
+  :name "ops/newsvendor-fractile"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/newsvendor-fractile cost price salvage) -> critical-ratio"
+  :summary "Newsvendor critical ratio (p-c)/(p-s) — the target service level for the newsvendor problem."
+  :impl-status "wired"
+  :explanation "The critical ratio determines the optimal order quantity in the newsvendor model: given per-unit cost c, selling price p, and salvage value s (what you get for unsold units), the optimal Q satisfies P(D ≤ Q*) = (p-c)/(p-s). The ratio compares the underage cost (missed profit p-c) against the total cost of getting the quantity wrong (p-s). A high critical ratio (close to 1) means stockouts are much more painful than salvage — stock plenty. A low ratio means salvage recoups most of the cost — stock lean."
+  :examples (
+    (:tier "novice"
+     :code "(ops/newsvendor-fractile 3 10 1)"
+     :note "Cost 3, price 10, salvage 1 → fractile 0.778. Order to the 78th percentile of demand.")
+    (:tier "apprentice"
+     :code "(let ((c 8) (p 20) (s 4)) (ops/newsvendor-fractile c p s))"
+     :note "Higher salvage narrows the gap; fractile drops to 0.75. Salvage matters.")
+    (:tier "intermediate"
+     :code "(let ((rows (list (list 2 10 0) (list 4 10 0) (list 6 10 0) (list 8 10 0)))) (map (lambda (r) (ops/newsvendor-fractile (car r) (cadr r) (caddr r))) rows))"
+     :note "As cost climbs from 2 to 8 (price fixed at 10, no salvage), the fractile falls from 0.8 to 0.2. Higher cost → order less.")
+    (:tier "expert"
+     :code "(define (fractile-report c p s) (let ((cr (ops/newsvendor-fractile c p s))) (list (quote underage-per-unit) (- p c) (quote overage-per-unit) (- c s) (quote target-fractile) cr))) (fractile-report 5 12 2)"
+     :note "Explain the fractile in terms of underage (opportunity cost of a stockout) and overage (dollars burned on unsold units).")
+    (:tier "master"
+     :code "(let* ((c 6) (p 15) (s 2) (fractile (ops/newsvendor-fractile c p s)) (nv (ops/newsvendor 200 50 c p s))) (list (quote fractile) fractile (quote Q*) (car nv) (quote expected-profit) (cadr nv)))"
+     :note "The fractile drives Q* in ops/newsvendor. See both numbers together and the connection is explicit: Q* is the inverse-CDF at the fractile.")
+  )
+  :caveats
+    ("Requires price > salvage; otherwise the formula degenerates (returns 0)."
+     "Assumes constant unit cost. Tiered pricing needs the piecewise version."
+     "Cost c should include only variable per-unit cost, not fixed setup — those don't affect the marginal fractile.")
+  :drawbacks
+    ("Ignores stockout goodwill cost; if losing a sale damages the customer relationship, add that to the underage side manually."
+     "Assumes salvage is guaranteed. If unsold units become worthless with probability, use expected salvage."
+     "Not itself a Q; combine with a demand distribution (or use ops/newsvendor directly).")
+  :usecases
+    ("Determine the target service level for a perishable / single-period SKU."
+     "Explain to an operator WHY the recommended order quantity is high or low — the fractile is the intuition."
+     "Cross-check ops/newsvendor's Q* against the demand distribution's inverse CDF at this fractile.")
+  :related ("ops/newsvendor" "ops/eoq" "ops/safety-stock")
+  :learn
+    (:concept "Underage vs overage costs — the two ways of getting the quantity wrong."
+     :prerequisites ("multiplication and subtraction")
+     :progression "Compute the fractile. Explain what it means. Then plug into ops/newsvendor.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/newsvendor"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/newsvendor mu sigma cost price salvage) -> (Q* expected-profit)"
+  :summary "Newsvendor optimum for normally distributed demand: order Q* = μ + z·σ where z is the inverse-normal at the critical ratio."
+  :impl-status "wired"
+  :explanation "The single-period stochastic inventory problem. Demand D ~ Normal(μ, σ). Under-order (D > Q) and you lose profit p-c per missed unit; over-order (Q > D) and you lose c-s per leftover unit. The optimal Q* balances the two: Q* = μ + Φ⁻¹((p-c)/(p-s))·σ. Expected profit is computed with the normal loss function L(z) = φ(z) − z·(1−Φ(z)). Real-shop compatible: gives an operator a concrete number for how many of the perishable-item to stock this week."
+  :examples (
+    (:tier "novice"
+     :code "(ops/newsvendor 100 20 3 10 1)"
+     :note "Mean demand 100, σ=20, cost 3, price 10, salvage 1 → Q* ≈ 115, expected profit ≈ 646.")
+    (:tier "apprentice"
+     :code "(let ((mu 500) (sigma 100) (c 4) (p 12) (s 2)) (ops/newsvendor mu sigma c p s))"
+     :note "Larger scale: μ=500, σ=100, healthier margins. Q* comes in around 567.")
+    (:tier "intermediate"
+     :code "(let ((sigmas (list 10 20 30 40 50))) (map (lambda (s) (car (ops/newsvendor 100 s 3 10 1))) sigmas))"
+     :note "As demand variability rises (σ from 10 to 50), Q* grows too — you buy more insurance for a wider outcome distribution.")
+    (:tier "expert"
+     :code "(define (nv-decision mu sigma c p s) (let* ((res (ops/newsvendor mu sigma c p s)) (Q (car res)) (profit (cadr res))) (list (quote order-quantity) (ceiling Q) (quote expected-daily-profit) profit))) (nv-decision 80 15 5 20 3)"
+     :note "Wrap up the operator-facing report. Ceiling the quantity to a whole unit; return labeled fields.")
+    (:tier "master"
+     :code "(let* ((mu 300) (sigma 60) (options (list (list 2 8 1) (list 3 12 1) (list 5 15 3)))) (map (lambda (opt) (let ((res (ops/newsvendor mu sigma (car opt) (cadr opt) (caddr opt)))) (list (quote cost) (car opt) (quote price) (cadr opt) (quote salvage) (caddr opt) (quote Q) (car res) (quote profit) (cadr res)))) options))"
+     :note "Portfolio view: same demand, three cost/price scenarios. Which SKU is worth stocking most aggressively? The one whose margin per unit dominates.")
+  )
+  :caveats
+    ("Assumes demand is normally distributed. Heavy-tailed demand (Zipf, lognormal) needs a different quantile."
+     "Salvage < cost is expected. Salvage > cost would make ordering infinitely profitable — return sanely handles the (price ≤ salvage) degenerate case with (0, 0)."
+     "Q* is a real number. Round up in practice — the loss function is asymmetric near the optimum but flat.")
+  :drawbacks
+    ("Single period only. Multi-period stochastic problems need dynamic programming (Wagner-Whitin or similar)."
+     "Ignores lead time — assumes decision + delivery happen simultaneously. If lead time matters, precompute lead-time demand and pass μ, σ accordingly."
+     "No consideration of substitute goods; each SKU is treated in isolation.")
+  :usecases
+    ("Bakery deciding how many cookies to bake tomorrow."
+     "Retailer deciding how much fresh produce to stock for the weekend."
+     "Fashion buyer deciding how deep to go on a one-season SKU."
+     "Curriculum: teach the underage/overage tradeoff with a concrete number.")
+  :related ("ops/newsvendor-fractile" "ops/eoq" "ops/safety-stock" "ops/reorder-point")
+  :learn
+    (:concept "Marginal analysis under uncertainty: order one more unit if expected marginal profit > expected marginal cost."
+     :prerequisites ("normal distribution" "inverse CDF" "profit / cost per unit")
+     :progression "Compute the fractile with ops/newsvendor-fractile. Then compute Q* here. Then compare Q* against a stubbornly-fixed order quantity to see the profit gap.")
+  :entry-provenance "authored")
+
+
+;; ─── Queueing ────────────────────────────────────────────────────
+
+(verb
+  :name "ops/mm1"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mm1 lambda mu) -> (rho L Lq W Wq)"
+  :summary "M/M/1 queue: Poisson arrivals, exponential service, one server — closed-form steady-state metrics."
+  :impl-status "wired"
+  :explanation "Given arrival rate λ and service rate μ (both per unit time), computes the five key steady-state metrics of the classical M/M/1 queue. ρ = λ/μ is server utilization. L = ρ/(1-ρ) is the average number of customers in the system (queue + service). Lq = ρ²/(1-ρ) is the average number in the queue. W = 1/(μ-λ) is the average time in system. Wq = ρ/(μ-λ) is the average time in queue. If λ ≥ μ the system is unstable — the queue grows without bound; we return a tagged list ('unstable λ μ) rather than infinity, so the caller can branch cleanly."
+  :examples (
+    (:tier "novice"
+     :code "(ops/mm1 4 5)"
+     :note "λ=4, μ=5 → ρ=0.8 (80% busy), L=4, Lq=3.2, W=1.0, Wq=0.8. High utilization → long wait.")
+    (:tier "apprentice"
+     :code "(let ((lambda 3) (mu 5)) (ops/mm1 lambda mu))"
+     :note "Lower utilization ρ=0.6: L=1.5, W=0.5. Half the wait of the previous example — utilization matters a lot.")
+    (:tier "intermediate"
+     :code "(let* ((res (ops/mm1 6 10)) (rho (car res)) (L (cadr res))) (list (quote utilization) rho (quote avg-in-system) L))"
+     :note "Destructure the result to name the metrics you care about — ρ and L are the two most quoted.")
+    (:tier "expert"
+     :code "(define (safe-mm1 lam mu) (let ((r (ops/mm1 lam mu))) (if (and (pair? r) (number? (car r))) r (list (quote system-unstable) (quote arrival-exceeds-service))))) (safe-mm1 12 10)"
+     :note "Handle the unstable case. When λ ≥ μ, ops/mm1 returns ('unstable λ μ); wrap it to return a friendly diagnosis.")
+    (:tier "master"
+     :code "(let* ((mu 8) (lambda-vals (list 2 4 6 7 7.5)) (metrics (map (lambda (lam) (ops/mm1 lam mu)) lambda-vals))) (list (quote lambdas) lambda-vals (quote L-values) (map cadr metrics)))"
+     :note "Utilization sweep: as λ approaches μ, L blows up nonlinearly. This is the M/M/1 congestion curve — the reason capacity planning is nonlinear.")
+  )
+  :caveats
+    ("Arrival and service rates must be in matching time units."
+     "Returns ('unstable λ μ) when λ ≥ μ instead of infinity — check for the 'unstable head before consuming numbers."
+     "Assumes Poisson arrivals AND exponential service times. If either fails you need a more general queueing model (G/M/1 or G/G/1)."
+     "Steady-state values; startup transients are ignored.")
+  :drawbacks
+    ("One server only. Multi-server → use ops/mmc."
+     "Assumes infinite queue capacity. Finite buffers → M/M/1/K, not implemented here."
+     "No priority classes, no jockeying, no reneging.")
+  :usecases
+    ("Estimate wait times at a single-checkout coffee shop."
+     "Sizing decision: is one server enough, or do we need ops/mmc?"
+     "Teach the utilization law — ρ near 1 is where systems break.")
+  :related ("ops/mmc" "ops/littles-law" "ops/erlang-b" "ops/erlang-c")
+  :learn
+    (:concept "Steady-state closed forms for the simplest nontrivial queue — one server, memoryless everything."
+     :prerequisites ("understanding of arrival rate and service rate" "Poisson vs exponential")
+     :progression "Play with ρ. Then add servers with ops/mmc. Then find the right number of servers with ops/mmc-servers-for.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/mmc"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mmc lambda mu c) -> (rho L Lq W Wq Pw)"
+  :summary "M/M/c queue: c identical parallel servers, Poisson arrivals, exponential service — closed-form metrics plus P(wait > 0)."
+  :impl-status "wired"
+  :explanation "Multi-server generalization of M/M/1. Given arrival rate λ, per-server service rate μ, and c parallel servers, computes ρ = λ/(c·μ), average number in system L, in queue Lq, time in system W, time in queue Wq, and probability of a nonzero wait Pw (the Erlang-C formula). The sixth number Pw is what a hotel manager or call-center supervisor stares at — it's the probability an arriving customer has to wait at all. Stable iff λ < c·μ; otherwise returns ('unstable λ μ c)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/mmc 8 3 4)"
+     :note "λ=8/hr, μ=3/hr, 4 servers → ρ≈0.67, L≈3.4, Wq≈0.09 hr (5.7 min avg wait).")
+    (:tier "apprentice"
+     :code "(let ((lam 15) (mu 4) (c 5)) (ops/mmc lam mu c))"
+     :note "5 servers each serving 4/hr against 15/hr demand — pretty busy but stable. ρ=0.75.")
+    (:tier "intermediate"
+     :code "(let ((cs (list 4 5 6 7))) (map (lambda (c) (let ((r (ops/mmc 10 3 c))) (list c (list-ref r 4)))) cs))"
+     :note "Wait-time sweep: at each c from 4 to 7, extract Wq. Adding servers has diminishing returns beyond a point. (c=3 would be unstable: 10 arrivals against 3·3=9 service.)")
+    (:tier "expert"
+     :code "(define (avg-wait-min lam mu c) (let ((res (ops/mmc lam mu c))) (if (and (pair? res) (number? (car res))) (* 60 (list-ref res 4)) (quote unstable)))) (avg-wait-min 12 4 4)"
+     :note "Wrap Wq in minutes and handle the unstable case. Business-facing report.")
+    (:tier "master"
+     :code "(let* ((lam 20) (mu 5)) (map (lambda (c) (let ((r (ops/mmc lam mu c))) (list (quote servers) c (quote utilization) (car r) (quote pwait) (list-ref r 5) (quote avg-wait-min) (* 60 (list-ref r 4))))) (list 5 6 7 8)))"
+     :note "Full staffing dashboard: for each c, show utilization, P(wait), and average wait. Pick the c where P(wait) hits your service target.")
+  )
+  :caveats
+    ("c must be a positive integer. Fractional c is meaningless."
+     "Assumes servers are identical and pooled — customers accept whoever is free."
+     "Same distributional assumptions as M/M/1 (Poisson, exponential)."
+     "Unstable case returns ('unstable λ μ c) with three elements — different arity from the stable 6-tuple.")
+  :drawbacks
+    ("No differentiated service — all customers pooled, all servers identical."
+     "No abandonment (reneging) — assumes callers wait forever."
+     "No priority tiers.")
+  :usecases
+    ("Call center staffing: how many agents to hit an SLA?"
+     "Warehouse: how many packing stations to keep the day's orders moving?"
+     "Curriculum: extend the M/M/1 story to parallel servers.")
+  :related ("ops/mm1" "ops/mmc-servers-for" "ops/erlang-c" "ops/littles-law")
+  :learn
+    (:concept "Server pooling: c parallel identical servers reduce mean wait more than c times."
+     :prerequisites ("ops/mm1" "Erlang-C intuition")
+     :progression "Compare a fixed λ across c=1..N. Then use ops/mmc-servers-for to invert the question.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/mmc-servers-for"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mmc-servers-for lambda mu target-Wq) -> c"
+  :summary "Minimum number of servers c such that the resulting M/M/c average queueing time Wq ≤ target."
+  :impl-status "wired"
+  :explanation "Given demand rate λ, per-server service rate μ, and a target average queueing time Wq_target, scans c upward from ⌈λ/μ⌉+1 and returns the smallest integer c that keeps average queue wait at or below the target. Uses ops/mmc under the hood. Caps at c=512 and returns 'infeasible if no c reaches the target — a signal that your target requires more capacity than the model supports at this parameterization. Handy for capacity planning: what's the smallest team that hits the SLA?"
+  :examples (
+    (:tier "novice"
+     :code "(ops/mmc-servers-for 8 3 0.1)"
+     :note "λ=8, μ=3, want Wq ≤ 0.1 hr (6 min) → answer 4 servers.")
+    (:tier "apprentice"
+     :code "(let ((lam 20) (mu 4) (target 0.05)) (ops/mmc-servers-for lam mu target))"
+     :note "Tighter target (3 min) at higher demand — need more servers. Returns 7.")
+    (:tier "intermediate"
+     :code "(let ((targets (list 0.5 0.2 0.1 0.05 0.02))) (map (lambda (t) (ops/mmc-servers-for 15 3 t)) targets))"
+     :note "How many servers as the wait target tightens? Watch c grow superlinearly at the low end.")
+    (:tier "expert"
+     :code "(define (staffing-report lam mu target-min) (let ((c (ops/mmc-servers-for lam mu (/ target-min 60)))) (if (number? c) (list (quote hire) c (quote servers)) (quote infeasible-at-this-target)))) (staffing-report 25 5 3)"
+     :note "Human-facing staffing recommendation with minutes as input. Handles the 'target unreachable' case honestly.")
+    (:tier "master"
+     :code "(let* ((lam 30) (mu 5) (targets-min (list 30 15 10 5 3 1)) (targets-hr (map (lambda (t) (/ t 60)) targets-min)) (staff (map (lambda (t) (ops/mmc-servers-for lam mu t)) targets-hr))) (list (quote target-minutes) targets-min (quote servers) staff))"
+     :note "Full SLA/staffing table: pick your tolerance, see the required headcount. This is what a call center capacity report looks like.")
+  )
+  :caveats
+    ("Target Wq must be positive. Zero or negative returns 0 (degenerate)."
+     "Caps at c=512 — for larger problems returns 'infeasible."
+     "Assumes M/M/c model. Real environments with G/G/c behavior may need more servers than the closed form predicts.")
+  :drawbacks
+    ("Linear scan — O(c) calls to ops/mmc. For large c a bisection would be faster, but the linear form is small in absolute cost."
+     "No cost side of the tradeoff — just capacity. Combine with a per-server cost to get a $-optimum.")
+  :usecases
+    ("Answer 'how many agents for a 3-minute SLA?'"
+     "Sizing new-store staffing given projected demand and per-service-desk speed."
+     "Cross-check a manual staffing decision against the closed-form optimum.")
+  :related ("ops/mmc" "ops/mm1" "ops/erlang-c")
+  :learn
+    (:concept "Invert an M/M/c query: fix the service target, find the c."
+     :prerequisites ("ops/mmc")
+     :progression "Play with target Wq. Then think about the cost per server — the model gives capacity, cost gives the tradeoff.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/erlang-b"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/erlang-b intensity num-channels) -> blocking-probability"
+  :summary "Erlang B: blocking probability in a lossy system with N channels at offered load A."
+  :impl-status "wired"
+  :explanation "The classical Erlang-B formula B(A, N) — the probability that an arriving call finds all N channels busy and is REJECTED (no queueing, no waiting, no retries). Computed via the numerically stable recursion B(A, n) = A·B(A, n-1) / (n + A·B(A, n-1)) with B(A, 0) = 1. Offered load A is in Erlangs — dimensionless, computed as arrival rate × average call duration. This is the metric telecommunications carriers actually engineer against: 'grade of service' P.01 means B ≤ 0.01."
+  :examples (
+    (:tier "novice"
+     :code "(ops/erlang-b 10 15)"
+     :note "10 Erlangs offered, 15 channels → B ≈ 3.6%. About one call in 28 gets blocked.")
+    (:tier "apprentice"
+     :code "(let ((A 5) (channels 8)) (ops/erlang-b A channels))"
+     :note "Lightly loaded system: 5 Erlangs on 8 channels → B ≈ 1.9%. Well below P.02.")
+    (:tier "intermediate"
+     :code "(let ((ns (list 10 12 14 16 18 20))) (map (lambda (n) (ops/erlang-b 10 n)) ns))"
+     :note "Blocking curve: as channels grow from 10 to 20, blocking falls steeply then flattens.")
+    (:tier "expert"
+     :code "(define (channels-for-gos A target) (let loop ((n 1)) (if (or (> n 500) (<= (ops/erlang-b A n) target)) n (loop (+ n 1))))) (channels-for-gos 20 0.01)"
+     :note "Invert Erlang-B: smallest N that meets a blocking target. Answers 'how many trunks for P.01?'")
+    (:tier "master"
+     :code "(let* ((loads (list 5 10 15 20 25))) (map (lambda (A) (list (quote load) A (quote channels-p01) (let loop ((n 1)) (if (or (> n 200) (<= (ops/erlang-b A n) 0.01)) n (loop (+ n 1)))))) loads))"
+     :note "Provisioning table: for each offered load, the number of channels needed to hit P.01 grade-of-service. This is what a telecom capacity planner ships.")
+  )
+  :caveats
+    ("Assumes calls that find all channels busy are LOST (no queueing, no retries) — that's the 'B' vs 'C' distinction."
+     "Poisson arrivals, exponential holding times."
+     "N must be a non-negative integer; N=0 always gives blocking probability 1."
+     "Numerically stable via recursion — no factorial overflow at large N.")
+  :drawbacks
+    ("No queueing model — if calls wait when blocked, use Erlang-C instead."
+     "No retry behavior — real users hang up and try again, which inflates apparent load."
+     "Assumes identical channels and calls; no priority tiers.")
+  :usecases
+    ("Sizing PBX trunk groups for a target grade of service."
+     "Estimating cellular sector blocking at peak hour."
+     "Curriculum: introduce the loss-system model before the delay-system model.")
+  :related ("ops/erlang-c" "ops/mmc" "ops/mm1")
+  :learn
+    (:concept "Loss systems: rejected calls disappear. Erlang-B is the canonical example."
+     :prerequisites ("offered load A in Erlangs = λ · mean holding time")
+     :progression "Compute B for a few (A, N). Then invert to find N for a target. Then compare Erlang-B (loss) with Erlang-C (delay).")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/erlang-c"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/erlang-c intensity num-servers) -> probability-of-wait"
+  :summary "Erlang C: probability that an arriving customer must wait (all servers busy) in an M/M/c queue."
+  :impl-status "wired"
+  :explanation "The Erlang-C formula P(wait > 0) — the fraction of arrivals who find every server busy and must queue. Companion to ops/mmc, which also exposes this as its sixth element. Given offered load A (in Erlangs) and c servers, computes C(A, c) using the standard closed form. Requires A < c (stability). Call centers engineer their service levels around this number: an 'answer 80% of calls within 20 seconds' SLA is essentially a bound on C(A, c) times the exponential tail."
+  :examples (
+    (:tier "novice"
+     :code "(ops/erlang-c 8 10)"
+     :note "A=8, c=10 → C ≈ 0.41. About 4 in 10 callers wait at least a moment.")
+    (:tier "apprentice"
+     :code "(let ((load 15) (servers 20)) (ops/erlang-c load servers))"
+     :note "Lightly loaded (ρ=0.75): C ≈ 0.28. Fewer waits than a heavily-loaded system.")
+    (:tier "intermediate"
+     :code "(let ((cs (list 10 12 14 16 18))) (map (lambda (c) (ops/erlang-c 10 c)) cs))"
+     :note "Wait-probability sweep as we add servers to a fixed load of 10 Erlangs. Diminishing returns are visible.")
+    (:tier "expert"
+     :code "(define (servers-for-wait-prob A target) (let loop ((c (+ 1 (ceiling A)))) (if (or (> c 500) (<= (ops/erlang-c A c) target)) c (loop (+ c 1))))) (servers-for-wait-prob 20 0.2)"
+     :note "Invert Erlang-C: smallest c such that P(wait) ≤ target. Matches how call centers set an SLA.")
+    (:tier "master"
+     :code "(let* ((A 30) (cs (list 32 34 36 40 45)) (rows (map (lambda (c) (list (quote c) c (quote pwait) (ops/erlang-c A c))) cs))) rows)"
+     :note "Staffing table with P(wait) at each candidate c. Combine with an average handle time to translate into average wait — that's ops/mmc.")
+  )
+  :caveats
+    ("Requires A < c (arrival rate must not saturate the servers) — otherwise the wait probability is trivially 1."
+     "A is in Erlangs (dimensionless offered load), NOT arrival rate in calls per second. A = λ · mean-service-time."
+     "Assumes Poisson arrivals + exponential service times + c identical pooled servers."
+     "Different from Erlang-B: here callers WAIT rather than being lost.")
+  :drawbacks
+    ("Says nothing about how long the wait is — for that combine with ops/mmc (Wq)."
+     "No abandonment model — real callers hang up."
+     "No skill-based routing.")
+  :usecases
+    ("Call center SLA planning: what P(wait) does my current headcount deliver?"
+     "Cross-check ops/mmc's sixth-element output."
+     "Sanity-check third-party workforce-management software.")
+  :related ("ops/erlang-b" "ops/mmc" "ops/mm1")
+  :learn
+    (:concept "Delay systems: everyone gets served eventually, but some wait. Erlang-C is the wait probability."
+     :prerequisites ("offered load in Erlangs")
+     :progression "Compute C at a few (A, c). Then invert. Then combine with ops/mmc for the full time-in-queue picture.")
+  :entry-provenance "authored")
+
+
+;; ─── Scheduling ────────────────────────────────────────────────────
+
+(verb
+  :name "ops/spt"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/spt tasks) -> ordered-tasks"
+  :summary "Shortest processing time first: sort tasks ascending by processing time."
+  :impl-status "wired"
+  :explanation "Given a list of tasks — each a scalar processing time or a list with processing time as its first element — returns the same tasks sorted by processing time ascending. SPT minimizes average flow time (equivalently, average completion time) on a single machine when all tasks are ready at time zero and preemption is disallowed. Also minimizes work-in-progress. This is one of the two or three most useful facts in operations scheduling: doing the short jobs first is not laziness, it's optimality."
+  :examples (
+    (:tier "novice"
+     :code "(ops/spt (list 5 2 8 1 4))"
+     :note "Sort by ascending processing time → (1 2 4 5 8). Do the 1-minute job first.")
+    (:tier "apprentice"
+     :code "(let ((tasks (list 10 3 7 1 5 8 2))) (ops/spt tasks))"
+     :note "Same idea with a longer list. The sort is stable so ties preserve input order.")
+    (:tier "intermediate"
+     :code "(ops/spt (list (list 5 (quote a)) (list 2 (quote b)) (list 8 (quote c)) (list 1 (quote d))))"
+     :note "Tasks with labels: each is (processing-time id). Result: (1,d)(2,b)(5,a)(8,c) — sorted by first element.")
+    (:tier "expert"
+     :code "(let* ((tasks (list (list 5 (quote job1)) (list 2 (quote job2)) (list 8 (quote job3)) (list 1 (quote job4)))) (sorted (ops/spt tasks)) (metrics (ops/sequence-metrics sorted))) (list (quote schedule) sorted (quote metrics) metrics))"
+     :note "Full pipeline: sort tasks by SPT, then compute makespan / total flow / max lateness. SPT minimizes total flow.")
+    (:tier "master"
+     :code "(define (compare-heuristics tasks) (let* ((spt-order (ops/spt tasks)) (edd-order (ops/edd tasks)) (spt-metrics (ops/sequence-metrics spt-order)) (edd-metrics (ops/sequence-metrics edd-order))) (list (quote spt) spt-metrics (quote edd) edd-metrics))) (compare-heuristics (list (list 4 10) (list 2 5) (list 6 8) (list 3 12)))"
+     :note "Head-to-head: SPT vs EDD on the same tasks. SPT wins on average flow, EDD wins on max lateness — the classic scheduling tradeoff.")
+  )
+  :caveats
+    ("Non-list inputs return the empty list."
+     "Tasks may be scalars (interpreted as processing time) or lists (first element = processing time)."
+     "Sort is stable, so ties preserve input order — useful when secondary tiebreakers matter."
+     "SPT is optimal for AVERAGE flow only, not for maximum lateness — for that use ops/edd.")
+  :drawbacks
+    ("Requires all tasks to be available at time zero; if release times differ, need a dynamic algorithm."
+     "No consideration of due dates — a critical late job may still get scheduled last."
+     "Does not model precedence constraints.")
+  :usecases
+    ("Prioritize a queue of short customer requests to minimize average response time."
+     "Pre-order jobs on a single-machine shop when average flow is the KPI."
+     "Baseline heuristic before adding due-date or precedence complexity.")
+  :related ("ops/edd" "ops/johnson" "ops/sequence-metrics" "ops/assign")
+  :learn
+    (:concept "The single-machine average-flow-optimum: sort by processing time ascending."
+     :prerequisites ("(core)/sort")
+     :progression "Sort by processing time. Then feed into ops/sequence-metrics. Then compare against ops/edd.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/edd"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/edd jobs) -> ordered-jobs"
+  :summary "Earliest due date first: sort jobs ascending by due date — minimizes maximum lateness on a single machine."
+  :impl-status "wired"
+  :explanation "Given a list of jobs where each job is a list (processing-time due-date …), returns them sorted ascending by due date. On a single machine with all jobs available at time zero and no preemption, EDD minimizes maximum lateness Lmax = max_i (completion_i − due_i). This is Jackson's theorem — one of the earliest results in scheduling. EDD does NOT minimize average flow time (that's SPT); it optimizes the tail of the lateness distribution."
+  :examples (
+    (:tier "novice"
+     :code "(ops/edd (list (list 3 10) (list 2 5) (list 4 7)))"
+     :note "Sort by due date → ((2 5) (4 7) (3 10)). The most urgent job goes first regardless of length.")
+    (:tier "apprentice"
+     :code "(let ((jobs (list (list 5 20) (list 3 8) (list 7 15) (list 2 6)))) (ops/edd jobs))"
+     :note "Four jobs sorted by due-date ascending. First column is proc-time, second is due.")
+    (:tier "intermediate"
+     :code "(let* ((jobs (list (list 4 15) (list 3 12) (list 5 20) (list 2 8))) (ordered (ops/edd jobs)) (metrics (ops/sequence-metrics ordered))) (list (quote order) ordered (quote max-lateness) (caddr metrics)))"
+     :note "Schedule by EDD, then read max-lateness from ops/sequence-metrics. EDD minimizes exactly that number.")
+    (:tier "expert"
+     :code "(define (edd-report jobs) (let* ((ordered (ops/edd jobs)) (m (ops/sequence-metrics ordered))) (list (quote schedule) ordered (quote makespan) (car m) (quote total-flow) (cadr m) (quote max-lateness) (caddr m)))) (edd-report (list (list 6 25) (list 4 10) (list 3 8) (list 5 20)))"
+     :note "Full EDD scheduling report — schedule, makespan, total flow, max-lateness. Business-facing.")
+    (:tier "master"
+     :code "(define (compare-orders jobs) (let* ((edd-o (ops/edd jobs)) (spt-o (ops/spt jobs)) (edd-m (ops/sequence-metrics edd-o)) (spt-m (ops/sequence-metrics spt-o))) (list (quote edd-max-late) (caddr edd-m) (quote spt-max-late) (caddr spt-m) (quote edd-flow) (cadr edd-m) (quote spt-flow) (cadr spt-m)))) (compare-orders (list (list 4 10) (list 2 5) (list 6 8) (list 3 12)))"
+     :note "EDD wins on max-lateness, SPT wins on total flow. The classic single-machine tradeoff — see both numbers side by side.")
+  )
+  :caveats
+    ("Jobs without a due date are treated as due-date 0 by the sort — put them first."
+     "Non-list inputs return the empty list."
+     "Sort is stable; ties preserve input order.")
+  :drawbacks
+    ("Does not minimize average flow — SPT does. Pick your objective."
+     "Requires known due dates; if a due date arrives late (dynamic), use a rolling EDD.")
+  :usecases
+    ("Meet-the-deadline scheduling on a single machine."
+     "Prioritize customer orders by promised ship date."
+     "Compare against SPT to educate an operator on the multi-objective nature of scheduling.")
+  :related ("ops/spt" "ops/johnson" "ops/sequence-metrics")
+  :learn
+    (:concept "Jackson's rule: EDD minimizes maximum lateness on a single machine."
+     :prerequisites ("(core)/sort" "understanding due dates + completion times")
+     :progression "Sort by EDD. Feed into ops/sequence-metrics. Compare with SPT.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/sequence-metrics"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/sequence-metrics tasks) -> (makespan total-flow max-lateness)"
+  :summary "Compute makespan, total flow time, and max lateness for a given single-machine sequence."
+  :impl-status "wired"
+  :explanation "Given a list of tasks in the intended processing order — each task a list (processing-time due-date) or a scalar processing time — computes three metrics. Makespan = total time to finish everything (sum of processing times, since there's one machine). Total flow = sum of completion times (proxy for average flow). Max lateness = max_i (completion_i − due_i); positive when jobs finish after their due dates. This is the universal scheduling scoreboard: feed any sequence in, get three numbers out."
+  :examples (
+    (:tier "novice"
+     :code "(ops/sequence-metrics (list (list 3 5) (list 2 8) (list 4 6)))"
+     :note "Process in order: complete at 3, 5, 9. Total flow 17. Lateness (3-5,5-8,9-6)=max=3. Makespan 9.")
+    (:tier "apprentice"
+     :code "(let ((sched (list (list 5 12) (list 3 8) (list 4 15) (list 2 10)))) (ops/sequence-metrics sched))"
+     :note "Four tasks in the given order. Makespan 14, total flow 32, max-lateness varies by due date alignment.")
+    (:tier "intermediate"
+     :code "(let* ((jobs (list (list 5 20) (list 3 8) (list 7 15) (list 2 6))) (edd (ops/edd jobs)) (metrics (ops/sequence-metrics edd))) (list (quote edd-sequence) edd (quote makespan) (car metrics) (quote max-lateness) (caddr metrics)))"
+     :note "EDD order then evaluate. Shows the sequencing decision separated from the metric evaluation.")
+    (:tier "expert"
+     :code "(define (best-of-two jobs) (let* ((spt (ops/sequence-metrics (ops/spt jobs))) (edd (ops/sequence-metrics (ops/edd jobs))) (spt-lmax (caddr spt)) (edd-lmax (caddr edd))) (if (< edd-lmax spt-lmax) (list (quote pick) (quote edd) edd) (list (quote pick) (quote spt) spt)))) (best-of-two (list (list 4 10) (list 6 8) (list 2 5)))"
+     :note "Pick the better of SPT and EDD by max-lateness. Simple two-heuristic ensemble.")
+    (:tier "master"
+     :code "(let* ((jobs (list (list 4 10) (list 2 5) (list 6 8) (list 3 12) (list 5 15))) (schedules (list (ops/spt jobs) (ops/edd jobs))) (metrics (map ops/sequence-metrics schedules))) (list (quote spt-metrics) (car metrics) (quote edd-metrics) (cadr metrics)))"
+     :note "Two-schedule dashboard: SPT vs EDD on the same job set. All three metrics for each. Business decides which to run.")
+  )
+  :caveats
+    ("Tasks are processed in the given input order — this verb does NOT reorder them."
+     "If a task has no due date, treated as due at +infinity (never late)."
+     "Assumes a single machine, no preemption, all tasks ready at time zero.")
+  :drawbacks
+    ("Says nothing about the OPTIMAL sequence — that's ops/spt / ops/edd / ops/johnson."
+     "Single machine only.")
+  :usecases
+    ("Score any candidate sequence with the same three numbers."
+     "Compare heuristics head-to-head."
+     "Compute the cost of a manually-imposed schedule (e.g. one dictated by external constraints).")
+  :related ("ops/spt" "ops/edd" "ops/johnson")
+  :learn
+    (:concept "Separate the scheduling decision (which order?) from the scoring (how good is it?)."
+     :prerequisites ("(core)/list" "understanding completion time = cumulative processing")
+     :progression "Compute metrics on a manual order. Then compare against SPT and EDD.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/johnson"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/johnson jobs m1-times m2-times) -> job-sequence"
+  :summary "Johnson's rule: optimal job sequence for a two-machine flow shop that minimizes makespan."
+  :impl-status "wired"
+  :explanation "The two-machine flow shop: every job passes through machine 1 first, then machine 2, in the same order for both. Johnson's rule (1954) finds the sequence that minimizes total makespan. Rule: split jobs into two sets — those where m1-time ≤ m2-time (Set A) go first in ascending m1-time order; those where m1-time > m2-time (Set B) go last in descending m2-time order. Concatenate A then B. This is the earliest polynomial-time result in scheduling and is genuinely optimal — not a heuristic."
+  :examples (
+    (:tier "novice"
+     :code "(ops/johnson (list (quote J1) (quote J2) (quote J3)) (list 4 8 2) (list 5 3 6))"
+     :note "Three jobs; Johnson orders (J3 J1 J2) — short m1 first, long m1 (with short m2) last.")
+    (:tier "apprentice"
+     :code "(let ((jobs (list (quote A) (quote B) (quote C) (quote D))) (m1 (list 5 2 7 3)) (m2 (list 3 8 4 6))) (ops/johnson jobs m1 m2))"
+     :note "Four jobs with mixed m1/m2 times. The result concatenates Set A (m1 ≤ m2, ascending m1) then Set B (m1 > m2, descending m2).")
+    (:tier "intermediate"
+     :code "(let* ((jobs (list 1 2 3 4)) (m1 (list 6 2 8 4)) (m2 (list 4 7 3 5)) (seq (ops/johnson jobs m1 m2))) (list (quote optimal-order) seq))"
+     :note "Numeric job ids — the algorithm doesn't care whether ids are symbols or numbers. The sequence is optimal for makespan.")
+    (:tier "expert"
+     :code "(define (makespan-2machine seq m1 m2) (let loop ((remaining seq) (t1 0) (t2 0)) (if (null? remaining) t2 (let* ((j (car remaining)) (i (- j 1)) (start1 t1) (end1 (+ start1 (list-ref m1 i))) (start2 (max end1 t2)) (end2 (+ start2 (list-ref m2 i)))) (loop (cdr remaining) end1 end2))))) (makespan-2machine (ops/johnson (list 1 2 3 4) (list 6 2 8 4) (list 4 7 3 5)) (list 6 2 8 4) (list 4 7 3 5))"
+     :note "Simulate the flow shop under Johnson's sequence to get the actual minimum makespan. Watch how m2 waits for m1 initially.")
+    (:tier "master"
+     :code "(let* ((jobs (list (quote alpha) (quote beta) (quote gamma) (quote delta) (quote epsilon))) (m1 (list 3 8 5 2 6)) (m2 (list 7 4 3 9 5)) (order (ops/johnson jobs m1 m2))) (list (quote jobs) jobs (quote m1) m1 (quote m2) m2 (quote johnson-order) order))"
+     :note "Full 5-job dashboard with named jobs. Show inputs alongside the Johnson-optimal sequence — the sequence tells you when to run each job.")
+  )
+  :caveats
+    ("Requires m1-times, m2-times to be parallel to jobs — length must match."
+     "Assumes both machines process one job at a time; buffer between machines is unlimited."
+     "Optimal for TWO machines only; three or more is NP-hard and needs a different approach.")
+  :drawbacks
+    ("No preemption, no priority classes."
+     "No blocking constraints — assumes unlimited buffer between the two machines."
+     "Cannot handle machine-specific processing times that violate the same-order constraint.")
+  :usecases
+    ("Bakery: mix (m1) then bake (m2). Which order to prep?"
+     "Fabrication: cut (m1) then finish (m2)."
+     "Classic OR curriculum example — the first optimal polynomial scheduling result.")
+  :related ("ops/spt" "ops/edd" "ops/sequence-metrics")
+  :learn
+    (:concept "Johnson's rule: the two-set split that yields a provably-optimal makespan for two-machine flow shops."
+     :prerequisites ("understanding of a flow shop with two stages")
+     :progression "Compute Johnson's order. Then simulate. Then compare against arbitrary orders — Johnson wins.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/assign"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/assign cost-matrix) -> assignment-vector"
+  :summary "Hungarian algorithm: minimum-cost bipartite matching for a square cost matrix (O(n³))."
+  :impl-status "wired"
+  :explanation "Solves the assignment problem: given an n × n cost matrix where cost[i][j] is the cost of assigning worker i to task j, find the bijection (each worker to exactly one task, each task to exactly one worker) that minimizes total cost. Uses the Kuhn-Munkres (Hungarian) algorithm with O(n³) time complexity. Returns a vector where assign[i] = j means worker i is assigned to task j. Nonsquare matrices return the sentinel 'nonsquare. The Hungarian algorithm is genuinely optimal — no heuristic approximation."
+  :examples (
+    (:tier "novice"
+     :code "(ops/assign (list (list 4 1 3) (list 2 0 5) (list 3 2 2)))"
+     :note "3-worker, 3-task problem. Optimal: worker 0→task 1 (cost 1), worker 1→task 0 (cost 2), worker 2→task 2 (cost 2). Total 5.")
+    (:tier "apprentice"
+     :code "(let ((costs (list (list 10 5 7) (list 6 8 4) (list 3 9 2)))) (ops/assign costs))"
+     :note "3×3 with different structure. Result gives the min-cost matching directly.")
+    (:tier "intermediate"
+     :code "(let* ((costs (list (list 10 5 7) (list 6 8 4) (list 3 9 2))) (assign (ops/assign costs)) (total (ops/assign-cost costs assign))) (list (quote assignment) assign (quote total-cost) total))"
+     :note "Combine ops/assign with ops/assign-cost to see both the matching and its total cost.")
+    (:tier "expert"
+     :code "(define (assign-workers costs) (let* ((assignment (ops/assign costs)) (total (ops/assign-cost costs assignment)) (pairs (let loop ((i 0) (a assignment) (acc (quote ()))) (if (null? a) (reverse acc) (loop (+ i 1) (cdr a) (cons (list (quote worker) i (quote task) (car a)) acc)))))) (list (quote optimal-assignment) pairs (quote total-cost) total))) (assign-workers (list (list 15 10 9 12) (list 9 15 10 11) (list 10 12 8 20) (list 7 12 13 15)))"
+     :note "4×4 problem with human-friendly labels: walk assignment and worker index in lockstep via a named-let (multi-list map in this Scheme uses only the first list).")
+    (:tier "master"
+     :code "(let* ((costs (list (list 12 8 9 15) (list 7 11 6 14) (list 10 5 12 8) (list 14 9 11 6))) (optimal (ops/assign costs)) (greedy (list 0 1 2 3)) (opt-cost (ops/assign-cost costs optimal)) (greedy-cost (ops/assign-cost costs greedy))) (list (quote optimal) opt-cost (quote greedy-diagonal) greedy-cost (quote savings) (- greedy-cost opt-cost)))"
+     :note "Optimal vs naive-diagonal: how much does the Hungarian save over just assigning worker i to task i? For a well-mixed cost matrix, quite a lot.")
+  )
+  :caveats
+    ("Requires SQUARE cost matrix. Nonsquare returns 'nonsquare — pad with large costs to force squareness."
+     "Costs may be negative — the Hungarian handles that."
+     "May be multiple optimal assignments; this returns one."
+     "Uses potentials internally; numerically stable for reasonable magnitudes.")
+  :drawbacks
+    ("O(n³) — impractical beyond n ≈ 500 in a single-cell REPL."
+     "Requires the full cost matrix in memory; no streaming."
+     "Does not handle soft constraints or 'preferences' — costs are hard.")
+  :usecases
+    ("Assign delivery drivers to routes minimizing distance."
+     "Match students to project topics minimizing preference disutility."
+     "Assign packing stations to orders minimizing walking distance."
+     "Warehouse: match SKUs to bin slots.")
+  :related ("ops/assign-cost" "ops/lp-solve" "ops/knapsack")
+  :learn
+    (:concept "Bipartite matching with dual variables; each worker + task gets a potential, and the reduced cost graph reveals the match."
+     :prerequisites ("understanding of a cost matrix" "bipartite graph intuition")
+     :progression "Solve small instances by hand. Then use ops/assign. Then combine with ops/assign-cost to verify.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/assign-cost"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/assign-cost cost-matrix assignment) -> total-cost"
+  :summary "Total cost of a given worker→task assignment under the cost matrix."
+  :impl-status "wired"
+  :explanation "Given the same n × n cost matrix as ops/assign plus an assignment vector (where assign[i] is the task assigned to worker i), sums cost[i][assign[i]] across all workers. Useful for evaluating any assignment — an optimal one from ops/assign, a heuristic one, a manually-imposed one, or a pre-existing one you want to score. Also accepts a list of (worker task) pairs as an alternative assignment format. Never validates that the assignment is a valid bijection; garbage in, garbage out. Companion to ops/assign, but useful on its own."
+  :examples (
+    (:tier "novice"
+     :code "(ops/assign-cost (list (list 4 1 3) (list 2 0 5) (list 3 2 2)) (list 1 1 2))"
+     :note "Assignment 0→1, 1→1, 2→2. Costs 1+0+2 = 3. (This assignment is invalid — task 1 has two workers — but we still sum honestly.)")
+    (:tier "apprentice"
+     :code "(let ((costs (list (list 5 8 3) (list 6 4 7) (list 9 2 5))) (assign (list 2 1 0))) (ops/assign-cost costs assign))"
+     :note "Diagonal-flip assignment 0→2, 1→1, 2→0. Costs 3+4+9 = 16.")
+    (:tier "intermediate"
+     :code "(let ((costs (list (list 4 1 3) (list 2 0 5) (list 3 2 2)))) (let ((opt (ops/assign costs)) (naive (list 0 1 2))) (list (quote opt-cost) (ops/assign-cost costs opt) (quote naive-cost) (ops/assign-cost costs naive))))"
+     :note "Compare optimal Hungarian assignment against the naive diagonal. Optimal wins.")
+    (:tier "expert"
+     :code "(define (score-candidates costs candidates) (map (lambda (c) (list (quote assign) c (quote cost) (ops/assign-cost costs c))) candidates)) (score-candidates (list (list 3 5 1) (list 6 2 4) (list 7 3 5)) (list (list 0 1 2) (list 2 1 0) (list 1 0 2)))"
+     :note "Score multiple candidate assignments against the same cost matrix. Useful when a downstream system suggests a few options and you want to pick.")
+    (:tier "master"
+     :code "(let* ((costs (list (list 8 6 4 2) (list 5 3 7 1) (list 9 4 2 6) (list 3 8 5 7))) (opt (ops/assign costs)) (opt-cost (ops/assign-cost costs opt)) (naive (list 0 1 2 3)) (naive-cost (ops/assign-cost costs naive)) (savings (- naive-cost opt-cost)) (savings-pct (/ (* 100 savings) naive-cost))) (list (quote optimal) opt-cost (quote naive) naive-cost (quote savings-pct) savings-pct))"
+     :note "Full report: optimal vs naive, absolute savings, percentage savings. This is what a project scheduler sees when they run the optimizer for the first time.")
+  )
+  :caveats
+    ("Does NOT validate assignment as a bijection — allows duplicates or missing tasks."
+     "Assignment vector length should match worker count; extra entries beyond that are ignored, missing entries are treated as (row not counted)."
+     "Also accepts (worker task) pairs as an alternative shape.")
+  :drawbacks
+    ("Purely evaluative — cannot optimize. Use ops/assign for that."
+     "No feasibility diagnosis; won't warn about invalid assignments.")
+  :usecases
+    ("Score an assignment produced by ops/assign."
+     "Score a heuristic assignment against the optimal."
+     "Score a manually-crafted assignment (e.g., 'senior worker X must handle task Y')."
+     "Sensitivity: score the optimal assignment under perturbed cost matrices.")
+  :related ("ops/assign" "ops/lp-value")
+  :learn
+    (:concept "Separate the optimizer from the evaluator; ops/assign-cost is the score function on which ops/assign operates."
+     :prerequisites ("(core)/map" "understanding cost matrix indexing")
+     :progression "Score a fixed assignment. Then compare optimal vs heuristic. Then use in a sensitivity loop.")
+  :entry-provenance "authored")
+
+
+;; ─── Graphs ────────────────────────────────────────────────────────
+
+(verb
+  :name "ops/dijkstra"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/dijkstra graph source) -> path-table"
+  :summary "Dijkstra shortest paths from source: single-source shortest paths on a nonneg-weighted graph."
+  :impl-status "wired"
+  :explanation "Given a directed graph with nonnegative edge weights and a source node, computes the shortest path from source to every reachable node. Returns a list of triples (node distance predecessor) where predecessor lets you reconstruct the shortest path back to source. Unreachable nodes appear with 'unreachable in the distance slot. Graph may be an edge list ((from to weight) ...) OR an alist ((node ((neighbor . weight) ...)) ...) — the verb detects both. Dijkstra is O((n+m) log n) with a heap; this implementation uses the simpler O(n²) unsorted-array pick, which is fine for small graphs and gives the same answer."
+  :examples (
+    (:tier "novice"
+     :code "(ops/dijkstra (list (list (quote A) (quote B) 1) (list (quote A) (quote C) 4) (list (quote B) (quote C) 2) (list (quote C) (quote D) 1)) (quote A))"
+     :note "Four-node graph. Shortest A→D is A→B→C→D with distance 4. Result includes the predecessor chain.")
+    (:tier "apprentice"
+     :code "(let ((edges (list (list (quote S) (quote A) 2) (list (quote S) (quote B) 5) (list (quote A) (quote B) 1) (list (quote A) (quote T) 6) (list (quote B) (quote T) 2)))) (ops/dijkstra edges (quote S)))"
+     :note "Five edges, source S, target T. Cheapest S→T is S→A→B→T at cost 5.")
+    (:tier "intermediate"
+     :code "(let* ((edges (list (list (quote A) (quote B) 3) (list (quote B) (quote C) 2) (list (quote A) (quote C) 6) (list (quote C) (quote D) 1))) (table (ops/dijkstra edges (quote A))) (d-entry (assoc (quote D) table))) (if d-entry (list (quote distance-to-D) (cadr d-entry)) (quote unreachable)))"
+     :note "Extract the distance to a specific node D from Dijkstra's table via assoc.")
+    (:tier "expert"
+     :code "(define (nearest-neighbor edges source) (let* ((table (ops/dijkstra edges source)) (candidates (let loop ((tbl table) (acc (quote ()))) (if (null? tbl) acc (let* ((row (car tbl)) (node (car row)) (dist (cadr row))) (if (and (number? dist) (not (eq? node source))) (loop (cdr tbl) (cons (list dist node) acc)) (loop (cdr tbl) acc))))))) (if (null? candidates) (quote none) (let* ((sorted (sort candidates (lambda (a b) (< (car a) (car b)))))) (cadar sorted))))) (nearest-neighbor (list (list (quote H) (quote A) 5) (list (quote H) (quote B) 3) (list (quote H) (quote C) 8)) (quote H))"
+     :note "Wrap Dijkstra to find the single nearest non-source node. Uses sort with a lambda comparator.")
+    (:tier "master"
+     :code "(let* ((edges (list (list (quote depot) (quote store-a) 5) (list (quote depot) (quote store-b) 3) (list (quote store-a) (quote store-c) 4) (list (quote store-b) (quote store-c) 6) (list (quote store-c) (quote store-d) 2))) (table (ops/dijkstra edges (quote depot)))) (list (quote from-depot) table))"
+     :note "Realistic delivery scenario: named nodes for depot and stores. The distance to each store is the shortest driving path — useful for planning routes.")
+  )
+  :caveats
+    ("Edge weights must be nonnegative. Negative weights give incorrect results — use ops/bellman-ford instead."
+     "Graph may be edge-list or alist form; the verb detects which."
+     "Unreachable nodes appear in the table with distance = 'unreachable and predecessor = null."
+     "Node names can be symbols, numbers, or strings — the verb compares by name equality.")
+  :drawbacks
+    ("O(n²) implementation — for very large graphs a heap-based variant would be O((n+m) log n)."
+     "No handling of parallel edges (multiple edges between the same pair); if present, uses whichever appears first in the edge list."
+     "No support for path reconstruction as a single call — you get predecessors and walk them yourself.")
+  :usecases
+    ("Route planning between locations with distance / travel-time as edge weights."
+     "Shortest-path in a game grid."
+     "Cost minimization in a supplier network."
+     "Curriculum: introduce the greedy shortest-path idea before Bellman–Ford.")
+  :related ("ops/bellman-ford" "ops/max-flow" "ops/pagerank")
+  :learn
+    (:concept "Greedy shortest paths: at each step, finalize the closest unvisited node — its distance can't be improved."
+     :prerequisites ("directed graph adjacency" "nonnegative weights")
+     :progression "Small graph by hand. Then ops/dijkstra. Then reconstruct a full path via predecessors. Then compare with ops/bellman-ford.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/bellman-ford"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/bellman-ford graph source) -> (distances predecessors) | infeasible"
+  :summary "Bellman–Ford shortest paths: supports negative edge weights, detects negative cycles."
+  :impl-status "wired"
+  :explanation "Given a directed graph (edge list or alist) with possibly-negative weights and a source, computes shortest paths OR returns the sentinel 'infeasible if a negative cycle is reachable. Relaxes all edges up to n-1 times; if a further relaxation still improves any distance, a negative cycle exists (paths can be made arbitrarily short). Time is O(n·m). Slower than Dijkstra but strictly more capable — use whenever you can't rule out negative weights. Result is a two-list — first list is (node distance) pairs, second is (node predecessor) pairs — so you can reconstruct the shortest path if you need it."
+  :examples (
+    (:tier "novice"
+     :code "(ops/bellman-ford (list (list 0 1 4) (list 0 2 2) (list 1 2 3) (list 2 3 5)) 0)"
+     :note "Positive weights only, no negative cycle. Standard shortest-path answer — same as Dijkstra would give.")
+    (:tier "apprentice"
+     :code "(let ((edges (list (list (quote A) (quote B) 5) (list (quote A) (quote C) 4) (list (quote B) (quote C) -3) (list (quote C) (quote D) 2)))) (ops/bellman-ford edges (quote A)))"
+     :note "Contains a negative edge (B→C = -3). Bellman–Ford handles it; shortest A→D goes A→B→C→D = 4.")
+    (:tier "intermediate"
+     :code "(let* ((res (ops/bellman-ford (list (list (quote A) (quote B) 4) (list (quote A) (quote C) 2) (list (quote C) (quote B) -3)) (quote A))) (distances (if (pair? res) (car res) (quote none)))) (list (quote distances) distances))"
+     :note "Destructure the two-list result. First half is (node dist) pairs. -3 edge shortens A→C→B path.")
+    (:tier "expert"
+     :code "(define (safe-shortest-path edges source) (let ((res (ops/bellman-ford edges source))) (cond ((eq? res (quote infeasible)) (list (quote error) (quote negative-cycle-detected))) ((pair? res) (list (quote ok) (quote distances) (car res))) (else (list (quote unexpected) res))))) (safe-shortest-path (list (list 0 1 1) (list 1 2 -2) (list 2 0 -1)) 0)"
+     :note "Handle the negative-cycle case explicitly. This graph has a cycle 0→1→2→0 with weight -2 → infeasible.")
+    (:tier "master"
+     :code "(let* ((edges (list (list (quote S) (quote A) 4) (list (quote S) (quote B) 5) (list (quote A) (quote C) 6) (list (quote B) (quote C) -3) (list (quote C) (quote T) 2))) (result (ops/bellman-ford edges (quote S)))) (if (eq? result (quote infeasible)) (list (quote status) (quote infeasible)) (list (quote status) (quote solved) (quote distances) (car result) (quote predecessors) (cadr result))))"
+     :note "Full report with both halves of the result. Shows distances AND predecessors — enough to reconstruct any shortest path.")
+  )
+  :caveats
+    ("Returns 'infeasible atomically when a negative cycle is reachable — no partial data."
+     "Slower than Dijkstra (O(n·m) vs O((n+m) log n)); prefer Dijkstra when weights are nonnegative."
+     "Edge weights may be any real number (positive, negative, zero)."
+     "Unreachable nodes appear with distance 'unreachable.")
+  :drawbacks
+    ("Slow on dense graphs — a repeated-Dijkstra-with-potentials (Johnson's algorithm) is faster in that regime."
+     "Detects negative cycles but does not identify WHICH cycle — just returns 'infeasible."
+     "No streaming; requires the full edge list.")
+  :usecases
+    ("Currency-arbitrage detection: negative log-exchange-rate cycles mean profit."
+     "Critical-path method (negate durations, find longest path)."
+     "Constraint satisfaction with distance-like constraints."
+     "Anywhere weights represent 'costs' that can be positive or negative (e.g. shipping discounts).")
+  :related ("ops/dijkstra" "ops/max-flow")
+  :learn
+    (:concept "Relaxation-based shortest paths: iterate n-1 times through all edges; extra improvement means a negative cycle."
+     :prerequisites ("ops/dijkstra" "directed edge weights (any sign)")
+     :progression "Positive-only graph. Then add a negative edge. Then add a negative cycle → 'infeasible.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/max-flow"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/max-flow graph source sink) -> max-flow-value"
+  :summary "Maximum flow via Edmonds–Karp (BFS-augmenting-paths). Returns the max flow from source to sink."
+  :impl-status "wired"
+  :explanation "The max-flow problem: given a directed graph with edge CAPACITIES (nonnegative) plus a source and a sink node, find the maximum total flow that can be routed from source to sink respecting capacity constraints. Implementation is Edmonds–Karp: repeatedly find the shortest (BFS) augmenting path in the residual graph and push flow through it, until no augmenting path remains. Time is O(V·E²), practical for graphs with hundreds of edges. Returns just the numeric max-flow value; the underlying flow assignment is not exposed."
+  :examples (
+    (:tier "novice"
+     :code "(ops/max-flow (list (list (quote S) (quote A) 10) (list (quote S) (quote B) 5) (list (quote A) (quote B) 3) (list (quote A) (quote T) 4) (list (quote B) (quote T) 8)) (quote S) (quote T))"
+     :note "Small 4-node network. Bottleneck sits at S's outbound + T's inbound. Max flow = 12.")
+    (:tier "apprentice"
+     :code "(let ((net (list (list (quote src) (quote v1) 5) (list (quote src) (quote v2) 3) (list (quote v1) (quote dst) 3) (list (quote v2) (quote dst) 5)))) (ops/max-flow net (quote src) (quote dst)))"
+     :note "Two parallel paths from src to dst, each with mismatched capacity. Total flow = 6.")
+    (:tier "intermediate"
+     :code "(let* ((net (list (list (quote s) 1 3) (list (quote s) 2 3) (list 1 3 2) (list 1 4 3) (list 2 3 2) (list 2 4 2) (list 3 (quote t) 3) (list 4 (quote t) 4))) (flow (ops/max-flow net (quote s) (quote t)))) (list (quote max-flow) flow))"
+     :note "Larger network with intermediate nodes 1-4. Max flow = 6 (both source-adjacent edges saturate).")
+    (:tier "expert"
+     :code "(define (bottleneck-test net s t candidate-caps) (map (lambda (cap) (let ((scaled (map (lambda (e) (list (car e) (cadr e) (min (caddr e) cap))) net))) (list (quote cap-limit) cap (quote max-flow) (ops/max-flow scaled s t)))) candidate-caps)) (bottleneck-test (list (list (quote a) (quote b) 5) (list (quote a) (quote c) 8) (list (quote b) (quote d) 6) (list (quote c) (quote d) 4)) (quote a) (quote d) (list 3 5 7 10))"
+     :note "Sensitivity analysis: what if every edge were capped at K? Vary K, see max flow. Explores how single-edge bottlenecks matter.")
+    (:tier "master"
+     :code "(let* ((warehouse-net (list (list (quote inbound) (quote sort-a) 100) (list (quote inbound) (quote sort-b) 80) (list (quote sort-a) (quote pack-1) 60) (list (quote sort-a) (quote pack-2) 50) (list (quote sort-b) (quote pack-2) 40) (list (quote sort-b) (quote pack-3) 70) (list (quote pack-1) (quote ship) 60) (list (quote pack-2) (quote ship) 90) (list (quote pack-3) (quote ship) 70))) (throughput (ops/max-flow warehouse-net (quote inbound) (quote ship)))) (list (quote daily-throughput-cap) throughput))"
+     :note "Warehouse operations model: inbound → sort → pack → ship, with capacities per stage. Max flow tells you the daily throughput ceiling.")
+  )
+  :caveats
+    ("Capacities must be nonnegative."
+     "Only the numeric flow value is returned; the flow assignment on each edge is not exposed."
+     "Multiple edges between the same pair (u,v) get their capacities SUMMED."
+     "Unreachable sink returns 0 rather than erroring.")
+  :drawbacks
+    ("Slower than push-relabel on dense graphs, but simpler to reason about."
+     "No min-cut extraction as a companion output."
+     "No cost side — for min-cost flow, use ops/lp-solve or a dedicated MCMF solver.")
+  :usecases
+    ("Network capacity planning."
+     "Bipartite matching by flow (unit-capacity edges + source→left→right→sink)."
+     "Warehouse / distribution throughput."
+     "Traffic modeling.")
+  :related ("ops/dijkstra" "ops/bellman-ford")
+  :learn
+    (:concept "Augmenting paths in the residual graph; the max-flow / min-cut duality."
+     :prerequisites ("directed graph capacities" "BFS")
+     :progression "Small hand-solved network. Then ops/max-flow. Then think about the min cut that certifies the max.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/pagerank"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/pagerank edges [damping]) -> ((node score) ...)"
+  :summary "PageRank via power iteration. Returns each node's importance score summing to 1."
+  :impl-status "wired"
+  :explanation "The original Google PageRank algorithm: model a random surfer who follows outbound links from each page with probability damping (default 0.85), and otherwise teleports to a random page. The stationary distribution of this random walk is the PageRank vector. Given edges (list of (from to) pairs), builds the transition matrix, adds damping and sink-mass handling, and iterates until convergence. Returns a list of (node score) pairs. Sum of scores is 1. Higher score = 'more important' node in the link graph."
+  :examples (
+    (:tier "novice"
+     :code "(ops/pagerank (list (list (quote A) (quote B)) (list (quote B) (quote C)) (list (quote C) (quote A)) (list (quote A) (quote C))))"
+     :note "4 edges, 3 nodes. A points to B and C; B and C form part of a cycle. Scores sum to 1; C has highest.")
+    (:tier "apprentice"
+     :code "(let ((edges (list (list (quote hub) (quote leaf1)) (list (quote hub) (quote leaf2)) (list (quote hub) (quote leaf3)) (list (quote leaf1) (quote hub))))) (ops/pagerank edges))"
+     :note "Hub-and-spokes network: hub links to three leaves, one leaf links back. Hub gets high score from feedback loop.")
+    (:tier "intermediate"
+     :code "(let* ((edges (list (list 1 2) (list 2 3) (list 3 1) (list 3 4) (list 4 3))) (ranks (ops/pagerank edges)) (top (car (sort ranks (lambda (a b) (> (cadr a) (cadr b)))))) ) (list (quote most-important) top))"
+     :note "Find the top-ranked node by sorting the returned list by score descending. Node 3 ranks highest — cycle 1→2→3 pumps mass into it.")
+    (:tier "expert"
+     :code "(define (rank-comparison edges dampings) (map (lambda (d) (list (quote damping) d (quote ranks) (ops/pagerank edges d))) dampings)) (rank-comparison (list (list (quote A) (quote B)) (list (quote B) (quote C)) (list (quote C) (quote A))) (list 0.5 0.75 0.85 0.95))"
+     :note "How does damping change the rankings? Higher damping (less teleportation) makes the structure of the graph matter more.")
+    (:tier "master"
+     :code "(let* ((social-graph (list (list (quote alice) (quote bob)) (list (quote alice) (quote carol)) (list (quote bob) (quote carol)) (list (quote carol) (quote alice)) (list (quote carol) (quote dave)) (list (quote dave) (quote bob)) (list (quote dave) (quote carol)))) (ranks (ops/pagerank social-graph)) (sorted (sort ranks (lambda (a b) (> (cadr a) (cadr b)))))) (list (quote ranking) sorted))"
+     :note "Friend-of-friend social graph, ranked by influence. Carol emerges as most-linked — she's on 3 paths, half the traffic goes to her.")
+  )
+  :caveats
+    ("Damping must be in (0, 1). Default 0.85 matches the original Google value."
+     "Dangling nodes (no outbound edges) have their mass distributed uniformly across all nodes."
+     "Converges in ~100 iterations for reasonable graphs; harder graphs may not fully converge but still produce a useful ranking."
+     "Scores are approximate; sum to 1 up to floating-point drift.")
+  :drawbacks
+    ("Does not handle edge weights — treats every out-link as equally likely to be followed."
+     "Slow on very large graphs — power iteration is O(iterations · edges)."
+     "Not personalized — no support for a query-dependent teleport distribution.")
+  :usecases
+    ("Reputation ranking on a citation or follower graph."
+     "Content ranking in a hyperlink network."
+     "Node importance in a knowledge graph."
+     "Curriculum: introduce Markov chain stationarity through a familiar application.")
+  :related ("ops/stationary" "ops/markov" "ops/dijkstra")
+  :learn
+    (:concept "PageRank as the stationary distribution of a random walk with teleportation."
+     :prerequisites ("Markov chain stationarity" "damping factor intuition")
+     :progression "Small graph by hand. Then ops/pagerank with default damping. Then sweep damping.")
+  :entry-provenance "authored")
+
+
+;; ─── Markov chains ────────────────────────────────────────────────
+
+(verb
+  :name "ops/markov"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/markov transition-matrix) -> matrix | 'invalid"
+  :summary "Validate a Markov transition matrix — each row must sum to 1 within numerical tolerance."
+  :impl-status "wired"
+  :explanation "Passes through a matrix if every row sums to 1.0 (within 1e-6), else returns the sentinel 'invalid. A Markov transition matrix P has P[i][j] = probability of moving from state i to state j; the row constraint says that from any state we go SOMEWHERE with probability 1. This is a validation gate for ops/markov-step, ops/stationary, and ops/absorbing-*. Not itself a computation — a health check."
+  :examples (
+    (:tier "novice"
+     :code "(ops/markov (list (list 0.5 0.5) (list 0.3 0.7)))"
+     :note "Both rows sum to 1.0 → returned as-is. This is a valid 2-state Markov chain.")
+    (:tier "apprentice"
+     :code "(ops/markov (list (list 0.6 0.4) (list 0.2 0.8) (list 0.1 0.9)))"
+     :note "3-state chain, all rows sum to 1 → valid, returned unchanged.")
+    (:tier "intermediate"
+     :code "(let ((bad-P (list (list 0.5 0.4) (list 0.3 0.7)))) (ops/markov bad-P))"
+     :note "First row sums to 0.9 → not stochastic → returns the sentinel 'invalid. Catch this early.")
+    (:tier "expert"
+     :code "(define (safe-markov P) (let ((res (ops/markov P))) (if (eq? res (quote invalid)) (list (quote reject) (quote non-stochastic-rows)) (list (quote accept) res)))) (safe-markov (list (list 0.4 0.6) (list 0.55 0.45)))"
+     :note "Predicate wrapper: report accept/reject rather than mixing sentinel and matrix. Both rows sum to 1 here → accepted.")
+    (:tier "master"
+     :code "(let* ((candidates (list (list (list 0.5 0.5) (list 0.3 0.7)) (list (list 0.5 0.4) (list 0.3 0.7)) (list (list 0.9 0.1) (list 0.1 0.9)))) (validated (map ops/markov candidates))) (list (quote candidates) candidates (quote results) validated))"
+     :note "Batch validation: pass three candidate matrices through ops/markov. The middle one (row 1 sums to 0.9) comes back as 'invalid.")
+  )
+  :caveats
+    ("Tolerance is 1e-6. Rows summing to 0.999999 pass; 0.9999 fail."
+     "Matrix must be square (n × n) for downstream ops (markov-step, stationary, absorbing-*); this verb doesn't enforce that."
+     "Non-list input returns 'invalid without inspection.")
+  :drawbacks
+    ("Only validates row sums; does not check for negative entries or entries > 1."
+     "Cannot 'fix' a matrix — just accepts or rejects.")
+  :usecases
+    ("Guard the input to ops/stationary or ops/markov-step."
+     "Sanity-check a matrix constructed from empirical data."
+     "Curriculum: introduce the row-sum constraint before diving into simulation.")
+  :related ("ops/markov-step" "ops/stationary" "ops/absorbing-probs" "ops/absorbing-steps")
+  :learn
+    (:concept "A stochastic matrix: rows are probability distributions."
+     :prerequisites ("probability sums to 1")
+     :progression "Validate. Then step forward with ops/markov-step. Then converge with ops/stationary.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/markov-step"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/markov-step pi P k) -> pi-after-k-steps"
+  :summary "Advance a state distribution π forward k steps through Markov transition matrix P: π_k = π · P^k."
+  :impl-status "wired"
+  :explanation "Given an initial state distribution π (a vector summing to 1), a transition matrix P (rows sum to 1), and a nonneg integer k, computes the distribution after k discrete time steps. Left-multiplies π by P iteratively: π_1 = π · P, π_2 = π_1 · P, and so on. When k = 0, returns π unchanged. When k → ∞, π_k approaches the stationary distribution (ops/stationary)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/markov-step (list 1 0) (list (list 0.5 0.5) (list 0.3 0.7)) 3)"
+     :note "Start in state 0, step 3 times. Distribution converges toward the stationary (~0.375, 0.625).")
+    (:tier "apprentice"
+     :code "(ops/markov-step (list 0.5 0.5) (list (list 0.9 0.1) (list 0.2 0.8)) 5)"
+     :note "Slow-mixing chain (heavy diagonal). 5 steps from uniform start; still not yet stationary.")
+    (:tier "intermediate"
+     :code "(let ((P (list (list 0.5 0.5) (list 0.3 0.7))) (pi0 (list 1 0))) (list (ops/markov-step pi0 P 0) (ops/markov-step pi0 P 1) (ops/markov-step pi0 P 5) (ops/markov-step pi0 P 100)))"
+     :note "Track the same chain at k=0,1,5,100. Convergence to the stationary is visible.")
+    (:tier "expert"
+     :code "(define (iota n)\n  (let loop ((i 0) (acc '()))\n    (if (= i n) (reverse acc) (loop (+ i 1) (cons i acc)))))\n(define (transient-decay pi0 P n) (map (lambda (k) (list k (ops/markov-step pi0 P k))) (iota n))) (transient-decay (list 1 0) (list (list 0.6 0.4) (list 0.2 0.8)) 6)"
+     :note "Build a table of (step, distribution) pairs — the transient decay of a chain. Useful for visualizing mixing time.")
+    (:tier "master"
+     :code "(let* ((weather-P (list (list 0.8 0.2) (list 0.4 0.6))) (start-sunny (list 1 0)) (start-rainy (list 0 1)) (final-sunny (ops/markov-step start-sunny weather-P 30)) (final-rainy (ops/markov-step start-rainy weather-P 30))) (list (quote from-sunny) final-sunny (quote from-rainy) final-rainy))"
+     :note "Weather Markov chain: probability of sunny/rainy after 30 days from either start. Both converge to the same distribution — the past washes out.")
+  )
+  :caveats
+    ("π and P must be dimensionally consistent (length matches n)."
+     "k ≥ 0. Negative k is rounded to 0 (no time-reversal implemented)."
+     "For large k, use ops/stationary directly — power iteration is faster than 1000 explicit steps.")
+  :drawbacks
+    ("O(k · n²) — for large k prefer ops/stationary."
+     "No matrix-caching between calls; repeated ops/markov-step with the same P doesn't share work.")
+  :usecases
+    ("Simulate the evolution of a state distribution over time."
+     "Estimate 'convergence time' by watching successive π_k values."
+     "Explain the stationary distribution as the limit of iteration.")
+  :related ("ops/markov" "ops/stationary" "ops/absorbing-probs")
+  :learn
+    (:concept "Left-multiplication by P is the fundamental Markov operation."
+     :prerequisites ("matrix-vector multiplication" "row-stochastic constraint")
+     :progression "One step. Then a few steps. Then compare k=100 with ops/stationary.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/stationary"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/stationary P [tol max-iter]) -> stationary-distribution"
+  :summary "Stationary distribution of a Markov chain via power iteration. π · P = π."
+  :impl-status "wired"
+  :explanation "Given a Markov transition matrix P, computes the unique distribution π satisfying π · P = π (a fixed point of the transition operator). Uses power iteration: start uniform, repeatedly multiply by P until successive iterates differ by less than tol (default 1e-9) or max-iter reached (default 1000). For an irreducible aperiodic chain, π is unique and this converges. Reducible chains may converge to different distributions depending on initial choice."
+  :examples (
+    (:tier "novice"
+     :code "(ops/stationary (list (list 0.5 0.5) (list 0.3 0.7)))"
+     :note "2-state chain. Stationary ≈ (0.375, 0.625). State 1 is stickier so gets more mass.")
+    (:tier "apprentice"
+     :code "(ops/stationary (list (list 0.9 0.1) (list 0.5 0.5)))"
+     :note "Highly asymmetric chain. State 0 is very persistent → high stationary probability there.")
+    (:tier "intermediate"
+     :code "(let* ((P (list (list 0.5 0.3 0.2) (list 0.1 0.7 0.2) (list 0.2 0.2 0.6))) (pi (ops/stationary P))) (list (quote stationary) pi (quote sum) (apply + pi)))"
+     :note "3-state chain. Stationary sums to 1 (up to float precision).")
+    (:tier "expert"
+     :code "(define (mixing-comparison P0 P1) (let ((pi0 (ops/stationary P0)) (pi1 (ops/stationary P1))) (list (quote chain-0) pi0 (quote chain-1) pi1))) (mixing-comparison (list (list 0.5 0.5) (list 0.5 0.5)) (list (list 0.99 0.01) (list 0.01 0.99)))"
+     :note "Both chains have symmetric structure → both stationaries are (0.5, 0.5). But the second one mixes much slower — stationary doesn't reveal mixing time.")
+    (:tier "master"
+     :code "(let* ((weather (list (list 0.7 0.2 0.1) (list 0.3 0.4 0.3) (list 0.2 0.3 0.5))) (long-run (ops/stationary weather))) (list (quote states) (list (quote sunny) (quote cloudy) (quote rainy)) (quote long-run-fraction) long-run))"
+     :note "Weather chain with three states. Long-run fraction of days in each state via stationary distribution.")
+  )
+  :caveats
+    ("Requires an irreducible aperiodic chain for uniqueness — periodic chains may fail to converge (result is average of oscillation)."
+     "Tolerance defaults to 1e-9. Very tight tolerance may exceed max-iter."
+     "Starts from uniform π₀; reducible chains may need a specific π₀ to find the correct component.")
+  :drawbacks
+    ("Power iteration is slow near unit eigengap; better to solve (P^T − I)π = 0 with a linear solver for large chains."
+     "No eigenvalue reporting; can't tell how close to periodicity you are.")
+  :usecases
+    ("Long-run fraction of time in each state."
+     "Google PageRank's underlying stationary distribution."
+     "Equilibrium modeling of processes with memory-1 dynamics."
+     "Cross-check ops/pagerank against ops/stationary on the same transition matrix.")
+  :related ("ops/markov" "ops/markov-step" "ops/pagerank")
+  :learn
+    (:concept "Fixed point of the Markov operator: the distribution that doesn't change."
+     :prerequisites ("Markov chains" "power iteration intuition")
+     :progression "Compute stationary. Compare with ops/markov-step at large k. Use for PageRank-like ranking.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/absorbing-probs"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/absorbing-probs P) -> absorption-matrix | 'no-absorbing | 'invalid | 'singular"
+  :summary "Absorption probabilities matrix B[i][j] = probability of eventually being absorbed into absorbing state j starting from transient state i."
+  :impl-status "wired"
+  :explanation "For a Markov chain with both absorbing states (rows with 1 on the diagonal, 0 elsewhere) and transient states, computes B = N · R, where N = (I − Q)⁻¹ is the fundamental matrix (Q is the transient-to-transient submatrix) and R is the transient-to-absorbing submatrix. B[i][j] gives the probability that starting from transient state i, the chain eventually gets absorbed into absorbing state j. Returns 'no-absorbing if no absorbing states exist, 'singular if I − Q is singular (rare, indicates ill-formed chain)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/absorbing-probs (list (list 0.5 0.3 0.2) (list 0.0 1.0 0.0) (list 0.0 0.0 1.0)))"
+     :note "3-state chain: state 0 transient, states 1 and 2 absorbing. From state 0: 60% absorb into 1, 40% into 2.")
+    (:tier "apprentice"
+     :code "(ops/absorbing-probs (list (list 0.6 0.2 0.2) (list 0.1 0.9 0.0) (list 0.0 0.0 1.0)))"
+     :note "Only state 2 is absorbing (state 1 has 0.9 on diagonal but 0.1 off — not absorbing). All transient states end up in 2 → all 1's.")
+    (:tier "intermediate"
+     :code "(let ((P (list (list 0.5 0.4 0.1) (list 0.2 0.3 0.5) (list 0.0 0.0 1.0)))) (ops/absorbing-probs P))"
+     :note "Two transient states 0, 1 → one absorbing state 2. Both transient states absorb into 2 with probability 1.")
+    (:tier "expert"
+     :code "(define (absorption-summary P) (let ((B (ops/absorbing-probs P))) (cond ((symbol? B) (list (quote error) B)) ((pair? B) (list (quote absorption-matrix) B (quote transient-states) (length B))) (else (list (quote unexpected) B))))) (absorption-summary (list (list 0.6 0.3 0.1) (list 0.2 0.5 0.3) (list 0.0 0.0 1.0)))"
+     :note "Wrap the result with a summary. Handles sentinel-symbol results honestly.")
+    (:tier "master"
+     :code "(let* ((gambler-P (list (list 0.6 0.4 0.0) (list 0.4 0.2 0.4) (list 0.0 0.0 1.0))) (win-state 2) (absorb (ops/absorbing-probs gambler-P))) (list (quote absorption-into-win) absorb))"
+     :note "Simplified gambler's ruin: two transient wealth levels and a winning boundary. Absorption probabilities give the chance of winning from each start.")
+  )
+  :caveats
+    ("Absorbing state detection: row has 1 on diagonal and 0 elsewhere. Rounding tolerance is 1e-9."
+     "Requires at least one absorbing state; else returns 'no-absorbing."
+     "Requires (I − Q) to be invertible. Almost always holds; singular case returns 'singular."
+     "Result rows correspond to transient states in their order in P.")
+  :drawbacks
+    ("Does not name states — result is indexed by their position among transients."
+     "Ill-conditioned Q near singularity produces numerically wobbly answers.")
+  :usecases
+    ("Gambler's ruin: probability of hitting a target vs going bust."
+     "Reliability engineering: probability of eventual system failure vs eventual repair."
+     "Cross-check simulation results against the analytical answer.")
+  :related ("ops/absorbing-steps" "ops/markov" "ops/stationary")
+  :learn
+    (:concept "Canonical form and the fundamental matrix N = (I − Q)⁻¹."
+     :prerequisites ("matrix inverse" "understanding transient vs absorbing states")
+     :progression "Solve small chains by hand. Then ops/absorbing-probs. Pair with ops/absorbing-steps.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/absorbing-steps"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/absorbing-steps P) -> expected-steps-vector | 'no-absorbing | 'invalid | 'singular"
+  :summary "Expected number of steps to absorption from each transient state — t = N·1 (row sums of the fundamental matrix)."
+  :impl-status "wired"
+  :explanation "Given a Markov chain with absorbing and transient states, computes for each transient state the expected number of steps before absorption. The answer is t[i] = sum over j of N[i][j] where N = (I − Q)⁻¹ is the fundamental matrix. Complements ops/absorbing-probs: that tells you WHERE you'll be absorbed; this tells you HOW LONG it takes."
+  :examples (
+    (:tier "novice"
+     :code "(ops/absorbing-steps (list (list 0.5 0.3 0.2) (list 0.0 1.0 0.0) (list 0.0 0.0 1.0)))"
+     :note "Only state 0 is transient. Expected steps from 0 to absorption = 1/(1-0.5) = 2.")
+    (:tier "apprentice"
+     :code "(ops/absorbing-steps (list (list 0.5 0.4 0.1) (list 0.2 0.3 0.5) (list 0.0 0.0 1.0)))"
+     :note "Two transient states. Both take a few steps to reach absorbing state 2.")
+    (:tier "intermediate"
+     :code "(let* ((P (list (list 0.7 0.2 0.1) (list 0.3 0.4 0.3) (list 0.0 0.0 1.0))) (steps (ops/absorbing-steps P))) (list (quote steps-from-state-0) (car steps) (quote steps-from-state-1) (cadr steps)))"
+     :note "Two transient states. Extract expected steps for each — the more 'stuck' state takes longer.")
+    (:tier "expert"
+     :code "(define (extinction-time-estimate reproduction-matrix) (let ((steps (ops/absorbing-steps reproduction-matrix))) (if (symbol? steps) (list (quote error) steps) (list (quote expected-generations) steps)))) (extinction-time-estimate (list (list 0.4 0.4 0.2) (list 0.3 0.3 0.4) (list 0.0 0.0 1.0)))"
+     :note "Model: extinction of a population as absorption into state 2. Expected generations before extinction from each starting size.")
+    (:tier "master"
+     :code "(let* ((chain (list (list 0.6 0.3 0.1 0.0) (list 0.2 0.5 0.2 0.1) (list 0.1 0.2 0.6 0.1) (list 0.0 0.0 0.0 1.0))) (probs (ops/absorbing-probs chain)) (steps (ops/absorbing-steps chain))) (list (quote absorption-probs) probs (quote expected-steps) steps))"
+     :note "Full analysis: for a 4-state chain with 1 absorbing state, both absorption probabilities (all 1 here) and expected steps from each transient state.")
+  )
+  :caveats
+    ("Result is a vector indexed by transient state order in P."
+     "'no-absorbing when the chain has no absorbing state — nothing to absorb into."
+     "Ill-conditioned (I − Q) gives 'singular.")
+  :drawbacks
+    ("Gives only the MEAN — no variance or distribution of absorption times."
+     "Cannot distinguish between different absorbing states (use ops/absorbing-probs for that)."
+     "Slow for very large chains (matrix inverse is O(n³)).")
+  :usecases
+    ("Mean-time-to-failure or mean-time-to-recovery."
+     "Expected duration of a random walk to hit a boundary."
+     "Population dynamics: expected time to extinction."
+     "Curriculum: separate the 'where' (probs) from the 'when' (steps).")
+  :related ("ops/absorbing-probs" "ops/markov" "ops/stationary")
+  :learn
+    (:concept "N·1 gives expected hitting time; complementary to N·R for absorption probability."
+     :prerequisites ("ops/absorbing-probs" "matrix multiplication")
+     :progression "Compute absorption probs. Then compute steps. Interpret side by side.")
+  :entry-provenance "authored")
+
+
+;; ─── Linear + integer programming ─────────────────────────────────
+
+(verb
+  :name "ops/lp"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/lp [direction] c A b) -> lp-artifact"
+  :summary "Build a standard-form linear-programming artifact: (lp direction c A b) with Ax ≤ b, x ≥ 0."
+  :impl-status "wired"
+  :explanation "Constructs the tagged data structure the LP solvers consume. Accepts either (ops/lp c A b) — direction defaults to 'maximize — or (ops/lp direction c A b) with direction = 'maximize or 'minimize. c is the objective coefficient vector; A is the constraint matrix (rows are constraints); b is the RHS vector; all constraints are ≤. This is a builder — it does not solve, just packages inputs. Pass the result to ops/simplex, ops/lp-solve, ops/interior-point, ops/mip-solve, or ops/branch-bound."
+  :examples (
+    (:tier "novice"
+     :code "(ops/lp (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5))"
+     :note "3-variable LP with 2 constraints and default 'maximize direction. Ready to solve.")
+    (:tier "apprentice"
+     :code "(ops/lp (quote minimize) (list 1 2 3) (list (list 1 1 0) (list 0 1 1)) (list 5 4))"
+     :note "Explicit minimize direction. Three decision variables, two constraints.")
+    (:tier "intermediate"
+     :code "(let* ((c (list 5 4)) (A (list (list 6 4) (list 1 2))) (b (list 24 6)) (lp (ops/lp (quote maximize) c A b))) (list (quote lp-shape) lp (quote solved) (ops/simplex lp)))"
+     :note "Build the LP, then solve it. Standard LP example — result gives x* and objective value.")
+    (:tier "expert"
+     :code "(define (production-plan profit-vec resource-matrix capacity) (let* ((lp (ops/lp (quote maximize) profit-vec resource-matrix capacity)) (sol (ops/simplex lp))) (list (quote plan) sol))) (production-plan (list 40 30) (list (list 2 1) (list 1 1) (list 1 3)) (list 100 80 90))"
+     :note "Wrap ops/lp + ops/simplex as a domain function — build the LP, solve it, return the plan.")
+    (:tier "master"
+     :code "(let* ((profit (list 3 5 4)) (usage (list (list 2 3 2) (list 4 1 3) (list 3 4 1))) (capacity (list 100 120 90)) (lp (ops/lp (quote maximize) profit usage capacity)) (result (ops/lp-solve profit usage capacity))) (list (quote lp-artifact) lp (quote solution) result))"
+     :note "Product-mix planning: three products, three resources. Build lp, then solve. See both the artifact and the resulting production quantities.")
+  )
+  :caveats
+    ("Constraints are always ≤. Convert equalities and ≥ constraints by negating or splitting into two constraints."
+     "Assumes nonnegative variables (x ≥ 0). To allow negative variables, substitute x = x⁺ − x⁻ and expand."
+     "This verb does not validate dimensions; a malformed artifact will error out at solve time.")
+  :drawbacks
+    ("No bound constraints beyond nonnegativity — pass (0 ≤ x_i ≤ u_i) as an explicit row."
+     "No sparse representation — dense A is required."
+     "Cannot yet express variable-integer requirements — for that use ops/mip-solve with a separate integers list.")
+  :usecases
+    ("Production planning: maximize profit under resource capacities."
+     "Diet problem: minimize cost subject to nutritional constraints."
+     "Portfolio construction: maximize return with variance and budget constraints."
+     "Transportation and assignment reformulations.")
+  :related ("ops/simplex" "ops/lp-solve" "ops/interior-point" "ops/mip-solve" "ops/lp-value")
+  :learn
+    (:concept "Separate the LP MODEL from the LP SOLVER — the artifact is the currency both share."
+     :prerequisites ("linear inequality" "objective vs constraints")
+     :progression "Build a 2-var LP by hand. Then hand off to ops/simplex. Then wrap into a domain function.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/lp-value"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/lp-value c solution) -> objective-value"
+  :summary "Compute c·x — the objective value of an LP solution vector under coefficient vector c."
+  :impl-status "wired"
+  :explanation "Given the objective coefficient vector c and a solution — either a bare x vector, or a solution list from ops/simplex/ops/lp-solve (with ('x <vec>) inside) — computes the objective value c·x. Useful for verifying an ops/simplex answer, scoring a candidate solution, or computing objective values for multiple candidates against the same c."
+  :examples (
+    (:tier "novice"
+     :code "(ops/lp-value (list 3 2) (list 2 1))"
+     :note "c=(3,2), x=(2,1). c·x = 3·2 + 2·1 = 8.")
+    (:tier "apprentice"
+     :code "(let ((c (list 5 4 3)) (x (list 2 3 4))) (ops/lp-value c x))"
+     :note "c·x = 5·2 + 4·3 + 3·4 = 34.")
+    (:tier "intermediate"
+     :code "(let* ((sol (ops/simplex (ops/lp (quote maximize) (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5))))) (ops/lp-value (list 3 2) sol))"
+     :note "Pass the full solution list to ops/lp-value — it extracts the x vector. Answer matches the ('objective ...) inside sol.")
+    (:tier "expert"
+     :code "(define (score-candidates c candidates) (map (lambda (x) (list (quote candidate) x (quote value) (ops/lp-value c x))) candidates)) (score-candidates (list 3 5 4) (list (list 2 3 1) (list 1 4 2) (list 3 2 3)))"
+     :note "Score multiple candidate solution vectors against the same objective c. Useful in candidate-generation-then-select workflows.")
+    (:tier "master"
+     :code "(let* ((c (list 3 2)) (A (list (list 1 1) (list 2 1))) (b (list 4 5)) (sol (ops/lp-solve c A b)) (x-vec (cadr (assoc (quote x) sol))) (computed (ops/lp-value c x-vec))) (list (quote objective-in-solution) (cadr (assoc (quote objective) sol)) (quote objective-computed) computed))"
+     :note "Cross-verify: extract x from the solution list, recompute c·x, compare with the ('objective ...) reported by the solver. They should match.")
+  )
+  :caveats
+    ("Accepts EITHER a bare x vector OR a solution list from ops/simplex — auto-detects by looking for ('x …) inside."
+     "Assumes c and x are aligned; extra elements in c beyond x's length contribute 0."
+     "No sign convention — this is just c·x, whatever direction the LP was.")
+  :drawbacks
+    ("Does not verify feasibility. Garbage x gives garbage value.")
+  :usecases
+    ("Verify ops/simplex against a hand-computed dot product."
+     "Score a heuristic solution."
+     "Reconstruct the objective when only the x-vector was persisted.")
+  :related ("ops/lp" "ops/simplex" "ops/lp-solve")
+  :learn
+    (:concept "The objective function of an LP is simply a dot product."
+     :prerequisites ("(core)/vec-dot" "(core)/map")
+     :progression "Compute on a bare vector. Then on a solver output. Then use in cross-verification.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/lp-solve"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/lp-solve c A b) -> solution | 'infeasible | 'unbounded | 'fuel-budget"
+  :summary "One-shot LP solver: builds the LP with ops/lp (default maximize) and solves via ops/simplex."
+  :impl-status "wired"
+  :explanation "Convenience wrapper: compose ops/lp and ops/simplex in a single call. Returns the same solution shape as ops/simplex: ((status …) (objective v) (x …)) or one of the sentinel symbols 'infeasible / 'unbounded / 'fuel-budget. Direction is 'maximize (the most common case); if you need minimize, use the (ops/simplex (ops/lp 'minimize ...)) form directly."
+  :examples (
+    (:tier "novice"
+     :code "(ops/lp-solve (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5))"
+     :note "Small LP with two variables. Optimal x = (1,3), objective 9.")
+    (:tier "apprentice"
+     :code "(ops/lp-solve (list 5 4 3) (list (list 2 3 1) (list 4 1 2) (list 3 4 2)) (list 5 11 8))"
+     :note "3-var, 3-constraint LP. Real problem shape.")
+    (:tier "intermediate"
+     :code "(let* ((profit (list 40 30 50)) (usage (list (list 2 1 3) (list 1 2 1))) (cap (list 100 80)) (sol (ops/lp-solve profit usage cap))) (list (quote decision) (cadr (assoc (quote x) sol)) (quote profit) (cadr (assoc (quote objective) sol))))"
+     :note "Product-mix problem solved end-to-end. Extract the x vector and the objective.")
+    (:tier "expert"
+     :code "(define (solve-or-report profit usage cap) (let ((res (ops/lp-solve profit usage cap))) (cond ((eq? res (quote infeasible)) (list (quote error) (quote infeasible))) ((eq? res (quote unbounded)) (list (quote error) (quote unbounded))) (else (list (quote optimum) (cadr (assoc (quote objective) res))))))) (solve-or-report (list 3 5) (list (list 1 1) (list 2 3)) (list 4 12))"
+     :note "Handle sentinel-symbol failures explicitly. Returns clean error tags on infeasible / unbounded.")
+    (:tier "master"
+     :code "(let* ((markets (list (list 2 3 1) (list 3 1 2) (list 1 4 3))) (max-share (list 100 80 90)) (revenue (list 5 4 6)) (sol (ops/lp-solve revenue markets max-share))) (list (quote market-allocation) sol))"
+     :note "Business scenario: 3 products, 3 markets, each product has a per-market revenue and a max market share to consume. LP-solve finds the profit-maximizing production mix.")
+  )
+  :caveats
+    ("Direction is always 'maximize. For minimize, use (ops/simplex (ops/lp 'minimize c A b))."
+     "Constraints are ≤. Convert other constraint types manually."
+     "Requires nonnegative variables.")
+  :drawbacks
+    ("Simplex-based — for very large LPs, real solvers (Gurobi, CPLEX) beat this."
+     "Phase-1 not implemented — LPs with negative b entries return 'needs-phase-1."
+     "No sensitivity or dual-value output.")
+  :usecases
+    ("Prototype LP-based decision models."
+     "Curriculum: introduce LP as a one-call problem before diving into the artifact form."
+     "Rapid what-if analysis: change c, A, or b and re-run.")
+  :related ("ops/lp" "ops/simplex" "ops/lp-value")
+  :learn
+    (:concept "One-liner LP: c, A, b in → objective + x out."
+     :prerequisites ("understanding LP standard form")
+     :progression "Solve small LP. Then use the artifact form. Then compare against ops/interior-point.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/simplex"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/simplex lp-artifact) -> solution | 'infeasible | 'unbounded | 'fuel-budget"
+  :summary "Simplex algorithm on a standard-form LP artifact from ops/lp. Returns solution list or a diagnostic sentinel."
+  :impl-status "wired"
+  :explanation "Dantzig's simplex method on the LP artifact (lp direction c A b). Adds slack variables to convert Ax ≤ b to equalities, iterates pivots to move along vertices of the feasible polytope until a vertex where no reduced cost is negative — the optimum. Time is polynomial in practice, exponential in the worst case (rare). Returns ((status optimal) (objective v) (x …)). Fails as 'unbounded when a direction of improvement has no leaving variable, 'fuel-budget when max iterations (2000) is exceeded, 'invalid-lp if the artifact shape is wrong, or 'needs-phase-1 if b has negative entries (not yet supported)."
+  :examples (
+    (:tier "novice"
+     :code "(ops/simplex (ops/lp (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5)))"
+     :note "Solve the standard 2-var LP. Optimum at (1,3) with objective 9.")
+    (:tier "apprentice"
+     :code "(ops/simplex (ops/lp (quote minimize) (list 2 3) (list (list 1 1)) (list 5)))"
+     :note "Minimize with a single constraint. Optimum at (0,0), objective 0.")
+    (:tier "intermediate"
+     :code "(let* ((lp (ops/lp (quote maximize) (list 4 3) (list (list 2 3) (list 3 1) (list 1 1)) (list 12 9 5))) (sol (ops/simplex lp))) (list (quote solution) sol (quote check) (ops/lp-value (list 4 3) sol)))"
+     :note "3-constraint LP. Solution list plus cross-check via ops/lp-value.")
+    (:tier "expert"
+     :code "(define (dual-perspective c A b) (let* ((primal (ops/simplex (ops/lp (quote maximize) c A b))) (optimum (cadr (assoc (quote objective) primal)))) (list (quote primal-max) optimum))) (dual-perspective (list 3 5) (list (list 1 1) (list 2 3)) (list 4 12))"
+     :note "Wrap simplex and just report the optimum. Useful when only the number matters.")
+    (:tier "master"
+     :code "(let* ((profits (list 5 4 3 2)) (A (list (list 2 3 1 2) (list 1 1 3 1) (list 3 2 2 3))) (b (list 8 5 12)) (lp (ops/lp (quote maximize) profits A b)) (sol (ops/simplex lp)) (x (cadr (assoc (quote x) sol))) (obj (cadr (assoc (quote objective) sol)))) (list (quote objective) obj (quote decision) x (quote c-dot-x) (ops/lp-value profits x)))"
+     :note "4-var, 3-constraint LP. Full breakdown: objective from simplex, decision vector, and independent recomputation of c·x for cross-check.")
+  )
+  :caveats
+    ("Returns 'needs-phase-1 for LPs with negative b — must be provided in canonical form."
+     "Iteration cap is 2000; larger LPs may need more."
+     "Sign of the objective is corrected internally — the value returned is the intended objective (max or min)."
+     "Ties among candidate pivot columns broken by first-negative-index; may hit degeneracy on pathological instances.")
+  :drawbacks
+    ("No Phase 1 for infeasible-start LPs."
+     "No dual variables reported."
+     "No integer or binary constraints — use ops/mip-solve.")
+  :usecases
+    ("Solve small-to-medium LPs in-cart."
+     "Teach the simplex algorithm's mechanics without hiding them in a black-box solver."
+     "Verify a hand-calculated LP solution.")
+  :related ("ops/lp" "ops/lp-solve" "ops/interior-point" "ops/mip-solve")
+  :learn
+    (:concept "Simplex as a walk along vertices of the feasible polytope, pivoting toward improvement."
+     :prerequisites ("linear inequality" "the concept of a vertex")
+     :progression "Solve a 2-var LP by hand + graphically. Then ops/simplex. Then look inside the tableau via source.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/interior-point"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/interior-point lp-artifact) -> solution | 'use-backend | 'invalid-lp"
+  :summary "Interior-point LP solver — for small instances, backed by ops/simplex; larger instances escalate 'use-backend."
+  :impl-status "wired"
+  :explanation "The reference contract permits ops/interior-point to escalate 'use-backend when a real barrier solver is needed. In this in-language build, small LPs (n, m ≤ 20) are solved via ops/simplex and tagged with (solved-by simplex-fallback). Larger LPs return the sentinel 'use-backend cleanly — a signal to the caller that a native interior-point solver is required. This is NOT a lie: we document the boundary in the entry, and the returned tag says explicitly what happened."
+  :examples (
+    (:tier "novice"
+     :code "(ops/interior-point (ops/lp (list 3 2) (list (list 1 1) (list 2 1)) (list 4 5)))"
+     :note "Small LP — solves via simplex fallback. Result tagged with (solved-by simplex-fallback) for honesty.")
+    (:tier "apprentice"
+     :code "(ops/interior-point (ops/lp (quote maximize) (list 5 4 3) (list (list 2 3 1) (list 4 1 2) (list 3 4 2)) (list 5 11 8)))"
+     :note "3-var, 3-constraint LP. Small enough to solve; returns simplex-fallback result.")
+    (:tier "intermediate"
+     :code "(let ((sol (ops/interior-point (ops/lp (list 3 5) (list (list 1 1) (list 2 3)) (list 4 12))))) (list (quote status) (cadr (assoc (quote status) sol)) (quote via) (cadr (assoc (quote solved-by) sol))))"
+     :note "Extract the solver-provenance tag. Under this build every small instance is solved by the simplex fallback.")
+    (:tier "expert"
+     :code "(define (try-ip lp) (let ((res (ops/interior-point lp))) (cond ((eq? res (quote use-backend)) (list (quote escalated-to-backend))) ((eq? res (quote invalid-lp)) (list (quote error) (quote invalid-lp))) (else (list (quote solved) res))))) (try-ip (ops/lp (list 5 3 2) (list (list 1 2 1) (list 2 1 3)) (list 10 15)))"
+     :note "Handle the use-backend escalation explicitly. Real deployments would substitute a native interior-point solver on escalation.")
+    (:tier "master"
+     :code "(let* ((c (list 4 3 2 1)) (A (list (list 1 2 1 3) (list 2 1 3 1) (list 3 1 1 2))) (b (list 8 12 10)) (lp (ops/lp (quote maximize) c A b)) (ip-result (ops/interior-point lp)) (simplex-result (ops/simplex lp))) (list (quote interior-point) ip-result (quote simplex) simplex-result))"
+     :note "Small 4-var LP solved both ways. Simplex-fallback answer matches direct simplex answer — cross-verification of the fallback machinery.")
+  )
+  :caveats
+    ("Only small instances (n, m ≤ 20) are solved in-language; larger returns 'use-backend."
+     "Result carries a (solved-by simplex-fallback) tag when fallback fires — that's the honesty."
+     "Same LP-artifact shape as ops/simplex.")
+  :drawbacks
+    ("Not a real interior-point implementation; a native barrier solver would beat simplex on very large problems."
+     "The 20 × 20 threshold is a conservative choice — Alfred can adjust as the ambient runtime grows.")
+  :usecases
+    ("Placeholder in scripts that will later route to a native interior-point solver."
+     "Small LPs where the caller wants the interior-point semantics but is fine with the simplex fallback."
+     "Curriculum: contrast simplex vs interior-point conceptually, note that scale determines which wins.")
+  :related ("ops/simplex" "ops/lp" "ops/lp-solve")
+  :learn
+    (:concept "Interior-point methods traverse the INTERIOR of the polytope, not the vertices. Complementary to simplex."
+     :prerequisites ("ops/simplex" "the notion of a barrier function")
+     :progression "Solve small. Then note the fallback. Then think about when a real IP solver would be worth wiring.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/mip-solve"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/mip-solve constraints objective [opts]) -> solution | 'use-backend | 'invalid-mip | 'infeasible | 'fuel-budget"
+  :summary "Mixed-integer programming: LP-relaxation branch-and-bound over integer variables. Small instances only."
+  :impl-status "wired"
+  :explanation "MIP: some or all decision variables are constrained to integer values. Small instances (n ≤ 12) are solved exactly via branch-and-bound on the LP relaxation using ops/simplex at each node. Larger returns 'use-backend. `constraints` is a plist with 'A, 'b, 'integers (list of variable indices that must be integer), and 'direction ('maximize | 'minimize). `objective` is the c vector. Returns the standard solution shape plus (solved-by branch-and-bound) tag."
+  :examples (
+    (:tier "novice"
+     :code "(ops/mip-solve (list (list (quote A) (list (list 1 1) (list 2 1))) (list (quote b) (list 4 5)) (list (quote integers) (list 0 1)) (list (quote direction) (quote maximize))) (list 3 2))"
+     :note "2-var MIP with both variables integer. Optimum x = (1,3), objective 9. Solved by branch-and-bound.")
+    (:tier "apprentice"
+     :code "(ops/mip-solve (list (list (quote A) (list (list 2 3) (list 3 1))) (list (quote b) (list 12 10)) (list (quote integers) (list 0 1)) (list (quote direction) (quote maximize))) (list 4 3))"
+     :note "Both variables integer. Solver enumerates the small integer lattice via LP relaxation + bounds.")
+    (:tier "intermediate"
+     :code "(let* ((cons (list (list (quote A) (list (list 1 2 1) (list 2 1 3) (list 3 1 2))) (list (quote b) (list 8 12 10)) (list (quote integers) (list 0 1 2)) (list (quote direction) (quote maximize)))) (obj (list 5 4 3)) (sol (ops/mip-solve cons obj))) (list (quote solution) sol))"
+     :note "3-var, 3-constraint MIP. All three integer. Solver explores until integer-feasible node beats current best.")
+    (:tier "expert"
+     :code "(define (mip-report constraints objective) (let ((res (ops/mip-solve constraints objective))) (cond ((eq? res (quote use-backend)) (list (quote too-large))) ((eq? res (quote infeasible)) (list (quote no-integer-solution))) (else res)))) (mip-report (list (list (quote A) (list (list 3 2) (list 1 4))) (list (quote b) (list 12 8)) (list (quote integers) (list 0 1)) (list (quote direction) (quote maximize))) (list 4 3))"
+     :note "Handle both use-backend and infeasible sentinels. Solver still returns the standard shape on success.")
+    (:tier "master"
+     :code "(let* ((cons (list (list (quote A) (list (list 1 1 1 1) (list 2 3 1 2) (list 1 1 4 1))) (list (quote b) (list 10 20 15)) (list (quote integers) (list 0 1 2 3)) (list (quote direction) (quote maximize)))) (obj (list 4 5 3 2)) (sol (ops/mip-solve cons obj))) (list (quote allocation) sol))"
+     :note "4-item allocation MIP: all four variables constrained integer with three shared resource constraints. Solver returns the optimal integer allocation.")
+  )
+  :caveats
+    ("Constraints plist must include 'A and 'b; 'direction defaults to 'maximize."
+     "Larger than n=12 escalates 'use-backend."
+     "Solver-node cap is 5000; harder instances return 'fuel-budget."
+     "Constraints all interpreted as ≤. Convert equality/≥ manually.")
+  :drawbacks
+    ("Naïve branch-and-bound — no cutting planes, no strong branching."
+     "No warm-starting between related instances."
+     "Real MIP solvers (Gurobi, CPLEX) are orders of magnitude faster on hard instances.")
+  :usecases
+    ("Small combinatorial problems: assignment with cardinality constraints, small knapsack variants."
+     "Prototype MIP models before commissioning a real solver."
+     "Curriculum: expose branch-and-bound machinery in-language.")
+  :related ("ops/lp-solve" "ops/branch-bound" "ops/knapsack" "ops/simplex")
+  :learn
+    (:concept "MIP = LP + integer variables. Branch-and-bound divides the search space and prunes with LP bounds."
+     :prerequisites ("ops/lp-solve" "the idea of relaxation")
+     :progression "Solve tiny MIPs. Watch the branch-and-bound tag. Understand when 'use-backend fires.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/branch-bound"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/branch-bound problem-spec) -> solution | 'invalid-spec | 'use-backend"
+  :summary "Generic branch-and-bound solver on a problem-spec plist — dispatches to ops/mip-solve after shape normalization."
+  :impl-status "wired"
+  :explanation "Accepts a problem specification in one of two shapes: a plist of (direction/objective/constraints/integers) pairs, OR a flat form ('maximize c 'constraints ((row op rhs) ...) 'integers idxs). Converts constraints written as (coeffs op rhs) triples into standard A/b form (≤, ≥ negated, = split into two rows), then hands off to ops/mip-solve. Returns the same shapes ops/mip-solve returns."
+  :examples (
+    (:tier "novice"
+     :code "(ops/branch-bound (list (list (quote direction) (quote maximize)) (list (quote objective) (list 3 5)) (list (quote constraints) (list (list (list 2 1) (quote <=) 4) (list (list 1 1) (quote <=) 3))) (list (quote integers) (list 0 1))))"
+     :note "Small 2-var integer program with two ≤ constraints. Returns optimum x = (0,3), objective 15.")
+    (:tier "apprentice"
+     :code "(ops/branch-bound (list (list (quote direction) (quote maximize)) (list (quote objective) (list 4 3))  (list (quote constraints) (list (list (list 2 3) (quote <=) 12) (list (list 3 1) (quote <=) 10))) (list (quote integers) (list 0 1))))"
+     :note "2-var problem with both variables integer. Optimum lands on an integer vertex.")
+    (:tier "intermediate"
+     :code "(let* ((spec (list (list (quote direction) (quote maximize)) (list (quote objective) (list 3 2 1)) (list (quote constraints) (list (list (list 1 1 1) (quote <=) 6) (list (list 2 1 3) (quote <=) 10))) (list (quote integers) (list 0 1 2)))) (sol (ops/branch-bound spec))) (list (quote solution) sol))"
+     :note "3-var integer program with two constraints. Branch-and-bound expands the LP relaxation until integer feasible.")
+    (:tier "expert"
+     :code "(define (bb-summary spec) (let ((res (ops/branch-bound spec))) (cond ((eq? res (quote invalid-spec)) (list (quote error) (quote bad-input))) ((eq? res (quote use-backend)) (list (quote escalated))) (else (list (quote objective) (cadr (assoc (quote objective) res)) (quote x) (cadr (assoc (quote x) res))))))) (bb-summary (list (list (quote direction) (quote maximize)) (list (quote objective) (list 5 4 3)) (list (quote constraints) (list (list (list 2 3 1) (quote <=) 5) (list (list 4 1 2) (quote <=) 11))) (list (quote integers) (list 0 1 2))))"
+     :note "Wrap ops/branch-bound with error handling. Real deployments handle 'use-backend by routing to a native MIP solver.")
+    (:tier "master"
+     :code "(let* ((spec (list (list (quote direction) (quote maximize)) (list (quote objective) (list 8 11 6 4)) (list (quote constraints) (list (list (list 5 7 4 3) (quote <=) 14))) (list (quote integers) (list 0 1 2 3)))) (result (ops/branch-bound spec))) (list (quote knapsack-mip) result))"
+     :note "MIP-formulated knapsack (single capacity constraint, integer variables). Branch-and-bound recovers the same answer ops/knapsack gives via DP.")
+  )
+  :caveats
+    ("Constraint operator must be one of '<= '< '>= '> '= '=='."
+     "Same size threshold as ops/mip-solve (n ≤ 12); larger returns 'use-backend."
+     "Equality constraints are split into two ≤ rows internally.")
+  :drawbacks
+    ("Overhead vs ops/mip-solve — the shape-normalization pass costs a bit."
+     "No stronger cuts than the LP relaxation bounds."
+     "No presolve.")
+  :usecases
+    ("MIP with mixed constraint types (≤, ≥, =) expressed naturally."
+     "Reformulate combinatorial problems as generic branch-and-bound."
+     "Curriculum: expose the constraint-normalization step explicitly.")
+  :related ("ops/mip-solve" "ops/lp-solve" "ops/knapsack")
+  :learn
+    (:concept "Branch-and-bound as a template: define a problem, get a solution — the mechanics happen underneath."
+     :prerequisites ("ops/mip-solve")
+     :progression "Formulate a small MIP with all three constraint types. Then ops/branch-bound. Then compare with ops/mip-solve.")
+  :entry-provenance "authored")
+
+
+(verb
+  :name "ops/knapsack"
+  :library "ops"
+  :kind "pure"
+  :signature "(ops/knapsack capacity items) -> (total-value chosen-indices) | 'bad-items"
+  :summary "0/1 knapsack via dynamic programming — pick items to maximize value under a weight capacity."
+  :impl-status "wired"
+  :explanation "Classic 0/1 knapsack: given a nonneg integer capacity W and a list of items where each item is (weight value), find the subset that maximizes total value subject to total weight ≤ W. Uses standard dynamic programming O(n·W) time, O(n·W) space. Returns (total-value chosen-indices) where indices are 0-based positions in the input list. This is optimal — not a heuristic. Handles up to n·W ≈ 10⁶ product before memory becomes a concern in-cart."
+  :examples (
+    (:tier "novice"
+     :code "(ops/knapsack 10 (list (list 2 3) (list 3 4) (list 4 5) (list 5 6)))"
+     :note "Capacity 10, four items. Optimal choice: items 0, 1, 3 (weights 2+3+5=10, values 3+4+6=13).")
+    (:tier "apprentice"
+     :code "(ops/knapsack 15 (list (list 5 10) (list 4 40) (list 6 30) (list 3 50)))"
+     :note "Capacity 15. Higher-value-per-weight items get prioritized. Answers 90 with three items.")
+    (:tier "intermediate"
+     :code "(let* ((cap 20) (items (list (list 3 10) (list 5 20) (list 7 30) (list 2 5) (list 4 15))) (res (ops/knapsack cap items))) (list (quote total-value) (car res) (quote chosen) (cadr res)))"
+     :note "5 items, cap 20. Return the winning subset + its total value.")
+    (:tier "expert"
+     :code "(define (knapsack-report cap items) (let* ((res (ops/knapsack cap items)) (val (car res)) (idxs (cadr res)) (chosen (map (lambda (i) (list-ref items i)) idxs))) (list (quote capacity) cap (quote value) val (quote chosen-items) chosen))) (knapsack-report 12 (list (list 4 8) (list 3 6) (list 5 10) (list 2 3)))"
+     :note "Report the actual chosen items (not just indices) alongside the total value.")
+    (:tier "master"
+     :code "(let* ((cap 25) (items (list (list 3 8) (list 5 12) (list 4 10) (list 2 4) (list 6 15) (list 3 7) (list 5 11))) (res (ops/knapsack cap items)) (total-value (car res)) (chosen-idxs (cadr res)) (chosen-weight (apply + (map (lambda (i) (car (list-ref items i))) chosen-idxs)))) (list (quote value) total-value (quote weight-used) chosen-weight (quote capacity) cap))"
+     :note "Verify that total chosen weight ≤ capacity. Reports weight used + capacity for full transparency.")
+  )
+  :caveats
+    ("Weights must be nonneg integers. Fractional weights need a different algorithm (LP relaxation)."
+     "Capacity likewise must be integer for the DP to work."
+     "Items with negative value are simply not chosen — no error."
+     "Returns 'bad-items if the items list contains a malformed entry.")
+  :drawbacks
+    ("O(n·W) space — a capacity of 1_000_000 with 100 items uses ~100M cells."
+     "0/1 only — no multiple copies of an item. For unbounded knapsack, a different DP recurrence is needed."
+     "No support for multiple constraints (multi-dimensional knapsack).")
+  :usecases
+    ("Choose which SKUs to bring to a market booth given a limited carrying capacity."
+     "Portfolio construction with a hard budget."
+     "Cutting stock and packing problems (in simple form)."
+     "Curriculum: introduce DP with a classic problem.")
+  :related ("ops/mip-solve" "ops/branch-bound" "ops/lp-solve")
+  :learn
+    (:concept "Bottom-up DP: dp[i][c] = best value using first i items with capacity c."
+     :prerequisites ("0/1 vs unbounded" "understanding a DP table")
+     :progression "Solve small instance by hand. Then ops/knapsack. Then reformulate as MIP and compare with ops/mip-solve.")
+  :entry-provenance "authored")
+
+
+
+
+

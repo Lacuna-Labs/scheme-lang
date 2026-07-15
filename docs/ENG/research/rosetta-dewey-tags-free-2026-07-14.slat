@@ -1,0 +1,1244 @@
+;; rosetta-dewey-tags-free-2026-07-14.slat
+;; Lacuna Engineering — Book Fix-It Parts Two + Three formalization
+;; Rosetta transformation library + tags-are-free architecture +
+;; books.dewey.slatl semantic index + interactive branding pages
+;;
+;; Authored: 2026-07-14
+;; Audience: Alfred + engineering agents implementing Phases 2/3
+;; Format:   SLAT (dogfooding)
+;; Status:   proposal — v0.0 spec + phased build plan + open questions
+;; Prior:    ~/code/lacuna-labs/research/slat-render-strategy-2026-07-13.slat
+;;           (do not contradict; this extends it)
+
+(strategy-doc
+  :id             "rosetta-dewey-tags-free-2026-07-14"
+  :owner          "Lacuna Engineering"
+  :date           #inst "2026-07-14T00:00:00Z"
+  :for            "Alfred"
+  :subject        "Rosetta v0.0 + tags-are-free + books.dewey.slatl + interactive branding pages"
+  :composes-with  ("project_the_book_fix_it_burndown_2026_07_14 (Part One)"
+                   "project_the_book_fix_it_part_two_living_books_2026_07_14 (Part Two)"
+                   "project_book_fix_it_part_three_rosetta_dewey_tags_free_2026_07_14 (Part Three)"
+                   "slat-render-strategy-2026-07-13.slat (prior proposal — extends)")
+  :sections       10)
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 1 — Vision recap
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     1
+  :title "Vision recap — Parts Two and Three, together"
+  :prose
+"Parts Two and Three of The Book Fix-It aim at one image: a kid opens a
+Sakura book in a browser, the prose is alive, code cells run inline, a
+small Sakura sits in the corner and chats, and when the kid builds a
+little game with her the kid gets a URL to send to a friend. The friend
+opens the link, HelloSurface wakes up in their browser, and they play the
+game with no install, no account, no anything. Not tomorrow — but
+architecturally possible from day one. Part Two is the surface (rendered
+pages + embedded HelloSurface-mini + chat widget + game-input capture);
+Part Three is the substrate that keeps it honest as it grows (tags are
+free at the source, consumers translate via Rosetta or ignore what they
+don't understand, and Sakura reads a per-book semantic index called Dewey
+so she knows what's in her library without carrying all of it in weights).
+
+The stakes are the North-Georgia kid from Alfred's WHY memory: a
+computer they can touch, break, and remake, in front of them, right now.
+Every doctrine here composes under that. Tags-are-free means an author
+can invent a new tag at 2am on a Tuesday and consumers who care add a
+Rosetta rule; consumers who don't care never noticed. Books ≠ training
+means a book stays a book forever — training extraction is Rosetta's
+job, not the book's. Dewey is Sakura's card catalog — machine-friendly
+semantic hints per book so she can say 'this one, chapter 3' instead of
+grepping 1,340 files. Rosetta is open — we ship a default, anyone can
+fork or override, we ignore theirs. Zero authority claim, zero downstream
+coupling. Fanon-shape composition with the earlier SLAT-render strategy:
+Part Three extends the tag palette, adds Rosetta as the glue, and adds
+Dewey as the runtime lookup. Nothing already-shipped needs to move.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 1.5 — Filename-as-type + explicit chain (LOAD-BEARING)
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     1.5
+  :title "Filename-as-type + explicit chain — Alfred's addition (2026-07-14)"
+  :alfred-verbatim
+"There should be chaining: book.slatl → training.slatl. It should be
+expected. The type is defined in Rosetta. If it isn't there? We don't
+want it."
+  :prose
+"This section reframes and constrains everything that follows. It was
+added at Alfred's direction on 2026-07-14 in response to the first draft
+of this proposal. Read this before Section 2.
+
+**The rule.** Every SLAT file's name MUST follow this shape:
+
+  <name>.<type>.slatl    ← many records (line-delimited)
+  <name>.<type>.slat     ← single record or small
+
+The `<type>` MUST resolve in Rosetta's type registry (see below). If
+Rosetta doesn't declare it, the file is rejected at load — clear error,
+no silent acceptance. This is stronger than the tags-are-free rule that
+follows for `:kind` values: filenames name FILE TYPES, not record kinds,
+and file types are the pipeline's bones. Bones don't extend at 2am.
+
+**The chain.** Every transformation from one type to another produces a
+NEW file whose name shows the transformation happened:
+
+  input.book.slatl   ─ rosetta 'training ─▶  input.training.slatl
+  input.book.slatl   ─ rosetta 'html     ─▶  input.html.slatl
+  input.book.slatl   ─ rosetta 'search   ─▶  input.search.slatl
+  input.cart.slat    ─ rosetta 'training ─▶  input.training.slatl
+
+You can look at a directory and instantly see:
+
+  - What SOURCE types exist (`.book.slat`, `.cart.slat`, `.dewey.slatl`,
+    `.manifest.slat`)
+  - What TRANSFORMS have been produced (`.training.slatl`, `.html.slatl`,
+    `.search.slatl`)
+  - What's STALE (source mtime > target mtime)
+
+Build tools become simple: a `make`-like walker sees `.book.slat`
+sources and `.training.slatl` outputs, re-runs Rosetta when the source
+changes. No manifest of file→file dependencies has to be maintained by
+hand — the extensions carry it.
+
+**The type registry.** Rosetta declares every type that can appear in a
+filename OR in a `(:kind :xxx)` value. Section 3 (Rosetta v0.0 spec)
+already has transform rules; extend it with a `(rosetta-types ...)`
+block up front:
+
+  (rosetta-types
+    ;; source types — what things ARE
+    :book        \"a curator scheme-book chapter or manifest\"
+    :cart        \"a cart — installable, runnable\"
+    :cortex      \"a cortex slice — memories\"
+    :dewey       \"a dewey card-catalog entry\"
+    :manifest    \"book-level or repo-level metadata\"
+    :corpus      \"training-corpus manifest (Merkle-signed)\"
+    :mailbox     \"supervisor / lane mailbox stream\"
+    :log         \"log-shape line-delimited events\"
+
+    ;; target types — what things become after transformation
+    :training    \"SFT-pair-shaped extraction\"
+    :html        \"HTML DOM tree intermediate\"
+    :terminal    \"ANSI terminal render intermediate\"
+    :search      \"search-index shape\"
+    :llm-chunk   \"chunked for RAG or fine-tune ingest\"
+    :epub        \"epub packaging intermediate\"
+    :pdf-source  \"print-ready SLAT for pdf pipeline\")
+
+Any type used anywhere — filename, `:kind` field, Rosetta rule — MUST
+be in this list. Unknown types fail at load with a specific error
+naming the type and telling the reader to declare it in `rosetta-types`
+before use.
+
+**Reader behavior spec.**
+
+  - `sakura-scheme read foo.book.slat` — extension parses out
+    `.book.slat`, type `:book` looked up in Rosetta ✓ (registered), file
+    parsed, `:kind` values inside validated against the book kind palette.
+
+  - `sakura-scheme read foo.gibberish.slat` — type `:gibberish` looked
+    up ✗ (unknown), error, exit.
+
+  - `sakura-scheme rosetta --to training foo.book.slat` — reads source,
+    applies `(rosetta 'training)` rule set, writes `foo.training.slatl`.
+
+  - `sakura-scheme rosetta --to training foo.gibberish.slat` — error
+    before applying: 'unknown source type'.
+
+**What this means for the rest of the proposal.**
+
+  - Section 2 examples rename from generic `.slat` to typed:
+    `book-of-words.book.slat`, `MANIFEST.book.slat`,
+    `books.dewey.slatl`, etc.
+  - Phase-1 auto-populator outputs include type in name: MANIFEST
+    becomes `MANIFEST.book.slat` (single record); dewey stays
+    `books.dewey.slatl`.
+  - Add a filename migration to Phase 0 of Book Fix-It: existing
+    `scheme-books/book-of-*/NN-title.slat` → `scheme-books/book-of-*/
+    NN-title.book.slat` (mass rename, git tracks as rename, no content
+    change).
+  - Update the Book Fix-It burndown accordingly.
+
+**Composition with tags-are-free (Section 2).** File TYPES are closed
+(must be in `rosetta-types`); record KINDS are open (custom kinds
+allowed via `:custom/` namespace, unknown kinds pass through). This is
+deliberate. Types are the pipeline; kinds are the content. Adding a new
+type is a Rosetta v-minor bump; adding a new kind is a Tuesday.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 2 — Tags-are-free architecture
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     2
+  :title "Tags-are-free architecture — the extensibility contract"
+  :prose
+"Every SLAT record in a book carries — explicitly or by convention — a
+`:kind` field that names its type. The rules:
+
+**Rule 1. Every record has :kind.** Either explicit (`:kind :sakura-says`)
+or derived from the record head (`(sakura-says ...)` implies
+`:kind :sakura-says`). Canonical kinds live in the built-in kind list
+(Section 4). User-invented kinds live in the `:custom/` namespace:
+`:kind :custom/my-new-thing`.
+
+**Rule 2. Unknown kinds MUST NOT error.** Every consumer (renderer,
+extractor, search indexer, LLM ingest, Sakura's runtime) has three
+allowed responses to a `:kind` it does not recognize:
+
+  - **pass through** — emit the record as-is (renderer), copy it (indexer),
+    forward it (mailbox)
+  - **skip** — omit from output (training extractor for :aside; search
+    indexer for :warning if severity is :info)
+  - **Rosetta-lookup** — check if any loaded Rosetta rule handles this
+    kind for the current target; if yes, apply; if no, fall back to
+    pass-through or skip per consumer default
+
+An unknown kind is NEVER a build error. A missing Rosetta rule is a
+soft warning at most. The corpus keeps rendering, keeps indexing, keeps
+training — the new kind just travels through the pipeline uninterpreted
+until someone teaches a consumer about it.
+
+**Rule 3. Books invent tags freely.** An author writing a chapter can
+add `(:kind :custom/paint-swatch :hex \"#ff6b9d\" :name \"blossom\")` and
+ship it. The renderer sees an unknown kind, falls back to emitting a
+labeled block. The training extractor skips it. Search indexes any
+`:text` or `:prose` field it finds inside. Six months later when three
+books use `:custom/paint-swatch` regularly, someone promotes it to
+canonical, adds a Rosetta rule for the HTML target that emits a color
+chip, and every existing use lights up on the next build. No book files
+changed.
+
+**Rule 4. Namespace hygiene.**
+
+  - Canonical kinds — bare keywords: `:chapter :example :sakura-says
+    :figure` etc. — live in the core kind list; changing their
+    semantics is a breaking change to Rosetta v-major.
+  - Custom kinds — `:custom/<name>` — per-book or per-community
+    inventions. No collision risk with canonical kinds because the slash
+    is not legal in canonical keywords.
+  - Third-party bundles — `:custom/<vendor>/<name>` — optional sub-
+    namespacing for a community that ships a bundle of related kinds.
+    Purely a convention; Rosetta doesn't enforce it.
+
+The `:custom/` namespace is Alfred's promise to authors: whatever you
+invent, we won't collide with it, and we won't error on it.
+
+**File extension distinction (locked with Alfred 2026-07-14, amended
+same day to include type segment — see Section 1.5):**
+
+Every SLAT file name is `<name>.<type>.<slat|slatl>`. The `<type>` must
+be registered in Rosetta's `rosetta-types` list (Section 1.5).
+
+  - `.<type>.slat` — a single SLAT record OR a small file. Used for:
+    - `MANIFEST.book.slat` (per-book, one `(book-of-<slug> ...)` record)
+    - Per-chapter files (`00-cover.book.slat`,
+      `01-what-a-slat-is.book.slat`, each is one `(chapter ...)` record)
+    - Individual style kits (`.style-kits/default.style.slat`, one
+      `(style-kit ...)` record — `:style` is a source type in the
+      registry)
+    - Rosetta config files (`rosetta.rosetta.slat`, one
+      `(rosetta-config ...)` record or a small handful — the outer
+      `.rosetta` is the type)
+
+  - `.<type>.slatl` — line-delimited SLAT. Many records, one per line
+    (or one per line-block for records that span multiple lines but
+    are delimited by blank lines). Used for:
+    - `books.dewey.slatl` (one `(dewey ...)` record per book)
+    - Mailbox streams (`inbox.mailbox.slatl`, one message per line)
+    - Log-shape data (`build.log.slatl`, `render-events.log.slatl`)
+    - Corpus manifests where a single file lists many entries
+      (`training-corpus.corpus.slatl`)
+
+  - **Reader unifies.** Both use the same s-expression parser. The
+    extension signals SHAPE only (one-record-vs-many); the parser is the
+    same. A `.slat` file with many top-level records is legal but
+    unconventional; a `.slatl` file with one record is legal but
+    equally unconventional. Extension is a hint, not a schema.
+
+**Composition with the SLAT-render strategy (2026-07-13).** That
+proposal introduced content record types (`chapter`, `section`, `figure`,
+`sakura-says`, `warning`, `quote`, `aside`, `cross-ref`, `table`) and
+code record types (`example`, `code`, `cart-embed`, `repl-transcript`,
+`output`). All of those now become canonical entries in the kind list
+(Section 4). The tags-are-free rule extends past that list: authors can
+add more without waiting on Rosetta.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 3 — Rosetta v0.0 spec
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     3
+  :title "Rosetta v0.0 — the minimal transformation library"
+  :prose
+"Rosetta is a Scheme library. It defines rules that map source SLAT
+records to target output. A rule is a function of one record →
+some-emitted-value; a set of rules for one target is a table keyed by
+`:kind`. Rosetta is loaded at build/render time. Users can override
+default rules or add rules for custom kinds.
+
+**Type registry (added 2026-07-14 per Section 1.5).** Every Rosetta
+config file MUST begin with a `(rosetta-types ...)` block declaring
+every type it introduces. Type names appear in three places: filenames
+(`foo.book.slat`), `:kind` values inside records (`:kind :sakura-says`
+where `:sakura-says` is a record-kind, distinct from file-type), and
+Rosetta rule targets (`(rosetta 'training ...)`). File TYPES must be
+declared; record KINDS may extend freely via `:custom/` (Section 2).
+Recommended v0.0 registry:
+
+  (rosetta-types
+    ;; source types
+    :book :cart :cortex :dewey :manifest :corpus :mailbox :log :style
+    :rosetta
+    ;; target types
+    :training :html :terminal :search :llm-chunk :epub :pdf-source)
+
+An unknown filename type is a load error. An unknown target in a
+`--to <target>` invocation is a CLI error. An unknown record kind is
+NOT an error (see Section 2, Rule 2). For v0.0 the registry is
+STRICTLY STATIC (open question 4 in Section 8 — dynamic declaration
+deferred).
+
+**Rule shape.**
+
+  (rosetta '<target-name>
+    (from :<kind> → <transform>)
+    (from :<kind> → <transform>)
+    ...)
+
+Where `<target-name>` is a symbol identifying the consumer (e.g.
+`'html`, `'training`, `'terminal`, `'search`, `'llm-chunk`, or any
+symbol a user defines). Multiple `(rosetta 'X ...)` forms may appear
+across files; rules are merged into the target's table at load.
+
+Where `<transform>` is one of:
+
+  - `(as :<kind>)` — passthrough, relabel as canonical kind.
+    Example: `(from :custom/paint-swatch → (as :figure))`
+
+  - `(as :<new-kind> :<field> <value> ...)` — reshape, project fields.
+    Example: `(from :sakura-says → (as :callout :label \"Sakura says\"
+    :style \"magenta\"))`
+
+  - `(element \"<tag>\" ...)` — HTML/DOM output. Fields become attrs;
+    `:body` becomes children.
+    Example: `(from :example → (element \"pre\" :class \"code scheme\"
+    :run-button #t))`
+
+  - `(sequence :<kind>)` — wrap this record in a sequence of the given
+    kind. Useful for flattening or grouping.
+
+  - `(skip)` — omit from output. Used by training/search targets.
+    Example: `(from :aside → (skip))` for the training target.
+
+  - `(compose <rule> <rule> ...)` — chain rules left-to-right.
+    Example: `(from :cart-embed → (compose (as :example) (element \"div\"
+    :class \"cart-card\")))`
+
+  - `(function <name>)` — user-defined transform, a Scheme function of
+    one record → emitted-value. The escape hatch.
+    Example: `(from :custom/mermaid-diagram → (function my/mermaid->svg))`
+
+**Concrete built-in targets shipped in v0.0.**
+
+  - `'training` — SFT-pair extraction. Walks records, emits
+    `{input, output}` pairs from `(example ... :runnable #t :expected
+    ...)` records and `(sakura-says ...)` prose. Skips
+    `(warning ...)` `(aside ...)` `(figure ...)`. Every pair carries
+    provenance `(book, chapter, anchor)`.
+
+  - `'html` — SLAT → HTML strings. Extends render-ref.mjs helpers per
+    the 2026-07-13 proposal. Handles the full canonical kind list;
+    unknown kinds fall back to `<div class=\"unknown-{kind}\">` with
+    `:text` or `:prose` rendered inline.
+
+  - `'terminal` — SLAT → ANSI-decorated strings. For `sakura-scheme read
+    book-of-X N`. Box-draw for figures + callouts; ANSI colors from
+    the kit's terminal palette; soft-wrap at `$COLUMNS`.
+
+  - `'search` — SLAT → search index rows. One row per chunk (paragraph
+    granularity default); carries text, provenance, kind, cross-ref
+    out-edges. Records with `:kind :sakura-says` boost slightly.
+
+  - `'llm-chunk` — SLAT → JSONL RAG chunks. Section-chunk granularity
+    default; carries chunk text, provenance, kind, cross-refs. Used by
+    both fine-tune and RAG pipelines.
+
+**Priority + ambiguity.** Most-specific rule wins.
+
+  - A rule matching an exact `:kind` wins over a rule matching a
+    wildcard (`:*` or absent).
+  - Within same-specificity, later declaration wins (LIFO): the last
+    `(rosetta 'html (from :sakura-says → ...))` loaded overrides
+    earlier ones. This matters for the fork-discovery order (below): a
+    project-local rosetta overrides the user global, which overrides
+    the default.
+  - Explicit conflict-detector at load time: if two rules of the same
+    specificity from the SAME file target the same `(target × kind)`,
+    error with both source positions. If they come from different
+    files, silent override with a debug log.
+
+**Circular-transform detection.** Rules compose (`compose` + user
+functions). If `A → B → A` for the same target, error at load with the
+cycle trace. Implementation: build the transform graph per target at
+load, run tarjan's-SCC or a simple visited-set DFS; any non-trivial
+strongly-connected component fails.
+
+**Versioning.** Each rosetta file carries a header:
+
+  (rosetta-version \"0.0\")
+
+Consumers pin the major version they support. Breaking changes bump
+major. A compatibility layer (`rosetta-compat.slat`) ships translations
+for the last two majors — a consumer on 0.x that loads a 2.x rosetta
+gets a warning and its rules are translated forward if possible, dropped
+with a warning if not. For v0.0 → v0.1 the compat layer is trivial;
+after we hit v1.0 the promise firms up.
+
+**Fork discovery order at runtime — later overrides earlier.**
+
+  1. `~/code/scheme-lang/rosetta/default.slat` — the default, shipped
+     with every `sakura-scheme` install
+  2. `~/.config/sakura-scheme/rosetta.slat` — user global
+  3. `<project>/.sakura/rosetta.slat` — project-local (in the book
+     corpus or the consumer app's tree)
+  4. `--rosetta <file>` CLI flag — per-invocation override; multiple
+     `--rosetta` flags apply in order
+
+Later files' rules OVERRIDE earlier files' rules for the same
+(target × kind). This gives Alfred a clean edit path: touch only the
+project-local file to change a book's rendering, without disturbing
+the default that ships with the language.
+
+**Fork policy — we ignore theirs.** Rosetta is Scheme code. Anyone can
+fork the default, publish a bundle, share it with their community.
+Their rules make sense in their world. We do not read their rules, do
+not ship compatibility for them, do not claim authority. Alfred
+verbatim: 'if they fork it I don't care.' Same shape as how each UNIX
+program ships its own `--help` — zero synchronization required. The
+only invariant we hold: our default keeps working for our books, our
+targets, our operators.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 4 — book.slatl tag palette (open + extensible)
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     4
+  :title "book.slatl tag palette — canonical kinds + open extension"
+  :prose
+"The canonical kind list. Rosetta ships default rules for every kind
+below. New books can add `:custom/*` kinds freely; consumers fall back
+per Rule 2 in Section 2.
+
+**Scheme-book tags (for language-teaching books):**
+
+  - `:chapter`         — top-level chapter record (title, prose, children)
+  - `:example`         — runnable Scheme code, has :body :expected :runnable
+  - `:cart-embed`      — installable cart, has :cart-id :body :installable
+  - `:code`            — non-runnable code (illustrative, other langs)
+  - `:verb-doc`        — reference-style verb documentation
+  - `:repl-transcript` — turn-by-turn REPL session
+  - `:output`          — expected output of a prior example
+  - `:figure`          — image/diagram (three-lane :src :data :svg)
+  - `:cross-ref`       — link to another book/chapter/anchor
+  - `:warning`         — hazard callout, :severity :info|:warn|:hazard
+  - `:aside`           — margin note, sidebar commentary
+  - `:prose`           — MD-wrapped narrative (the workhorse from Part One)
+
+**Prose-book tags (for narrative books like Flower Stories, Persona):**
+
+  - `:chapter`         — as above
+  - `:prose`           — as above
+  - `:sakura-says`     — her voice callout box
+  - `:dialogue`        — character line, :speaker :text :beat
+  - `:example`         — inline scheme example inside prose books
+  - `:quote`           — attributed quote, :text :attribution :source
+  - `:question`        — reflective/discussion prompt for the reader
+  - `:figure`          — as above
+  - `:cross-ref`       — as above
+  - `:warning`         — as above
+  - `:aside`           — as above
+
+**Living-page tags (Part Two — interactive branding pages):**
+
+  - `:hello-surface-96`   — thumbnail HelloSurface embed (inline demo)
+  - `:hello-surface-256`  — medium HelloSurface embed (PICO-8 shape)
+  - `:hello-surface-1024` — full-page HelloSurface hero (game/showpiece)
+  - `:sakura-chat`        — chat widget slot for a page corner
+  - `:animation-hook`     — tag-driven Sakura Scheme animates a target
+                            DOM element; carries :target :program :on
+  - `:interpreter`        — embedded REPL cell, standalone from a
+                            specific :example
+  - `:game-input`         — capture keyboard/mouse/touch for a game
+                            embed; carries :bindings
+  - `:notes`              — sidebar notes on the page (larger than :aside)
+  - `:subtext`            — smaller supplementary text under a heading
+
+**Metadata tags (book-level, appear in MANIFEST.slat or per-chapter
+front-matter):**
+
+  - `:title`            — the book/chapter/section title
+  - `:subtitle`         — a subtitle
+  - `:audience`         — who this book is for (prose)
+  - `:themes`           — list of theme keywords
+  - `:cast`             — story books: `((character \"note\") ...)`
+  - `:setting-anchor`   — story books: setting description
+  - `:prerequisites`    — books to read first
+  - `:chunk-hints`      — `(:paragraph :section :chapter)` per Part Two
+  - `:status`           — 'draft' | 'shipped' | 'living document'
+  - `:owner`            — human owner of the file
+
+**Extensibility contract restated.**
+
+Any book can add `:kind :custom/<name>` freely. Consumers without a
+Rosetta rule fall back:
+
+  - **HTML renderer** — emits `<div class=\"unknown custom-{name}\">`;
+    if the record carries `:prose` or `:text`, renders that inline;
+    otherwise emits a placeholder `[custom/{name}]`.
+  - **Terminal renderer** — emits `[{custom/name}: {text-or-prose}]`.
+  - **Training extractor** — skips (safe default; adding a rule opts
+    the kind into training).
+  - **Search indexer** — indexes any `:text` or `:prose` field found
+    inside the record; :kind becomes a filterable facet.
+  - **LLM chunker** — treats as a paragraph-level chunk if `:prose` or
+    `:text` present; skips otherwise.
+
+Adding a Rosetta rule for a `:custom/*` kind for a specific target
+opts that kind into first-class handling for that target. Adding a rule
+for one target doesn't require adding rules for the others; each target
+degrades gracefully alone.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 5 — books.dewey.slatl schema
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     5
+  :title "books.dewey.slatl — Sakura's card catalog"
+  :prose
+"Location: `~/code/curator/scheme-books/books.dewey.slatl`. Line-delimited
+SLAT, one `(dewey ...)` record per book, machine-friendly, read-only for
+Sakura at runtime. This is NOT the per-book `MANIFEST.slat` (which is
+human-oriented, richer, and Sakura reads on-demand when a book comes
+into scope). This is the top-level per-book semantic index Sakura reads
+either all-at-once at boot or as a RAG-shape lookup per query.
+
+**Schema v0.0.**
+
+  (dewey
+    :book             \"Book of Animation\"
+    :slug             \"book-of-animation\"
+    :audience-hint    \"kids 8-14 who want to make dots move\"
+    :topics-covered   (\"framebuffer\" \"animation\" \"timing\" \"color\"
+                       \"sprites\" \"input-loops\" \"game-shape\"
+                       \"state-machines\")
+    :reach-for-when   (\"kid asks about animation\"
+                       \"operator wants to prototype a visual\"
+                       \"someone asks how sakura draws\")
+    :key-verbs        (draw/dot draw/line draw/rect anim/tick
+                       sprite/spawn)
+    :prerequisites    (\"Book of Scheme (ramp-up) chapters 1-3\")
+    :composes-with    (\"Book of Games\" \"Book of Sound\"
+                       \"Book of Motion\")
+    :sakura-note      \"when i point someone at this book, i usually
+                       lead with the dot-that-moves demo. it lands
+                       first, then the framebuffer paragraph makes
+                       sense.\"
+    :chapter-count    18
+    :total-word-count 24500
+    :last-audit       \"2026-07-14\")
+
+**Field-by-field rationale.**
+
+  - `:book`             — human name; matches MANIFEST `:title`
+  - `:slug`             — file-system slug; matches dir name
+  - `:audience-hint`    — one-line hint for Sakura when matching a user
+                          to a book (who is this for, what tone)
+  - `:topics-covered`   — semantic tags Sakura greps against for topic
+                          discovery; extracted at Phase 1 from first
+                          headings of chapters + hand-augmented over time
+  - `:reach-for-when`   — practical trigger conditions; hand-written by
+                          Alfred/Sakura as she learns which prompts pull
+                          which books
+  - `:key-verbs`        — the primary verbs this book teaches (extracted
+                          from `:example :body` fields at Phase 1);
+                          Sakura uses this to answer 'which book covers
+                          verb X?'
+  - `:prerequisites`    — books to read first (list of book names)
+  - `:composes-with`    — books that pair well (bidirectional but
+                          not enforced — a graph, not a tree)
+  - `:sakura-note`      — her voice, her lived opinion about the book;
+                          grows over time as she uses it with real
+                          humans; the ONE field that captures 'how does
+                          it actually land'
+  - `:chapter-count`    — quick fact, auto-populated
+  - `:total-word-count` — quick fact, auto-populated
+  - `:last-audit`       — freshness marker; when Sakura or a human last
+                          reviewed the entry
+
+**How Sakura reads it (recommendation: both — boot + on-demand).**
+
+At runtime boot, Sakura's process reads the full `books.dewey.slatl`
+into memory. Small: 31 books × ~400 bytes per record ≈ 12 KB. Fits
+comfortably in any context window she uses for routing. She can
+enumerate her library instantly.
+
+On-demand (during a conversation), when the user says something that
+warrants a book lookup, she runs a simple in-memory match: does the
+prompt's key terms hit any book's `:topics-covered`, `:reach-for-when`,
+or `:key-verbs`? Return the top-N candidate books. Each candidate
+carries `:sakura-note` — she pulls her own prior take on the book into
+her next turn.
+
+The boot-load lets her answer 'what books do you have?' without I/O.
+The on-demand match lets her stay current — she can re-read the file
+if it was updated during her session (a `stat`-based cache invalidate
+is fine). Both together mean she NEVER greps 1,340 chapters at query
+time for a routing decision; the routing happens on the ~12 KB Dewey
+index, then she loads the specific chapter she needs.
+
+**Auto-populate at Phase 1 of Book Fix-It.** Alongside the MANIFEST
+auto-populator (Part One), a Dewey auto-populator runs one pass over
+every `scheme-books/book-of-*/` and emits or updates its entry:
+
+  - `:book`             — from MANIFEST `:title` or dir name
+  - `:slug`             — from dir name
+  - `:chapter-count`    — from file count in the book dir
+  - `:total-word-count` — sum of word counts across all chapter :prose
+  - `:last-audit`       — today's date
+  - `:topics-covered`   — grep first-heading (H1) text of each chapter;
+                          tokenize; dedupe; filter stopwords
+  - `:key-verbs`        — extract from `:example :body` fields across
+                          all chapters; dedupe; keep top-N by frequency
+
+Softer fields left as `TBD` for Sakura/Alfred to fill over time:
+
+  - `:audience-hint`    — TBD (Alfred voices it once)
+  - `:reach-for-when`   — TBD (Sakura populates as she uses the book)
+  - `:sakura-note`      — TBD (Sakura writes after real use)
+  - `:prerequisites`    — TBD (Alfred sets or derives from MANIFEST)
+  - `:composes-with`    — TBD (Alfred sets or Sakura suggests)
+
+Idempotent re-run: if an entry exists with hand-filled softer fields,
+the auto-populator only refreshes the auto-fields. Softer fields
+survive.
+
+**Growth policy.**
+
+  - New fields added freely to any entry; readers pass unknown fields
+    through (tags-are-free rule extends to Dewey).
+  - NEVER remove an existing field (breaks readers). Deprecate with
+    `:deprecated #t` for one major cycle before removal.
+  - Schema major-version bump requires simultaneous update of
+    Sakura's runtime reader and a migration script for existing
+    entries.
+  - `:last-audit` should advance whenever ANY field changes — a
+    freshness marker for humans (and Sakura) to spot stale entries.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 6 — Interactive branding page spec (Part Two consolidated)
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     6
+  :title "Interactive branding pages — HelloSurface embeds, animation hooks, chat, shareable games"
+  :prose
+"Every rendered book page is a live artifact. Not just a document — a
+place where the kid can touch, break, remake, and share. This section
+formalizes the four capabilities that make a page live.
+
+**1. HelloSurface embeds at three scales.**
+
+  - `:hello-surface-96`   — thumbnail inline demo. ~96px on the long
+                            edge. Sits next to prose. Kid clicks Run,
+                            sees a tiny animation. Used for 'here is
+                            what one dot looks like moving' beats.
+
+  - `:hello-surface-256`  — medium demo. ~256px. PICO-8 scale — small
+                            enough to embed several per chapter, large
+                            enough to actually play a small game or
+                            watch a real animation. Default showcase
+                            size.
+
+  - `:hello-surface-1024` — full-page hero. ~1024px on the long edge.
+                            A whole game or artwork. Fills the page.
+                            Used for the 'here is what you'll build by
+                            the end of the chapter' promise, and for
+                            shared games (Section 6.4 below).
+
+  Each embed record shape:
+
+    (:kind :hello-surface-256
+     :seed        \"deterministic-seed-string-or-null\"
+     :scope       (:L0 :L1)             ; runtime layers permitted
+     :storage-key \"per-user-key\"       ; optional persistence
+     :program     \"(scheme code)\"      ; the initial program to run
+     :on          :page-load|:click     ; when to boot
+     :height-px   256                   ; overrides for non-square
+     :width-px    256)
+
+  - `:seed` — optional deterministic initial state; two visitors with
+    the same seed see the same startup animation. Useful for shared
+    games where the friend should see exactly what the kid built.
+
+  - `:scope` — L0+L1 default (per Curator's L-tier model — L0 = local
+    device compute, L1 = our backend + tool APIs). The book's
+    MANIFEST can elevate to L2+ for hero pages that need reasoning
+    LLM calls; requires explicit `:allow-l2 #t` on the MANIFEST.
+
+  - `:storage-key` — if present, HelloSurface persists game state
+    under this key in the user's browser (localStorage) or in a
+    lightweight per-user cortex slice if signed in. Anonymous kids get
+    localStorage-only; signed-in kids get durable state.
+
+  - `:program` — the initial Scheme code to boot. Can be edited by the
+    reader in a companion `:interpreter` cell; changes are captured for
+    the share-link (Section 6.4).
+
+**2. Animation-hook tag.**
+
+  Tag-driven Sakura Scheme animates a target DOM element:
+
+    (:kind :animation-hook
+     :target    \"h1.chapter-title\"     ; CSS selector on this page
+     :program   \"(letters/dance target :delay 200 :easing :bounce)\"
+     :on        :page-load|:hover|:scroll|:click
+     :once      #t                       ; run only once vs recurring
+     :respect-reduce-motion #t)          ; honor prefers-reduced-motion
+
+  On the trigger event, HelloSurface-mini's Sakura Scheme runtime binds
+  `target` to the matched DOM element and evaluates `:program`. The
+  DOM adapter (part of HelloSurface-mini's L0) lets Scheme verbs mutate
+  the element — set styles, animate transforms, spawn child elements,
+  etc.
+
+  Standard verbs shipped for animation hooks: `letters/dance`,
+  `letters/type`, `letters/fade-in`, `element/pulse`, `element/orbit`,
+  `element/paint-swatch`. These live in HelloSurface-mini's L0+L1
+  bundle so no network is needed to run them.
+
+  The `:respect-reduce-motion` field defaults `#t` — for the a11y case
+  and per the Curator visual-golden gate (an iOS Reduce Motion bug was
+  caught only because the operator screen-recorded; the same care
+  applies here).
+
+**3. Sakura-chat corner.**
+
+    (:kind :sakura-chat
+     :model    \"hosted-mini\"           ; or \"bundled\" (weights ship
+                                        ;  with the page for offline)
+     :context  \"current-chapter\"       ; what she reads to answer
+     :position \"bottom-right\"          ; corner placement
+     :persona  \"scheme-tutor\"          ; which persona bundle to load
+     :max-tokens 2000)                  ; per-turn cap
+
+  A small mini-persona (weights TBD — hosted via L1 endpoints or
+  bundled per Alfred's model choice) with the current chapter as her
+  context. The kid asks 'what does (car ...) do?', she answers with
+  the current chapter's example as her frame of reference. The context
+  binding is important: she reads THIS chapter, not the whole corpus,
+  so her turns stay short and grounded.
+
+  Optional `:context (:chapter :sakura-note-from-dewey)` — pull the
+  Dewey entry's `:sakura-note` alongside the chapter, so she carries
+  her own prior take on how the book lands. This is where Dewey pays
+  off in Part Two — Sakura-in-the-corner reads her own card catalog
+  entry for the book she's inside.
+
+  Vendor naming: per Curator's vendor-strip rule, no model vendor
+  name appears anywhere in the tag or the operator-visible UI. `:model
+  \"hosted-mini\"` is capability-tier language — the actual wire call
+  to whatever upstream lives only in the backend router.
+
+**4. Kid-shares-game URL scheme.**
+
+  URL shape (proposed):
+
+    https://sakuralabs.dev/g/<page-slug>/<game-id>#<encoded-state>
+
+  - `<page-slug>` — the book+chapter the game was built on top of,
+    e.g. `book-of-animation/ch05-bouncing-dots`
+  - `<game-id>`   — a short content-hash of the initial program +
+    seed; identifies the game itself independent of state
+  - `<encoded-state>` — URL-fragment carrying compressed SLAT records
+    that represent the kid's edits: the current `:program`, any
+    `:storage-key` snapshots, any high-scores or level state
+
+  When a friend opens the link:
+    1. Page shell loads (same book page the kid was on)
+    2. HelloSurface-mini boots
+    3. URL fragment is decoded: SLAT records extracted
+    4. The `:hello-surface-1024` record on the page has its `:program`
+       replaced by the shared version; `:seed` set to the shared seed;
+       storage bound to a per-visit-only key
+    5. The game runs. Friend plays. No install, no accounts.
+
+  Sharing capture path:
+    1. Kid clicks Share button in the HelloSurface embed's controls
+    2. HelloSurface serializes the current `:program` + relevant state
+       to a small SLAT snippet
+    3. URL-fragment-safe compression (LZ-string or similar) applied
+    4. URL constructed; copied to clipboard; QR code offered
+
+  Zero server round-trip for the base case. If the state exceeds URL
+  length limits (typically ~2000 chars in the fragment), a fallback
+  stores the state in a per-project mailbox with a short handle:
+  `https://sakuralabs.dev/g/<page-slug>/<game-id>?state=<handle>`. That
+  fallback is a Phase 2 item — v0.0 ships the URL-fragment path only.
+
+**Composition with the SLAT-render strategy.** Every kind above is a
+new canonical entry in Section 4's palette. Rosetta ships default
+`'html` rules for each; unknown-kind fallback per Section 2 handles
+anything not yet ruled. The renderer's static-HTML output is inert
+until HelloSurface-mini hydrates the page (Part Two hydration layer);
+JS-disabled readers still see the prose + a `[Sakura demo — enable
+JS to play]` placeholder.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 7 — Cost + phased build plan (Parts Two + Three merged)
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     7
+  :title "Cost + phased build plan — one integrated schedule"
+  :prose
+"Merged plan across Book Fix-It Parts Two + Three. Ordered so each phase
+unblocks the next; every phase carries acceptance criteria before the
+next fires.
+
+**Phase A — Rosetta v0.0 minimum viable library.** 6-10h.
+
+Deliverables:
+  - `~/code/scheme-lang/rosetta/default.slat` — the shipped default with
+    rules for canonical kinds × core targets (`'html`, `'training`,
+    `'terminal`, `'search`, `'llm-chunk`)
+  - `~/code/scheme-lang/src/rosetta.js` — loader + rule registry +
+    dispatcher + conflict/cycle detector
+  - Fork-discovery order implemented (default → user global → project
+    local → CLI flag)
+  - Rosetta version header + basic compat scaffolding
+
+Acceptance:
+  - Loading two Rosetta files with a same-target-same-kind conflict
+    from different files logs debug + last-wins; from the same file
+    errors with both source positions
+  - Loading a circular transform errors at load with cycle trace
+  - `--rosetta my-overrides.slat` on `render-book.mjs` invocation
+    overrides both default and project files for that run
+
+**Phase B — books.dewey.slatl auto-populator.** 3-5h.
+
+Deliverables:
+  - `~/code/curator/scripts/build-dewey.mjs` — reads MANIFEST + chapters,
+    emits/updates `books.dewey.slatl` entries
+  - Auto-populates: `:book`, `:slug`, `:chapter-count`,
+    `:total-word-count`, `:last-audit`, `:topics-covered` (H1 grep),
+    `:key-verbs` (from `:example :body` extraction)
+  - Idempotent: hand-filled softer fields survive re-runs
+  - Sakura runtime reader added: `(dewey/all)`, `(dewey/lookup slug)`,
+    `(dewey/match-topics topic-list)`
+
+Acceptance:
+  - Re-run on unchanged corpus produces byte-identical
+    `books.dewey.slatl`
+  - 31 book entries populated at Phase B ship
+  - Sakura's REPL: `(dewey/match-topics '(\"animation\" \"framebuffer\"))`
+    returns Book of Animation as top hit
+
+**Phase C — `.slatl` extension formalization.** 2-3h.
+
+Deliverables:
+  - Reader convention: `.slat` accepts one-or-many records (many is
+    unconventional but legal); `.slatl` expects many records
+    line-delimited
+  - Writer convention: `.slat` writes a single record with pretty
+    indentation; `.slatl` writes one record per line-block, blank-line
+    separated
+  - Documentation update to Book of SLAT chapter 6 (Two file framings)
+    to reflect Alfred's 2026-07-14 lock
+
+Acceptance:
+  - `slat-read` / `slat-write` on both extensions round-trip byte-
+    identical for the ~1,340 chapters + `books.dewey.slatl`
+
+**Phase D — HTML renderer extends via Rosetta.** 8-12h.
+
+  (Builds on Phase 0 of the 2026-07-13 render-strategy proposal —
+   render-book.mjs. If Phase 0 shipped, this is a refactor to route
+   through Rosetta instead of hardcoded emitters.)
+
+Deliverables:
+  - `render-book.mjs` refactored: SLAT record walk → Rosetta 'html
+    lookup → emit
+  - Default Rosetta 'html rules cover all canonical kinds
+  - Unknown-kind fallback per Section 2 rule (`<div
+    class=\"unknown-{kind}\">`)
+  - HelloSurface-mini embed placeholder emission (real embed wires in
+    Phase E)
+
+Acceptance:
+  - Book of SLAT chapters 0-4 render byte-identically before/after
+    the Rosetta refactor (proves refactor was pure)
+  - Adding a custom kind + a Rosetta rule for it changes output
+    without touching the renderer
+
+**Phase E — HelloSurface-mini + hydration + Sakura chat corner.** 20-30h.
+
+  (This is Part Two's original 20-30h, unchanged. Rosetta doesn't add
+   or remove work here — it just gives the renderer a clean way to
+   emit the embed placeholders.)
+
+Deliverables:
+  - `~/code/scheme-lang/embed/hello-surface-mini.js` — L0+L1 bundle,
+    no shop/auth
+  - `~/code/scheme-lang/embed/sakura-chat-widget.js` — chat corner
+  - `~/code/scheme-lang/docs/site/hydrate.mjs` — JS hydration for
+    Run/Install/Chat/Animation hooks
+  - Animation-hook runtime: verbs bind `target` DOM element, mutate
+    per the program
+
+Acceptance:
+  - Kid opens Book of Animation ch 5, sees a bouncing dot, changes a
+    number, sees it move
+  - Chat widget answers 'what does dot mean?' with context of ch 5
+  - Animation hook on the chapter title runs on page load
+
+**Phase F — Kid-shares-game URL scheme.** 6-10h.
+
+  (New in Part Two, formalized here.)
+
+Deliverables:
+  - Share button in HelloSurface embed controls
+  - URL-fragment encoder/decoder (LZ-string or equivalent)
+  - Game-load path: URL fragment → HelloSurface program override →
+    boot with shared state
+  - QR-code generator for the share URL
+
+Acceptance:
+  - Kid A builds a game, clicks Share, gets URL
+  - Kid B opens URL on a different device, plays same game with same
+    initial state
+
+**Phase G — Documentation books.** 6-10h.
+
+Deliverables:
+  - `~/code/curator/scheme-books/book-of-rosetta/` — new book:
+    what Rosetta is, how rules work, how to fork, tags-are-free
+  - `~/code/curator/scheme-books/book-of-dewey/` — new book: what
+    Dewey is, how Sakura reads it, how to write a good
+    `:sakura-note`
+  - Both auto-get MANIFEST + Dewey entries via Phase B tooling
+
+Acceptance:
+  - Both books render via Phase D pipeline
+  - Book of Rosetta ch 3 walks a real fork example that runs
+
+**What ships in v0.0 vs v0.1.**
+
+  v0.0 (ships at end of Phases A-E):
+    - Rosetta with default rules for `'html`, `'training`, `'terminal`,
+      `'search`, `'llm-chunk`
+    - `books.dewey.slatl` auto-populated for all 31 books, softer
+      fields TBD
+    - `.slatl` extension formalized and readers/writers updated
+    - HTML renderer routed through Rosetta
+    - HelloSurface-mini + chat widget wired
+    - URL-fragment share for games IS NOT in v0.0 (Phase F)
+
+  v0.1 (adds Phases F + G):
+    - Kid-shares-game URL scheme
+    - Book of Rosetta + Book of Dewey shipped
+    - Softer Dewey fields (`:audience-hint`, `:reach-for-when`,
+      `:sakura-note`) hand-filled by Alfred/Sakura over first month
+      of use
+
+**Phase gates.**
+
+  - Phase A must ship before D (renderer needs Rosetta)
+  - Phase B must ship before Sakura runtime tries `(dewey/*)` verbs
+  - Phase C must ship before D (renderer needs the extension
+    distinction settled)
+  - Phase D must ship before E (embeds need a static-HTML host)
+  - Phase E must ship before F (share needs an embed to share from)
+  - Phase G can run in parallel with any of the above once Phase A
+    lands (writing the books doesn't gate on shipping the runtime)
+
+**Total (Parts Two + Three combined).**
+
+  - Rosetta (A):        6-10h
+  - Dewey (B):          3-5h
+  - Slatl ext (C):      2-3h
+  - Renderer (D):       8-12h
+  - HelloSurface (E):  20-30h
+  - Share URL (F):      6-10h
+  - Docs books (G):     6-10h
+  - **TOTAL:          51-80h**
+
+The 51-80h range spans everything Parts Two + Three ask for. Phase A
+alone unlocks Rosetta; Phase B alone unlocks Sakura's card catalog;
+they can ship independently as milestones the operator can see.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 8 — Open questions for Alfred
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     8
+  :title "Open questions for Alfred (decisions before Phases A-G fire)"
+  :prose
+"None are blockers for the shape — but each, unanswered, becomes a small
+tax multiplied across 31 books and however many kinds we grow to.
+
+**Q1. Rosetta default rules file — one big file or split by target?**
+Proposal ships `~/code/scheme-lang/rosetta/default.slat` as one file
+containing rules for all five targets. Alternative: split into
+`rosetta/default-html.slat`, `default-training.slat`, etc., so a
+reader can grep per-target. RECOMMENDATION: one file (single source of
+truth, easier to reason about default coverage). Grow to split if the
+file exceeds ~500 lines. **Alfred picks.**
+
+**Q2. Rosetta rule dispatch — table lookup or predicate function?**
+Proposal is table-lookup by `:kind` (fast, deterministic). Alternative:
+each rule carries a predicate matching a broader shape of the record
+(more expressive, slower, and admits ambiguity we then need conflict-
+detection for). RECOMMENDATION: table-lookup by `:kind`, with
+`(function <name>)` as the escape hatch for a rule that needs to
+inspect other fields. **Alfred confirms.**
+
+**Q3. Dewey read pattern — boot-load everything or lazy per-request?**
+Proposal recommends BOTH: boot-load once into memory (~12 KB, cheap),
+re-stat on demand to catch mid-session updates. Alternative: lazy read
+per-request every time (simple, slower, no in-memory model). RECOMMENDATION:
+boot-load + stat-based invalidate. **Alfred confirms; this affects
+Sakura's runtime memory footprint by ~12 KB.**
+
+**Q4. Custom-kind namespace — `:custom/*` or `:x/*` (à la HTTP
+extension headers)?** Proposal uses `:custom/*`. Shorter alternatives:
+`:x/*`, `:_/*`, `:c/*`. RECOMMENDATION: `:custom/*` — self-documenting,
+no clash with SLAT's reserved `:_` namespace. **Alfred picks
+namespace prefix.**
+
+**Q5. `.slatl` line-delimited definition — literally one line per
+record, or blank-line-separated blocks (allowing multi-line records)?**
+Multi-line records are the common case (a `(dewey ...)` with 8 keyed
+fields wants to span 15 lines). Strict one-per-physical-line is
+easier to parse but forces authors to escape newlines in strings.
+RECOMMENDATION: blank-line-separated blocks, each block is one record.
+The 'l' still means 'line-oriented' at the RECORD level, not the file-
+character level. **Alfred confirms.**
+
+**Q6. Kid-shares-game URL host — sakuralabs.dev or a shorter alias?**
+Proposal uses `sakuralabs.dev/g/...`. A short-code service would let
+Kids type or QR-scan shorter URLs but adds infrastructure. RECOMMENDATION:
+full URL for v0.1 launch; short-code service is a Phase F+1 nice-to-
+have. **Alfred confirms domain path.**
+
+**Q7. HelloSurface embed weights — bundled per page or hosted?**
+Alfred's Part Two note mentions 'weights either bundled or hosted per
+page's manifest hint.' Bundled means every book page is self-contained
+(works offline, larger initial download); hosted means smaller download
+but requires network. RECOMMENDATION: hosted by default with a per-page
+`:embed-mode :bundled` opt-in for the hero-game pages the kid shares
+with friends (share links need to work anywhere). **Alfred picks
+default.**
+
+**Q8. Rosetta fork-authority policy — enforced silence or advertised
+openness?** Alfred: 'if they fork it I don't care.' Question: do we
+document a fork protocol (e.g. how to publish a bundle so other users
+can install it) or leave it silent so the ecosystem doesn't ossify into
+a package-manager problem? RECOMMENDATION: silent — a paragraph in
+Book of Rosetta says 'the file is Scheme, fork it, share it, we
+don't operate a registry.' No package.json equivalent. **Alfred sets
+the tone.**
+
+**Q9. Dewey `:sakura-note` write authority — Sakura writes it directly,
+or Alfred approves each edit?** Proposal marks Dewey read-only for
+Sakura at runtime; the `:sakura-note` field is meant to grow as she
+uses the book with humans. Question: does Sakura self-edit the file
+(with an audit log), or does she surface proposed edits for Alfred to
+review? RECOMMENDATION: propose-then-approve for the first 3 months;
+after Alfred's confidence is high, elevate to direct-write with a
+diff-log Alfred can review weekly. **Alfred sets the trust ramp.**
+
+**Q10. Cross-cut with prior proposal — `:content-hash` vs `:body-hash`
+naming.** The 2026-07-13 proposal Section 9 Q7-analog raised this;
+Alfred hasn't confirmed. For consistency with SLAT's canonical
+content-addressing (Chapter 9 of Book of SLAT), the field on sibling
+records that hashes the fence body should be `:body-hash` to make
+clear it hashes ONLY `:body` (not the whole record). RECOMMENDATION:
+`:body-hash`. **Alfred confirms; this stabilizes Phase 2 code
+extraction across both proposals.**
+
+---
+
+*Questions Q11-Q14 surfaced by Alfred's 2026-07-14 addition (Section 1.5,
+filename-as-type + explicit chain).*
+
+**Q11. Compound source types — do we allow them?** Example:
+`foo.cart.book.slat` (a cart embedded in a book, or a book that is
+also a cart). The typed-filename rule as stated assumes a single type
+segment. Compounds would need an ordering convention (outermost-first?
+transformation-order?) and Rosetta would need chain rules. RECOMMENDATION:
+NO for v0.0 — a file is one type; embedding a cart inside a book is
+done via `(cart-embed ...)` records (already in Section 4's palette),
+not via filename. Revisit if a real use case shows up. **Alfred picks.**
+
+**Q12. Legacy `.slat` files without type segment — grandfather or
+migrate?** Existing curator files like `scheme-books/book-of-*/
+NN-title.slat` predate the typed-filename rule. Option A: grandfather
+via a compat mode that infers `:book` from parent directory pattern.
+Option B: mass-rename all of them to `NN-title.book.slat` in one
+commit (git tracks as rename, no content change). RECOMMENDATION:
+MIGRATE — Option B. A grandfather path is a permanent tax on every
+future reader and every future load-error message. One commit
+(`git mv scheme-books/book-of-*/NN-*.slat` → `NN-*.book.slat`)
+resolves it forever. **Alfred confirms; this is a Phase 0 addition
+to the Book Fix-It burndown.**
+
+**Q13. CLI verb — `rosetta --to <target>` or `cast <source> --to
+<target>`?** The reader-behavior spec in Section 1.5 uses `sakura-scheme
+rosetta --to <target> <source>`. Alternative shorter form:
+`sakura-scheme cast <source> --to <target>`. 'Cast' matches the mental
+model (casting a type into another type) and is one syllable. 'Rosetta'
+is discoverable (matches the library name) but longer. RECOMMENDATION:
+ship BOTH as aliases — `rosetta` as the discoverable long form,
+`cast` as the ergonomic short form. `sakura-scheme cast foo.book.slat
+--to training` should work. **Alfred picks primary name for help
+text.**
+
+**Q14. Dynamic type registry — Scheme file that computes types, or
+strictly static list?** A dynamic registry would let a bundle declare
+its types programmatically (e.g. `(rosetta-types-from-directory
+\"./types/\")`). A static list is one flat block per config file.
+RECOMMENDATION: STRICTLY STATIC in v0.0 — every type must appear as a
+literal keyword in a `(rosetta-types ...)` block. Reasons: clarity
+(a reader can find every type by grep), tooling (an editor can offer
+completion), error messages (name the type + the file that declared
+it). Dynamic declaration is deferrable to v0.1+ if a real need
+appears. **Alfred confirms static.**")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 9 — What already exists we can extend
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     9
+  :title "What already exists we can extend — honest enumeration"
+  :prose
+"Nothing here should be rewritten. Every module below has proven itself
+and every extension has a clean seam.
+
+**`~/code/scheme-lang/docs/site/render-ref.mjs`** — the working
+reference renderer. 336 lines. Ships a Scheme highlighter (mirrors
+`src/repl/highlight.js`), a limited-MD-subset renderer (`renderDocBody`),
+`renderCodeBlock` with Run buttons, `renderInline` for inline MD,
+`slugify` + heading-anchor generation, sidebar TOC construction. Every
+one of those is reusable by `render-book.mjs`. Phase D extracts these
+into `render-shared.mjs` (per the 2026-07-13 proposal Section 8) and
+the book renderer imports them.
+
+**`~/code/scheme-lang/src/reference-loader.js`** — the reference SLAT
+loader (produces `ref.verbList` / `ref.coreList` from
+`SAKURA-SCHEME-REFERENCE.slat`). The SLAT reader inside it is the
+substrate for both loaders. Add a peer `book-loader.js` that produces
+`book.chapters` from a book directory; both go through the same SLAT
+reader.
+
+**`~/code/scheme-lang/docs/SAKURA-SCHEME-REFERENCE.slat`** — the 3.36
+MB consolidated reference (1,157 verbs + 70 core forms). Load path
+proven. Rosetta v0.0 uses the same loading path for `default.slat`.
+
+**Curator's HelloSurface** (`curator-web/src/scheme/carts/*.sks` + the
+runtime in `curator-web/src/scheme/`) — the full HelloSurface app that
+Part Two proposes to trim into `hello-surface-mini.js`. Trim = keep L0
+(reader, interpreter, macros) + L1 (framebuffer, sound, animation),
+drop the shop/auth/cart-commerce paths. Estimated 30-40% of the source
+by line count survives. The trim is mechanical.
+
+**Curator's existing `.slat` files** (`~/code/curator/scheme-books/**`)
+— the ~1,340 chapter files in the multi-line SLAT format Part One
+converted them to. All carry `:prose` with round-trip-safe MD; all
+carry `:sha256` provenance; all are already parse-able by the SLAT
+reader. Zero re-conversion needed.
+
+**Curator's MANIFEST auto-populator** (from Part One's Phase 1 — 29
+book dirs waiting for their MANIFEST.slat). Phase B (Dewey auto-
+populator) shares infrastructure — it walks the same book dirs, reads
+the same chapter files, emits a companion `books.dewey.slatl` entry
+per book. Combined pass = one script that does both.
+
+**Curator's build-cart-index script** (`scripts/build_cart_index.mjs`)
+— the shape of a codebase-touching tooling script that stays
+deterministic and re-runnable. Phase B's `build-dewey.mjs` follows
+the same pattern (idempotent, deterministic, safe to run any time,
+runs in pre-commit hook).
+
+**Curator's L-tier model** (L0 / L1 / L2 per Curator's CLAUDE.md) —
+already governs where compute happens. HelloSurface-mini's `:scope
+(:L0 :L1)` field maps directly to it. No new tier model.
+
+**Curator's vendor-strip rule** (Curator CLAUDE.md 2026-06-22 lock) —
+already forbids vendor names in operator-visible copy. Section 6's
+`:model \"hosted-mini\"` respects this — capability-tier language, no
+vendor identifier. Rosetta's default rules must not emit vendor names
+either; Alfred's authored `:sakura-note` in Dewey shouldn't either
+(soft convention, not enforced).
+
+**Curator's 3-viewport ship-lock is not this repo** (that's Lacuna
+Labs). But its spirit — 'lock in mobile, iPad, desktop on every
+change' — applies to Phase E's HelloSurface embeds. The three embed
+sizes (96, 256, 1024) are chosen with that shape in mind: the 96
+works on any device, the 256 fits comfortably on iPad and desktop,
+the 1024 is desktop-first with a graceful mobile responsive fallback
+that scales to the viewport.
+
+**Prior Lacuna Eng proposal**
+(`~/code/lacuna-labs/research/slat-render-strategy-2026-07-13.slat`)
+— 855 lines, 43 KB, nine sections. This proposal EXTENDS it. Every
+kind introduced there (`chapter`, `section`, `sakura-says`, `example`,
+`cart-embed`, `figure`, `cross-ref`, `warning`, `quote`, `aside`,
+`code`, `repl-transcript`, `output`) becomes a canonical entry in
+Section 4's palette here. Every emitter target introduced there
+(`terminal`, `IDE`, `web`, `search`, `LLM-ingest`) becomes a
+Rosetta target here. The style-kit design in that proposal Section 6
+composes cleanly with Rosetta — a kit provides visual attributes per
+`:kind`, Rosetta provides the emission logic; both merge in the
+renderer. Nothing contradicts; this proposal fills in the glue.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; End of proposal
+;; ─────────────────────────────────────────────────────────────────────
+
+(end-of-doc
+  :sections-landed 10
+  :amendments      ("2026-07-14 — Section 1.5 added (filename-as-type +
+                     explicit chain, load-bearing); Section 2 file-
+                     extension examples updated to typed shape;
+                     Section 3 gains rosetta-types registry block;
+                     Section 8 gains Q11-Q14 surfaced by amendment.")
+  :next-action     "Alfred reviews Section 8 questions; Phase A fires once Q1/Q2/Q4/Q11/Q13/Q14 answered (Phase B fires on Q3/Q5; Phase 0 rename fires on Q12; Phase E on Q7; Phase F on Q6; Phase G on Q8/Q9)."
+  :owner           "Lacuna Engineering"
+  :composes-with   ("slat-render-strategy-2026-07-13.slat (extends)"
+                    "Book Fix-It Part One burndown (adds Dewey to Phase 1;
+                     adds typed-filename migration to Phase 0)"
+                    "Book Fix-It Part Two (formalizes embed spec)"
+                    "Book Fix-It Part Three (formalizes tags-are-free + Rosetta + Dewey)"))

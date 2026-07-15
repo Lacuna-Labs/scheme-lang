@@ -1,0 +1,59 @@
+;; Scheme engine engineering spine — the ~25% teachable slice.
+
+(spine
+ :domain          scheme-engine
+ :topic           engine-architecture-at-a-level
+ :section-hash    "sha256:PLACEHOLDER-scheme-eng-architecture"
+ :source          "curator/scheme-lang/docs/ENGINEERING.md"
+ :teach-shape     "reader -> interpreter -> base -> macro — four layers at a level; each has one job"
+ :body            "The Sakura Scheme engine at conceptual altitude: (1) READER parses source text into a value tree; (2) INTERPRETER walks values and evaluates; (3) BASE provides the primitive verb layer (arithmetic, list ops, string ops, i/o); (4) MACRO layer supports hygienic macro definitions (define-syntax + syntax-rules). Waves 0 and 1 layered the surface primitives on top of this stack.")
+
+(spine
+ :domain          scheme-engine
+ :topic           verb-registration-pattern
+ :section-hash    "sha256:PLACEHOLDER-scheme-eng-registration"
+ :source          "curator/scheme-lang/docs/ENGINEERING.md"
+ :teach-shape     "registerPrimitive({name, signature, tier, fuel, capabilities, body, examples}) — the metadata blob shape"
+ :body            "Every engine primitive is registered with a metadata blob: name (symbol), signature (human-readable string), returns (what shape comes back), tier (color-tier gate), fuel (base cost), capabilities (surface requirements), body (Scheme closure or JS-backed descriptor), examples (worked prose+Scheme). The same blob feeds the dispatcher, the reference manual renderer, and the training data pipeline. Book of Reference ch 15 covers the language-facing view.")
+
+(spine
+ :domain          scheme-engine
+ :topic           hygiene-over-defmacro
+ :section-hash    "sha256:PLACEHOLDER-scheme-eng-hygiene"
+ :source          "curator/scheme-lang/docs/ENGINEERING.md"
+ :teach-shape     "syntax-rules > defmacro — no accidental variable capture"
+ :philosopher-lens ((popper "falsifiability of hygiene: capture would show as a test failure"))
+ :body            "Sakura Scheme uses hygienic macros (define-syntax + syntax-rules) rather than defmacro. Reason: pattern-based rewriting guarantees the macro's internal identifiers won't collide with the caller's identifiers. Classic variable capture bugs don't happen. Book of Reference ch 11 covers language-facing detail.")
+
+(spine
+ :domain          scheme-engine
+ :topic           fuel-budget-concept
+ :section-hash    "sha256:PLACEHOLDER-scheme-eng-fuel"
+ :source          "curator/scheme-lang/docs/ENGINEERING.md"
+ :teach-shape     "every primitive call, function call, allocation, and network call burns fuel — nothing runs forever"
+ :body            "Fuel bounds execution. Every step consumes fuel; when fuel is exhausted, the interpreter halts and returns :fuel-exhausted. Cart tiers get different fuel budgets (white minimal, magic generous). This is the anti-DoS and anti-hang discipline. Book of Reference ch 13 covers language-facing detail.")
+
+(spine
+ :domain          scheme-engine
+ :topic           five-gate-dispatcher
+ :section-hash    "sha256:PLACEHOLDER-scheme-eng-dispatcher"
+ :source          "curator/scheme-lang/docs/ENGINEERING.md"
+ :teach-shape     "tier / capability / registration / fuel / custom — five gates before any verb runs"
+ :philosopher-lens ((popper "each gate is a falsifier"))
+ :body            "Every verb dispatch passes through five gates in order: tier (operator's color tier permits this verb?), capability (surface has required caps?), registration (verb is registered?), fuel (budget remains?), custom (verb-specific check like auth or quota). Any refusal returns a legible refuse record; the whole dispatch aborts with that refuse. Book of Reference ch 14 covers language-facing detail.")
+
+(spine
+ :domain          scheme-engine
+ :topic           polyglot-registration
+ :section-hash    "sha256:PLACEHOLDER-scheme-eng-polyglot"
+ :source          "curator/scheme-lang/docs/ENGINEERING.md"
+ :teach-shape     "same registerPrimitive shape works from Scheme AND from JavaScript — dispatcher doesn't care which"
+ :body            "Sakura Scheme is polyglot at the primitive layer. Verbs implemented in Scheme and verbs implemented in JavaScript register with the same metadata shape. The dispatcher walks a single registry regardless of body language. This is what makes Wave 1 installers (installCardVerbs etc.) work — JS-backed primitives sit next to Scheme-defined verbs, all first-class.")
+
+(spine
+ :domain          scheme-engine
+ :topic           monotone-registration
+ :section-hash    "sha256:PLACEHOLDER-scheme-eng-monotone"
+ :source          "curator/scheme-lang/docs/ENGINEERING.md"
+ :teach-shape     "deregistration is impossible within a session — verbs only get added; versioning handles evolution"
+ :body            "You can register a verb but you cannot deregister it within a running session. This is a safety property — a bug can never remove verbs from the registry. Verb evolution uses versioning: a new version registers alongside the old; consumers migrate; the old version stays until deprecation cycles complete.")

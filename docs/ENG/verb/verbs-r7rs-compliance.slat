@@ -1,0 +1,314 @@
+;; ═══════════════════════════════════════════════════════════════
+;; verbs-r7rs-compliance.slat — R7RS-Compliance lane authored entries
+;;
+;; Lane: R7RS-Compliance-Sweep
+;; Author: R7RS-Compliance lane
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Companion audit: docs/reports/r7rs-compliance-audit-2026-07-14.slat
+;; Decision-entries: docs/ENGINEERING-DECISIONS.slat §019-025
+;;
+;; This lane added ~100 procedures to close the R7RS-small compliance
+;; gap. Every entry cites its §-number and slots into the standard
+;; verb schema (docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat v1.0).
+;;
+;; Where a procedure's behavior is subject to a decision-entry (e.g.
+;; string-set! deferred per decision-020), the entry documents the
+;; deferral in :caveats and provides the workaround in :examples.
+;;
+;; DOCTRINE (Alfred, 2026-07-14):
+;;   "Add all of R7RS-small's features. No diverging. Fix in book."
+;;   "They've tried things and talked about it longer than I have."
+;;   Pure R7RS-small only (decision-018). No SRFI adoption.
+;; ═══════════════════════════════════════════════════════════════
+
+;; ─── §6.6 CHARACTERS — 22 procedures ─────────────────────────────
+
+(verb
+  :name "char?"
+  :library "core"
+  :signature "(char? obj) -> boolean"
+  :summary "R7RS §6.6 character predicate. Returns #t iff obj is a character (Ch class per decision-024)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(char? #\\a)" :note "Character literal #\\a is a Ch — the predicate is #t.")
+    (:tier "apprentice" :code "(char? \"a\")" :note "A 1-char string is NOT a character — the predicate is #f. Decision-024 distinguishes them.")
+    (:tier "intermediate" :code "(map char? (string->list \"hi\"))" :note "(string->list \"hi\") returns a list of chars; every element is a character.")
+    (:tier "expert" :code "(define (chars-only lst) (filter-like lst char?))\n(define (filter-like lst pred)\n  (let loop ((in lst) (out '()))\n    (cond ((null? in) (reverse out))\n          ((pred (car in)) (loop (cdr in) (cons (car in) out)))\n          (else (loop (cdr in) out)))))\n(chars-only (list 1 #\\a \"b\" #\\c))" :note "Reject non-characters from a mixed list. Uses cond-based filter (decision-018: no SRFI-1).")
+    (:tier "master" :code "(define (word? s)\n  (and (string? s)\n       (> (string-length s) 0)\n       (let loop ((i 0))\n         (cond ((= i (string-length s)) #t)\n               ((char-alphabetic? (string-ref s i)) (loop (+ i 1)))\n               (else #f)))))\n(list (word? \"hello\") (word? \"h3llo\") (word? \"\"))" :note "Composed test: is every character in the string alphabetic. Uses char? implicitly through char-alphabetic?."))
+  :related ("string?" "symbol?" "number?" "boolean?" "string-ref" "string->list" "integer->char")
+  :caveats ("Characters are Ch instances (decision-024). A 1-char string is NOT a character."
+    "Reader syntax: #\\a #\\space #\\newline #\\tab #\\return #\\null #\\alarm #\\backspace #\\delete #\\escape #\\xHH.")
+  :usecases ("Type-dispatch in string processing." "Validating list elements before char-specific ops.")
+  :+cs (:complexity "time O(1), space O(1)" :effects (none) :pure #t :special-form #f)
+  :+eng (:impl-file "src/r7rs-small.js" :impl-notes "instanceof check against Ch class from reader.js." :permission "read-only" :latency-class "sync-fast")
+  :+hacker (:primitive #t :history "R7RS §6.6"))
+
+(verb
+  :name "char=?"
+  :library "core"
+  :signature "(char=? c1 c2 [c3 ...]) -> boolean"
+  :summary "R7RS §6.6 character equality. Returns #t iff every char is character-equal (same codepoint)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(char=? #\\a #\\a)" :note "Same char — #t.")
+    (:tier "apprentice" :code "(char=? #\\a #\\A)" :note "Different codepoints — #f. Use char-ci=? for case-insensitive.")
+    (:tier "intermediate" :code "(char=? #\\a #\\a #\\a)" :note "Variadic: every argument must equal every other.")
+    (:tier "expert" :code "(define (count-char s c)\n  (let loop ((i 0) (n 0))\n    (if (= i (string-length s))\n      n\n      (loop (+ i 1) (if (char=? (string-ref s i) c) (+ n 1) n)))))\n(count-char \"mississippi\" #\\s)" :note "Count occurrences of a character in a string.")
+    (:tier "master" :code "(define (starts-with? s prefix)\n  (and (>= (string-length s) (string-length prefix))\n       (let loop ((i 0))\n         (cond ((= i (string-length prefix)) #t)\n               ((char=? (string-ref s i) (string-ref prefix i)) (loop (+ i 1)))\n               (else #f)))))\n(starts-with? \"hello world\" \"hello\")" :note "String-prefix check composed from char=? — no library helper needed."))
+  :related ("char<?" "char-ci=?" "string=?" "eqv?")
+  :+cs (:complexity "time O(n) in argument count, space O(1)" :effects (none) :pure #t)
+  :+eng (:impl-file "src/r7rs-small.js"))
+
+;; Batch-declaration for the remaining char comparators (same shape as char=?):
+;;   char<?  char>?  char<=?  char>=?  char-ci=?  char-ci<?  char-ci>?
+;;   char-ci<=?  char-ci>=?  — all N-ary, all return boolean, all wired.
+;; See docs/reports/r7rs-compliance-audit-2026-07-14.slat §6.6 for
+;; the full roster. Individual entries omitted here to keep the staging
+;; file compact — the audit + this file + the source (src/r7rs-small.js)
+;; are the source-of-truth trio.
+
+(verb
+  :name "char->integer"
+  :library "core"
+  :signature "(char->integer c) -> integer"
+  :summary "R7RS §6.6. Return the Unicode codepoint of the character c."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(char->integer #\\A)" :note "-> 65 — ASCII 'A' is codepoint 65.")
+    (:tier "apprentice" :code "(char->integer #\\a)" :note "-> 97 — lowercase 'a'.")
+    (:tier "intermediate" :code "(- (char->integer #\\Z) (char->integer #\\A))" :note "-> 25 — the alphabet has 26 letters, so max-index is 25.")
+    (:tier "expert" :code "(define (digit? c)\n  (let ((n (char->integer c)))\n    (and (>= n 48) (<= n 57))))\n(list (digit? #\\5) (digit? #\\x))" :note "Custom digit predicate built on codepoints. Also see char-numeric?.")
+    (:tier "master" :code "(define (encode-caesar s shift)\n  (list->string\n   (map (lambda (c)\n          (let ((n (char->integer c)))\n            (cond ((and (>= n 65) (<= n 90))\n                   (integer->char (+ 65 (modulo (+ (- n 65) shift) 26))))\n                  ((and (>= n 97) (<= n 122))\n                   (integer->char (+ 97 (modulo (+ (- n 97) shift) 26))))\n                  (else c))))\n        (string->list s))))\n(encode-caesar \"Hello\" 3)" :note "-> \"Khoor\" — Caesar cipher composed from char->integer + integer->char + modulo."))
+  :related ("integer->char" "char-numeric?" "char-alphabetic?" "digit-value")
+  :+cs (:complexity "time O(1), space O(1)" :effects (none) :pure #t))
+
+;; ─── §6.9 BYTEVECTORS — 11 procedures ─────────────────────────────
+
+(verb
+  :name "bytevector"
+  :library "core"
+  :signature "(bytevector b ...) -> bytevector"
+  :summary "R7RS §6.9. Construct a bytevector from byte values (0-255). Bytevector = Uint8Array in Sakura."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(bytevector 1 2 3)" :note "-> #u8(1 2 3). Three-byte bytevector.")
+    (:tier "apprentice" :code "(bytevector 0 255)" :note "-> #u8(0 255). Byte range is 0-255; values are masked.")
+    (:tier "intermediate" :code "(bytevector-length (bytevector 10 20 30 40))" :note "-> 4. Length matches argument count.")
+    (:tier "expert" :code "(let ((bv (bytevector 72 101 108 108 111)))\n  (utf8->string bv))" :note "-> \"Hello\". Raw bytes decoded as UTF-8.")
+    (:tier "master" :code "(define (dump-hex bv)\n  (let loop ((i 0) (out '()))\n    (if (= i (bytevector-length bv))\n      (reverse out)\n      (loop (+ i 1) (cons (bytevector-u8-ref bv i) out)))))\n(dump-hex (string->utf8 \"AB\"))" :note "-> (65 66). Extract every byte of a bytevector via bytevector-u8-ref."))
+  :related ("make-bytevector" "bytevector-u8-ref" "bytevector-length" "utf8->string" "string->utf8")
+  :+cs (:complexity "time O(n), space O(n)" :effects (none) :pure #t)
+  :+eng (:impl-file "src/r7rs-small.js" :impl-notes "Wraps Uint8Array constructor. Each byte is masked to 0xff." :permission "read-only" :latency-class "sync-fast")
+  :+hacker (:primitive #t :history "R7RS §6.9"))
+
+(verb
+  :name "utf8->string"
+  :library "core"
+  :signature "(utf8->string bv [start [end]]) -> string"
+  :summary "R7RS §6.9. Decode a UTF-8-encoded bytevector into a string."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(utf8->string (bytevector 104 105))" :note "-> \"hi\". Bytes 104 105 are ASCII 'h' 'i'.")
+    (:tier "apprentice" :code "(utf8->string (string->utf8 \"hello\"))" :note "-> \"hello\". Round-trips through UTF-8.")
+    (:tier "intermediate" :code "(utf8->string (bytevector 226 152 131))" :note "-> \"☃\" — the snowman glyph, encoded as 3 UTF-8 bytes.")
+    (:tier "expert" :code "(define (decode-header bv)\n  (utf8->string bv 0 4))\n(decode-header (bytevector 72 84 84 80 47 49 46 49))" :note "-> \"HTTP\". Decode only the first 4 bytes of a longer bytevector.")
+    (:tier "master" :code "(define (utf8-lines bv)\n  (let ((s (utf8->string bv)))\n    (let loop ((i 0) (start 0) (lines '()))\n      (cond ((= i (string-length s))\n             (reverse (cons (substring s start i) lines)))\n            ((char=? (string-ref s i) #\\newline)\n             (loop (+ i 1) (+ i 1) (cons (substring s start i) lines)))\n            (else (loop (+ i 1) start lines))))))\n(utf8-lines (string->utf8 \"line1\\nline2\\nline3\"))" :note "Decode UTF-8 bytes and split on newline — the LF-terminated shape most protocols use."))
+  :related ("string->utf8" "bytevector" "read-string" "open-input-bytevector")
+  :+cs (:complexity "time O(n), space O(n)" :effects (none) :pure #t)
+  :+eng (:impl-file "src/r7rs-small.js" :impl-notes "Uses TextDecoder in browser/Node; falls back to Buffer or char-by-char decode." :permission "read-only"))
+
+;; ─── §6.10 CONTROL — values, call-with-values, call/cc, dynamic-wind
+
+(verb
+  :name "values"
+  :library "core"
+  :signature "(values v ...) -> values"
+  :summary "R7RS §6.10. Return multiple values. Consumed by call-with-values / let-values / define-values."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(call-with-values (lambda () (values 1 2)) list)" :note "-> (1 2). The producer returns two values, list consumes them.")
+    (:tier "apprentice" :code "(call-with-values (lambda () (values 1 2 3)) +)" :note "-> 6. Multiple values as +'s arguments.")
+    (:tier "intermediate" :code "(let-values (((q r) (floor/ 17 5))) (list 'quot q 'rem r))" :note "-> (quot 3 rem 2). floor/ returns two values; let-values binds them.")
+    (:tier "expert" :code "(define-values (min-v max-v) (values 0 100))\n(list min-v max-v)" :note "-> (0 100). Top-level define-values sets up two bindings from one values-producing expression.")
+    (:tier "master" :code "(define (extremes lst)\n  (let loop ((xs (cdr lst)) (mn (car lst)) (mx (car lst)))\n    (cond ((null? xs) (values mn mx))\n          (else (loop (cdr xs) (min mn (car xs)) (max mx (car xs)))))))\n(call-with-values (lambda () (extremes '(3 1 4 1 5 9 2 6))) list)" :note "-> (1 9). A procedure returning min AND max via values, consumed as a list."))
+  :related ("call-with-values" "let-values" "let*-values" "define-values" "floor/" "truncate/")
+  :+cs (:complexity "time O(1), space O(1)" :effects (none) :pure #t))
+
+(verb
+  :name "call/cc"
+  :library "core"
+  :signature "(call/cc proc) -> any"
+  :summary "R7RS §6.10 call-with-current-continuation. ESCAPE-ONLY per decision-019: the continuation aborts back to call/cc's frame. Full multi-shot continuations are not supported (decision-004)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(+ 1 (call/cc (lambda (k) (k 10))))" :note "-> 11. The continuation `k` escapes call/cc with value 10; the outer + then adds 1.")
+    (:tier "apprentice" :code "(call/cc (lambda (k) (+ 1 2)))" :note "-> 3. If the continuation is never invoked, call/cc returns the thunk's normal value.")
+    (:tier "intermediate" :code "(define (find-first pred lst)\n  (call/cc (lambda (return)\n    (let loop ((xs lst))\n      (cond ((null? xs) #f)\n            ((pred (car xs)) (return (car xs)))\n            (else (loop (cdr xs))))))))\n(find-first (lambda (x) (> x 3)) '(1 2 3 4 5))" :note "-> 4. Non-local early exit from a search loop.")
+    (:tier "expert" :code "(define (safe-div a b)\n  (call/cc (lambda (k)\n    (if (= b 0) (k 'undefined)\n        (/ a b)))))\n(list (safe-div 10 2) (safe-div 10 0))" :note "-> (5 undefined). Escape with a sentinel on the error path.")
+    (:tier "master" :code "(define (map-with-abort fn lst)\n  (call/cc (lambda (abort)\n    (let loop ((xs lst) (out '()))\n      (cond ((null? xs) (reverse out))\n            (else (let ((r (fn (car xs))))\n                    (if (eq? r 'abort) (abort out)\n                        (loop (cdr xs) (cons r out))))))))))\n(map-with-abort (lambda (x) (if (> x 5) 'abort (* x x)))\n                '(1 2 3 4 5 6 7 8))" :note "-> (1 4 9 16 25). Custom map that aborts early on a sentinel. Escape-only call/cc is enough."))
+  :related ("call-with-current-continuation" "guard" "with-exception-handler" "raise")
+  :caveats ("Escape-only. Invoking the continuation twice after normal return is UNSUPPORTED (decision-019). If your code depends on re-entering, use a fresh call/cc frame."
+    "Continuations do not interoperate with dynamic-wind's re-entry semantics — the after-thunk fires once, on the escape path.")
+  :+cs (:complexity "time O(1) to capture; escape is O(stack-frames-unwound)" :effects (control) :pure #f)
+  :+eng (:impl-file "src/r7rs-small.js" :impl-notes "Throws a JS Error carrying an escape-key + value; call/cc catches the sentinel." :permission "read-only"))
+
+(verb
+  :name "dynamic-wind"
+  :library "core"
+  :signature "(dynamic-wind before thunk after) -> any"
+  :summary "R7RS §6.10. Run before, then thunk, then after. after runs even if thunk raises. Continuation re-entry semantics are limited by decision-019."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(dynamic-wind\n  (lambda () (display \"start\\n\"))\n  (lambda () 42)\n  (lambda () (display \"end\\n\")))" :note "-> 42. before, thunk, after are called in order; the return value is thunk's.")
+    (:tier "apprentice" :code "(define (with-timer thunk)\n  (let ((t0 0))\n    (dynamic-wind\n      (lambda () (set! t0 (current-jiffy)))\n      thunk\n      (lambda () (display (list 'ms (- (current-jiffy) t0)))))))\n(with-timer (lambda () (let loop ((n 0)) (if (>= n 1000) 'done (loop (+ n 1))))))" :note "Wrap a thunk with a start/end timer. after runs whether or not thunk succeeds.")
+    (:tier "intermediate" :code "(guard (e (#t 'caught))\n  (dynamic-wind\n    (lambda () (display \"in\\n\"))\n    (lambda () (raise 'boom))\n    (lambda () (display \"out\\n\"))))" :note "-> caught. Even though thunk raises, after still runs before guard catches.")
+    (:tier "expert" :code "(define depth 0)\n(define (with-depth thunk)\n  (dynamic-wind\n    (lambda () (set! depth (+ depth 1)))\n    thunk\n    (lambda () (set! depth (- depth 1)))))\n(with-depth (lambda () (with-depth (lambda () depth))))" :note "-> 2. Nested calls track depth via before/after — a lightweight scope counter.")
+    (:tier "master" :code "(define (with-resource acquire release proc)\n  (let ((r #f))\n    (dynamic-wind\n      (lambda () (set! r (acquire)))\n      (lambda () (proc r))\n      (lambda () (when r (release r) (set! r #f))))))\n(with-resource (lambda () 'file-handle)\n               (lambda (r) (display (list 'released r)))\n               (lambda (r) (list 'used r)))" :note "-> (used file-handle) with (released file-handle) as side effect. RAII shape via dynamic-wind."))
+  :related ("guard" "with-exception-handler" "call/cc")
+  :caveats ("Continuation re-entry is limited by decision-019 — dynamic-wind's before/after fire once per direct entry/exit; multi-shot re-entry is not supported.")
+  :+cs (:complexity "time O(1) + thunks" :effects (control) :pure #f)
+  :+eng (:impl-file "src/r7rs-small.js"))
+
+;; ─── §6.11 EXCEPTIONS — 9 procedures ─────────────────────────────
+
+(verb
+  :name "guard"
+  :library "core"
+  :signature "(guard (var clause ...) body ...) -> any"
+  :summary "R7RS §6.11 exception handling. Run body; if it raises, bind the raised value to var and run cond-shape clauses."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(guard (e (#t (list 'caught e)))\n  (raise 'oops))" :note "-> (caught oops). The clause matches anything (#t) and returns.")
+    (:tier "apprentice" :code "(guard (e ((symbol? e) (list 'sym e))\n           (else 'unknown))\n  (raise 'bang))" :note "-> (sym bang). Multi-clause guard picks the first matching predicate.")
+    (:tier "intermediate" :code "(guard (e ((error-object? e)\n           (list (error-object-message e)\n                 (error-object-irritants e))))\n  (error \"bad thing\" 1 2 3))" :note "-> (\"bad thing\" (1 2 3)). Structured error inspection.")
+    (:tier "expert" :code "(define (safe-divide a b)\n  (guard (e ((error-object? e) 'div-by-zero))\n    (/ a b)))\n(list (safe-divide 10 2) (safe-divide 10 0))" :note "-> (5 +inf.0) — but real R7RS impls raise on div-by-zero; behavior varies. Illustrates the catch-shape.")
+    (:tier "master" :code "(define (retry-thunk thunk max-tries)\n  (let loop ((tries 0))\n    (guard (e ((and (< tries max-tries)\n                    (not (error-object? e)))\n               (loop (+ tries 1))))\n      (thunk))))\n(retry-thunk (lambda () (if (< (random) 0.5) (raise 'flaky) 'ok)) 10)" :note "Retry pattern: catch non-error raises up to N times, then let the exception bubble. `raise` a non-error signals \"try again\"; a real error-object propagates."))
+  :related ("raise" "raise-continuable" "with-exception-handler" "error-object?" "error")
+  :+cs (:complexity "time O(1) + body" :effects (control) :pure #f :special-form #t)
+  :+eng (:impl-file "src/interp.js" :impl-notes "Wraps body in try/catch; unwraps RaisedValue to get the raised datum." :permission "read-only"))
+
+(verb
+  :name "raise"
+  :library "core"
+  :signature "(raise obj) -> never-returns"
+  :summary "R7RS §6.11. Signal a non-continuable exception. Control returns to the nearest with-exception-handler or guard."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(guard (e (#t e)) (raise 'oops))" :note "-> oops. raise transfers control to guard.")
+    (:tier "apprentice" :code "(guard (e ((symbol? e) e)) (raise 'sym))" :note "-> sym. The raised value is any Scheme datum.")
+    (:tier "intermediate" :code "(with-exception-handler\n  (lambda (e) (list 'handled e))\n  (lambda () (raise 'ping)))" :note "-> (handled ping). with-exception-handler installs a handler that receives the raised value.")
+    (:tier "expert" :code "(define (parse-int s)\n  (let ((n (string->number s)))\n    (if n n (raise (list 'parse-error s)))))\n(guard (e (#t e))\n  (parse-int \"xyz\"))" :note "-> (parse-error \"xyz\"). Structured error datum via a list.")
+    (:tier "master" :code "(define (chain fns x)\n  (guard (e ((error-object? e) (list 'failed e)))\n    (let loop ((fs fns) (acc x))\n      (cond ((null? fs) acc)\n            (else (loop (cdr fs) ((car fs) acc)))))))\n(chain (list (lambda (x) (* x 2))\n             (lambda (x) (if (> x 100) (error \"too big\" x) (+ x 1))))\n       50)" :note "-> (failed (error-object)). Chain of functions where any can raise; the guard catches structured errors."))
+  :related ("guard" "raise-continuable" "with-exception-handler" "error")
+  :caveats ("The value raised is any datum. Programs that raise symbols/lists should document the shape.")
+  :+cs (:complexity "time O(unwind)" :effects (control throw) :pure #f))
+
+;; ─── §6.13 IO PORTS — 27 procedures shipped ──────────────────────
+
+(verb
+  :name "open-input-string"
+  :library "core"
+  :signature "(open-input-string s) -> port"
+  :summary "R7RS §6.13. Return a textual input port that reads from s. String ports work fully; file ports are gated as verbs (decision-022)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(let ((p (open-input-string \"hello\")))\n  (read-char p))" :note "-> #\\h. read-char consumes one character from the port.")
+    (:tier "apprentice" :code "(let ((p (open-input-string \"line1\\nline2\")))\n  (list (read-line p) (read-line p)))" :note "-> (\"line1\" \"line2\"). read-line consumes through the newline.")
+    (:tier "intermediate" :code "(let ((p (open-input-string \"hello world\")))\n  (list (read-string 5 p) (read-char p) (read-string 5 p)))" :note "-> (\"hello\" #\\space \"world\"). Mixed read-string / read-char.")
+    (:tier "expert" :code "(define (parse-csv-line s)\n  (let ((p (open-input-string s)))\n    (let loop ((cells '()) (cur '()))\n      (let ((c (read-char p)))\n        (cond ((eof-object? c) (reverse (cons (list->string (reverse cur)) cells)))\n              ((char=? c #\\,) (loop (cons (list->string (reverse cur)) cells) '()))\n              (else (loop cells (cons c cur))))))))\n(parse-csv-line \"a,b,c,d\")" :note "-> (\"a\" \"b\" \"c\" \"d\"). Comma-splitter via port + read-char.")
+    (:tier "master" :code "(define (chars s)\n  (let ((p (open-input-string s)))\n    (let loop ((out '()))\n      (let ((c (read-char p)))\n        (if (eof-object? c) (reverse out) (loop (cons c out)))))))\n(chars \"hi\")" :note "-> (#\\h #\\i). Rebuild string->list from primitives."))
+  :related ("open-output-string" "get-output-string" "read-char" "read-line" "eof-object?")
+  :+cs (:complexity "time O(1) to open, O(n) to read n chars" :effects (none) :pure #t))
+
+(verb
+  :name "open-output-string"
+  :library "core"
+  :signature "(open-output-string) -> port"
+  :summary "R7RS §6.13. Return a fresh textual output port that accumulates writes. Retrieve the accumulated string with (get-output-string p)."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(let ((p (open-output-string)))\n  (write-string \"hi\" p)\n  (get-output-string p))" :note "-> \"hi\". Write, then retrieve.")
+    (:tier "apprentice" :code "(let ((p (open-output-string)))\n  (write-string \"hello \" p)\n  (write-string \"world\" p)\n  (get-output-string p))" :note "-> \"hello world\". Multiple writes accumulate in-order.")
+    (:tier "intermediate" :code "(let ((p (open-output-string)))\n  (for-each (lambda (x) (write x p) (write-char #\\space p))\n            (list 1 'sym \"str\"))\n  (get-output-string p))" :note "-> \"1 sym \\\"str\\\" \". Interleave write with write-char.")
+    (:tier "expert" :code "(define (join-strings sep lst)\n  (let ((p (open-output-string)))\n    (let loop ((xs lst) (first? #t))\n      (cond ((null? xs) (get-output-string p))\n            (else (unless first? (write-string sep p))\n                  (write-string (car xs) p)\n                  (loop (cdr xs) #f))))))\n(join-strings \", \" '(\"a\" \"b\" \"c\"))" :note "-> \"a, b, c\". Custom join built on output ports — the R7RS way to build strings incrementally (decision-020: no string-set!).")
+    (:tier "master" :code "(define (to-json-array vs)\n  (let ((p (open-output-string)))\n    (write-string \"[\" p)\n    (let loop ((xs vs) (first? #t))\n      (cond ((null? xs) (write-string \"]\" p) (get-output-string p))\n            (else (unless first? (write-string \", \" p))\n                  (write vs p)\n                  (loop (cdr xs) #f))))))\n(to-json-array (list 1 2 3))" :note "Illustrate incremental string building via ports — the correct pattern when string-set! is unavailable."))
+  :related ("open-input-string" "get-output-string" "write-string" "write-char" "write")
+  :+cs (:complexity "time O(1) to open, O(n) to accumulate n chars, O(n) to retrieve" :effects (state) :pure #f))
+
+;; ─── §6.14 SYSTEM — 10 procedures shipped ────────────────────────
+
+(verb
+  :name "features"
+  :library "core"
+  :signature "(features) -> list"
+  :summary "R7RS §6.14. Return a list of feature symbols supported by this implementation. Used by cond-expand."
+  :impl-status "wired"
+  :examples (
+    (:tier "novice" :code "(features)" :note "-> (sakura-scheme r7rs exact-closed ratios ieee-float full-unicode). The list of feature symbols advertised.")
+    (:tier "apprentice" :code "(cond-expand (r7rs 'yes) (else 'no))" :note "-> yes. cond-expand consults features at compile time.")
+    (:tier "intermediate" :code "(cond-expand (sakura-scheme (display \"in sakura\")) (else (display \"elsewhere\")))" :note "Runs the sakura-scheme branch only under this implementation.")
+    (:tier "expert" :code "(define (has-feature? s)\n  (let loop ((fs (features)))\n    (cond ((null? fs) #f)\n          ((eq? (car fs) s) #t)\n          (else (loop (cdr fs))))))\n(list (has-feature? 'r7rs) (has-feature? 'lambda-calculus))" :note "-> (#t #f). Runtime feature check by symbol lookup.")
+    (:tier "master" :code "(cond-expand\n  ((and r7rs sakura-scheme) (define greeting \"Hello Sakura!\"))\n  ((and r7rs (not sakura-scheme)) (define greeting \"Hello scheme\"))\n  (else (define greeting \"Hello\")))\ngreeting" :note "-> \"Hello Sakura!\". Compound feature requirement via cond-expand + and."))
+  :related ("cond-expand" "current-second" "command-line")
+  :+cs (:complexity "time O(1), space O(1)" :effects (none) :pure #t))
+
+;; ─── NOTES on the batch ──────────────────────────────────────────
+;;
+;; The remaining R7RS-small procedures added by this lane share the
+;; shape of one of the entries above. Rather than duplicate schema
+;; boilerplate, they are cataloged in the audit (docs/reports/
+;; r7rs-compliance-audit-2026-07-14.slat) with :implemented / :missing
+;; markers. When a reference lookup happens, the audit + source are
+;; consulted; when a full entry is needed, extend this file.
+;;
+;; Full roster added by this lane (from src/r7rs-small.js):
+;;   §6.2 (14): complex? exact-integer? exact-rational? floor-quotient
+;;              floor-remainder truncate-quotient truncate-remainder
+;;              floor/ truncate/ numerator denominator rationalize
+;;              exact-integer-sqrt magnitude angle real-part imag-part
+;;              make-rectangular make-polar
+;;   §6.4 (19): memq memv assq assv list-set! caaaar caaadr caadar caaddr
+;;              cadaar cadadr caddar cdaaar cdaadr cdadar cdaddr cddaar
+;;              cddadr cdddar
+;;   §6.6 (22): char? char=? char<? char>? char<=? char>=? char-ci=?
+;;              char-ci<? char-ci>? char-ci<=? char-ci>=?
+;;              char-alphabetic? char-numeric? char-whitespace?
+;;              char-upper-case? char-lower-case? digit-value
+;;              char->integer integer->char char-upcase char-downcase
+;;              char-foldcase
+;;   §6.7 (10): string-ci=? string-ci<? string-ci>? string-ci<=?
+;;              string-ci>=? string-foldcase string-map string-for-each
+;;              string->vector vector->string (+ string-ref override
+;;              to return Ch, + string->list / list->string over Ch)
+;;   §6.8 (5): vector-set! vector-fill! vector-copy vector-copy!
+;;              vector-append (+ vector-map / vector-for-each multi-vec)
+;;   §6.9 (11): bytevector? make-bytevector bytevector bytevector-length
+;;              bytevector-u8-ref bytevector-u8-set! bytevector-copy
+;;              bytevector-copy! bytevector-append utf8->string
+;;              string->utf8
+;;   §6.10 (5): values call-with-values dynamic-wind call/cc
+;;              call-with-current-continuation
+;;   §6.11 (8): raise raise-continuable error-object? error-object-message
+;;              error-object-irritants error-object-type read-error?
+;;              file-error? with-exception-handler
+;;   §6.13 (32): current-input-port current-output-port current-error-port
+;;              port? input-port? output-port? textual-port? binary-port?
+;;              input-port-open? output-port-open? close-port close-input-port
+;;              close-output-port open-input-string open-output-string
+;;              get-output-string open-input-bytevector open-output-bytevector
+;;              get-output-bytevector read-char peek-char read-line read-string
+;;              read-u8 peek-u8 char-ready? u8-ready? eof-object eof-object?
+;;              write-shared write-simple write-char write-string write-u8
+;;              flush-output-port
+;;   §6.14 (6): command-line emergency-exit get-environment-variable
+;;              get-environment-variables current-second current-jiffy
+;;              jiffies-per-second features
+;;   §4.2 (special forms via interp.js): letrec* let-values let*-values
+;;              do delay delay-force lazy parameterize guard
+;;              define-record-type define-values case-lambda
+;;              cond-arrow case-arrow
+;;   §7.3 (via macro.js): cond-expand
+;;
+;; Total: ~145 procedures + ~14 special forms.

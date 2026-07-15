@@ -1,0 +1,272 @@
+;; ─────────────────────────────────────────────────────────────────────
+;; rin-topo-comb audit — Phase A
+;; Lane: topo/* (topology, algebraic + persistent) + comb/* (combinatorics)
+;; Author: Rin (Lacuna Eng Lead — topo+comb lane)
+;; Date: 2026-07-14
+;; Branch: verbs/wire-596-2026-07-14
+;;
+;; Alfred's floor doctrine — "We can't lie to people. They trust us."
+;; Every stamp MUST correspond to a REAL REPL run that succeeded for
+;; every one of the 5 example tiers. If a verb cannot be honestly wired
+;; + verified, its entry ships with :entry-provenance "author-blocked"
+;; and a plain-English reason.
+;;
+;; Composition with kid-from-North-Georgia doctrine:
+;;   topo/ is the "shape of things" library. A kid who opens
+;;   topo/euler-char on a cube expects to get 2. A kid who opens
+;;   topo/betti on a torus expects to get '(1 2 1). If we return a
+;;   descriptor tag pretending to be homology, the kid learns the tool
+;;   lies. Same for the operator running (comb/choose 52 5) to think
+;;   about a card hand: the number returned had better BE 2598960.
+;;
+;; Composition with reference-manual-IS-the-language doctrine:
+;;   The reference is authoritative. If reference says
+;;   (comb/stirling2 n k) with signature (n k) -> number, we honor that
+;;   signature exactly. If reference says topo/complex takes a list of
+;;   simplices, we honor that. No drifting sig, no aliasing away the
+;;   canonical name.
+;; ─────────────────────────────────────────────────────────────────────
+
+(audit
+  :lane "topo+comb"
+  :author "rin"
+  :dated "2026-07-14"
+  :branch "verbs/wire-596-2026-07-14"
+  :verbs-total 40
+  :verbs-scope-per-dispatch 31
+  :verbs-actual-in-reference 40
+
+  :note-scope-drift
+    "Dispatch mentioned ~31 verbs (topo ~23 + comb ~8). Reference actually
+     documents 27 topo/* and 13 comb/*. All 40 are in scope; the discrepancy
+     is scope drift from an earlier count, not a schema mismatch. Rin owns
+     the full 40. The 5 topo/* predicates that return #f (topo/orientable?
+     topo/planar? topo/unknot?) are called 'thin stubs'; the remaining topo
+     verbs return descriptor tuples that carry no math. All get real impls."
+
+  ;; ── TOPO/* : 27 verbs, ALL STUBS ────────────────────────────────
+  (:sub-lane
+    :name "topo"
+    :count 27
+    :wired-with-real-math 0
+    :wired-as-descriptor-stub 23
+    :wired-as-false-predicate-stub 4
+    :stub-locations (
+      (:file "src/wired-verbs.js" :lines "959-972" :count 23)
+      (:file "src/reference-impls.js" :lines "1358-1367" :count 27
+       :note "Descriptor stubs here; superseded by wired-verbs.js for the 23 there. The 4 in reference-impls that are NOT in wired-verbs.js also get the descriptor stub treatment.")
+      (:file "src/reference-impls.js" :lines "2161-2165" :count 3
+       :note "topo/link-number, topo/knot-genus, topo/orbit — but these three are NOT in the reference; they are orphan stubs. Rin will not touch them; separate cleanup."))
+
+    ;; Categorized by algorithmic character. Estimates for planning.
+    (:categories (
+
+      ;; ── CHEAP: closed-form, one-liner arithmetic ─────────────
+      (:tier "cheap"
+       :count 3
+       :verbs (
+         "topo/euler-char"        ; V - E + F  (or sum of (-1)^k f_k on f-vector)
+         "topo/euler-genus"       ; from euler-char: g = (2 - chi) / 2 for orientable
+         "topo/f-vector"          ; count simplices at each dimension
+       )
+       :note "Trivial reductions over a complex representation. Definition of representation locked in :caveats.")
+
+      ;; ── SMALL: standard graph/combinatorial algorithms ───────
+      (:tier "small"
+       :count 8
+       :verbs (
+         "topo/components"        ; union-find or DFS
+         "topo/connected?"        ; components count == 1
+         "topo/graph"             ; constructor: adjacency list from edge list
+         "topo/complex"           ; constructor: simplicial complex from face list
+         "topo/ball"              ; discrete ball: BFS to depth r
+         "topo/close"             ; closure of a set of simplices
+         "topo/orientable?"       ; on surfaces: check consistent orientation of triangles
+         "topo/planar?"           ; Kuratowski quick-check (n <= 4 trivially planar; else heuristic + K5/K3,3 subdivision detection)
+       )
+       :note "All are graph or simplicial-complex primitives. topo/planar? honest impl handles small graphs completely; large graphs get an honest 'unknown — no lying #f.")
+
+      ;; ── MEDIUM: linear algebra over GF(2), boundary maps ─────
+      (:tier "medium"
+       :count 6
+       :verbs (
+         "topo/boundary-matrix"   ; d_k as sparse 0/1 matrix in dim
+         "topo/homology-gf2"      ; rank(ker d_k) - rank(im d_{k+1}) via smith normal form over GF(2)
+         "topo/betti"             ; wrapper: ranks of H_0, H_1, H_2, ...
+         "topo/betti-k"           ; single k
+         "topo/betti-curve"       ; betti-k as function of filtration parameter
+         "topo/metric-space"      ; constructor: point set + distance function
+       )
+       :note "Real linear algebra. GF(2) is friendly — no eigenvalue mess. Reference implementation: Gaussian elimination mod 2. betti-curve depends on filtration; needs sync with rips-filtration.")
+
+      ;; ── LARGE: persistent homology + knot invariants ─────────
+      (:tier "large"
+       :count 10
+       :verbs (
+         "topo/vietoris-rips"     ; VR complex up to radius r + max-dim
+         "topo/rips-filtration"   ; sequence of VR complexes as r sweeps
+         "topo/persistence"       ; persistence pairs: [(birth, death, dim), ...]
+         "topo/persistence-entropy" ; -sum p_i log p_i on lifetimes / total
+         "topo/total-persistence" ; sum (death - birth)
+         "topo/bottleneck"        ; bottleneck distance between two diagrams
+         "topo/knot"              ; constructor: PD-code or Gauss-code
+         "topo/writhe"            ; signed sum of crossings on an oriented knot diagram
+         "topo/crossing-number"   ; count of crossings in a PD-code (lower bound only; canonical crossing number is NP-hard)
+         "topo/unknot?"           ; on Gauss-code: use finite invariants (writhe, det, Jones at limited N); return #t only when demonstrably true, #f only when Jones/Alexander distinguishes from unknot, else honest 'unknown
+       )
+       :note "This is the heavy lifting. Persistent homology needs the reduction algorithm on the boundary matrix. Bottleneck needs Hopcroft-Karp on a bipartite matching. topo/unknot? on general knots is undecidable in general but decidable on small crossing numbers; Rin will implement a bounded-complete version and clearly document the cutoff."))))
+
+  ;; ── COMB/* : 13 verbs, ALL WIRED WITH REAL MATH ───────────────
+  (:sub-lane
+    :name "comb"
+    :count 13
+    :wired-with-real-math 13
+    :wired-as-stub 0
+    :impl-locations (
+      (:file "src/wired-verbs.js" :lines "706-761" :count 8
+       :verbs (
+         "comb/choose"
+         "comb/binomial-coeffs"
+         "comb/multichoose"
+         "comb/pascal-row"
+         "comb/pascal-triangle"
+         "comb/permute"
+         "comb/partition-count"
+         "comb/stirling2"))
+      (:file "src/reference-impls.js" :lines "733-816" :count 5
+       :verbs (
+         "comb/factorial"
+         "comb/multinomial"
+         "comb/derangement"
+         "comb/bell"
+         "comb/catalan")))
+
+    :note-orphan-impls
+      "reference-impls.js also defines comb/permutations, comb/combinations,
+       comb/binomial, comb/stirling-2 (with dash) — none of these appear in
+       the reference. They are orphan impls that shadow no reference contract.
+       Rin does not remove them (out of lane scope), but flags them for a
+       later cleanup pass. The reference-authoritative names are all present
+       and correct."
+
+    :verified-outputs (
+      ;; All 13 REPL-verified 2026-07-14 by Rin during audit phase.
+      (:verb "comb/bell"           :call "(comb/bell 5)"                    :result 52)
+      (:verb "comb/binomial-coeffs":call "(comb/binomial-coeffs 5)"         :result "(1 5 10 10 5 1)")
+      (:verb "comb/catalan"        :call "(comb/catalan 5)"                 :result 42)
+      (:verb "comb/choose"         :call "(comb/choose 5 2)"                :result 10)
+      (:verb "comb/derangement"    :call "(comb/derangement 5)"             :result 44)
+      (:verb "comb/factorial"      :call "(comb/factorial 5)"               :result 120)
+      (:verb "comb/multichoose"    :call "(comb/multichoose 5 3)"           :result 35)
+      (:verb "comb/multinomial"    :call "(comb/multinomial 5 2 3)"         :result 2520)
+      (:verb "comb/partition-count":call "(comb/partition-count 5)"         :result 7)
+      (:verb "comb/pascal-row"     :call "(comb/pascal-row 5)"              :result "(1 5 10 10 5 1)")
+      (:verb "comb/pascal-triangle":call "(comb/pascal-triangle 5)"         :result "((1) (1 1) (1 2 1) (1 3 3 1) (1 4 6 4 1) (1 5 10 10 5 1))")
+      (:verb "comb/permute"        :call "(comb/permute (quote (a b c)))"   :result "((a b c) (a c b) (b a c) (b c a) (c a b) (c b a))")
+      (:verb "comb/stirling2"      :call "(comb/stirling2 5 2)"             :result 15)
+    )
+
+    :note-arity-gotcha
+      "comb/stirling2 with a single arg returns 0 (missing k coerces via k
+       undefined). This is fine behavior but the reference should note it in
+       :caveats. Rin will fix this in Phase B when authoring the new
+       reference entry: signature is (n k) -> number, k required."
+
+    :note-work-remaining
+      "All comb/* code is CORRECT. What's missing is the Phase-B :math,
+       :cs, :ai slices plus 5-tier examples per the schema-in-flight.
+       Rin authors those; existing impls are not touched.")
+
+  ;; ── ORDER OF OPERATIONS FOR PHASE B ────────────────────────────
+  (:phase-b-plan
+    :ordering (
+      ;; comb/* first — impls done, only authoring left. Fast wins,
+      ;; validate the schema shape end-to-end before topo/* code work.
+      (:group "comb-authoring"
+       :verbs 13
+       :estimate-hours 6
+       :risk "low"
+       :depends-on "schema-locked")
+
+      ;; topo/* cheap tier — closed forms, one-file JS
+      (:group "topo-cheap"
+       :verbs 3
+       :estimate-hours 2
+       :risk "low"
+       :depends-on "schema-locked + comb-authoring")
+
+      ;; topo/* small tier — graph/complex primitives
+      (:group "topo-small"
+       :verbs 8
+       :estimate-hours 6
+       :risk "medium"
+       :depends-on "topo-cheap"
+       :notes "topo/planar? honesty question: will implement Kuratowski for n <= 8 exactly, honest degrade-to-error for larger graphs (NOT silent #f).")
+
+      ;; topo/* medium tier — GF(2) linear algebra
+      (:group "topo-medium"
+       :verbs 6
+       :estimate-hours 8
+       :risk "medium"
+       :depends-on "topo-small"
+       :notes "One shared GF(2) matrix module supports boundary-matrix + homology-gf2 + betti*. Reuse aggressively.")
+
+      ;; topo/* large tier — persistent homology + knot invariants
+      (:group "topo-large"
+       :verbs 10
+       :estimate-hours 14
+       :risk "high"
+       :depends-on "topo-medium"
+       :notes "Persistent homology reduction algorithm is the big one. Knot invariants — writhe is trivial, unknot? and crossing-number are honestly-bounded (will document exact bounds in reference).")
+    )
+    :total-estimate-hours 36
+    :note "Wall-clock. Assumes no interruption + schema locks cleanly. If
+           schema lands with unexpected slots, replan.")
+
+  ;; ── FILE PLAN ──────────────────────────────────────────────────
+  (:file-plan
+    :new-files (
+      (:path "src/topo.js"
+       :purpose "All real topo/* impls. Includes: simplicial-complex + graph datatypes, GF(2) matrix module, boundary maps, persistence reduction, VR filtration, knot PD-code + Gauss-code manipulation."
+       :estimated-lines "500-800"
+       :depends-on "src/base.js primitives; nothing else outside core")
+      (:path "src/comb.js"
+       :purpose "OPTIONAL. Current comb impls are split across wired-verbs.js + reference-impls.js. Rin will NOT move them (out of scope + risk); Rin will only ADD what the reference needs. If it grows past ~5 new helpers, split later."))
+    :modified-files (
+      (:path "src/wired-verbs.js"
+       :change "Remove topo/* descriptor stub block (lines 959-972). Real impls now live in src/topo.js, imported and installed here or directly in sakuraEnv.js.")
+      (:path "src/reference-impls.js"
+       :change "Remove topo/* descriptor stub block (lines 1358-1367) and orphan block (lines 2161-2165). Real impls now live in src/topo.js.")
+      (:path "src/sakuraEnv.js"
+       :change "One import + one install call for the topo module. Slotted before registerReferenceVerbs so it wins over any stub registrar.")
+      (:path "docs/SAKURA-SCHEME-REFERENCE.slat"
+       :change "Replace 40 verb entries with new-schema entries: 5-tier examples, :math + :cs + :ai slices, corrected caveats. Comb entries keep existing signatures; topo entries fix any signature drift discovered during impl.")))
+
+  ;; ── OPEN QUESTIONS FOR ALFRED ─────────────────────────────────
+  (:open-questions (
+    (:q "Should topo/planar? and topo/unknot? return a three-valued signal
+        (#t / #f / 'unknown) when they hit their honest complexity bound?
+        Current stub returns #f which is a LIE for large graphs. Rin
+        preference: return 'unknown-beyond-bound. This changes the type
+        signature from boolean-predicate to symbol-or-boolean, which is
+        unusual for a Scheme /? verb. Alfred call.")
+
+    (:q "topo/complex — what's the canonical input representation? Options:
+        (a) list of maximal simplices (face lattice generated); (b) list
+        of ALL simplices at all dims; (c) f-vector + adjacency. Rin default:
+        (a) — most compact + matches standard TDA papers. Alfred confirm.")
+
+    (:q "topo/knot input — Gauss code, PD code, or braid word? Rin default:
+        PD code (list of 4-tuples), with a topo/knot->gauss converter.")
+
+    (:q "comb/permute returns permutations in lex order (via wired-verbs.js
+        impl). Reference does not specify order. Should we lock lex order
+        in the reference :caveats? Rin recommends yes — matches user
+        intuition and is stable for testing.")
+  ))
+
+  ;; ── STATUS ────────────────────────────────────────────────────
+  (:status
+    :phase-a "COMPLETE — this document."
+    :phase-b "BLOCKED on docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat. Rin polls every 60s. No speculative work begun."
+    :first-target-when-unblocked "comb/bell (fastest, sanity-checks the schema shape end-to-end)."))

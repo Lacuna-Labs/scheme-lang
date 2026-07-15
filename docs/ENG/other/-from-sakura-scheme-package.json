@@ -1,0 +1,62 @@
+{
+  "name": "sakura-scheme",
+  "version": "1.4.0",
+  "private": true,
+  "description": "A small Scheme for humans and AI to program together — reader, interpreter, macros, base library, verb registry, REPL, CLI, doc emitter, and slat serialization.",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./reader": "./src/reader.js",
+    "./interp": "./src/interp.js",
+    "./base": "./src/base.js",
+    "./macro": "./src/macro.js",
+    "./registry": "./src/verbRegistry.js",
+    "./introspect": "./src/introspect.js",
+    "./repl": "./src/repl.js",
+    "./cli": "./src/cli.js",
+    "./docs-emitter": "./src/docs-emitter.js",
+    "./slat": "./src/slat.js"
+  },
+  "bin": {
+    "sakura-scheme": "./bin/sakura-scheme"
+  },
+  "files": [
+    "src",
+    "bin",
+    "bindings/js",
+    "docs",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "PUBLIC-API.md"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:fast": "vitest run --reporter=dot",
+    "docs:build": "vitepress build docs",
+    "docs:dev": "vitepress dev docs",
+    "lint": "eslint src bindings/js",
+    "lint:artifact": "eslint site eslint-rules",
+    "rag:build": "node scripts/build-rag-chunks.mjs",
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=20.16.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.0",
+    "vitepress": "^1.3.0",
+    "vitest": "^2.0.0"
+  },
+  "keywords": [
+    "scheme",
+    "lisp",
+    "interpreter",
+    "language",
+    "repl"
+  ],
+  "license": "MIT"
+}

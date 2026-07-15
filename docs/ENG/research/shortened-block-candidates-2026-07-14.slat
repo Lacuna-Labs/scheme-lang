@@ -1,0 +1,1256 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SHORTENED-BLOCK CANDIDATES — 2026-07-14
+;; Recovery-013 phase 1 audit output.
+;;
+;; Method: for every chapter under ~/code/curator/scheme-books/
+;; book-of-*, extract the prose body (unwrapped from any SLAT
+;; wrapper), then search BOOK/A-branch, BOOK/B-main,
+;; BOOK/D-remote for same-slug files (slug = filename minus
+;; NN- prefix, -rN suffix, and extension). Compare word count.
+;;
+;; Findings summary:
+;;
+;;   TRUE candidates (same slug, no -rN):        0
+;;   Revision-draft variants (-rN):              91
+;;
+;; ─── TRUE candidates ─────────────────────────────────────────
+;; None. For every canonical chapter matched to a same-slug
+;; preserved counterpart, the canonical is at least as long as
+;; the preserved version — often longer. No shortening detected
+;; in that dimension. No restore action needed from same-slug
+;; comparisons.
+;;
+;; ─── Revision-draft variants ─────────────────────────────────
+;; These are chapters where a preserved -rN (e.g. ch10-name-r1.md,
+;; ch07-name-r2.md) contains materially MORE content than the
+;; canonical chapter of the same slug. Two interpretations:
+;;
+;;   (a) The r-variant is an EARLIER expanded draft that got
+;;       polished DOWN into canonical. In this case, canonical is
+;;       correct — do not restore.
+;;
+;;   (b) The r-variant is a LATER expansion labeled with -rN for
+;;       revision-track hygiene but never landed as canonical.
+;;       In this case, its content should merge or replace.
+;;
+;; Spot-check of book-of-music/ch01-surface-of-sound-r1.md shows
+;; interpretation (b) is plausible for at least SOME entries — the
+;; r1 header reads 'refill r1 — more', suggesting it was authored
+;; as additional-material to append to canonical, not a superseded
+;; draft. Alfred must decide per chapter.
+;;
+;; RESTORE POLICY: NO WHOLESALE RESTORE APPLIED. All r-variants
+;; remain preserved in BOOK/ (no deletes doctrine). Restoration
+;; requires Alfred's per-chapter go/no-go.
+;; ═══════════════════════════════════════════════════════════════
+
+(shortened-block-audit
+  :date "2026-07-14"
+  :recovery-item "recovery-013"
+  :phase "phase-1-audit"
+  :true-candidates 0
+  :revision-draft-candidates 91
+  :canonical-chapters-scanned 733
+  :roots-scanned ("BOOK/A-branch-scheme-books/"
+                  "BOOK/B-main-scheme-books/scheme-books/"
+                  "BOOK/D-remote-branches/")
+  :threshold ":wc >20 more than canonical AND same-slug OR -rN variant"
+  :restore-applied 0
+  :next-action "alfred-review-then-per-chapter-decision")
+
+;; ─── Revision-draft candidates by book ───────────────────────
+
+;; ── book-of-money — 16 candidates ──
+
+(candidate
+  :book "book-of-money"
+  :slug "budgets"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch09-budgets.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch09-budgets-r1.md"
+  :canonical-wc 3544
+  :preserved-wc 4129
+  :canonical-lc 1029
+  :preserved-lc 965
+  :wc-ratio 1.17
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "counting-coins"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch02-counting-coins.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch02-counting-coins-r1.md"
+  :canonical-wc 3785
+  :preserved-wc 4214
+  :canonical-lc 978
+  :preserved-lc 1218
+  :wc-ratio 1.11
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "value"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch11-value.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch11-value-r1.md"
+  :canonical-wc 4107
+  :preserved-wc 4405
+  :canonical-lc 912
+  :preserved-lc 929
+  :wc-ratio 1.07
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "fairness"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch14-fairness.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch14-fairness-r1.md"
+  :canonical-wc 5427
+  :preserved-wc 5359
+  :canonical-lc 1137
+  :preserved-lc 1230
+  :wc-ratio 0.99
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "forecasting"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch12-forecasting.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch12-forecasting-r1.md"
+  :canonical-wc 3859
+  :preserved-wc 3824
+  :canonical-lc 909
+  :preserved-lc 1229
+  :wc-ratio 0.99
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-ladder"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch03-the-ladder.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch03-the-ladder-r1.md"
+  :canonical-wc 3582
+  :preserved-wc 3294
+  :canonical-lc 1158
+  :preserved-lc 842
+  :wc-ratio 0.92
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-warn"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch07-the-warn.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch07-the-warn-r1.md"
+  :canonical-wc 5283
+  :preserved-wc 4827
+  :canonical-lc 1090
+  :preserved-lc 1201
+  :wc-ratio 0.91
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-decline"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch08-the-decline.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch08-the-decline-r1.md"
+  :canonical-wc 6107
+  :preserved-wc 5298
+  :canonical-lc 1569
+  :preserved-lc 1058
+  :wc-ratio 0.87
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-checkpoint"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch13-the-checkpoint.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch13-the-checkpoint-r1.md"
+  :canonical-wc 5161
+  :preserved-wc 4344
+  :canonical-lc 1237
+  :preserved-lc 1684
+  :wc-ratio 0.84
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-honest-quote"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch16-the-honest-quote.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch16-the-honest-quote-r1.md"
+  :canonical-wc 5646
+  :preserved-wc 4721
+  :canonical-lc 1440
+  :preserved-lc 1381
+  :wc-ratio 0.84
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "cost-per-token"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch04-cost-per-token.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch04-cost-per-token-r1.md"
+  :canonical-wc 3472
+  :preserved-wc 2472
+  :canonical-lc 1123
+  :preserved-lc 730
+  :wc-ratio 0.71
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-hold"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch06-the-hold.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch06-the-hold-r1.md"
+  :canonical-wc 5493
+  :preserved-wc 3867
+  :canonical-lc 1722
+  :preserved-lc 1471
+  :wc-ratio 0.7
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-ledger"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch15-the-ledger.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch15-the-ledger-r1.md"
+  :canonical-wc 5293
+  :preserved-wc 3669
+  :canonical-lc 1278
+  :preserved-lc 1110
+  :wc-ratio 0.69
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "what-a-coin-is"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch01-what-a-coin-is.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch01-what-a-coin-is-r1.md"
+  :canonical-wc 4050
+  :preserved-wc 2666
+  :canonical-lc 1019
+  :preserved-lc 791
+  :wc-ratio 0.66
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-refund"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch10-the-refund.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch10-the-refund-r1.md"
+  :canonical-wc 4818
+  :preserved-wc 2973
+  :canonical-lc 1179
+  :preserved-lc 993
+  :wc-ratio 0.62
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-money"
+  :slug "the-estimate"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-money/ch05-the-estimate.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/money/ch05-the-estimate-r1.md"
+  :canonical-wc 5667
+  :preserved-wc 3305
+  :canonical-lc 1151
+  :preserved-lc 1004
+  :wc-ratio 0.58
+  :recommendation "human-review-modest-signal")
+
+;; ── book-of-motion — 16 candidates ──
+
+(candidate
+  :book "book-of-motion"
+  :slug "timing"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch05-timing.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch05-timing-r1.md"
+  :canonical-wc 4096
+  :preserved-wc 6053
+  :canonical-lc 938
+  :preserved-lc 1093
+  :wc-ratio 1.48
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "locomotion"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch10-locomotion.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch10-locomotion-r1.md"
+  :canonical-wc 4659
+  :preserved-wc 5567
+  :canonical-lc 1098
+  :preserved-lc 1250
+  :wc-ratio 1.19
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "squash-stretch"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch07-squash-stretch.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch07-squash-stretch-r1.md"
+  :canonical-wc 5322
+  :preserved-wc 5674
+  :canonical-lc 1113
+  :preserved-lc 1370
+  :wc-ratio 1.07
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "forces"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch09-forces.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch09-forces-r1.md"
+  :canonical-wc 5204
+  :preserved-wc 5435
+  :canonical-lc 1077
+  :preserved-lc 1407
+  :wc-ratio 1.04
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "the-crowd"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch15-the-crowd.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch15-the-crowd-r1.md"
+  :canonical-wc 5827
+  :preserved-wc 5935
+  :canonical-lc 1151
+  :preserved-lc 1597
+  :wc-ratio 1.02
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "easing"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch03-easing.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch03-easing-r1.md"
+  :canonical-wc 4397
+  :preserved-wc 4423
+  :canonical-lc 763
+  :preserved-lc 996
+  :wc-ratio 1.01
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "the-still-frame"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch01-the-still-frame.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch01-the-still-frame-r1.md"
+  :canonical-wc 5142
+  :preserved-wc 4937
+  :canonical-lc 1131
+  :preserved-lc 1375
+  :wc-ratio 0.96
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "secondary-motion"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch12-secondary-motion.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch12-secondary-motion-r1.md"
+  :canonical-wc 6055
+  :preserved-wc 5640
+  :canonical-lc 1298
+  :preserved-lc 1190
+  :wc-ratio 0.93
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "weight"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch06-weight.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch06-weight-r1.md"
+  :canonical-wc 5166
+  :preserved-wc 4748
+  :canonical-lc 1078
+  :preserved-lc 1234
+  :wc-ratio 0.92
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "the-living-scene"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch16-the-living-scene.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch16-the-living-scene-r1.md"
+  :canonical-wc 6218
+  :preserved-wc 5454
+  :canonical-lc 1560
+  :preserved-lc 1581
+  :wc-ratio 0.88
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "the-arc"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch04-the-arc.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch04-the-arc-r1.md"
+  :canonical-wc 6338
+  :preserved-wc 5460
+  :canonical-lc 885
+  :preserved-lc 1337
+  :wc-ratio 0.86
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "blending"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch14-blending.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch14-blending-r1.md"
+  :canonical-wc 6662
+  :preserved-wc 5213
+  :canonical-lc 1407
+  :preserved-lc 1830
+  :wc-ratio 0.78
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "velocity"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch02-velocity.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch02-velocity-r1.md"
+  :canonical-wc 7217
+  :preserved-wc 5608
+  :canonical-lc 1346
+  :preserved-lc 1322
+  :wc-ratio 0.78
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "style"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch13-style.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch13-style-r1.md"
+  :canonical-wc 5889
+  :preserved-wc 3958
+  :canonical-lc 1419
+  :preserved-lc 1215
+  :wc-ratio 0.67
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "oscillation"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch08-oscillation.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch08-oscillation-r1.md"
+  :canonical-wc 5196
+  :preserved-wc 3312
+  :canonical-lc 1094
+  :preserved-lc 1075
+  :wc-ratio 0.64
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-motion"
+  :slug "gesture"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-motion/ch11-gesture.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch11-gesture-r1.md"
+  :canonical-wc 7367
+  :preserved-wc 4594
+  :canonical-lc 986
+  :preserved-lc 1226
+  :wc-ratio 0.62
+  :recommendation "human-review-modest-signal")
+
+;; ── book-of-music — 22 candidates ──
+
+(candidate
+  :book "book-of-music"
+  :slug "surface-of-sound"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch01-surface-of-sound.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch01-surface-of-sound-r2.md"
+  :canonical-wc 2460
+  :preserved-wc 5819
+  :canonical-lc 347
+  :preserved-lc 990
+  :wc-ratio 2.37
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "timbre-envelope"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch08-timbre-envelope.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch08-timbre-envelope-r2.md"
+  :canonical-wc 3639
+  :preserved-wc 7199
+  :canonical-lc 445
+  :preserved-lc 857
+  :wc-ratio 1.98
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "polyphony"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch09-polyphony.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch09-polyphony-r2.md"
+  :canonical-wc 4312
+  :preserved-wc 8365
+  :canonical-lc 509
+  :preserved-lc 969
+  :wc-ratio 1.94
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "voices"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch07-voices.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch07-voices-r2.md"
+  :canonical-wc 2844
+  :preserved-wc 5387
+  :canonical-lc 379
+  :preserved-lc 1137
+  :wc-ratio 1.89
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "polyrhythm"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch10-polyrhythm.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch10-polyrhythm-r2.md"
+  :canonical-wc 3720
+  :preserved-wc 6946
+  :canonical-lc 481
+  :preserved-lc 996
+  :wc-ratio 1.87
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "timbre-envelope"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch08-timbre-envelope.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch08-timbre-envelope-r1.md"
+  :canonical-wc 3639
+  :preserved-wc 6759
+  :canonical-lc 445
+  :preserved-lc 1325
+  :wc-ratio 1.86
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "voices"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch07-voices.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch07-voices-r1.md"
+  :canonical-wc 2844
+  :preserved-wc 5232
+  :canonical-lc 379
+  :preserved-lc 1151
+  :wc-ratio 1.84
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "harmony"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch06-harmony.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch06-harmony-r2.md"
+  :canonical-wc 3552
+  :preserved-wc 6458
+  :canonical-lc 605
+  :preserved-lc 1257
+  :wc-ratio 1.82
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "note"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch03-note.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch03-note-r2.md"
+  :canonical-wc 3673
+  :preserved-wc 6351
+  :canonical-lc 453
+  :preserved-lc 1135
+  :wc-ratio 1.73
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "surface-of-sound"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch01-surface-of-sound.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch01-surface-of-sound-r1.md"
+  :canonical-wc 2460
+  :preserved-wc 4238
+  :canonical-lc 347
+  :preserved-lc 783
+  :wc-ratio 1.72
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "concerto"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch16-concerto.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch16-concerto-r2.md"
+  :canonical-wc 4384
+  :preserved-wc 7414
+  :canonical-lc 539
+  :preserved-lc 781
+  :wc-ratio 1.69
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "melody"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch04-melody.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch04-melody-r2.md"
+  :canonical-wc 3822
+  :preserved-wc 6212
+  :canonical-lc 677
+  :preserved-lc 1279
+  :wc-ratio 1.63
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "polyrhythm"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch10-polyrhythm.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch10-polyrhythm-r1.md"
+  :canonical-wc 3720
+  :preserved-wc 6004
+  :canonical-lc 481
+  :preserved-lc 1087
+  :wc-ratio 1.61
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "rhythm-meter"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch05-rhythm-meter.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch05-rhythm-meter-r2.md"
+  :canonical-wc 4366
+  :preserved-wc 7002
+  :canonical-lc 510
+  :preserved-lc 1436
+  :wc-ratio 1.6
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "concerto"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch16-concerto.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch16-concerto-r1.md"
+  :canonical-wc 4384
+  :preserved-wc 6856
+  :canonical-lc 539
+  :preserved-lc 1017
+  :wc-ratio 1.56
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "melody"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch04-melody.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch04-melody-r1.md"
+  :canonical-wc 3822
+  :preserved-wc 5869
+  :canonical-lc 677
+  :preserved-lc 1207
+  :wc-ratio 1.54
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "polyphony"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch09-polyphony.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch09-polyphony-r1.md"
+  :canonical-wc 4312
+  :preserved-wc 6107
+  :canonical-lc 509
+  :preserved-lc 1139
+  :wc-ratio 1.42
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "language"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch02-language.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch02-language-r1.md"
+  :canonical-wc 4158
+  :preserved-wc 5480
+  :canonical-lc 726
+  :preserved-lc 1367
+  :wc-ratio 1.32
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "rhythm-meter"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch05-rhythm-meter.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch05-rhythm-meter-r1.md"
+  :canonical-wc 4366
+  :preserved-wc 5411
+  :canonical-lc 510
+  :preserved-lc 1059
+  :wc-ratio 1.24
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "harmony"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch06-harmony.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch06-harmony-r1.md"
+  :canonical-wc 3552
+  :preserved-wc 4159
+  :canonical-lc 605
+  :preserved-lc 956
+  :wc-ratio 1.17
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "note"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch03-note.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch03-note-r1.md"
+  :canonical-wc 3673
+  :preserved-wc 4055
+  :canonical-lc 453
+  :preserved-lc 895
+  :wc-ratio 1.1
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-music"
+  :slug "language"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-music/ch02-language.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch02-language-r2.md"
+  :canonical-wc 4158
+  :preserved-wc 3393
+  :canonical-lc 726
+  :preserved-lc 738
+  :wc-ratio 0.82
+  :recommendation "human-review-modest-signal")
+
+;; ── book-of-one-shot — 5 candidates ──
+
+(candidate
+  :book "book-of-one-shot"
+  :slug "close-data-close-paren"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-one-shot/ch02-close-data-close-paren.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/one-shot/ch02-close-data-close-paren-r1.md"
+  :canonical-wc 2675
+  :preserved-wc 3134
+  :canonical-lc 747
+  :preserved-lc 823
+  :wc-ratio 1.17
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-one-shot"
+  :slug "looks-simple"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-one-shot/ch03-looks-simple.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/one-shot/ch03-looks-simple-r1.md"
+  :canonical-wc 2076
+  :preserved-wc 2387
+  :canonical-lc 645
+  :preserved-lc 857
+  :wc-ratio 1.15
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-one-shot"
+  :slug "compose-dont-sequence"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-one-shot/ch05-compose-dont-sequence.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/one-shot/ch05-compose-dont-sequence-r1.md"
+  :canonical-wc 4068
+  :preserved-wc 4009
+  :canonical-lc 1009
+  :preserved-lc 895
+  :wc-ratio 0.99
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-one-shot"
+  :slug "looks-hard"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-one-shot/ch04-looks-hard.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/one-shot/ch04-looks-hard-r1.md"
+  :canonical-wc 4026
+  :preserved-wc 2893
+  :canonical-lc 1100
+  :preserved-lc 880
+  :wc-ratio 0.72
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-one-shot"
+  :slug "one-form"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-one-shot/ch01-one-form.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/one-shot/ch01-one-form-r1.md"
+  :canonical-wc 5744
+  :preserved-wc 2694
+  :canonical-lc 1012
+  :preserved-lc 654
+  :wc-ratio 0.47
+  :recommendation "human-review-modest-signal")
+
+;; ── book-of-self — 16 candidates ──
+
+(candidate
+  :book "book-of-self"
+  :slug "attention-and-interrupt"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch14-attention-and-interrupt.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch14-attention-and-interrupt-r1.md"
+  :canonical-wc 2619
+  :preserved-wc 4435
+  :canonical-lc 876
+  :preserved-lc 1397
+  :wc-ratio 1.69
+  :recommendation "human-review-strong-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "thought"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch07-thought.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch07-thought-r1.md"
+  :canonical-wc 3766
+  :preserved-wc 4644
+  :canonical-lc 955
+  :preserved-lc 1015
+  :wc-ratio 1.23
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "sound-and-speech"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch05-sound-and-speech.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch05-sound-and-speech-r1.md"
+  :canonical-wc 2427
+  :preserved-wc 2866
+  :canonical-lc 666
+  :preserved-lc 797
+  :wc-ratio 1.18
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "sight-describing"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch02-sight-describing.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch02-sight-describing-r1.md"
+  :canonical-wc 2931
+  :preserved-wc 3365
+  :canonical-lc 888
+  :preserved-lc 1094
+  :wc-ratio 1.15
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "introspection-and-load"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch10-introspection-and-load.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch10-introspection-and-load-r1.md"
+  :canonical-wc 4137
+  :preserved-wc 4584
+  :canonical-lc 850
+  :preserved-lc 1210
+  :wc-ratio 1.11
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "senses-to-faculty-map"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch12-senses-to-faculty-map.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch12-senses-to-faculty-map-r1.md"
+  :canonical-wc 3550
+  :preserved-wc 3482
+  :canonical-lc 1005
+  :preserved-lc 1109
+  :wc-ratio 0.98
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "memory-and-continuity"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch15-memory-and-continuity.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch15-memory-and-continuity-r1.md"
+  :canonical-wc 4170
+  :preserved-wc 4007
+  :canonical-lc 888
+  :preserved-lc 1046
+  :wc-ratio 0.96
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "who-she-is"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch01-who-she-is.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch01-who-she-is-r1.md"
+  :canonical-wc 5575
+  :preserved-wc 5307
+  :canonical-lc 951
+  :preserved-lc 1160
+  :wc-ratio 0.95
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "time-sense"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch13-time-sense.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch13-time-sense-r1.md"
+  :canonical-wc 4181
+  :preserved-wc 3852
+  :canonical-lc 980
+  :preserved-lc 983
+  :wc-ratio 0.92
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "hearing"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch06-hearing.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch06-hearing-r1.md"
+  :canonical-wc 3652
+  :preserved-wc 3311
+  :canonical-lc 960
+  :preserved-lc 684
+  :wc-ratio 0.91
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "self-knowledge"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch08-self-knowledge.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch08-self-knowledge-r1.md"
+  :canonical-wc 5234
+  :preserved-wc 4630
+  :canonical-lc 1162
+  :preserved-lc 1072
+  :wc-ratio 0.88
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "knowing-her-limit"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch11-knowing-her-limit.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch11-knowing-her-limit-r1.md"
+  :canonical-wc 5331
+  :preserved-wc 4638
+  :canonical-lc 950
+  :preserved-lc 808
+  :wc-ratio 0.87
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "sight-the-vector"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch03-sight-the-vector.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch03-sight-the-vector-r1.md"
+  :canonical-wc 4013
+  :preserved-wc 3199
+  :canonical-lc 1217
+  :preserved-lc 693
+  :wc-ratio 0.8
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "mood"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch09-mood.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch09-mood-r1.md"
+  :canonical-wc 4646
+  :preserved-wc 3609
+  :canonical-lc 964
+  :preserved-lc 916
+  :wc-ratio 0.78
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "image-vs-video"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch04-image-vs-video.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch04-image-vs-video-r1.md"
+  :canonical-wc 3446
+  :preserved-wc 2443
+  :canonical-lc 897
+  :preserved-lc 600
+  :wc-ratio 0.71
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-self"
+  :slug "the-strange-loop"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-self/ch16-the-strange-loop.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/ch16-the-strange-loop-r1.md"
+  :canonical-wc 4512
+  :preserved-wc 2381
+  :canonical-lc 1026
+  :preserved-lc 758
+  :wc-ratio 0.53
+  :recommendation "human-review-modest-signal")
+
+;; ── book-of-systems — 16 candidates ──
+
+(candidate
+  :book "book-of-systems"
+  :slug "the-first-cart"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch05-the-first-cart.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch05-the-first-cart-r1.md"
+  :canonical-wc 4519
+  :preserved-wc 5418
+  :canonical-lc 1047
+  :preserved-lc 1515
+  :wc-ratio 1.2
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "inventory"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch09-inventory.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch09-inventory-r1.md"
+  :canonical-wc 4169
+  :preserved-wc 4519
+  :canonical-lc 1051
+  :preserved-lc 1184
+  :wc-ratio 1.08
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "the-shopkeeper"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch16-the-shopkeeper.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch16-the-shopkeeper-r1.md"
+  :canonical-wc 5126
+  :preserved-wc 5008
+  :canonical-lc 1400
+  :preserved-lc 1390
+  :wc-ratio 0.98
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "multi-service"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch15-multi-service.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch15-multi-service-r1.md"
+  :canonical-wc 4469
+  :preserved-wc 4327
+  :canonical-lc 1034
+  :preserved-lc 964
+  :wc-ratio 0.97
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "service-discovery"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch04-service-discovery.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch04-service-discovery-r1.md"
+  :canonical-wc 4845
+  :preserved-wc 4566
+  :canonical-lc 1608
+  :preserved-lc 1135
+  :wc-ratio 0.94
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "reading-a-service"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch03-reading-a-service.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch03-reading-a-service-r1.md"
+  :canonical-wc 3634
+  :preserved-wc 2979
+  :canonical-lc 1010
+  :preserved-lc 814
+  :wc-ratio 0.82
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "what-an-automation-is"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch01-what-an-automation-is.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch01-what-an-automation-is-r1.md"
+  :canonical-wc 4991
+  :preserved-wc 4019
+  :canonical-lc 935
+  :preserved-lc 898
+  :wc-ratio 0.81
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "safety"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch14-safety.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch14-safety-r1.md"
+  :canonical-wc 3832
+  :preserved-wc 3034
+  :canonical-lc 827
+  :preserved-lc 850
+  :wc-ratio 0.79
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "the-dashboard"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch13-the-dashboard.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch13-the-dashboard-r1.md"
+  :canonical-wc 4163
+  :preserved-wc 3202
+  :canonical-lc 1233
+  :preserved-lc 1042
+  :wc-ratio 0.77
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "chaining"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch06-chaining.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch06-chaining-r1.md"
+  :canonical-wc 4347
+  :preserved-wc 2953
+  :canonical-lc 1161
+  :preserved-lc 723
+  :wc-ratio 0.68
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "scheduling"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch11-scheduling.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch11-scheduling-r1.md"
+  :canonical-wc 5370
+  :preserved-wc 3634
+  :canonical-lc 1048
+  :preserved-lc 1063
+  :wc-ratio 0.68
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "errors"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch12-errors.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch12-errors-r1.md"
+  :canonical-wc 5234
+  :preserved-wc 3430
+  :canonical-lc 1065
+  :preserved-lc 868
+  :wc-ratio 0.66
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "the-fake-shop"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch02-the-fake-shop.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch02-the-fake-shop-r1.md"
+  :canonical-wc 5520
+  :preserved-wc 3204
+  :canonical-lc 1408
+  :preserved-lc 896
+  :wc-ratio 0.58
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "branching"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch07-branching.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch07-branching-r1.md"
+  :canonical-wc 5172
+  :preserved-wc 2657
+  :canonical-lc 1444
+  :preserved-lc 882
+  :wc-ratio 0.51
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "pricing"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch10-pricing.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch10-pricing-r1.md"
+  :canonical-wc 6055
+  :preserved-wc 3091
+  :canonical-lc 1374
+  :preserved-lc 1098
+  :wc-ratio 0.51
+  :recommendation "human-review-modest-signal")
+
+(candidate
+  :book "book-of-systems"
+  :slug "the-listing"
+  :variant-kind "revision-draft"
+  :canonical-path "/Users/alfred/code/curator/scheme-books/book-of-systems/ch08-the-listing.book.slatl"
+  :preserved-path "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/systems/ch08-the-listing-r1.md"
+  :canonical-wc 5778
+  :preserved-wc 2810
+  :canonical-lc 1715
+  :preserved-lc 948
+  :wc-ratio 0.49
+  :recommendation "human-review-modest-signal")

@@ -1,0 +1,230 @@
+;; ═══════════════════════════════════════════════════════════════
+;; Book↔Code Sync Sweep — 2026-07-14
+;;
+;; Alfred: "Make sure the code complies with R7RS-small. Make sure
+;; the book complies with the code. Then make sure all the rest of
+;; the internal code complies with that."
+;;
+;; This lane executed every :examples :code snippet in
+;; docs/SAKURA-SCHEME-REFERENCE.slat against the current runtime
+;; (parse → macro-expand → evaluate under makeSakuraEnv), captured
+;; pass/fail, categorized failures, applied fix-the-book edits for
+;; the top-yield patterns, and filed the residue as code-bugs or
+;; spec-ambiguous for follow-up lanes.
+;;
+;; Method: in-process runner at scripts/book-code-sync-sweep.mjs.
+;; ~3.5s per full sweep of 3,573 examples. Checkpoint file at
+;; scripts/.book-code-sync.json for resumable analysis.
+;; ═══════════════════════════════════════════════════════════════
+
+(report
+  :lane "book-code-sync"
+  :date "2026-07-14"
+  :branch "verbs/wire-596-2026-07-14"
+  :method "In-process execution of every :examples :code via parse→expand→evaluate. Verb-not-wired / unbound / runtime-error / arity-mismatch / type-mismatch classification. Two full sweep passes: initial baseline, and post-fix confirmation."
+  :runner "scripts/book-code-sync-sweep.mjs"
+  :checkpoint "scripts/.book-code-sync.json"
+
+  :counts
+    ((:verbs-total 1168)
+     (:verbs-with-examples 1168)
+     (:examples-total 3573)
+     (:pass 2970)
+     (:fail 603)
+     (:pass-rate "83.1%")
+     (:note "Numbers drift by ~3 examples between runs — a handful of examples (~12) trip the default fuel budget (200000) nondeterministically depending on JS engine timing. Consider raising DEFAULT_FUEL in the sweep runner if these examples matter."))
+
+  :book-fixes-applied
+    ((:decision-017-entity-rename
+        (:description "Renamed entity/get → entity/ref (2-arg scratch read) and entity/get-set! → entity/set! (3-arg scratch write) throughout example bodies. Removed the duplicate entity/set! verb entry created by the rename. Fixed one 3-arg (entity/get id key default) call to the correct 2-arg entity/ref shape.")
+        (:commit "c35a7f9")
+        (:touched-examples "~90"))
+     (:r7rs-name-renames
+        (:description "math/cos → cos, math/sin → sin, math/sqrt → sqrt, math/tan → tan, math/log → log per R7RS §6.2.6. dict-ref → hash-ref (Sakura's actual hash accessor). list-get → list-ref (R7RS). Fold-left applied to (+) with a literal 0 initial → (apply +) — the R7RS-small idiom for summing a list.")
+        (:commit "14f4c1a")
+        (:touched-examples "~90"))
+     (:paren-typo-fixes
+        (:description "Hand-fixed one unbalanced-paren typo (ai/wander expert tier). Remaining 40 reader-error typos are enumerated below for follow-up.")
+        (:touched-examples 1)))
+
+  ;; ─── code-bugs filed for follow-up lanes ──────────────────────────
+  ;;
+  ;; These failures indicate the RUNTIME is misbehaving relative to
+  ;; the reference (or relative to R7RS-small). File as code-bugs.
+  :code-bugs
+    (
+      (bug
+        :id "cbs-001"
+        :severity "high"
+        :tag "js-bleed-error-message"
+        :count 90
+        :unique-verbs 75
+        :symptom "JS-level TypeError leaks through as the sole error message. Common phrasings: `a.slice is not a function`, `lst is not iterable`, `h.has is not a function`, `alist.find is not a function`, `Cannot read properties of undefined (reading 'N')`."
+        :why-a-bug "Per decision-014 verbs return values that match their :signature. When an impl calls a JS method (.slice, .has, .find) on a Scheme value that plausibly could have arrived via a caller mistake, the mismatch should surface as a typed Scheme error (raise 'type-mismatch ...) or a structured 'wrong-type-arg' message — not a raw JS Error. The current behavior tells authors nothing about which verb saw a bad arg or what the expected shape was."
+        :affects
+          ("alg/apply-symmetry" "calc/partial" "camera-state" "card-find-by-kind"
+           "card-kinds" "card-land" "card-lean-aside" "card-list" "card-open"
+           "card-pluck" "card-rows" "card-toss" "card-unfocus!" "card-visible?"
+           "card/audio-pulse" "chem/balance" "conway-cell-mixed-parents"
+           "curve/christoffel" "curve/frenet-frame" "curve/normal"
+           "curve/spline-resample" "curve/unit-tangent" "entity/collisions"
+           "entity/sensor!" "entity/y" "exact/float->rat" "form-list"
+           "game/mex" "game/surreal-birthday" "grid/flower-list" "grid/flower-pos"
+           "land-on-downbeat" "math/place-value" "motion/arc" "motion/cadence"
+           "motion/drop" "nav-map" "nt/divmod" "nt/extended-gcd"
+           "ops/pagerank" "ops/sequence-metrics" "ops/simplex" "ops/stationary"
+           "pattern/clave" "phys/L-harmonic" "podcast-clear-history"
+           "podcast-followed-speakers" "podcast-muted?" "podcast-play"
+           "podcast-publish-insight" "podcast-queue-add" "podcast-queue-remove"
+           "podcast-save-brief" "podcast-save-clip" "podcast-save-mini-pod"
+           "podcast-seek" "podcast-set-show-tier" "podcast-state"
+           "podcast-subscribe" "radio/mesh" "read-desktop-text" "read-gmail-folder"
+           "read-inbox" "shoppe/balance" "shoppe/buy-merch" "shoppe/buy-pack"
+           "shoppe/savings" "shoppe/transactions" "system/registry"
+           "topo/homology-gf2" "vec/dot" "vec/norm" "world/find" "world/repel!"
+           "world/tape-audio")
+        :recommended-fix "Add arg-shape validation at each affected verb's impl entry. Return/raise a Scheme-level error like (raise (list 'wrong-type-arg VERB-NAME ARG-INDEX EXPECTED-SHAPE ACTUAL-VALUE)). See src/reference-impls.js line 491 (vec/dot) as the canonical shape: `a.reduce((s, x, i) => ...)` assumes `a` is an array. Add: if (!Array.isArray(a)) raise('wrong-type-arg vec/dot 0 list a)."
+        :example-repro "(vec/scale 3 '(1 2 3))  ; signature is (vec/scale v k); example reversed → a.map is not a function")
+      (bug
+        :id "cbs-002"
+        :severity "medium"
+        :tag "descriptor-return-called-as-fn"
+        :count 8
+        :unique-verbs 6
+        :symptom "`not a function: [object Object]` — a verb returns a tagged descriptor list (from src/reference-impls.js stub) that a downstream example tries to invoke as a procedure."
+        :why-a-bug "The reference documents these verbs as returning structured shapes (hash-table, list, number). Per decision-014 the impl must match the :signature. The current reference-impls.js stubs universally return `descriptor(name, ...args)` — a tagged list. This satisfies 'the verb is callable' but not 'the verb returns what its signature promises'."
+        :affects
+          ("audio/bar-clock" "calc/jacobian" "motion/with-feel" "surface/describe"
+           "surface/digest" "with-seed")
+        :recommended-fix "Either implement the verb (preferred) or change the stub to return a shape closer to the :signature (e.g., for a promised hash-table, return an empty (make-hash); for a promised list, return '()). At minimum, the descriptor should not be inadvertently callable — the current shape lets author code write (result 'key) which surfaces as `not a function`.")
+      (bug
+        :id "cbs-003"
+        :severity "expected-if-no-sidecar"
+        :tag "ai-sidecar-required"
+        :count 14
+        :unique-verbs 7
+        :symptom "`(ai/X …) requires-python-ml-sidecar. …`"
+        :why-not-a-bug "ai/classify, ai/generate, ai/summarize, ai/translate, ai/rank, ai/rerank, ai/vector-search all correctly refuse to run without their sidecar per doctrine. The failure is that these examples are invoked (with a sidecar-free CI runner), not that the impl is wrong."
+        :recommended-fix "Add :examples-need-sidecar #t to the affected verb entries so the sweep runner can skip them. Alternately, rewrite the examples as `(if (ai/sidecar-available?) (ai/generate …) 'sidecar-not-wired)` so they exercise the auth-gate path but do not force the sidecar."
+        :affects
+          ("ai/classify" "ai/generate" "ai/summarize" "ai/translate"
+           "ai/rank" "ai/rerank" "ai/vector-search"))
+      (bug
+        :id "cbs-004"
+        :severity "low-priority"
+        :tag "reader-scientific-notation"
+        :count 5
+        :symptom "Reader treats `1e-6`, `1e24`, `2e-6`, `1.5e-6`, `2.5e10` as unbound symbols instead of parsing as inexact real."
+        :why-a-bug "R7RS §6.2.5 grammar defines `<real R>` as including `<uinteger R> <suffix>` where `<suffix> = <exponent-marker> <sign> <digit>+`. The exponent markers are e, E, s, S, f, F, d, D, l, L. Our NUM_RE at src/reader.js:94 does not accept the suffix. Scheme code that computes with small tolerances (`1e-6`) is a legitimate need."
+        :recommended-fix "Widen NUM_RE in src/reader.js:94 to match R7RS §6.2.5 real syntax. Suggested: `^[+-]?(\\d+\\.?\\d*|\\.\\d+)([eEsSfFdDlL][+-]?\\d+)?$`. The exponent parses as a JS parseFloat once matched — no runtime work needed beyond the regex."
+        :affects "The reader. Systemic — not per-verb."))
+
+  ;; ─── spec-ambiguous — mark in reference, do not silently guess ───
+  ;;
+  ;; Alfred: "Never fabricate a fix. If the example is wrong AND you
+  ;; can't figure out what it should be, mark spec-ambiguous." These
+  ;; entries were already marked *[verify]* by original authors OR
+  ;; surface a genuine semantic question this sweep could not resolve.
+  :spec-ambiguous
+    ((:count 45
+      :symptom "Verb entry contains `*[verify]*` in :signature or :examples :code, indicating the original author could not confirm the impl shape."
+      :why "Cannot fabricate examples for verbs whose runtime contract is unknown. Per :entry-provenance the correct tag is `spec-ambiguous`; the current :code payload of `*[verify]*` is honest signalling that the entry needs an author with source access."
+      :verbs
+        ("apply-markdown" "ask/reasoner" "audio-play" "chem/atomic-weight"
+         "chem/formula-counts" "create-listing-from" "eng/bode" "eye-contact"
+         "linalg/characteristic-poly" "math/area-model" "math/array"
+         "math/place-value" "math/round-to-place" "math/round"
+         "motion-anchor-to-input" "motion-follow-input" "note-place-at"
+         "note-release" "note-strike" "nt/base-convert"
+         "…and 25 more (see grep pattern awk in analysis notes)")
+      :recommended-fix "Original authors already flagged. A follow-up lane should either verify the impl and rewrite the entry, or (per decision policy) delete the entry if the verb should not exist.")
+     (:decision-needed
+      :symptom "Reader currently accepts `1/2` as a symbol (unbound). Per R7RS §6.2.5 grammar `1/2` is a rational literal, but per decision-011 we have no numerical tower. Should the reader (a) raise a reader error on rational-literal syntax, (b) accept and convert to inexact double (0.5), or (c) continue treating as a symbol (current)?"
+      :why "18 example failures across `1/2`, `1/4`, `3/4`, `3/8`, `5/4`, `7/8`, `22/7`, `355/113`. Authors clearly reach for rationals; the reader silently produces a nonsense symbol."
+      :recommended-decision "New decision-entry: `Rational-literal syntax reads as inexact double per decision-011 (no tower); the exactness bit is lost with a warning at the reader level.` OR `Reject rational-literal syntax with a clear reader error naming decision-011.` The current silent-drift behavior is the worst of both worlds."
+      :count 18))
+
+  ;; ─── book issues, aggregated for follow-up authoring lanes ───────
+  ;;
+  ;; These are all fix-the-book. Applying them individually is a
+  ;; per-example rewriting task — many examples assume unbound
+  ;; identifiers (`ctx`, `avatar`, `player-id`) as if pre-defined,
+  ;; or call SRFI-1 / Common Lisp names not in R7RS-small.
+  :book-issues-remaining
+    ((:cause "srfi-1-name-not-in-r7rs-small"
+      :count 61
+      :unique-verbs 58
+      :details
+        ((fold-left  53 "Rewrite as (let loop ((xs xs) (acc INIT)) (if (null? xs) acc (loop (cdr xs) (FN acc (car xs)))))")
+         (every      3  "Rewrite as (let loop ((xs xs)) (cond ((null? xs) #t) ((not (PRED (car xs))) #f) (else (loop (cdr xs)))))")
+         (delete-duplicates 1 "Rewrite with a manual pass; see decision-018 :examples for the R7RS-small pattern")
+         (list-range 3 "Use a named-let (iota-style) or numeric loop; SRFI-1 iota is out")
+         (list-copy  1 "R7RS-small does provide list-copy; verify verb impl is wired")
+         (list->vec  1 "Non-standard; use list->vector"))
+      :recommended-fix "Rewrite each example inline using R7RS-small primitives. Reference decision-018's :examples for the canonical patterns. Approximately 61 example bodies; ~15 minutes each = a half-day authoring lane.")
+
+     (:cause "common-lisp-name-not-in-scheme"
+      :count 23
+      :unique-verbs 22
+      :details
+        ((null    14 "Replace bare `null` with `'()` (empty list) or `#f` (false), context-dependent")
+         (dotimes 8  "Rewrite as `(let loop ((i 0)) (when (< i N) BODY (loop (+ i 1))))`")
+         (loop    1  "CL macro; use named-let"))
+      :recommended-fix "Per-example rewrite; ~2 minutes each = under an hour authoring lane. NOTE: bare `null` occurs in 14 examples but the correct replacement depends on whether the arg semantically means 'empty list' (use `'()`) or 'no value/default' (use `#f`).")
+
+     (:cause "unbound-placeholder-identifier"
+      :count 274
+      :unique-verbs 183
+      :details "Examples reference names like `ctx`, `avatar`, `player-id`, `my-entity`, `db` as if pre-defined. These are author-time laziness: the intermediate/expert tiers assume the novice tier's defines are in scope, but each :code snippet is executed independently."
+      :top-symbols
+        ((ctx        25) (avatar     12) (player-id  10) (my-card    9)
+         (my-entity  8)  (e1         6)  (my-sprite  6)  (initial    5)
+         (my-world   5)  (entity     4)  (guard-id   4)  (x          4)
+         (player     4)  (hero       4)  (h          4)  (soldier-id 3)
+         (scout-id   3)  (flower-id  3)  (surface    3))
+      :recommended-fix "Each example should be self-contained: prepend the required (define ...) forms so the snippet runs as-is. This is the largest single work item — ~250 example rewrites, ~3 minutes each = 12 hours across a dedicated authoring lane. Cross-refs decision-014 (verbs return their :signature) and the SICP taste in the schema: 'teach by SHOWING the shell do real work' (Quigley) — examples that assume invisible context violate that.")
+
+     (:cause "reader-error-typo"
+      :count 40
+      :details "Unbalanced parens in example bodies. Reader raises `unexpected )` or `missing )`. Each is a hand-fix."
+      :verbs
+        ("ai/wander (FIXED)" "alg/zn" "audio-perceptual-bands" "camera-tilt"
+         "card-canvas-rect (x2)" "emoji-turn" "grid-cell-set!"
+         "grid-step-aged" "…and 32 more — full list in scripts/.book-code-analysis.json")
+      :recommended-fix "Hand-fix. Each takes ~1 minute; ~40 minutes total. A follow-up lane can process these with a paren-counter script to identify the exact insertion point.")
+
+     (:cause "rational-literal-decision-011"
+      :count 18
+      :details "Examples use `1/2`, `3/4`, `22/7`, `355/113` as literal constants. See :spec-ambiguous above for the decision needed."
+      :recommended-fix "If decision defers to (b) or (c): rewrite as decimal literals (`0.5`, `0.75`, `3.142857`, `3.14159292`). If decision (a): the reader will error and each example needs its literal replaced anyway.")
+
+     (:cause "scientific-notation-literal"
+      :count 5
+      :details "Examples use `1e-6`, `1e24`, `2e-6`, `1.5e-6`, `2.5e10`. This is a reader bug (cbs-004 above); the fix is code-side."
+      :recommended-fix "Fix the reader (cbs-004); examples become correct automatically.")
+
+     (:cause "other"
+      :count 67
+      :details "Mixed causes — verify placeholders (16), fuel exhaustion (12, likely example infinite-loop), on-key handler wrong shape (4), verb-not-in-reference misspellings (curve/circle, world/find-all, pow, string-find, list->vec, alg/klein-four, entity/id, podcast-playing?, list-iota, plan-get, phys/q-, topo/metric-space->points), other reader-shape errors."))
+
+  ;; ─── proposed decision-entries (if the sweep surfaces doctrine gaps) ───
+  :proposed-decisions
+    ((:number "TBD-026"
+      :what "Rational-literal reader syntax: reject vs coerce vs symbol"
+      :why "18 example failures across `1/2`-shaped literals reveal an unclosed loop in decision-011. Reader currently swallows them as symbols (worst outcome — silent). Decision needs to name one of: reject / coerce-to-inexact / accept-as-symbol."
+      :cross-refs ("decision-011" "R7RS §6.2.5"))
+     (:number "TBD-027"
+      :what "Scientific-notation reader syntax must accept R7RS §6.2.5 exponent suffix"
+      :why "`1e-6` is R7RS-standard real syntax; our reader errors on it. Any example computing with small tolerances is affected. This is a straight bug (cbs-004) but might warrant a decision-entry noting the exact accepted grammar for completeness."
+      :cross-refs ("cbs-004" "R7RS §6.2.5"))
+     (:number "TBD-028"
+      :what "Every :examples :code snippet must be self-contained"
+      :why "274 book-issue failures were caused by examples calling undefined placeholder identifiers (ctx, avatar, player-id). The SLAT schema's :example-tiers docs say tiers show progression, but each :code runs independently. Making self-containment explicit as authoring doctrine would prevent the recurrence."
+      :cross-refs ("SAKURA-SCHEME-REFERENCE-SCHEMA.slat :example-tiers"))
+     (:number "TBD-029"
+      :what "Verbs must raise typed Scheme errors, not JS TypeErrors"
+      :why "90 example failures surfaced as raw JS TypeError messages (a.slice is not a function). Decision-014 covers return-shape but not error-shape. Extending it to say 'errors are Scheme-level, not JS-level' would motivate adding an arg-shape check at every wired verb entry."
+      :cross-refs ("decision-014" "R7RS §6.11"))))
+
+;; End of report. Follow-up lanes can pick up the 600 remaining
+;; failures using scripts/.book-code-sync.json as source-of-truth.

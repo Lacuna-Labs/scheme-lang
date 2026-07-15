@@ -1,0 +1,855 @@
+;; slat-render-strategy-2026-07-13.slat
+;; Lacuna Engineering — SLAT render strategy: extending render-ref.mjs
+;; from a per-verb reference renderer to a general SLAT→(HTML|terminal|IDE|
+;; search|LLM-ingest) pipeline that also treats code as first-class records.
+;;
+;; Authored: 2026-07-13
+;; Audience: Alfred + future engineering agents
+;; Format:   SLAT, dogfooding the very thing we're specifying
+;; Status:   proposal — Phase-0 estimates real, later phases TBD
+
+(strategy-doc
+  :id             "slat-render-strategy-2026-07-13"
+  :owner          "Lacuna Engineering"
+  :date           #inst "2026-07-13T00:00:00Z"
+  :for            "Alfred"
+  :subject        "SLAT rendering — extend render-ref.mjs into a general pipeline"
+  :related-docs   ("~/code/curator/scheme-books/book-of-slat/00-cover.slat"
+                   "~/code/curator/scheme-books/book-of-slat/01-what-a-slat-is.slat"
+                   "~/code/curator/scheme-books/book-of-slat/04-the-slat-record.slat"
+                   "~/code/scheme-lang/docs/site/render-ref.mjs"
+                   "~/code/curator/BOOK/BOOK-INVENTORY.jsonl")
+  :sections       9)
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 1 — State of the union
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     1
+  :title "State of the union — what SLAT already specifies and what render-ref.mjs already does"
+  :prose
+"Book of SLAT already nails the substrate.
+
+Chapter 1 fixes the round-trip property: whatever you write, you can read
+back — byte-identical, across every binding. Chapter 4 fixes the record
+shape: head symbol at position 0, then keys and positional values, plus a
+reserved `:_` namespace for reader-internal fields (`:_form`,
+`:_positional`, `:_comment`, `:_meta`). The cover promises sixteen chapters
+plus ten appendices covering canonicalization, content-addressing, signing,
+auto-assembly, and the fifteen record types. That work is done. SLAT is a
+usable, honest wire format today.
+
+What SLAT does NOT specify — and what tonight raises — is what to DO with a
+SLAT record once you have it: how a `(chapter ... :prose \"...\")` record
+turns into HTML the operator reads, how it turns into a terminal page a kid
+running `sakura-scheme repl` sees, how it turns into an IDE hover card, how
+it turns into a search result, how it turns into a training chunk. The spec
+today stops at 'here is the shape'. The renderer does not exist yet — for
+books.
+
+`render-ref.mjs` is the closest thing we have. It reads the consolidated
+reference SLAT (~1,157 verbs + 70 core forms) via `reference-loader.js`,
+walks `ref.verbList` and `ref.coreList`, and emits `dist/reference.html`
+with sidebar TOC, per-verb Signature/Summary/Explanation/Examples blocks,
+Caveats/Drawbacks/Use-cases/Related lists, and Learn metadata. It carries a
+Scheme highlighter (mirroring `src/repl/highlight.js`) that emits Run
+buttons on `sakura-scheme` fences. And it handles a limited MD subset
+inside `doc-body` strings — fenced blocks by language, `####` subheads,
+`---` rules, inline code, links, bold/italic.
+
+Where it stops: it is SHAPED for the reference record schema. It reads
+`verbList` / `coreList` directly. It does NOT walk generic `chapter` /
+`section` / `figure` records. It has no chunking hints, no target other
+than HTML, no cross-ref resolution, no image handling, no style-kit
+separation (all styles baked into the emitter + `styles.css`), and no
+notion of code as a queryable record.
+
+Tonight's ~1,340 chapters (Book of Words, Book of SLAT itself, Book of
+Don'ts, Book of CS Curriculum, Book of Animation, Book of Challenges, and
+the rest per BOOK-INVENTORY.jsonl) live as `(chapter :prose \"...markdown
+with front-matter and fenced code...\")`. They round-trip. They validate.
+They just do not render — for books — yet. The 2026-07-13 authoring push
+has parked ~1,340 wrapped-MD SLAT files at the door. This document is the
+plan for opening it.
+
+The gap this doc fills: extend render-ref.mjs into a general SLAT render
+pipeline that (a) handles the wrapped-MD chapter shape unchanged, (b)
+learns to treat code as first-class records alongside `:prose`, (c) grows
+to four more targets (terminal, IDE, search, LLM-ingest), and (d)
+externalizes styling into a kit written in — dogfood — SLAT.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 2 — Alfred's questions, answered
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     2
+  :title "Alfred's questions, answered"
+  :prose
+"**Can SLAT faithfully reproduce MD?** Yes. The `:prose` field is a string;
+strings round-trip byte-for-byte per Chapter 1's guarantee. Every fenced
+code block, front-matter block, blockquote, `> **Sakura says**` callout,
+and cross-link syntax survives read+write unchanged. The ~1,340 chapters
+we've already emitted prove this in practice — their `:sha256` provenance
+is intact from the original MD source, and `slat-read → slat-write` on
+each returns identical bytes. So SLAT-as-MD-wrapper is not a compromise;
+it's a first-class use of the format. The MD lives INSIDE a typed record
+with metadata (`:book`, `:chapter-number`, `:title`, `:source-path`,
+`:size`, `:sha256`) that a bare `.md` file cannot carry.
+
+**What happens when we render SLAT to HTML?** Nothing yet, for books. For
+the reference, `render-ref.mjs` does it. For books, we build a new
+emitter — but not from scratch. Section 5 details a pipeline that shares
+the SLAT reader + style kit across five targets. For HTML specifically,
+the emitter walks the record, treats `:prose` with the same
+`renderDocBody` MD subset render-ref.mjs already uses, and emits sibling
+records (Section 3) into typed HTML blocks. The plan is: extend, not
+rewrite.
+
+**Chunking granularity?** Layered. A chapter declares
+`:chunkable-as (:paragraph :section :chapter)` and the render pipeline
+picks the level per target. Search wants paragraph chunks (snippets fit
+the SERP shape). LLM ingest wants section chunks (RAG context wants
+semantic units, not random 512-token windows). Rendering to HTML wants
+whole-chapter chunks (one file per URL). Terminal wants section chunks
+(one screenful at a time). The declaration is a HINT; the renderer honors
+the smallest level that satisfies the target. Recommendation in Section
+3: derive on demand from a paragraph-tokenizer applied to `:prose`,
+CACHE the derivation into a sidecar `.chunks.slat` file whose
+`:content-hash` binds to the parent chapter's `:sha256`. Materialization
+avoids re-parsing 1,340 chapters on every build. Invalidation is trivial:
+hash mismatch → recompute.
+
+**Images and diagrams?** Three lanes, all first-class `:figure` records.
+Archived / historical images ship base64-inline in `:data` so the SLAT
+file is a self-contained artifact (signed, content-addressed, portable
+across mailboxes and mail archives). Currently-authored images ship as
+`:src \"path/or/url\"` so the SLAT stays small and the image lives in the
+file tree next to the chapter (or on a CDN). Diagrams — the ones a kid
+should be able to read AND edit — ship as inline SVG in `:svg`, so the
+SLAT is again self-contained, human-legible (SVG is XML), and the
+diagram can be regenerated by a Scheme cart the same way carts render
+graphics today. Three lanes, one record type, distinguished by which
+field is populated. Renderer picks the field.
+
+**Style: inline every time or in a kit?** Kit. Every time. Content records
+carry `:kind` (semantic type — `:sakura-says`, `:warning`, `:paragraph`,
+`:code`, `:figure`, `:table`). The renderer carries a style kit — a
+separate SLAT file — that maps each `:kind` to visual attributes per
+target (HTML class + optional inline style, terminal ANSI code, IDE
+hover-card badge). Alfred edits colors and spacing by editing the kit,
+not by touching 1,340 chapters. Inline `:style` on a specific record is
+POSSIBLE but discouraged — it exists for the one-off case where a chapter
+genuinely needs to break the kit for pedagogical reasons (rare). Section
+6 details the kit.
+
+**Are SLATs fine as MD-wrappers?** Yes — as a starting point, and for
+long-form narrative prose, arguably forever. The chapter narrative that a
+human WROTE as prose reads best as `:prose` and the round-trip is byte-
+perfect. But CODE deserves better. Code in a wrapped-MD chapter is trapped
+behind an MD parse: to programmatically find every runnable example in
+every book you must re-parse the fence, guess the language, and hope no
+one used tildes or indented fences. Sakura and the operators deserve
+first-class records for code — that's Section 4, and it's the amendment
+Alfred is right to push for. Bottom line: SLAT-as-MD-wrapper is fine for
+prose. Code lives BOTH in `:prose` (so MD→HTML renders) AND as sibling
+records (so programmatic access needs zero MD parsing). Redundancy with
+`:content-hash` verifies the two representations agree.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 3 — SLAT spec extensions (additions, not rewrite)
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     3
+  :title "SLAT spec extensions — additions to the record vocabulary, not a rewrite"
+  :prose
+"The extensions below are ADDITIONS. Nothing in Book of SLAT Chapters
+1-16 changes. The `head + keys + positional + comment` shape stands.
+The `:_` reserved namespace stands. The canonical writer, the round-trip
+guarantee, the content-addressing rules — all stand. What follows is a
+catalog of NEW record heads with well-defined semantics that the
+render pipeline knows how to walk.
+
+**Content record types.** These describe pieces of a book.
+
+  (chapter    :book \"...\" :chapter-number N :title \"...\"
+              :prose \"...\"                    ; MD-wrapped, current shape
+              :chunkable-as (:paragraph :section :chapter)
+              :children [(section ...) (section ...) ...])
+
+  (appendix   :book \"...\" :letter \"A\" :title \"...\" :prose \"...\")
+
+  (index      :book \"...\" :entries [(entry :term \"...\" :ref \"...\") ...])
+
+  (section    :heading \"...\" :level N :prose \"...\"
+              :children [...])
+
+  (paragraph  :text \"...\"
+              :kind :paragraph)               ; default
+
+  (sakura-says :text \"...\")                  ; the callout box shape
+
+  (warning    :text \"...\" :severity :info|:warn|:hazard)
+
+  (quote      :text \"...\" :attribution \"...\" :source \"...\")
+
+  (aside      :text \"...\")                   ; sidebar / margin note
+
+  (figure     :caption \"...\"
+              :src \"path/or/url\"              ; ONE of these three
+              :data \"base64-bytes...\"        ;   is populated per figure
+              :svg \"<svg>...</svg>\"          ;   per Section 2
+              :alt \"...\"
+              :width N :height N)
+
+  (table      :caption \"...\"
+              :headers [\"col1\" \"col2\" ...]
+              :rows [[...] [...] ...])
+
+  (cross-ref  :to-book \"...\"
+              :to-chapter N
+              :to-record-id \"...\"            ; anchors within a chapter
+              :label \"...\")                  ; display text
+
+**Chunk hints — pre-materialized or derived on demand?** Recommendation:
+derived on demand, sidecar-cached. When a chapter carries
+`:chunkable-as (:paragraph :section :chapter)`, the pipeline runs a
+paragraph tokenizer on `:prose` at BUILD time, emits a companion file
+`<chapter-file>.chunks.slat` containing a `(chunks :parent-hash \"...\"
+:paragraphs [...] :sections [...])` record, and binds it to the parent
+chapter's `:sha256`. On subsequent builds, if `parent-hash` matches, the
+cache is reused. If not, recompute. This means:
+
+  - Author edits `:prose` → sha changes → chunk cache invalidates → rebuild
+  - No manual maintenance of chunk boundaries in the source SLAT
+  - Chunks are addressable independently for search + LLM ingest
+  - Author does not have to think about chunking at all
+
+The alternative — pre-materializing chunks as sibling records at author
+time — clutters the source and creates a maintenance hazard (author edits
+`:prose`, forgets to re-chunk, chunks drift). Rejected.
+
+**Style semantics — content carries kind, renderer carries kit.** Every
+content record accepts a `:kind` field. Defaults are derived from the
+record head (`(sakura-says ...)` implies `:kind :sakura-says`,
+`(paragraph ...)` implies `:kind :paragraph`). The renderer resolves
+`:kind` against the currently-loaded style kit (Section 6) to determine
+visual output. A record MAY carry `:style` for inline override — it's
+supported for pedagogical exceptions but discouraged; overuse fragments
+the visual system. The kit is where colors, spacing, typographic
+choices live. The kit IS a SLAT file (dogfood). Section 6 details.
+
+**Cross-refs.** A `(cross-ref ...)` resolves at RENDER time. The
+resolver walks the book+chapter+record-id triple:
+
+  - `:to-book \"Book of SLAT\"` → look up the book by name
+  - `:to-chapter 4`             → look up the chapter within the book
+  - `:to-record-id \"the-shape\"` → look up an anchor within the chapter
+
+For HTML, the resolver emits `<a href=\"/books/book-of-slat/ch04#the-shape\">
+label</a>` plus optional hover-preview data attributes. For terminal, it
+emits a labeled section reference the user can jump to via a REPL verb.
+For LLM ingest, it emits a resolved chunk reference so RAG can hop the
+graph. For search, it's a backlink signal (chapters with many incoming
+cross-refs rank higher).
+
+Anchors within a chapter are recommended — record authors can carry
+`:id \"the-shape\"` on any record that a cross-ref might target. The
+render pipeline slugifies missing ids from headings the same way
+render-ref.mjs already does (`slugify()` + counter suffix).
+
+**Preserving existing provenance.** The current wrapped-MD chapters
+carry `:sha256` and `:source-path`. Both stay. The chunk cache binds to
+`:sha256`. The build system uses `:source-path` for reverse lookup
+(operator says 'edit chapter 4 of Book of SLAT' → resolver finds the
+file). The extensions ADD to this metadata; nothing removes it.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 4 — Code as first-class SLAT records (Alfred's amendment)
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     4
+  :title "Code as first-class SLAT records — the redundancy pattern that unlocks query"
+  :prose
+"Alfred's amendment: code deserves first-class records. This section
+specifies what that looks like without breaking anything the wrapped-MD
+chapters already do.
+
+**The record types.**
+
+  (example
+    :kind        :example
+    :lang        :scheme
+    :body        \"(define (square x) (* x x))\\n(square 5)\"
+    :runnable    #t
+    :expected    \"25\"
+    :parent      \"book-of-slat/ch01#the-second-slat\"
+    :order       2)                    ; nth code block in the chapter
+
+  (code
+    :kind        :code
+    :lang        :scheme
+    :body        \"; illustrative only — do not run\\n(define x ...)\"
+    :runnable    #f
+    :parent      \"...\"
+    :order       N)
+
+  (cart-embed
+    :kind        :cart-embed
+    :cart-id     'shop/new-listing-v3
+    :body        \"(cart :head 'shop/new-listing-v3 ...)\"
+    :installable #t
+    :tier        :green
+    :parent      \"...\"
+    :order       N)
+
+  (repl-transcript
+    :kind        :repl-transcript
+    :turns       [(:input \"(+ 1 2)\" :output \"3\")
+                  (:input \"(* 4 5)\" :output \"20\")]
+    :parent      \"...\"
+    :order       N)
+
+  (output
+    :kind             :output
+    :from-example-order  2
+    :text             \"25\"
+    :parent           \"...\")
+
+The `:parent` field points back to a chapter+anchor. `:order` disambiguates
+multiple code blocks within one chapter. `:runnable #t` means the pipeline
+should render a Run button and the LLM ingest pipeline should include this
+as a verified SFT training pair (input=body, output=expected).
+
+**The redundancy pattern.** Code lives BOTH in the parent chapter's
+`:prose` (as a Markdown fenced block, so MD→HTML rendering works with zero
+special-casing) AND as a sibling `(example ...)` / `(code ...)` /
+`(cart-embed ...)` record (so programmatic access needs no MD parsing).
+The two representations must agree; a `:content-hash` field on the sibling
+record binds to the exact bytes inside the MD fence:
+
+  (example
+    ...
+    :body \"(define (square x) (* x x))\\n(square 5)\"
+    :content-hash \"sha256:abc123...\")
+
+At build time, the extractor (Phase 2 in Section 7) verifies for every
+sibling record that hashing the corresponding fence content produces
+`:content-hash`. Mismatch = build fails, author edits `:prose`, extractor
+re-emits siblings. The invariant is checked, not trusted.
+
+**The query API this enables.** Sakura and operator tooling gain:
+
+  ;; every runnable Scheme example across every book
+  (select :kind :example :lang :scheme :runnable #t)
+
+  ;; every cart embedded in Book of Music
+  (select :kind :cart-embed :book \"Book of Music\")
+
+  ;; the code at chapter 3, block 2, of Book of SLAT
+  (select :book \"Book of SLAT\" :chapter-number 3 :order 2)
+
+  ;; every REPL transcript that mentions error handling
+  (select :kind :repl-transcript :turns-contain \"error\")
+
+No MD parsing anywhere. The query walks record indexes. Result: milliseconds
+across the entire book corpus.
+
+**Killer use cases.**
+
+  - **Interactive REPL cells in the browser.** Every `(example ... :runnable
+    #t)` renders as a Run button (already done in render-ref.mjs);
+    additionally, the pipeline can lift the block into an editable REPL
+    cell where the reader edits and re-runs. Same code that runs in the
+    reference now runs in the books.
+
+  - **IDE hover 'Run this'.** LSP hover on a code fence in the source SLAT
+    surfaces the `(example ...)` record, its expected output, its parent
+    chapter, and a Run action. The IDE calls back into the runtime, runs,
+    diffs against `:expected`.
+
+  - **Sakura pulls carts on-demand.** A `(cart-embed ...)` record is a
+    first-class installable. Sakura sees `:cart-id`, looks up the operator
+    tier gating, and offers install with a one-line explanation from the
+    parent chapter's context.
+
+  - **Training data.** LLM ingest walks `(example ... :runnable #t
+    :expected ...)` records and emits SFT pairs directly. No fence parsing,
+    no ambiguous 'is this Scheme or output?' problem. Every pair carries
+    provenance back to a chapter, book, author.
+
+  - **Regression testing.** Nightly build runs every `(example ...
+    :runnable #t)` in the corpus and diffs actual output against
+    `:expected`. Book that doesn't work anymore = red build. Trust in
+    the pedagogy is a CI signal.
+
+  - **Migration safety net.** When a verb signature changes and 43
+    examples across 12 books use it, the query API finds them all in
+    milliseconds. The old world required a grep+regex sweep across MD.
+
+**Extraction plan for the ~1,340 existing wrapped-MD files.** One pass,
+one script:
+
+  1. Read each `(chapter ... :prose \"...\")` record
+  2. Scan `:prose` for fenced code blocks — reuse the same regex the
+     current `renderDocBody` uses (`^\\`\\`\\` <lang>`)
+  3. For each fence, compute `:content-hash` over the fence body
+  4. Emit a sibling record based on lang and heuristics:
+     - `sakura-scheme` / `scheme` / `scm` → `(example :runnable #t)`
+       (heuristic: if the block ends with an expression that produces a
+       value, it's runnable; if it starts with `;;` and defines only,
+       still runnable)
+     - `text` / `output` / no-lang and immediately follows a scheme block
+       → `(output :from-example-order N)`
+     - anything with `(cart ...)` head symbol → `(cart-embed ...)`
+     - other lang → `(code :lang <lang> :runnable #f)`
+  5. Set `:parent`, `:order`, `:content-hash`
+  6. Write the sibling records into the same file OR a companion
+     `.code.slat` (Section 7 defers this choice to Phase 2)
+
+`:prose` stays untouched. The MD renderer keeps working. The new pipeline
+gains query. The two coexist. That is the whole point of the redundancy
+pattern.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 5 — Render pipeline architecture (five targets)
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     5
+  :title "Render pipeline architecture — five targets, one reader, one kit"
+  :prose
+"The pipeline is shaped like a T. The vertical stroke is shared: SLAT
+reader (`slat-loader.js` / `reference-loader.js`) parses records, the
+style kit (Section 6) provides visual attributes, the chunk cache (Section
+3) provides pre-materialized boundaries. The horizontal stroke is
+target-specific emitters. Five today.
+
+**Terminal.** For the kid running `sakura-scheme repl` who types
+`(book 'book-of-slat :chapter 1)` and expects a page to appear. Emitter
+uses box-drawing characters for figures, ANSI 256-color codes mapped from
+the kit's terminal palette, monospace column layout with soft-wrap at 80
+columns default (respects `$COLUMNS`). Code blocks render with syntax
+highlighting via ANSI color; the reference verb `run-example` on the head
+line lets the reader execute in-place. `(figure :svg ...)` renders as
+ASCII-art via a small svg-to-ascii routine for the simple cases and a
+`[figure: <caption>]` placeholder otherwise. `(cross-ref ...)` renders as
+`[→ Book of X, ch N]` and becomes a jumpable target via a REPL verb. This
+is the surface for the North Georgia kid — no browser needed, works over
+SSH, works offline.
+
+**IDE.** For the developer editing a `.slat` file in VS Code (or any LSP
+client). Emitter is the LSP server — it does not produce a static file;
+it responds to hover/complete/references requests. Hover on a code fence
+inside `:prose` surfaces the corresponding `(example ...)` sibling record
+as a hover card: expected output, parent chapter, tier if it's a
+cart-embed. Gutter icons: Run for `:runnable #t`, Install for
+`:installable #t`, Jump-to-def for `:cross-ref`. Cross-refs resolve to
+file positions across the workspace. This surface makes SLAT authoring
+feel like editing code with tests — because that's what it is.
+
+**Web (HTML).** For the operator on `sakura.lacunalabs.ai`. Emitter is a
+generalized `render-book.mjs` that reuses render-ref.mjs's Scheme
+highlighter, `renderDocBody`, `renderCodeBlock`, and `renderInline`. New
+work: walk arbitrary `(chapter ...)` / `(section ...)` records, resolve
+`(cross-ref ...)` to `<a href>` + hover-preview data attributes, render
+`(figure ...)` with the three-lane logic from Section 2, render
+`(sakura-says ...)` / `(warning ...)` / `(quote ...)` as styled callouts
+per the kit. REPL cells become interactive: click Run and the browser
+posts the body to the same REPL endpoint the reference already uses. Sidebar
+TOC uses the same anchor pattern render-ref.mjs uses.
+
+**Search.** For the operator typing 'how do I sign a cart?' into the
+search box. Emitter builds an index from chunk records: paragraph chunks
+provide snippet text, section chunks provide semantic groupings, chapter
+records provide titles + URLs. Ranking uses cross-ref graph as a backlink
+signal, `:kind :sakura-says` chunks boost slightly (Sakura's callouts are
+lesson-shaped), and code chunks appear as separate results 'code example'
+with a snippet of the body. The index is a set of SLAT records too —
+`(search-index :entries [...])` — dogfooded, content-addressed, rebuildable
+from the corpus at any time.
+
+**LLM ingest.** For the training pipeline. Emitter walks the corpus at
+the section-chunk level (the semantic unit is what a language model needs
+for RAG and SFT), emits JSONL where each row carries: chunk text,
+provenance (book+chapter+anchor), `:kind`, cross-ref out-edges (for
+training the model to follow the cross-ref graph), and — critically — the
+verified code sibling records as separate rows tagged `:sft-pair`. The
+training pipeline treats `(example ... :runnable #t :expected ...)` as
+gold pairs. Nothing is invented from the MD; every training row cites a
+record. This is the corpus infrastructure that makes SFT trustworthy.
+
+**What is shared.** SLAT reader. Chunk cache. Cross-ref resolver. Style
+kit. Scheme highlighter (rendering to ANSI vs HTML spans is a small
+per-target adapter). Content-hash verifier.
+
+**What is target-specific.** The emitter. Terminal emits ANSI strings.
+IDE emits LSP responses. Web emits HTML strings. Search emits index rows.
+LLM ingest emits JSONL rows. Each is a small module that consumes the
+same in-memory record graph.
+
+This shape means adding a sixth target — say, print/PDF — is a new
+emitter, not a new pipeline.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 6 — Style kit design
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     6
+  :title "Style kit design — the visual contract, in SLAT"
+  :prose
+"Style kits live at `~/code/curator/scheme-books/.style-kits/<name>.slat`.
+A kit is a SLAT record that maps `:kind` values to visual attributes per
+target. Multiple named kits ship; the renderer takes a `--kit` flag or a
+book-level `:default-kit` declaration.
+
+**Example kit — the default.**
+
+  ;; ~/code/curator/scheme-books/.style-kits/default.slat
+  (style-kit
+    :name    \"default\"
+    :version 1
+    :for-books (\"Book of SLAT\" \"Book of Words\" \"Book of Reason\" *)
+    :kinds
+    ((:paragraph
+        :html    (:tag \"p\" :class \"prose-p\")
+        :terminal (:indent 0 :wrap 80)
+        :ide     (:hover nil))
+
+     (:sakura-says
+        :html    (:tag \"blockquote\" :class \"sakura-callout\"
+                  :prefix \"<strong>Sakura says</strong>\")
+        :terminal (:box :single :prefix \"Sakura says\"
+                   :color :magenta)
+        :ide     (:hover (:badge \"Sakura\" :color \"#e91e63\")))
+
+     (:warning
+        :html    (:tag \"aside\" :class \"warning-{severity}\")
+        :terminal (:box :double :color :yellow)
+        :ide     (:hover (:badge \"Warning\" :color \"#f57c00\")))
+
+     (:code
+        :html    (:tag \"pre\" :class \"code {lang}\"
+                  :children ((:tag \"code\" :highlight scheme)))
+        :terminal (:box :single :highlight scheme)
+        :ide     (:hover (:show-expected #t)))
+
+     (:figure
+        :html    (:tag \"figure\" :class \"figure\"
+                  :caption-tag \"figcaption\")
+        :terminal (:svg-to-ascii #t :fallback \"[figure: {caption}]\")
+        :ide     (:hover nil))
+
+     (:cross-ref
+        :html    (:tag \"a\" :class \"cross-ref\"
+                  :href \"{book-slug}/ch{chapter}#{record-id}\"
+                  :hover-preview #t)
+        :terminal (:format \"[→ {label}]\")
+        :ide     (:definition {book}/{chapter}/{record-id}))))
+
+**Named kits ship out of the box.**
+
+  - `default` — the current visual identity of sakura.lacunalabs.ai
+  - `kid-friendly` — larger type, more color, softer contrast
+  - `terminal` — the terminal-target defaults, extracted so a CI job can
+    render every book to text for archival
+  - `print` — grayscale, higher-density type, no interactive elements
+  - `high-contrast` — a11y variant, WCAG AAA
+
+**Contract.** A kit MUST provide entries for all `:kind` values the render
+pipeline recognizes. If a book uses a `:kind` the kit doesn't map, the
+renderer falls back to a bare tag with the `:kind` name as the class name
+(HTML) or a `[{:kind}: ...]` labeled block (terminal). This means a new
+`:kind` can ship in a chapter before the kit is updated — the fallback
+degrades gracefully.
+
+**Why in SLAT?** Dogfood. Alfred edits colors by editing a SLAT record.
+The kit is content-addressed, signable, versionable — same substrate as
+everything else. It composes with SLAT's canonical writer (kit changes
+have a hash; a book renders differently when the kit hash changes; the
+build system can detect this).
+
+**Author overrides.** A specific chapter can override the kit locally:
+
+  (chapter
+    :book \"Book of SLAT\"
+    :chapter-number 4
+    ...
+    :override-style ((:code (:html (:tag \"pre\" :class \"code emphasized\"))))
+    :prose \"...\")
+
+This is DISCOURAGED but supported. The renderer merges override on top of
+the loaded kit, per-kind. Use it when a chapter genuinely needs to break
+the visual system — rare; if a book needs to break it often, that's a
+signal that the kit itself should change.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 7 — Concrete implementation plan
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     7
+  :title "Concrete implementation plan — phased, with hour estimates where honest"
+  :prose
+"Phase 0 estimates are grounded in the shape of `render-ref.mjs` (334 lines
+of JS with a working highlighter + inline MD subset — a solid extension
+point). Later phases carry TBD because the scope expands multiplicatively
+with each target added.
+
+**Phase 0 — Extend render-ref.mjs to handle generic SLAT chapter records
+with MD-in-`:prose`.**  8-12 hours.
+
+Deliverables:
+  - `docs/site/render-book.mjs` — new file, shares helpers with
+    render-ref.mjs (`highlightScheme`, `renderDocBody`, `renderInline`,
+    `renderCodeBlock`, `slugify`, `esc`)
+  - Extract shared helpers into `docs/site/render-shared.mjs`
+  - New emitter walks `(chapter ...)`, `(section ...)`, `(sakura-says
+    ...)`, `(warning ...)`, `(quote ...)`, `(figure ...)` records
+  - Reads `:prose` MD via existing `renderDocBody`
+  - Emits `dist/books/<slug>/ch<N>.html` per chapter
+  - Sidebar TOC per book
+  - No style kit yet — inline styles matching current sakura.lacunalabs.ai
+    identity
+  - No cross-ref resolution yet — cross-refs render as plain text link
+    placeholders
+
+Verification:
+  - Rendering Book of SLAT chapters 0-4 produces HTML that visually matches
+    the current MD render (which today has to be done by hand)
+  - Byte-for-byte round-trip of `:prose` — the MD in the output HTML source
+    matches the MD in the SLAT input
+
+**Phase 1 — Chunk hints + LLM ingest pipeline.**  6-10 hours.
+
+Deliverables:
+  - Paragraph tokenizer (splits `:prose` on double-newline, respects
+    fenced blocks as atomic)
+  - Section tokenizer (splits on `##` / `###` headings within `:prose`)
+  - Sidecar `.chunks.slat` writer, keyed by parent `:sha256`
+  - Cache invalidation on hash mismatch
+  - `render-llm-ingest.mjs` emitter → JSONL rows tagged
+    `{book, chapter, anchor, kind, text, cross-refs, sft-pair?}`
+
+Verification:
+  - Re-running the build on unchanged corpus produces byte-identical
+    `.chunks.slat` files (deterministic per SLAT canonicalization)
+  - Every JSONL row cites a resolvable record
+
+**Phase 2 — Code extraction pass over the ~1,340 chapters.**  4-6 hours.
+
+Deliverables:
+  - `scripts/extract-code-records.mjs` — one-shot
+  - Walks every SLAT chapter, scans `:prose` for fenced blocks
+  - Emits `(example ...)` / `(code ...)` / `(cart-embed ...)` / `(output
+    ...)` / `(repl-transcript ...)` sibling records
+  - Content-hash verification
+  - Emits into a companion `<chapter>.code.slat` file (keeps `:prose`
+    pristine; keeps `git diff` on prose separable from code metadata)
+  - Dry-run mode reports counts by kind and detects ambiguous fences for
+    author review
+
+Verification:
+  - Every `(example ... :runnable #t)` extracted from a Scheme fence
+    parses under `slat-read`
+  - Nightly `run-all-examples` CI job diffs actuals against `:expected` on
+    a sample of ~100 records (grows over time)
+
+**Phase 3 — Media records + cross-refs.**  8-12 hours.
+
+Deliverables:
+  - `(figure ...)` renderer with three-lane logic (`:src`, `:data`,
+    `:svg`)
+  - `(table ...)` renderer (HTML `<table>`, terminal box-draw)
+  - `(cross-ref ...)` resolver: builds a global anchor index across all
+    books at build time, resolves `:to-book` + `:to-chapter` +
+    `:to-record-id` into a URL + hover-preview payload
+  - HTML hover-preview: on `:hover`, fetch the target chunk's first
+    paragraph as tooltip
+  - Anchor-id backfill: chapters without `:id` on records get slugified
+    ids from headings
+
+Verification:
+  - Every cross-ref in the corpus resolves OR is reported as a build
+    error
+  - Circular/broken cross-refs surface with source path + line
+
+**Phase 4 — Terminal + IDE targets.**  TBD after Phase 0.
+
+The scope depends on how much of Phase 0's shared helpers can be
+retargeted vs. rebuilt. Estimate after Phase 0 completes and the shared/
+target boundary is empirical.
+
+Terminal deliverables (sketch):
+  - `render-terminal.mjs` — walks records, emits ANSI-decorated strings
+  - `sakura-scheme repl` verb: `(book :name ... :chapter N)` prints the
+    chapter
+  - Box-draw for `(figure ...)`, `(sakura-says ...)`, `(warning ...)`
+
+IDE deliverables (sketch):
+  - `sakura-scheme-lsp` server exposing hover, definition, references
+  - VS Code extension consumes the LSP
+  - Gutter Run icons trigger REPL execution via the language runtime
+
+**Phase 5 — Search index.**  TBD after Phase 1 (depends on chunk shape
+being stable).
+
+**Style kit — cross-cutting.** The style-kit spec (Section 6)
+is authored during Phase 0 and consumed starting Phase 3 (when the visual
+system stops being ad-hoc inline styles and starts being kit-driven). Kit
+work is ~3-5 hours interleaved.
+
+**Total to a rendered book corpus with code query + LLM ingest + cross-
+refs:** roughly 26-40 hours across Phases 0-3, before Phase 4/5 targets.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 8 — What we extend, not rewrite
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     8
+  :title "What we extend, not rewrite — the surfaces that already work"
+  :prose
+"Three modules stay. Any rewrite temptation is a rewrite of scope, not a
+rewrite of code.
+
+**`~/code/scheme-lang/docs/site/render-ref.mjs`** — extend by extracting
+its helpers into `render-shared.mjs` (used by the new `render-book.mjs`)
+and keeping the existing reference-emit code path intact. The reference
+site keeps building the same way; the book site is a new emitter that
+consumes the same helpers. Zero regression on the reference.
+
+**`~/code/scheme-lang/src/slat-loader.js`** — the SLAT reader. It works,
+it is the single source of truth for the round-trip guarantee, and every
+new emitter reads through it. Do not fork it, do not shim it, do not add
+a book-only variant. If the loader needs a new capability (say, tolerant
+mode for a specific book), extend it in-place with a flag.
+
+**`~/code/scheme-lang/src/reference-loader.js`** — the wrapper that
+produces `ref.verbList` / `ref.coreList` from the reference SLAT. Keep
+it. Add a peer `book-loader.js` that produces `book.chapters` /
+`book.appendices` / `book.anchors` from a book SLAT (or set of files).
+The two loaders share the underlying reader and each shape their output
+for their consumer.
+
+**Do not touch.** The canonical writer. The content-addressing rules.
+The MD in `:prose` (Phase 2 emits SIBLINGS, not replacements). The
+Scheme highlighter (extend if a new lang is needed; do not refactor the
+tokenizer during a render sprint). `styles.css` for the reference site
+(new `styles-book.css` for the book site, or a shared file split by
+section).
+
+**Rule of thumb.** If the change fits behind a new file or a new arg on
+an existing function, extend. If it wants to rewrite an interface a
+downstream consumer depends on, stop and ask.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; Section 9 — Risks + open questions for Alfred
+;; ─────────────────────────────────────────────────────────────────────
+
+(section
+  :n     9
+  :title "Risks + open questions for Alfred (decisions before Phase 0 fires)"
+  :prose
+"None of these are blockers for the general shape — but each one, if left
+unanswered, becomes a small tax multiplied across ~1,340 chapters.
+
+**Q1. Companion file vs same file for extracted code records.** Phase 2
+proposes `<chapter>.code.slat` as a companion. Rationale: `git diff` on
+prose stays separable from code metadata, and re-runs of the extractor
+are idempotent without touching the author's source. Alternative:
+extracted records go into the same file as sibling top-level records
+inside the chapter. Cleaner in one sense (one file per chapter), messier
+in another (extractor writes into author's file). RECOMMENDATION:
+companion file. **Alfred decides.**
+
+**Q2. Chunk cache location.** Same question, different artifact.
+`<chapter>.chunks.slat` companion file, or an out-of-tree cache in
+`~/.cache/curator/chunks/`? Companion file makes chunks reviewable in
+git and reproducible without a cache warm. Out-of-tree keeps the source
+tree clean. RECOMMENDATION: companion file for now; move to out-of-tree
+if chunk artifacts become a git noise problem. **Alfred confirms.**
+
+**Q3. Cross-ref break policy.** When a `(cross-ref ...)` cannot be
+resolved, does the build fail, warn, or emit a placeholder? Reference
+material treats broken refs as build errors. Book material may want
+gentler treatment during authoring. RECOMMENDATION: warn during author
+mode, fail on release build. **Alfred sets the release gate.**
+
+**Q4. Kit ownership.** Where does the `default` kit live for editing?
+`~/code/curator/scheme-books/.style-kits/` is proposed but it means the
+kit ships with the corpus, not with the renderer. Alternative: kit lives
+in `~/code/scheme-lang/docs/site/kits/` alongside the renderer.
+RECOMMENDATION: with the corpus — Alfred edits book visuals when he
+edits book content. But if he wants renderer + kit versioned together,
+it moves. **Alfred picks.**
+
+**Q5. Run-button endpoint for the book site.** The reference site already
+has a REPL endpoint. The book site can reuse it or run in-page via
+WASM/JS. RECOMMENDATION: reuse the reference site's REPL endpoint in
+Phase 0, evaluate in-page execution in Phase 3+. **No decision needed
+for Phase 0.**
+
+**Q6. Base64 image size cap.** `(figure :data \"...\")` inlines base64.
+For a 500KB PNG that's ~680KB of SLAT. Cap at some limit and require
+`:src` above it? RECOMMENDATION: 100KB cap on `:data`, above which the
+extractor / linter warns and suggests `:src`. **Alfred confirms cap.**
+
+**Q7. Sibling-record collision with existing `:prose` slugs.**
+render-ref.mjs uses `slugify(text) + '-' + counter` for heading anchors.
+If a chapter regenerates its slugs on every build, cross-refs pointing
+to counter-suffixed anchors break. Solution: prefer author-supplied
+`:id` on records, fall back to stable-slug (hash of the heading text,
+not counter). RECOMMENDATION: stable-slug hash for auto-generated
+anchors. **Alfred confirms.**
+
+**Risks (not questions).**
+
+  - **Corpus scale.** ~1,340 chapters, some large. Naive per-record
+    parsing on every build costs. Chunk cache + content-hash
+    invalidation is not optional — Phase 1 must ship WITH Phase 0 for
+    build times to stay honest.
+  - **Kit drift.** Multiple named kits invite the visual system to
+    fragment. Mitigation: CI check that every `:kind` in the corpus
+    resolves in every named kit, or falls back cleanly.
+  - **Cross-ref graph rot.** Books evolve. Anchors move. Broken cross-
+    refs accumulate silently unless the build fails on them. Mitigation:
+    strict cross-ref check on release builds (Q3).
+  - **Code-extraction drift.** `:prose` fence changes without extractor
+    re-run mean sibling records go stale. Mitigation: `:content-hash`
+    verification is a CI gate (Section 4).
+  - **The `:_` reserved namespace.** Section 4 introduces new kinds
+    (`:parent`, `:order`, `:content-hash`). None start with `:_` so
+    they are legal per Chapter 4. But `:content-hash` overlaps
+    semantically with SLAT's built-in content-addressing (Chapter 9). We
+    should either use SLAT's canonical hash directly or namespace the
+    field as `:code-content-hash` to avoid confusion. RECOMMENDATION:
+    use SLAT's canonical content-hash function; name the field
+    `:body-hash` to make it clear it hashes only `:body`. **Naming
+    decision Alfred can confirm.**
+
+That is the full plan. Phase 0 can start once Q1, Q2, Q4, Q7 are
+answered (Q3 and Q6 come up later). None of the answers are load-bearing
+for the shape.")
+
+
+;; ─────────────────────────────────────────────────────────────────────
+;; End of strategy doc
+;; ─────────────────────────────────────────────────────────────────────
+
+(end-of-doc
+  :sections-landed 9
+  :next-action     "Alfred reviews Section 9 questions; Phase 0 fires once Q1/Q2/Q4/Q7 answered."
+  :owner           "Lacuna Engineering")

@@ -1,0 +1,357 @@
+;; ═══════════════════════════════════════════════════════════════
+;; HANA — Math/Plot lane audit report
+;; Lane   : solve/* + plot/* + seq/* + calc/*
+;; Branch : verbs/wire-596-2026-07-14
+;; Date   : 2026-07-14
+;; Author : Hana (Lacuna Eng)
+;;
+;; Alfred: "We can't lie to people. They trust us." Every claim in
+;; this file cross-checked against src/*.js + a fresh REPL run.
+;; Descriptor-return counts as STUB — no math actually happened.
+;; ═══════════════════════════════════════════════════════════════
+
+(audit
+  :lane "hana-math"
+  :date "2026-07-14"
+  :reference-file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :schema-file    "docs/SAKURA-SCHEME-REFERENCE-SCHEMA.slat"
+  :schema-version "1.0"
+
+  :summary
+    (:reference-verbs-in-lane 69
+     :real-impl               29
+     :stub-descriptor         40
+     :missing-from-src        0
+     :missing-from-reference  0)
+
+  :counts-by-namespace
+    ((solve :ref-count 13 :real 13 :stub  0 :missing 0)
+     (plot  :ref-count 14 :real  0 :stub 14 :missing 0)
+     (seq   :ref-count 12 :real 11 :stub  1 :missing 0)
+     (calc  :ref-count 30 :real  4 :stub 26 :missing 0)))
+
+;; ─── solve/* — 13 verbs, ALL wired real ────────────────────────
+
+(verb-status :name "solve/completing-square" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 923
+  :verified-repl "(solve/completing-square 1 4 3) -> (1 -2 -1)"
+  :notes "Returns (a h k) triple; reference entry lists (h k) — signature drift to reconcile in Phase B.")
+
+(verb-status :name "solve/distance" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 898
+  :verified-repl "(solve/distance 0 0 3 4) -> 5"
+  :notes "Euclidean, uses Math.hypot for numerical stability.")
+
+(verb-status :name "solve/interest" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 900
+  :verified-repl "(solve/interest 1000 0.05 3) -> 150"
+  :notes "Simple interest P*r*t. Reference signature says (p r n t) — arity drift; current impl is 3-arg (P r t). Reconcile in Phase B (drop compounding n or add it).")
+
+(verb-status :name "solve/linear" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 1370
+  :verified-repl "(solve/linear 2 -6) -> 3"
+  :notes "Solves a*x + b = 0.")
+
+(verb-status :name "solve/midpoint" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 899
+  :verified-repl "(solve/midpoint 0 0 4 6) -> (2 3)")
+
+(verb-status :name "solve/percent-change" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 901
+  :verified-repl "(solve/percent-change 100 125) -> 25"
+  :notes "Returns raw percentage (not fraction).")
+
+(verb-status :name "solve/proportion" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 905
+  :verified-repl "(solve/proportion 2 4 5) -> 2.5"
+  :notes "Solves a/b = c/x for x. Returns a*c/b — but a*c/b is x when a/b=c/x is solved as x=b*c/a. Current impl is likely mis-specified; verify semantics in Phase B.")
+
+(verb-status :name "solve/pythagorean-triple?" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 919
+  :verified-repl "(solve/pythagorean-triple? 3 4 5) -> #t")
+
+(verb-status :name "solve/quadratic" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 1371
+  :verified-repl "(solve/quadratic 1 -3 2) -> (2 1)"
+  :notes "Returns real roots when discriminant >= 0; otherwise handle in Phase B.")
+
+(verb-status :name "solve/slope-intercept" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 906
+  :verified-repl "(solve/slope-intercept 0 1 2 5) -> (2 1)")
+
+(verb-status :name "solve/system-2x2" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 913
+  :verified-repl "(solve/system-2x2 2 3 8 1 -1 -1) -> (1 2)")
+
+(verb-status :name "solve/unit-circle" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 937
+  :verified-repl "(solve/unit-circle 0) -> (1 0)")
+
+(verb-status :name "solve/vertex" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 930
+  :verified-repl "(solve/vertex 1 -4 3) -> (2 -1)")
+
+;; ─── plot/* — 14 verbs, ALL stubs (descriptors) ────────────────
+
+(verb-status :name "plot/bar" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 1345
+  :verified-repl "(plot/bar (list 1 2 3)) -> (\"plot/bar\" (1 2 3) ())"
+  :notes "Descriptor stub. Phase B: rasterize bars into framebuffer via new src/plot.js.")
+
+(verb-status :name "plot/contour" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 1352
+  :verified-repl "descriptor return"
+  :notes "Phase B: marching-squares contour of f(x,y) over a grid.")
+
+(verb-status :name "plot/fit-grid" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 1020
+  :verified-repl "descriptor return"
+  :notes "Phase B: layout helper that returns (rows cols) fitting N charts.")
+
+(verb-status :name "plot/from-series" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 1020
+  :verified-repl "descriptor return"
+  :notes "Phase B: convert seq/* output to a plot record.")
+
+(verb-status :name "plot/function" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 1355
+  :verified-repl "descriptor return"
+  :notes "Phase B: sample fn over [x0,x1] and rasterize into framebuffer.")
+
+(verb-status :name "plot/histogram" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 1346
+  :verified-repl "descriptor return"
+  :notes "Phase B: bin data + rasterize into framebuffer.")
+
+(verb-status :name "plot/line" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 1343
+  :verified-repl "descriptor return"
+  :notes "Phase B: connect points, rasterize into framebuffer.")
+
+(verb-status :name "plot/nice-domain" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 1020
+  :verified-repl "descriptor return"
+  :notes "Phase B: nice-numbers algorithm for axis ticks — pure, no framebuffer.")
+
+(verb-status :name "plot/parametric" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 1354
+  :verified-repl "descriptor return"
+  :notes "Phase B: sample (x(t),y(t)) over [t0,t1] and rasterize.")
+
+(verb-status :name "plot/phase-portrait" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 1020
+  :verified-repl "descriptor return"
+  :notes "Phase B: quiver plot of a 2D vector field; hardest of the lot.")
+
+(verb-status :name "plot/render-svg" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 1020
+  :verified-repl "descriptor return"
+  :notes "Phase B: take a plot record and produce an SVG string.")
+
+(verb-status :name "plot/scatter" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 1344
+  :verified-repl "descriptor return"
+  :notes "Phase B: rasterize points as discs into framebuffer.")
+
+(verb-status :name "plot/vector-field" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 1021
+  :verified-repl "descriptor return"
+  :notes "Phase B: sample F(x,y) on a grid, draw arrows into framebuffer.")
+
+(verb-status :name "plot/with" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 1022
+  :verified-repl "descriptor return"
+  :notes "Phase B: compose plot options (color, range, title). Pure record merge.")
+
+;; ─── seq/* — 12 verbs, 11 wired, 1 stub ────────────────────────
+
+(verb-status :name "seq/arithmetic" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 823
+  :verified-repl "(seq/arithmetic 1 2 5) -> (1 3 5 7 9)")
+
+(verb-status :name "seq/arithmetic-sum" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 769
+  :verified-repl "(seq/arithmetic-sum 1 2 5) -> 25")
+
+(verb-status :name "seq/fibonacci" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 834
+  :verified-repl "(seq/fibonacci 10) -> (0 1 1 2 3 5 8 13 21 34)")
+
+(verb-status :name "seq/geometric" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 828
+  :verified-repl "(seq/geometric 1 2 5) -> (1 2 4 8 16)")
+
+(verb-status :name "seq/geometric-inf-sum" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 778
+  :verified-repl "(seq/geometric-inf-sum 1 0.5) -> 2")
+
+(verb-status :name "seq/geometric-sum" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 773
+  :verified-repl "(seq/geometric-sum 1 2 5) -> 31")
+
+(verb-status :name "seq/lucas" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 784
+  :verified-repl "(seq/lucas 8) -> Lucas sequence up to n")
+
+(verb-status :name "seq/nth-term" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 783
+  :verified-repl "(seq/nth-term 3 2 5) -> 11"
+  :notes "Currently arithmetic-only. Reference implies generic. Reconcile in Phase B.")
+
+(verb-status :name "seq/partial-sums" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 875
+  :verified-repl "(seq/partial-sums (list 1 2 3 4)) -> (1 3 6 10)")
+
+(verb-status :name "seq/product" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 874
+  :verified-repl "(seq/product (list 1 2 3 4)) -> 24")
+
+(verb-status :name "seq/recurrence" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 800
+  :verified-repl "(seq/recurrence ...) -> descriptor"
+  :notes "Phase B: real impl — apply step fn n times starting from init.")
+
+(verb-status :name "seq/sigma" :impl-status "wired"
+  :impl-file "src/wired-verbs.js" :impl-line 791
+  :verified-repl "(seq/sigma (lambda (i) i) 1 10) -> 55")
+
+;; ─── calc/* — 30 verbs, 4 wired, 26 stubs ──────────────────────
+
+(verb-status :name "calc/arc-length" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 947
+  :notes "Phase B: integral of sqrt(1+f'(x)^2) over [a,b].")
+
+(verb-status :name "calc/arc-length-param" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 947
+  :notes "Phase B: integral of |r'(t)| over [t0,t1] for parametric curves.")
+
+(verb-status :name "calc/average-value" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 947
+  :notes "Phase B: (1/(b-a)) * integral(f, a, b).")
+
+(verb-status :name "calc/continuous?" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 948
+  :notes "Phase B: numeric continuity test at a point — |lim - f(x)| < tol.")
+
+(verb-status :name "calc/critical-points-1d" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 948
+  :notes "Phase B: sample f' over [a,b] and locate sign changes / near-zero points.")
+
+(verb-status :name "calc/curl" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2170
+  :notes "Phase B: 2D scalar or 3D vector curl via finite differences.")
+
+(verb-status :name "calc/derivative" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 890
+  :verified-repl "(calc/derivative (lambda (x) (* x x)) 3) -> ~6.0")
+
+(verb-status :name "calc/differentiable?" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 948
+  :notes "Phase B: check left/right derivatives agree.")
+
+(verb-status :name "calc/directional-derivative" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 949
+  :notes "Phase B: gradient . unit-vector.")
+
+(verb-status :name "calc/divergence" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2170
+  :notes "Phase B: sum of partial derivatives.")
+
+(verb-status :name "calc/extrema-1d" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 949
+  :notes "Phase B: classify critical points via second-derivative test.")
+
+(verb-status :name "calc/gradient" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2169
+  :notes "Phase B: vector of partial derivatives via finite differences.")
+
+(verb-status :name "calc/hessian" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2169
+  :notes "Phase B: matrix of second partial derivatives.")
+
+(verb-status :name "calc/integral" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 893
+  :verified-repl "(calc/integral (lambda (x) x) 0 1) -> ~0.5")
+
+(verb-status :name "calc/jacobian" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2169
+  :notes "Phase B: matrix of first partial derivatives for vector-valued fn.")
+
+(verb-status :name "calc/laplacian" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2170
+  :notes "Phase B: trace of hessian; sum of unmixed second partials.")
+
+(verb-status :name "calc/limit" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 903
+  :verified-repl "(calc/limit (lambda (x) (* x x)) 2) -> ~4"
+  :notes "One-sided approximation; upgrade in Phase B to two-sided average with fallback probing.")
+
+(verb-status :name "calc/line-integral" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 949
+  :notes "Phase B: integral of F . r'(t) over parametric curve.")
+
+(verb-status :name "calc/newton" :impl-status "wired"
+  :impl-file "src/reference-impls.js" :impl-line 907
+  :verified-repl "(calc/newton (lambda (x) (- (* x x) 2)) 1) -> ~1.4142")
+
+(verb-status :name "calc/partial" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 950
+  :notes "Phase B: partial derivative w.r.t. i-th variable via finite differences.")
+
+(verb-status :name "calc/radius-of-convergence" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2176
+  :notes "Phase B: ratio test on the coefficient sequence.")
+
+(verb-status :name "calc/riemann-sum" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2175
+  :notes "Phase B: left/right/midpoint rectangle sum over [a,b].")
+
+(verb-status :name "calc/second-derivative" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 950
+  :notes "Phase B: (f(x+h) - 2f(x) + f(x-h)) / h^2.")
+
+(verb-status :name "calc/series-converges?" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 950
+  :notes "Phase B: ratio test / partial-sums stability.")
+
+(verb-status :name "calc/surface-integral" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 951
+  :notes "Phase B: parametric surface integral via double Simpson.")
+
+(verb-status :name "calc/surface-revolution" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 951
+  :notes "Phase B: 2pi * integral(f * sqrt(1+f'^2), a, b).")
+
+(verb-status :name "calc/tangent-line" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2172
+  :notes "Phase B: returns (slope y-intercept) at x=x0.")
+
+(verb-status :name "calc/taylor" :impl-status "stub"
+  :impl-file "src/reference-impls.js" :impl-line 2171
+  :notes "Phase B: Taylor coefficient list around center to degree n.")
+
+(verb-status :name "calc/total-differential" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 952
+  :notes "Phase B: sum of partials * deltas — linear approximation for multi-var.")
+
+(verb-status :name "calc/volume-revolution" :impl-status "stub"
+  :impl-file "src/wired-verbs.js" :impl-line 952
+  :notes "Phase B: pi * integral(f^2, a, b) via disk method.")
+
+;; ─── Phase B plan ───────────────────────────────────────────────
+
+(phase-b-plan
+  :new-modules ("src/plot.js" "src/calc.js")
+  :existing-modules ("src/reference-impls.js" "src/wired-verbs.js" "src/framebuffer.js")
+
+  :ordering
+    ("1. seq/recurrence — smallest, isolated, warms up the format."
+     "2. solve/* — 13 verbs already wired; upgrade reference entries to new schema with 5 tiers each + impl-status wired."
+     "3. seq/* — 11 already wired; upgrade reference entries + reconcile nth-term generality."
+     "4. calc/* — 4 already wired, 26 stubs to implement in new src/calc.js: gradient hessian jacobian divergence curl laplacian partial directional-derivative second-derivative taylor tangent-line critical-points-1d extrema-1d continuous? differentiable? radius-of-convergence riemann-sum series-converges? arc-length arc-length-param average-value line-integral surface-integral surface-revolution total-differential volume-revolution."
+     "5. plot/* — new src/plot.js. Real rasterization into the shared framebuffer for line/scatter/bar/histogram/function/parametric/contour/vector-field/phase-portrait. Pure records for from-series/nice-domain/render-svg/with/fit-grid.")
+
+  :author-blocked
+    ("None at Phase A. If any Phase B verb turns out to have "
+     "ambiguous reference semantics, that entry will ship as "
+     ":impl-status \"author-blocked\" per Alfred's no-auto-stub rule."))

@@ -1,0 +1,214 @@
+; SAKURA SCHEME REFERENCE — VERB COUNT RECONCILIATION REPORT
+; Audit Date: 2026-07-14
+; Reconciler: file-count audit + loader inspection + test validation
+
+; ════════════════════════════════════════════════════════════════════════════
+; EXECUTIVE SUMMARY
+; ════════════════════════════════════════════════════════════════════════════
+;
+; ONE TRUE NUMBER: 1,167 verbs + 70 core language forms
+;
+; The file SAKURA-SCHEME-REFERENCE.slat contains exactly 1,167 (verb ...) 
+; records and 70 (core-form ...) records. The meta-header field :verb-count 
+; claims 1,160, which is STALE by 7 verbs. These 7 were added in Round 2
+; (cortex first-class wrappers: read/write/topk + 4 more, presumably).
+;
+; The core-form count of 70 is CORRECT. The header claims both 120 and 128
+; in different places, but the actual file has exactly 70.
+
+; ════════════════════════════════════════════════════════════════════════════
+; ACTUAL COUNTS FROM FILE (GROUND TRUTH)
+; ════════════════════════════════════════════════════════════════════════════
+
+(true-count
+  :verbs 1167
+  :core-forms 70
+  :other-records 0
+  :file-line-count 21842
+  :audit-method "grep -c '^(verb' and '^(core-form' from SAKURA-SCHEME-REFERENCE.slat"
+  :audit-date "2026-07-14"
+)
+
+; ════════════════════════════════════════════════════════════════════════════
+; SOURCES OF DISCREPANCY
+; ════════════════════════════════════════════════════════════════════════════
+
+(discrepancy
+  :name "comment-header-line-3"
+  :source "docs/SAKURA-SCHEME-REFERENCE.slat:3"
+  :asserted "1,160 verbs + 128 core language forms"
+  :actual-verbs 1167
+  :actual-core-forms 70
+  :drift-verbs +7
+  :drift-core-forms -58
+  :reason "Stale header. The comment was written when verb count was 1,160 and core-form count was 128. File now has +7 cortex verbs. Core-form count discrepancy is unexplained."
+)
+
+(discrepancy
+  :name "reference-meta-verb-count"
+  :source "docs/SAKURA-SCHEME-REFERENCE.slat:14"
+  :field ":verb-count"
+  :asserted 1160
+  :actual 1167
+  :drift +7
+  :reason "Meta field is stale. Should be updated to 1167."
+)
+
+(discrepancy
+  :name "reference-meta-core-form-count"
+  :source "docs/SAKURA-SCHEME-REFERENCE.slat:15"
+  :field ":core-form-count"
+  :asserted 120
+  :actual 70
+  :drift -50
+  :reason "Meta field is stale. Should be updated to 70. Suggests a prior mismatch or cleanup."
+)
+
+; ════════════════════════════════════════════════════════════════════════════
+; NAMESPACE BREAKDOWN (TOP 20 LIBRARIES BY VERB COUNT)
+; ════════════════════════════════════════════════════════════════════════════
+
+(namespace-breakdown
+  :library "core"     :count 322
+  :library "alg"      :count 59
+  :library "geom"     :count 57
+  :library "ai"       :count 45
+  :library "entity"   :count 40
+  :library "world"    :count 39
+  :library "curve"    :count 37
+  :library "ops"      :count 35
+  :library "calc"     :count 30
+  :library "nt"       :count 29
+  :library "topo"     :count 27
+  :library "game"     :count 26
+  :library "math"     :count 25
+  :library "sym"      :count 20
+  :library "linalg"   :count 20
+  :library "phys"     :count 19
+  :library "part"     :count 19
+  :library "exact"    :count 19
+  :library "stat"     :count 18
+  :library "complex"  :count 18
+  :total 1167
+  :notes "Core library dominates (27.5% of all verbs). Next 19 libraries comprise the remainder."
+)
+
+; ════════════════════════════════════════════════════════════════════════════
+; LOADER BEHAVIOR ANALYSIS
+; ════════════════════════════════════════════════════════════════════════════
+
+(loader-drift
+  :component "reference-loader.js"
+  :behavior "Reads SLAT file, parses all (verb ...) forms, populates verbs Map + verbList"
+  :expected-meta-verb-count 1160
+  :actual-parsed-verbs 1167
+  :expected-meta-core-form-count 120
+  :actual-parsed-core-forms 70
+  :discrepancy-verbs +7
+  :discrepancy-core-forms -50
+  :metadata-source ":verb-count and :core-form-count from (reference ...) S-expression"
+  :metadata-value-verb-count 1160
+  :metadata-value-core-form-count 120
+  :notes "Loader correctly parses 1167 verb records and 70 core-form records. But metadata fields (:verb-count, :core-form-count) are stale—they're cached in the (reference ...) form and not recalculated on each load."
+)
+
+; ════════════════════════════════════════════════════════════════════════════
+; TEST FAILURE ANALYSIS
+; ════════════════════════════════════════════════════════════════════════════
+
+(test-failure
+  :file "tests/verbs/reference-loader.test.mjs"
+  :failing-test "loader — parses and counts"
+  :test-line 15
+  :test-code "assert.equal(ref.verbs.size, 1160, 'expected 1,160 verbs (1,157 base + 3 cortex first-class wrappers added Round 2)')"
+  :actual-ref.verbs.size 1167
+  :actual-ref.coreForms.size 70
+  :expected-verbs 1160
+  :actual-verbs 1167
+  :drift +7
+  :root-cause "File now contains 1167 verb records, but test hardcodes expectation of 1160. Test comment says '1,157 base + 3 cortex wrappers' = 1160, but the actual file has +7 more verbs than the original 1157 baseline."
+  :extra-verbs-over-baseline 10
+  :notes "Test was written to expect 1160 (1157 base + 3 cortex). But the file has 1167, meaning 10 extra verbs over the 1157 baseline, not just 3."
+)
+
+; ════════════════════════════════════════════════════════════════════════════
+; CROSS-REFERENCE: MEMORY CLAIMS
+; ════════════════════════════════════════════════════════════════════════════
+
+(memory-claims
+  :claim-1 "1,157 verbs + 70 core forms"
+  :status "PARTIALLY CORRECT"
+  :explanation "70 core forms is correct. 1,157 verbs is the BASELINE (Round 1), not current. Actual current is 1,167."
+  :claim-2 "1,160 verbs + 128 core forms (Motoi burndown)"
+  :status "PARTIALLY CORRECT"
+  :explanation "1,160 verbs matches the outdated meta-header. 128 core forms does NOT match actual file (70)."
+  :claim-3 "1,160 verbs + 120 core forms (Motoi burndown, variant)"
+  :status "CLOSER"
+  :explanation "1,160 verbs matches meta-header. 120 core forms still wrong (actual is 70)."
+  :claim-4 "1,157 verbs + 70 core forms (Motoi burndown, another variant)"
+  :status "CORRECT FOR CORE, OUTDATED FOR VERBS"
+  :explanation "70 core forms is correct. 1,157 was the baseline before Round 2."
+)
+
+; ════════════════════════════════════════════════════════════════════════════
+; RECOMMENDATIONS
+; ════════════════════════════════════════════════════════════════════════════
+
+(recommendation
+  :priority 1
+  :action "UPDATE_SLAT_HEADER"
+  :file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :changes (
+    ("line 3" "OLD: ; 1,160 verbs + 128 core language forms" "NEW: ; 1,167 verbs + 70 core language forms")
+    ("line 14" "OLD: :verb-count 1160" "NEW: :verb-count 1167")
+    ("line 15" "OLD: :core-form-count 120" "NEW: :core-form-count 70")
+  )
+  :rationale "Meta-header must reflect actual file content. 1,167 verbs + 70 core forms are the truth."
+)
+
+(recommendation
+  :priority 2
+  :action "UPDATE_TEST_ASSERTION"
+  :file "tests/verbs/reference-loader.test.mjs"
+  :changes (
+    ("line 15" "OLD: assert.equal(ref.verbs.size, 1160, 'expected 1,160 verbs (1,157 base + 3 cortex first-class wrappers added Round 2)')" "NEW: assert.equal(ref.verbs.size, 1167, 'expected 1,167 verbs (1,157 base + 10 cortex/expansion verbs added)')")
+    ("line 16" "OLD: assert.equal(ref.coreForms.size, 70, 'expected 70 core forms')" "NEW: (keep as-is, now correct)")
+  )
+  :rationale "Test is failing because file now has 1,167 verbs, not 1,160."
+)
+
+(recommendation
+  :priority 3
+  :action "DOCUMENT_ROUND_2_EXPANSION"
+  :file "docs/SAKURA-SCHEME-REFERENCE.slat"
+  :changes (
+    ("line 6-8" "Clarify that Round 2 added +10 verbs total, not just +3 (read/write/topk + 7 others)")
+  )
+  :rationale "Comment mentions only 3 cortex wrappers but 7 extra verbs are in the file. Either the comment is incomplete, or 7 orphaned verbs need to be identified and documented."
+)
+
+(recommendation
+  :priority 4
+  :action "INVESTIGATE_CORE_FORM_VARIANCE"
+  :file "docs/SAKURA-SCHEME-REFERENCE.slat + memory notes"
+  :question "Why does the header claim :core-form-count 120 when the file contains exactly 70 (core-form ...) records? Was there a prior cleanup? A rename? A miscount?"
+  :suggested-investigation (
+    "1. Search git history for when core-form count changed"
+    "2. Diff old version of reference file vs. current to find when 50 core-forms vanished/renamed"
+    "3. Check if (form ...) records exist separately (grep '^(form' returns 0 matches)"
+  )
+)
+
+; ════════════════════════════════════════════════════════════════════════════
+; CONCLUSION
+; ════════════════════════════════════════════════════════════════════════════
+
+(final-verdict
+  :true-verb-count 1167
+  :true-core-form-count 70
+  :header-status "STALE — needs immediate update to match file"
+  :test-status "FAILING — expects 1160 verbs, gets 1167; expects 70 core forms (correct), but needs 1167 in assertion"
+  :file-status "HEALTHY — no duplicates, all 1,167 verbs unique, 70 core-forms valid"
+  :action-items-count 4
+  :severity "MEDIUM — metadata and test are out of sync with actual file content, but the file itself is sound"
+)

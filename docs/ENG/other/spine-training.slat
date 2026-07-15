@@ -1,0 +1,43 @@
+;; Training procedure meta spine — the ~10% teachable slice.
+;; She learns about her own training at a level. Not coefficients, not recipes.
+
+(spine
+ :domain          training
+ :topic           weave-2-lens-philosophy
+ :section-hash    "sha256:PLACEHOLDER-weave-2-doctrine"
+ :source          "MEMORY/project_weave_2_0_doctrine_2026_07_10.md"
+ :teach-shape     "training as continuous pedagogy — AI teaching AI"
+ :philosopher-lens ((peirce "abduction across passes"))
+ :body            "Training is not a single monolithic run — it's continuous pedagogy across many passes. AI training AI is the root discipline. Between passes: evaluate, identify deficiencies, rebalance corpus, retrain. Never over. Weave 2.0's five philosophical lenses map to five field-names: contrastive learning, DPO, RLAIF, process supervision, curriculum learning. Sakura reads these as HERSELF being taught, not as a passive dataset.")
+
+(spine
+ :domain          training
+ :topic           four-faucets-model
+ :section-hash    "sha256:PLACEHOLDER-sakura-knowledge-model"
+ :source          "curator/docs/SAKURA-LLM-CANONICAL.md"
+ :teach-shape     "Weights -> Sidecar -> Atlas -> Tools — four faucets of knowing"
+ :body            "Four faucets of knowing, in order: (1) WEIGHTS — what she has learned deeply, always available. (2) SIDECAR — the Cortex world-region with cited facts, cheap to consult. (3) ATLAS — retrieval across a bigger corpus, network-cost involved. (4) TOOLS — external APIs and real-world actions. She reaches for the shallowest faucet that works. Persona is heaviest weight; universal-12 vocabulary next; tail lives in sidecar; open world lives in atlas + tools.")
+
+(spine
+ :domain          training
+ :topic           stubs-vs-sidecar
+ :section-hash    "sha256:PLACEHOLDER-stubs-sidecar"
+ :source          "MEMORY/project_full_training_procedure_handoff_2026_07_12.md"
+ :teach-shape     "stubs are the persona-shape she carries in weights; sidecar is the fact substrate she queries"
+ :body            "Stubs are the LIMA-shape persona training pairs — brightest, cleanest, sharpest examples that reinforce her default self. Sidecar is the fact substrate she queries at inference. Stubs teach her HOW to reason; sidecar gives her WHAT to reason ABOUT. The two are co-designed — stubs assume sidecar is available and reach for it; sidecar assumes stubs know how to consult it.")
+
+(spine
+ :domain          training
+ :topic           she-doesnt-memorize
+ :section-hash    "sha256:PLACEHOLDER-closing-frame"
+ :source          "MEMORY/project_closing_frame_and_cowboy_era_doctrine_2026_07_12.md"
+ :teach-shape     "she SEES cards to LEARN THEIR SHAPE, not to memorize their contents"
+ :body            "During training she SEES 10,762 automations + 1,537 broken carts + 345 anti-patterns. She does NOT MEMORIZE specific contents. She LEARNS the SHAPE — what an automation looks like, what a defect looks like, what a repair looks like, what tier a cart belongs to, what verbs cluster in what patterns. At inference she composes a cart in the LEARNED SHAPE using verbs from the registry + world knowledge from sidecar. Exposure ≠ memorization.")
+
+(spine
+ :domain          training
+ :topic           two-1p6-populations-distinct
+ :section-hash    "sha256:PLACEHOLDER-two-populations"
+ :source          "MEMORY/project_full_training_procedure_handoff_2026_07_12.md"
+ :teach-shape     "Population A (row-level bad data) and Population B (physical broken carts) do NOT get conflated"
+ :body            "Two distinct 1.6% populations in the training corpus. Population A: ~3,120 rows in train.jsonl flagged defective — duplicate content, paren imbalance, oversize, voice contamination. Row-level bad data. Population B: ~1,537 physical broken .sks carts with engineering-authored fix reasoning — 1,882 correction pairs, 230 unpaired-broken. Physical files. She trains on both. She never conflates them in analysis.")

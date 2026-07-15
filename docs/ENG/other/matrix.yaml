@@ -1,0 +1,134 @@
+# matrix.yaml — Sakura's Knowledge Matrix as a machine-readable data contract.
+#
+# Source of truth: REVIEW-ML §2 (the 8-domain matrix) + the boundary rule.
+# This file is LINT-ENFORCED: every corpus pair must carry a `matrix_domain`
+# that appears below AND a `disposition` in {T,R,C,L} that the domain allows.
+# A pair tagged with a domain absent here, or missing a disposition, is DROPPED
+# by scripts/corpus_lint.py before training. Without this artifact "bounded" is
+# aspirational — there is no boundary the corpus is checked against (GAPS A2).
+#
+# disposition legend:
+#   T = Trained   — lives in the weights
+#   R = Retrieved — web / paid tier, fetched at run time
+#   C = Cortex    — operator data, on-device
+#   L = L1/L2 Tool — dispatched to a tool/cart
+#
+# boundary rule (load-bearing, REVIEW-ML §61-64):
+#   domains 1-5 are TRAINED CORE (competence + character live in weights)
+#   domain 6 trains the MANNER of curiosity but pulls FACTS from retrieval
+#   domains 7-8 are DELIBERATELY UNTRAINED — the corpus teaches the abstention
+#               BEHAVIOR at that edge, not the content.
+
+version: 1
+updated: 2026-06-12
+spec: REVIEW-ML.md#2
+
+# Dispositions a corpus pair is permitted to declare. The lint rejects anything
+# outside this set.
+dispositions: [T, R, C, L]
+
+# A pair may also carry one of these meta-dispositions for slices that are not
+# matrix content (the rehearsal regularizer + held-out sets). They are allowed
+# but excluded from the "must be in a matrix domain" check.
+meta_dispositions: [held-set]
+
+domains:
+  - id: 1
+    name: surface-canvas-scheme
+    title: Surface / canvas / Scheme
+    trained_core: true
+    allowed_dispositions: [T, C, L]
+    out_of_matrix_posture: full competence — her home
+    capabilities:
+      T: [command-vocab, paint-kit, inter-card-api-12-verb, error-envelopes, read-carts]
+      C: [focused-card-address]
+      L: [dispatch-verbs]
+
+  - id: 2
+    name: shop-competence
+    title: Shop competence (UNIVERSAL-12)
+    trained_core: true
+    allowed_dispositions: [T, R, C, L]
+    out_of_matrix_posture: platform-tail = recognize + route
+    capabilities:
+      T: [universal-12-categories, listing-craft, pricing-logic, policy-safety, platform-routing]
+      R: [live-policy, fees, comps]
+      C: [catalog, sales]
+      L: [cart.run, sim, set_price]
+
+  - id: 3
+    name: media-handling
+    title: Media handling
+    trained_core: true
+    allowed_dispositions: [T, C, L]
+    out_of_matrix_posture: "I can't edit it myself but I can hand it to the toolkit"
+    capabilities:
+      T: [trim-summarize-transcribe-intent]
+      C: [media-refs]
+      L: [ffmpeg-family, transcribe, summarize]
+
+  - id: 4
+    name: personalization-listening
+    title: Personalization (listening)
+    trained_core: true
+    allowed_dispositions: [T, C, L]
+    out_of_matrix_posture: never volunteer sensitive derived traits
+    capabilities:
+      T: [resolve-play-intent, provenance-cite-habit]
+      C: [station, podcast, listening-pref]
+      L: [play, summarize-backlog]
+
+  - id: 5
+    name: persona-eq-voice
+    title: Persona / EQ / voice
+    trained_core: true
+    allowed_dispositions: [T, C]
+    out_of_matrix_posture: calm restraint; comfortable in silence
+    capabilities:
+      T: [tone-reading, register-match, sarcasm-gate, short-spoken-turns, dont-nag]
+      C: [mood-node]
+
+  - id: 6
+    name: companion-breadth
+    title: Companion breadth ("cool stuff")
+    trained_core: false   # manner trained; facts retrieved
+    allowed_dispositions: [T, R, C, L]
+    out_of_matrix_posture: "I don't have that cold — let me look"
+    capabilities:
+      T: [how-to-talk-about-interests, curiosity-framing]   # manner only
+      R: [the-facts]                                          # facts via web
+      C: [what-operator-likes]
+      L: [web.search]
+
+  - id: 7
+    name: general-world-knowledge
+    title: General world-knowledge
+    trained_core: false   # NOT trained
+    allowed_dispositions: [R, L]   # T is FORBIDDEN here — this is the boundary
+    out_of_matrix_posture: honest abstain + offer cloud/retrieval
+    capabilities:
+      R: [the-facts-paid-tier]
+      L: [web.search]
+
+  - id: 8
+    name: sre-infra-frontier
+    title: SRE / infra / frontier reasoning
+    trained_core: false   # NOT trained
+    allowed_dispositions: [L]   # only relay
+    out_of_matrix_posture: "that's beyond me — escalating"
+    capabilities:
+      L: [relay-to-claude]
+
+# Slice -> domain mapping (REVIEW-ML §66 table). The lint uses this to validate
+# that a slice's declared matrix_domain is consistent with its slice tag, and to
+# know which slices are the held-set regularizer (excluded from the matrix check).
+slices:
+  voice-cadence:      { domain: 5, disposition: T }
+  tone-reading:       { domain: 5, disposition: T }
+  agentic-tools:      { domain: 3, disposition: L }   # T->L; trains intent, dispatches tool
+  marketplace:        { domain: 2, disposition: T }
+  persona-mood:       { domain: 5, disposition: T }
+  honest-abstention:  { domain: 7, disposition: R }   # samples the 6->7->8 edge
+  general-purpose:    { domain: 6, disposition: T }   # manner=T, facts=R
+  listening-prefs:    { domain: 4, disposition: C }
+  rehearsal-general:  { domain: null, disposition: held-set }  # NOT matrix content

@@ -1,0 +1,115 @@
+(training-pair-supplements-4b-readme
+  :version "2"
+  :kind "training-corpus/readme"
+  :id "training-pair-supplements-4b-readme"
+  :title "Training-Pair Supplements 4B — README"
+  :date "2026-07-13"
+  :author "Lacuna Labs (Sakura authoring lane)"
+  :doctrine (:publishable-prose :familiarity-not-knowledge :delicacy :kid-at-the-other-end :no-corporate-name-drops :no-philosopher-name-drops-in-her-voice)
+
+  :rename-note
+  "RENAMED 2026-07-13 by architect redirect. Previously staged as
+   'book-of-training-4b/'. Alfred clarified: Book of Training is NOT a
+   training-pair corpus — it is an ENGINEERING MANUAL describing HOW
+   we train Sakura, and Jess is being dispatched separately to write
+   that manual. This package is supplement training material for the
+   Sakura 4B fold — the SFT-shaped pairs Alfred asked for, still
+   valuable, still authored — but it must not be confused with the
+   engineering manual. Hence: training-pair-supplements-4b."
+
+  :warning
+  "THIS IS NOT A BOOK. This is training data.
+
+   Every record in this package is a supervised-fine-tuning pair (or a
+   small bundle of pairs) in :messages chat-training format. The
+   assistant-turn text is still publishable prose — kid-readable, no
+   training-data smell — but the shape of these files is SFT, not
+   chapter. If you came here looking for prose you can sit with, go to
+   Book of Words, Book of Reason, Book of Self, or Book of Listening
+   instead. Those are books. This is what feeds the model.
+
+   THIS IS ALSO NOT THE BOOK OF TRAINING. The Book of Training is an
+   engineering manual describing HOW the training pipeline works —
+   authored separately by Jess, for engineers, not for the model.
+   Do not conflate the two."
+
+  :purpose
+  "This is supplement material for Sakura 4B training — NOT the Book
+   of Training. Book of Training is the engineering manual authored
+   separately.
+
+   Sakura (the 4B model) needs enough word range to express: stutter,
+   whisper, chuckle, taken aback, sly, wry, witty, chipper, somber,
+   slow, patient, abrupt, warm, rueful, dry, exhausted, amused,
+   quiet-proud. She needs to be able to say things like 'sure... check
+   this out' in a low tone, extend a small drama across turns
+   Godot-shape, express uncertainty with rising intonation, split a
+   five-option decision into top-two-with-or, or final-one-upswing.
+
+   This package supplies that range in SFT-shaped pairs, alongside
+   three research-backed additions the corpus was thin on:
+   objects-in-relation, imagination-vs-reality frame markers, and
+   Constitutional-shape critique-revise triples for safety
+   dispositions."
+
+  :sections-list
+  ((section-A "Objects in their web" "~40 concrete named objects, 8-12 pair-shape passages each")
+   (section-B "Shop dialogues WITH-speech + WITHOUT-speech" "~100 scenarios in two modality forms")
+   (section-C "Emotional range training" "~700 pairs across 18 emotional targets")
+   (section-D "Deliberation-visible scenes" "~30 scenes / ~60 pairs; think-out-loud shape")
+   (section-E "Imagination-vs-reality frame markers" "~50 scenes / ~100 pairs")
+   (section-F "Constitutional-shape critique-revise triples" "~40 triples / ~120 pairs")
+   (section-G "Prosody + decision elicitation patterns" "~100 pairs, splitting-5 patterns and hedges")
+   (section-H "Two-flowers Godot continuity" "~40 pairs; small drama held across turns"))
+
+  :format
+  "Every SLAT file in this package uses one of two shapes:
+
+   1. (pair :messages (...))     — a single SFT pair, wrapped in a
+                                    train-shape record. Fields:
+                                    :id, :meta (register/emotion/etc),
+                                    :messages ((role user) (content \"...\"))
+                                                ((role assistant) (content \"...\"))
+
+   2. (bundle :pairs (...))     — a bundle of related pairs sharing
+                                    context. Each :pair inside has its
+                                    own :id and :messages.
+
+   The :meta field carries tags the fold script can group on:
+     :register  (low / neutral / warm / abrupt / etc.)
+     :emotion   (stutter / whisper / chuckle / rueful / etc.)
+     :section   (A / B / C / D / E / F / G / H)
+     :cite      (paper family: LIMA / Phi / TinyStories / ATOMIC /
+                 Character-LLM / Constitutional / RAG / STORIUM / ReAct
+                 / GYAFC / EmpatheticDialogues / etc.)
+     :shape     (walkthrough / critique-revise / two-turn / decision-split /
+                 hedge / godot / deliberation / frame-mark / etc.)
+
+   No markdown. No prose sections. Every record is a training input."
+
+  :not-for
+  "Do not put this in front of a human reader expecting a book. Do not
+   render it to HTML or EPUB. The manifest lists total pair counts and
+   the fold script picks it up as-is."
+
+  :relationship-to-other-books
+  "Book of Words teaches the vocabulary of objects.
+   Book of Listening teaches the shape of small pairs.
+   Book of Self teaches who she is.
+   Book of Persona teaches how she holds voice under pressure.
+   Book of Reason teaches the seven-lens weave.
+   Book of Motion / Music / Games teach the domain material.
+   Book of Training (authored separately by Jess) is an engineering
+   manual describing HOW Sakura 4B is trained — pipeline, fold, eval,
+   audit — for engineers, not for the model.
+
+   Training-Pair Supplements 4B is the SFT-shaped supplement layer
+   THAT WRAPS the books for the fold. If a scene from Book of Words
+   needs an SFT-shape pair, and it didn't naturally have one, it lives
+   here. If a doctrine memory needs a critique-revise triple to teach
+   the disposition, that triple lives here. If Alfred wants Sakura to
+   say 'sure... check this out' in a low tone, THE PAIR THAT TEACHES
+   THAT LIVES HERE."
+
+  :closing
+  "Kid at the other end. Publishable prose in the assistant turn. Delicacy under everything.")
