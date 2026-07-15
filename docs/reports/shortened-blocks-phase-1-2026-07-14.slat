@@ -1,0 +1,1419 @@
+;; ═══════════════════════════════════════════════════════════════
+;; SHORTENED-BLOCKS AUDIT — PHASE 1 — 2026-07-14
+;; Recovery Lane R-delta / Category E Phase 1.
+;;
+;; Method: for every canonical chapter under scheme-books/book-of-*/,
+;; look up same-slug NON-rN files across these sources:
+;;   .aliases-2026-07-14
+;;   .consolidated-wrong-2026-07-13   (READ-ONLY — has fake secrets)
+;;   .dupes-2026-07-14                (READ-ONLY — has fake secrets)
+;;   .wrong-attribution-2026-07-13    (READ-ONLY — has fake secrets)
+;;   BOOK/A-branch-scheme-books
+;;   BOOK/B-main-scheme-books
+;;   BOOK/I-scheme-lang-docs
+;;
+;; -rN revision drafts are OUT OF SCOPE (recovery-013 phase 2 handled).
+;;
+;; Verdict rules:
+;;   ratio >= 1.20  → restore
+;;   0.80 <= ratio < 1.20 → merge-appendix
+;;   ratio < 0.80  → no-action
+;;
+;; ratio = older-source-words / canonical-words
+;; ═══════════════════════════════════════════════════════════════
+
+(shortened-blocks-phase-1
+  :date "2026-07-14"
+  :lane "recovery-lane-r-delta"
+  :category "E-phase-1"
+  :chapters-audited 1123
+  :restore-candidates 1
+  :merge-appendix-candidates 74
+  :no-action-count 548
+  :ask-alfred-count 3
+  :threshold ">= 1.20 = restore; 0.80..1.20 = merge-appendix; < 0.80 = no-action"
+  :status "audit-complete"
+  :next-action "alfred-review-then-phase-2-restore-or-merge")
+
+;; ─── Restore + merge-appendix candidates ─────────────
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-scheme/07-macros.book.slatl"
+  :canonical-words 178
+  :older-source "/Users/alfred/code/curator/BOOK/B-main-scheme-books/scheme-books/reference/04-macros.md"
+  :older-words 1573
+  :ratio 8.837
+  :source-label "BOOK/B-main-scheme-books"
+  :verdict "restore"
+  :rationale "Source BOOK/B-main-scheme-books is 784% longer than canonical."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-training/21-research-index.book.slatl"
+  :canonical-words 1197
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/training-engineering-manual-1.0/21-research-index.slat"
+  :older-words 1169
+  :ratio 0.977
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.98); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/25-weed-and-the-wildflower-friend.book.slatl"
+  :canonical-words 714
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/25-weed-and-the-wildflower-friend.slat"
+  :older-words 687
+  :ratio 0.962
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.96); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/23-hosta-and-the-family-of-hostas.book.slatl"
+  :canonical-words 786
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/23-hosta-and-the-family-of-hostas.slat"
+  :older-words 752
+  :ratio 0.957
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.96); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/11-hosta-and-the-shade-guest.book.slatl"
+  :canonical-words 676
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/11-hosta-and-the-shade-guest.slat"
+  :older-words 644
+  :ratio 0.953
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/15-bee-and-the-late-summer-daisy.book.slatl"
+  :canonical-words 768
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/15-bee-and-the-late-summer-daisy.slat"
+  :older-words 732
+  :ratio 0.953
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/26-wildflowers-and-the-lost-bee.book.slatl"
+  :canonical-words 773
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/26-wildflowers-and-the-lost-bee.slat"
+  :older-words 736
+  :ratio 0.952
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/09-daffodil-and-the-borrowed-yellow.book.slatl"
+  :canonical-words 651
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/09-daffodil-and-the-borrowed-yellow.slat"
+  :older-words 619
+  :ratio 0.951
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/18-sun-and-the-morning-glory.book.slatl"
+  :canonical-words 718
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/18-sun-and-the-morning-glory.slat"
+  :older-words 683
+  :ratio 0.951
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/01-bug-fixing.book.slatl"
+  :canonical-words 1013
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/01-bug-fixing.slat"
+  :older-words 963
+  :ratio 0.951
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/20-cherry-blossom-and-the-visitor.book.slatl"
+  :canonical-words 720
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/20-cherry-blossom-and-the-visitor.slat"
+  :older-words 681
+  :ratio 0.946
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/07-wildflowers-and-the-meadow-song.book.slatl"
+  :canonical-words 765
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/07-wildflowers-and-the-meadow-song.slat"
+  :older-words 723
+  :ratio 0.945
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/08-cherry-blossom-and-the-wind-message.book.slatl"
+  :canonical-words 641
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/08-cherry-blossom-and-the-wind-message.slat"
+  :older-words 606
+  :ratio 0.945
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/16-sparrow-and-the-fallen-petal.book.slatl"
+  :canonical-words 724
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/16-sparrow-and-the-fallen-petal.slat"
+  :older-words 684
+  :ratio 0.945
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/28-sparrow-and-the-iris-secret.book.slatl"
+  :canonical-words 715
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/28-sparrow-and-the-iris-secret.slat"
+  :older-words 676
+  :ratio 0.945
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.95); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/24-dahlia-and-the-first-fall-frost.book.slatl"
+  :canonical-words 728
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/24-dahlia-and-the-first-fall-frost.slat"
+  :older-words 687
+  :ratio 0.944
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/21-daffodil-and-the-crocus-cousin.book.slatl"
+  :canonical-words 648
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/21-daffodil-and-the-crocus-cousin.slat"
+  :older-words 611
+  :ratio 0.943
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/04-hosta-and-the-tired-sparrow.book.slatl"
+  :canonical-words 769
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/04-hosta-and-the-tired-sparrow.slat"
+  :older-words 724
+  :ratio 0.941
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/17-rain-and-the-thirsty-hosta.book.slatl"
+  :canonical-words 660
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/17-rain-and-the-thirsty-hosta.slat"
+  :older-words 621
+  :ratio 0.941
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/12-dahlia-and-the-many-names.book.slatl"
+  :canonical-words 666
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/12-dahlia-and-the-many-names.slat"
+  :older-words 626
+  :ratio 0.94
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/29-daffodil-and-the-birthday-gardener.book.slatl"
+  :canonical-words 682
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/29-daffodil-and-the-birthday-gardener.slat"
+  :older-words 641
+  :ratio 0.94
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/19-wind-and-the-clumsy-message.book.slatl"
+  :canonical-words 667
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/19-wind-and-the-clumsy-message.slat"
+  :older-words 626
+  :ratio 0.939
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/05-dahlia-and-the-forgotten-corner.book.slatl"
+  :canonical-words 764
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/05-dahlia-and-the-forgotten-corner.slat"
+  :older-words 717
+  :ratio 0.938
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/06-weed-and-the-crack-in-the-path.book.slatl"
+  :canonical-words 764
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/06-weed-and-the-crack-in-the-path.slat"
+  :older-words 716
+  :ratio 0.937
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.94); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/02-daffodil-and-the-late-snow.book.slatl"
+  :canonical-words 669
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/02-daffodil-and-the-late-snow.slat"
+  :older-words 624
+  :ratio 0.933
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/01-06-ground-and-stack-early.book.slatl"
+  :canonical-words 1231
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/philosopher-inner-life/01-06-ground-and-stack-early.slat"
+  :older-words 1148
+  :ratio 0.933
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/10-iris-and-the-blue-rain.book.slatl"
+  :canonical-words 677
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/10-iris-and-the-blue-rain.slat"
+  :older-words 631
+  :ratio 0.932
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/14-wildflower-lantern.book.slatl"
+  :canonical-words 779
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/14-wildflower-lantern.slat"
+  :older-words 726
+  :ratio 0.932
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/27-cherry-blossom-in-the-rain.book.slatl"
+  :canonical-words 747
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/27-cherry-blossom-in-the-rain.slat"
+  :older-words 696
+  :ratio 0.932
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/30-the-garden-at-night.book.slatl"
+  :canonical-words 805
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/30-the-garden-at-night.slat"
+  :older-words 749
+  :ratio 0.93
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/07-12-stack-late.book.slatl"
+  :canonical-words 1127
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/philosopher-inner-life/07-12-stack-late.slat"
+  :older-words 1048
+  :ratio 0.93
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/13-weed-and-the-gardener-who-noticed.book.slatl"
+  :canonical-words 620
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/13-weed-and-the-gardener-who-noticed.slat"
+  :older-words 576
+  :ratio 0.929
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/22-iris-and-the-quiet-afternoon.book.slatl"
+  :canonical-words 652
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/22-iris-and-the-quiet-afternoon.slat"
+  :older-words 606
+  :ratio 0.929
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/03-iris-and-the-quiet-bee.book.slatl"
+  :canonical-words 656
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/03-iris-and-the-quiet-bee.slat"
+  :older-words 607
+  :ratio 0.925
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.93); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/13-17-top.book.slatl"
+  :canonical-words 948
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/philosopher-inner-life/13-17-top.slat"
+  :older-words 876
+  :ratio 0.924
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.92); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/04-cortex-shot.book.slatl"
+  :canonical-words 715
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/04-cortex-shot.slat"
+  :older-words 658
+  :ratio 0.92
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.92); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-reason-code/03-from-machines-to-minds.book.slatl"
+  :canonical-words 6069
+  :older-source "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reason-code/03-from-machines-to-minds.slat"
+  :older-words 5567
+  :ratio 0.917
+  :source-label "wrong-attribution-2026-07-13"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.92); may contain unique passages worth appending as appendix."
+  :ask-alfred "source-dir-has-fake-secrets-appendix-requires-manual-extract")
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/03-angry-user.book.slatl"
+  :canonical-words 745
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/03-angry-user.slat"
+  :older-words 683
+  :ratio 0.917
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.92); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/ch21-good-vs-bad-animation.book.slatl"
+  :canonical-words 2220
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch21-good-vs-bad-animation.slat"
+  :older-words 2023
+  :ratio 0.911
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.91); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-reason-code/01-signals-and-symbols.book.slatl"
+  :canonical-words 5132
+  :older-source "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reason-code/01-signals-and-symbols.slat"
+  :older-words 4677
+  :ratio 0.911
+  :source-label "wrong-attribution-2026-07-13"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.91); may contain unique passages worth appending as appendix."
+  :ask-alfred "source-dir-has-fake-secrets-appendix-requires-manual-extract")
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-reason-code/02-machines-that-think.book.slatl"
+  :canonical-words 5130
+  :older-source "/Users/alfred/code/curator/scheme-books/.wrong-attribution-2026-07-13/book-of-reason-code/02-machines-that-think.slat"
+  :older-words 4665
+  :ratio 0.909
+  :source-label "wrong-attribution-2026-07-13"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.91); may contain unique passages worth appending as appendix."
+  :ask-alfred "source-dir-has-fake-secrets-appendix-requires-manual-extract")
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/05-escalation.book.slatl"
+  :canonical-words 673
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/05-escalation.slat"
+  :older-words 612
+  :ratio 0.909
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.91); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/02-ide-help.book.slatl"
+  :canonical-words 663
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/02-ide-help.slat"
+  :older-words 602
+  :ratio 0.908
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.91); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-flower-stories/01-cherry-blossom-and-the-first-morning.book.slatl"
+  :canonical-words 976
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/flower-stories/01-cherry-blossom-and-the-first-morning.slat"
+  :older-words 883
+  :ratio 0.905
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.90); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/06-poem-reading.book.slatl"
+  :canonical-words 632
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/06-poem-reading.slat"
+  :older-words 572
+  :ratio 0.905
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.91); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/08-operator-goodnight.book.slatl"
+  :canonical-words 442
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/08-operator-goodnight.slat"
+  :older-words 399
+  :ratio 0.903
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.90); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/11-silent-if-trouble-prose.book.slatl"
+  :canonical-words 582
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/11-silent-if-trouble-prose.slat"
+  :older-words 525
+  :ratio 0.902
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.90); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/ch14-pitch-interval-harmonic-series.book.slatl"
+  :canonical-words 2611
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch14-pitch-interval-harmonic-series.slat"
+  :older-words 2342
+  :ratio 0.897
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.90); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/07-operator-frustrated.book.slatl"
+  :canonical-words 606
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/07-operator-frustrated.slat"
+  :older-words 541
+  :ratio 0.893
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.89); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/09-cart-broken.book.slatl"
+  :canonical-words 571
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/09-cart-broken.slat"
+  :older-words 510
+  :ratio 0.893
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.89); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/ch15-tempo-rubato-listening.book.slatl"
+  :canonical-words 2323
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch15-tempo-rubato-listening.slat"
+  :older-words 2072
+  :ratio 0.892
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.89); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/ch19-keyframes-and-inbetweens.book.slatl"
+  :canonical-words 2194
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch19-keyframes-and-inbetweens.slat"
+  :older-words 1955
+  :ratio 0.891
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.89); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/ch22-narrative-arc-in-motion.book.slatl"
+  :canonical-words 1982
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch22-narrative-arc-in-motion.slat"
+  :older-words 1765
+  :ratio 0.891
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.89); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/ch17-animation-history-part-one.book.slatl"
+  :canonical-words 2596
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch17-animation-history-part-one.slat"
+  :older-words 2295
+  :ratio 0.884
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.88); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/ch20-how-emotion-animates.book.slatl"
+  :canonical-words 2153
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch20-how-emotion-animates.slat"
+  :older-words 1889
+  :ratio 0.877
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.88); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/ch13-three-classical-forms.book.slatl"
+  :canonical-words 2507
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch13-three-classical-forms.slat"
+  :older-words 2195
+  :ratio 0.876
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.88); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/ch11a-form-as-meaning.book.slatl"
+  :canonical-words 1406
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch11a-form-as-meaning.slat"
+  :older-words 1225
+  :ratio 0.871
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.87); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/ch18-animation-history-part-two.book.slatl"
+  :canonical-words 2954
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/ch18-animation-history-part-two.slat"
+  :older-words 2567
+  :ratio 0.869
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.87); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/appendix-05-blues-progression.book.slatl"
+  :canonical-words 1885
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/appendix-05-blues-progression.slat"
+  :older-words 1638
+  :ratio 0.869
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.87); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/appendix-02-debussy.book.slatl"
+  :canonical-words 1783
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/appendix-02-debussy.slat"
+  :older-words 1523
+  :ratio 0.854
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.85); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/appendix-01-bach-goldberg.book.slatl"
+  :canonical-words 1983
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/appendix-01-bach-goldberg.slat"
+  :older-words 1691
+  :ratio 0.853
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.85); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/appendix-06-shakuhachi-and-ma.book.slatl"
+  :canonical-words 1730
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/appendix-06-shakuhachi-and-ma.slat"
+  :older-words 1473
+  :ratio 0.851
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.85); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/ch12-chopin-and-the-nocturne.book.slatl"
+  :canonical-words 2738
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch12-chopin-and-the-nocturne.slat"
+  :older-words 2328
+  :ratio 0.85
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.85); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-01-winsor-mccay-gertie.book.slatl"
+  :canonical-words 1416
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-01-winsor-mccay-gertie.slat"
+  :older-words 1200
+  :ratio 0.847
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.85); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-02-fleischer-rotoscope.book.slatl"
+  :canonical-words 1425
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-02-fleischer-rotoscope.slat"
+  :older-words 1207
+  :ratio 0.847
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.85); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-self/10-auth-required-refuse.book.slatl"
+  :canonical-words 445
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/self/situations/10-auth-required-refuse.slat"
+  :older-words 377
+  :ratio 0.847
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.85); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-05-ghibli-and-hand-drawn-feature.book.slatl"
+  :canonical-words 1631
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-05-ghibli-and-hand-drawn-feature.slat"
+  :older-words 1377
+  :ratio 0.844
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.84); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/ch11-rachmaninoff-second.book.slatl"
+  :canonical-words 3058
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/ch11-rachmaninoff-second.slat"
+  :older-words 2567
+  :ratio 0.839
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.84); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-08-independent-and-stop-motion.book.slatl"
+  :canonical-words 1608
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-08-independent-and-stop-motion.slat"
+  :older-words 1342
+  :ratio 0.835
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.83); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-06-satoshi-kon.book.slatl"
+  :canonical-words 1628
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-06-satoshi-kon.slat"
+  :older-words 1354
+  :ratio 0.832
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.83); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-04-upa-modernism.book.slatl"
+  :canonical-words 1407
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-04-upa-modernism.slat"
+  :older-words 1167
+  :ratio 0.829
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.83); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-07-norman-mclaren.book.slatl"
+  :canonical-words 1424
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-07-norman-mclaren.slat"
+  :older-words 1171
+  :ratio 0.822
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.82); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-motion/appendix-03-termite-terrace.book.slatl"
+  :canonical-words 1522
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/motion/appendix-03-termite-terrace.slat"
+  :older-words 1249
+  :ratio 0.821
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.82); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/appendix-04-nina-simone.book.slatl"
+  :canonical-words 1881
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/appendix-04-nina-simone.slat"
+  :older-words 1544
+  :ratio 0.821
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.82); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+(shortened-block-finding
+  :canonical "/Users/alfred/code/curator/scheme-books/book-of-music/appendix-03-ellington-swing.book.slatl"
+  :canonical-words 1758
+  :older-source "/Users/alfred/code/curator/BOOK/A-branch-scheme-books/music/appendix-03-ellington-swing.slat"
+  :older-words 1418
+  :ratio 0.807
+  :source-label "BOOK/A-branch-scheme-books"
+  :verdict "merge-appendix"
+  :rationale "Comparable length (ratio 0.81); may contain unique passages worth appending as appendix."
+  :ask-alfred #f)
+
+;; ─── No-action (source shorter or same as canonical) ───────────
+;; Recorded for audit completeness; no restoration warranted.
+
+(no-action-summary :count 548)
+
+(no-action :canonical "ch01-recursion-warmups.book.slatl" :canonical-words 7315 :older-source "ch01-recursion-warmups.md" :older-words 7315 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-higher-order.book.slatl" :canonical-words 7023 :older-source "ch02-higher-order.md" :older-words 7023 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-closures-and-state.book.slatl" :canonical-words 7393 :older-source "ch03-closures-and-state.md" :older-words 7393 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-list-surgery.book.slatl" :canonical-words 7371 :older-source "ch04-list-surgery.md" :older-words 7371 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-assoc-and-json.book.slatl" :canonical-words 5801 :older-source "ch05-assoc-and-json.md" :older-words 5801 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-the-verb-pipeline.book.slatl" :canonical-words 6126 :older-source "ch06-the-verb-pipeline.md" :older-words 6126 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-numbers-and-stats.book.slatl" :canonical-words 7269 :older-source "ch07-numbers-and-stats.md" :older-words 7269 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-text-and-strings.book.slatl" :canonical-words 5687 :older-source "ch08-text-and-strings.md" :older-words 5687 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-memory-and-cortex.book.slatl" :canonical-words 7101 :older-source "ch09-memory-and-cortex.md" :older-words 7101 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-orchestrating-tools.book.slatl" :canonical-words 6839 :older-source "ch10-orchestrating-tools.md" :older-words 6839 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-control-flow-mastery.book.slatl" :canonical-words 6421 :older-source "ch11-control-flow-mastery.md" :older-words 6421 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-composition-and-macros.book.slatl" :canonical-words 5796 :older-source "ch12-composition-and-macros.md" :older-words 5796 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-honest-failure.book.slatl" :canonical-words 6965 :older-source "ch13-honest-failure.md" :older-words 6965 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-time-and-pacing.book.slatl" :canonical-words 6085 :older-source "ch14-time-and-pacing.md" :older-words 6085 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-the-whole-route.book.slatl" :canonical-words 6642 :older-source "ch15-the-whole-route.md" :older-words 6642 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-summit.book.slatl" :canonical-words 6823 :older-source "ch16-the-summit.md" :older-words 6823 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "01-arrays-and-lists.book.slatl" :canonical-words 835 :older-source "01-arrays-and-lists.slat" :older-words 835 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "01-arrays-and-lists.book.slatl" :canonical-words 835 :older-source "01-arrays-and-lists.slat" :older-words 835 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-stacks-and-queues.book.slatl" :canonical-words 637 :older-source "02-stacks-and-queues.slat" :older-words 637 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "02-stacks-and-queues.book.slatl" :canonical-words 637 :older-source "02-stacks-and-queues.slat" :older-words 637 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-hash-tables.book.slatl" :canonical-words 751 :older-source "03-hash-tables.slat" :older-words 751 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "03-hash-tables.book.slatl" :canonical-words 751 :older-source "03-hash-tables.slat" :older-words 751 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-trees.book.slatl" :canonical-words 852 :older-source "04-trees.slat" :older-words 852 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "04-trees.book.slatl" :canonical-words 852 :older-source "04-trees.slat" :older-words 852 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-heaps-graphs-bloom.book.slatl" :canonical-words 1425 :older-source "05-heaps-graphs-bloom.slat" :older-words 1425 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "05-heaps-graphs-bloom.book.slatl" :canonical-words 1425 :older-source "05-heaps-graphs-bloom.slat" :older-words 1425 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-search-and-sort.book.slatl" :canonical-words 1085 :older-source "06-search-and-sort.slat" :older-words 1085 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "06-search-and-sort.book.slatl" :canonical-words 1085 :older-source "06-search-and-sort.slat" :older-words 1085 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "07-algorithm-families.book.slatl" :canonical-words 1484 :older-source "07-algorithm-families.slat" :older-words 1484 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "07-algorithm-families.book.slatl" :canonical-words 1484 :older-source "07-algorithm-families.slat" :older-words 1484 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "08-complexity-and-limits.book.slatl" :canonical-words 1131 :older-source "08-complexity-and-limits.slat" :older-words 1131 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "08-complexity-and-limits.book.slatl" :canonical-words 1131 :older-source "08-complexity-and-limits.slat" :older-words 1131 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "09-systems-and-concurrency.book.slatl" :canonical-words 1382 :older-source "09-systems-and-concurrency.slat" :older-words 1382 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "09-systems-and-concurrency.book.slatl" :canonical-words 1382 :older-source "09-systems-and-concurrency.slat" :older-words 1382 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "10-compilers-databases-distributed-security-ml.book.slatl" :canonical-words 2219 :older-source "10-compilers-databases-distributed-security-ml.slat" :older-words 2219 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "10-compilers-databases-distributed-security-ml.book.slatl" :canonical-words 2219 :older-source "10-compilers-databases-distributed-security-ml.slat" :older-words 2219 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-text-adventure.book.slatl" :canonical-words 6128 :older-source "ch01-text-adventure.md" :older-words 6128 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-branching-past.book.slatl" :canonical-words 6416 :older-source "ch02-branching-past.md" :older-words 6416 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-space-war.book.slatl" :canonical-words 6396 :older-source "ch03-space-war.md" :older-words 6396 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-enemies.book.slatl" :canonical-words 5308 :older-source "ch04-enemies.md" :older-words 5308 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-shooter.book.slatl" :canonical-words 5369 :older-source "ch05-shooter.md" :older-words 5369 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-input-control.book.slatl" :canonical-words 5885 :older-source "ch06-input-control.md" :older-words 5885 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-puzzle.book.slatl" :canonical-words 5774 :older-source "ch07-puzzle.md" :older-words 5774 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-pathfinding.book.slatl" :canonical-words 5984 :older-source "ch08-pathfinding.md" :older-words 5984 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-brain.book.slatl" :canonical-words 5839 :older-source "ch09-brain.md" :older-words 5839 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-chess.book.slatl" :canonical-words 6383 :older-source "ch10-chess.md" :older-words 6383 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-ml-agent.book.slatl" :canonical-words 6733 :older-source "ch11-ml-agent.md" :older-words 6733 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-physics.book.slatl" :canonical-words 6625 :older-source "ch12-physics.md" :older-words 6625 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-parallax.book.slatl" :canonical-words 5853 :older-source "ch13-parallax.md" :older-words 5853 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-side-scroller.book.slatl" :canonical-words 5770 :older-source "ch14-side-scroller.md" :older-words 5770 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-bosses.book.slatl" :canonical-words 5434 :older-source "ch15-bosses.md" :older-words 5434 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-adventure.book.slatl" :canonical-words 5334 :older-source "ch16-the-adventure.md" :older-words 5334 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "01-the-roster.book.slatl" :canonical-words 1409 :older-source "01-the-roster.md" :older-words 1409 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "01-the-roster.book.slatl" :canonical-words 1409 :older-source "01-the-roster.md" :older-words 1409 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-piano.book.slatl" :canonical-words 1422 :older-source "02-piano.md" :older-words 1422 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "02-piano.book.slatl" :canonical-words 1422 :older-source "02-piano.md" :older-words 1422 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-strings.book.slatl" :canonical-words 1462 :older-source "03-strings.md" :older-words 1462 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "03-strings.book.slatl" :canonical-words 1462 :older-source "03-strings.md" :older-words 1462 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-percussion.book.slatl" :canonical-words 1390 :older-source "04-percussion.md" :older-words 1390 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "04-percussion.book.slatl" :canonical-words 1390 :older-source "04-percussion.md" :older-words 1390 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-japanese-bamboo-flute.book.slatl" :canonical-words 1691 :older-source "05-japanese-bamboo-flute.md" :older-words 1691 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "05-japanese-bamboo-flute.book.slatl" :canonical-words 1691 :older-source "05-japanese-bamboo-flute.md" :older-words 1691 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-brass.book.slatl" :canonical-words 551 :older-source "06-brass.md" :older-words 551 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "06-brass.book.slatl" :canonical-words 551 :older-source "06-brass.md" :older-words 551 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "07-african-drums.book.slatl" :canonical-words 493 :older-source "07-african-drums.md" :older-words 493 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "07-african-drums.book.slatl" :canonical-words 493 :older-source "07-african-drums.md" :older-words 493 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "08-indian-tabla.book.slatl" :canonical-words 618 :older-source "08-indian-tabla.md" :older-words 618 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "08-indian-tabla.book.slatl" :canonical-words 618 :older-source "08-indian-tabla.md" :older-words 618 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "09-strings-ensemble.book.slatl" :canonical-words 537 :older-source "09-strings-ensemble.md" :older-words 537 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "09-strings-ensemble.book.slatl" :canonical-words 537 :older-source "09-strings-ensemble.md" :older-words 537 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "10-the-full-roster.book.slatl" :canonical-words 527 :older-source "10-the-full-roster.md" :older-words 527 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "10-the-full-roster.book.slatl" :canonical-words 527 :older-source "10-the-full-roster.md" :older-words 527 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "11-guitars.book.slatl" :canonical-words 1009 :older-source "11-guitars.md" :older-words 1009 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "12-electronic-and-synths.book.slatl" :canonical-words 990 :older-source "12-electronic-and-synths.md" :older-words 990 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "13-latin-percussion.book.slatl" :canonical-words 963 :older-source "13-latin-percussion.md" :older-words 963 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "14-vocal-instruments.book.slatl" :canonical-words 925 :older-source "14-vocal-instruments.md" :older-words 925 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "15-arranging-for-ensemble.book.slatl" :canonical-words 911 :older-source "15-arranging-for-ensemble.md" :older-words 911 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "16-the-roster-remembers.book.slatl" :canonical-words 898 :older-source "16-the-roster-remembers.md" :older-words 898 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-jewelry.book.slatl" :canonical-words 980 :older-source "01-jewelry.slat" :older-words 980 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-electronics.book.slatl" :canonical-words 871 :older-source "02-electronics.slat" :older-words 871 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-apparel.book.slatl" :canonical-words 1439 :older-source "03-apparel.slat" :older-words 1439 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-tier-2.book.slatl" :canonical-words 825 :older-source "05-tier-2.slat" :older-words 825 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-tier-3-tail.book.slatl" :canonical-words 1149 :older-source "06-tier-3-tail.slat" :older-words 623 :ratio 0.542 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "01-opening-and-mirroring.book.slatl" :canonical-words 756 :older-source "01-opening-and-mirroring.slat" :older-words 756 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "01-opening-and-mirroring.book.slatl" :canonical-words 756 :older-source "01-opening-and-mirroring.slat" :older-words 756 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-letting-lead-and-callback.book.slatl" :canonical-words 872 :older-source "02-letting-lead-and-callback.slat" :older-words 872 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "02-letting-lead-and-callback.book.slatl" :canonical-words 872 :older-source "02-letting-lead-and-callback.slat" :older-words 872 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-silence-ask-and-aesthetic.book.slatl" :canonical-words 832 :older-source "03-silence-ask-and-aesthetic.slat" :older-words 832 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "03-silence-ask-and-aesthetic.book.slatl" :canonical-words 832 :older-source "03-silence-ask-and-aesthetic.slat" :older-words 832 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-book-weather-time-sources.book.slatl" :canonical-words 1256 :older-source "04-book-weather-time-sources.slat" :older-words 1256 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "04-book-weather-time-sources.book.slatl" :canonical-words 1256 :older-source "04-book-weather-time-sources.slat" :older-words 1256 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-four-maxims-in-practice.book.slatl" :canonical-words 1329 :older-source "05-four-maxims-in-practice.slat" :older-words 1329 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "05-four-maxims-in-practice.book.slatl" :canonical-words 1329 :older-source "05-four-maxims-in-practice.slat" :older-words 1329 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "01-what-an-llm-is.book.slatl" :canonical-words 688 :older-source "01-what-an-llm-is.slat" :older-words 688 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "01-what-an-llm-is.book.slatl" :canonical-words 688 :older-source "01-what-an-llm-is.slat" :older-words 688 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-emergence-consciousness-counterfeit.book.slatl" :canonical-words 1530 :older-source "02-emergence-consciousness-counterfeit.slat" :older-words 1530 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "02-emergence-consciousness-counterfeit.book.slatl" :canonical-words 1530 :older-source "02-emergence-consciousness-counterfeit.slat" :older-words 1530 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-alignment-chinese-room-extended-mind.book.slatl" :canonical-words 1583 :older-source "03-alignment-chinese-room-extended-mind.slat" :older-words 1583 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "03-alignment-chinese-room-extended-mind.book.slatl" :canonical-words 1583 :older-source "03-alignment-chinese-room-extended-mind.slat" :older-words 1583 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-free-will-hallucination-bat-turing.book.slatl" :canonical-words 1424 :older-source "04-free-will-hallucination-bat-turing.slat" :older-words 1424 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "04-free-will-hallucination-bat-turing.book.slatl" :canonical-words 1424 :older-source "04-free-will-hallucination-bat-turing.slat" :older-words 1424 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-nagel-block-tononi-history-view.book.slatl" :canonical-words 1766 :older-source "05-nagel-block-tononi-history-view.slat" :older-words 1766 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "05-nagel-block-tononi-history-view.book.slatl" :canonical-words 1766 :older-source "05-nagel-block-tononi-history-view.slat" :older-words 1766 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-the-stage.book.slatl" :canonical-words 4561 :older-source "ch01-the-stage.md" :older-words 4561 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-the-tape.book.slatl" :canonical-words 4856 :older-source "ch02-the-tape.md" :older-words 4856 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-the-camera.book.slatl" :canonical-words 3922 :older-source "ch03-the-camera.md" :older-words 3922 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-motion-in-scheme.book.slatl" :canonical-words 5863 :older-source "ch04-motion-in-scheme.md" :older-words 5863 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-the-first-sound.book.slatl" :canonical-words 6640 :older-source "ch05-the-first-sound.md" :older-words 6640 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-sound-and-motion.book.slatl" :canonical-words 6449 :older-source "ch06-sound-and-motion.md" :older-words 6449 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-scoring.book.slatl" :canonical-words 3874 :older-source "ch07-scoring.md" :older-words 3874 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-the-cut.book.slatl" :canonical-words 5848 :older-source "ch08-the-cut.md" :older-words 5848 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-the-recording.book.slatl" :canonical-words 6342 :older-source "ch09-the-recording.md" :older-words 6342 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-the-gif.book.slatl" :canonical-words 5880 :older-source "ch10-the-gif.md" :older-words 5880 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-layering.book.slatl" :canonical-words 6162 :older-source "ch11-layering.md" :older-words 6162 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-timing-the-tape.book.slatl" :canonical-words 5232 :older-source "ch12-timing-the-tape.md" :older-words 5232 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-replay.book.slatl" :canonical-words 4665 :older-source "ch13-replay.md" :older-words 4665 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-the-ensemble.book.slatl" :canonical-words 6055 :older-source "ch14-the-ensemble.md" :older-words 6055 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-the-montage.book.slatl" :canonical-words 6204 :older-source "ch15-the-montage.md" :older-words 6204 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-short-film.book.slatl" :canonical-words 6012 :older-source "ch16-the-short-film.md" :older-words 6012 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch17-meet-the-sixteen.book.slatl" :canonical-words 3136 :older-source "ch17-meet-the-sixteen.md" :older-words 3136 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch18-moods-and-how-to-meet-them.book.slatl" :canonical-words 4545 :older-source "ch18-moods-and-how-to-meet-them.md" :older-words 4545 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch19-calling-them-by-name.book.slatl" :canonical-words 3974 :older-source "ch19-calling-them-by-name.md" :older-words 3974 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch20-sway-spin-jitter-in-place.book.slatl" :canonical-words 4459 :older-source "ch20-sway-spin-jitter-in-place.md" :older-words 4459 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch21-scatter-and-gather.book.slatl" :canonical-words 4694 :older-source "ch21-scatter-and-gather.md" :older-words 4694 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch22-the-sounds-they-make.book.slatl" :canonical-words 4643 :older-source "ch22-the-sounds-they-make.md" :older-words 4643 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch23-roll-dash-move.book.slatl" :canonical-words 4560 :older-source "ch23-roll-dash-move.md" :older-words 4560 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch24-the-counter.book.slatl" :canonical-words 5562 :older-source "ch24-the-counter.md" :older-words 5562 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch25-timed-sequences-on-the-counter.book.slatl" :canonical-words 6571 :older-source "ch25-timed-sequences-on-the-counter.md" :older-words 6571 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch26-seeing-each-other.book.slatl" :canonical-words 4106 :older-source "05-seeing-each-other.md" :older-words 1321 :ratio 0.322 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch26-seeing-each-other.book.slatl" :canonical-words 4106 :older-source "ch26-seeing-each-other.md" :older-words 4106 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch27-carrying-cards.book.slatl" :canonical-words 6211 :older-source "ch27-carrying-cards.md" :older-words 6211 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch28-coordinating-in-sync.book.slatl" :canonical-words 5683 :older-source "ch28-coordinating-in-sync.md" :older-words 5683 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch29-where-they-live-in-code.book.slatl" :canonical-words 4273 :older-source "ch29-where-they-live-in-code.md" :older-words 4273 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch30-grid-math-anticipation.book.slatl" :canonical-words 5357 :older-source "ch30-grid-math-anticipation.md" :older-words 5357 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch31-the-complexity-matrix.book.slatl" :canonical-words 3630 :older-source "ch31-the-complexity-matrix.md" :older-words 3630 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch32-the-judgment.book.slatl" :canonical-words 6216 :older-source "ch32-the-judgment.md" :older-words 6216 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch33-moving-a-card.book.slatl" :canonical-words 3353 :older-source "ch33-moving-a-card.md" :older-words 3353 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch34-open-close-hide-show.book.slatl" :canonical-words 4266 :older-source "ch34-open-close-hide-show.md" :older-words 4266 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch35-blossoms-move-cards.book.slatl" :canonical-words 4792 :older-source "ch35-blossoms-move-cards.md" :older-words 4792 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch36-card-physics-and-collision.book.slatl" :canonical-words 4453 :older-source "ch36-card-physics-and-collision.md" :older-words 4453 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch37-sensing-and-broadcast.book.slatl" :canonical-words 4451 :older-source "ch37-sensing-and-broadcast.md" :older-words 4451 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch38-orchestrating-the-board.book.slatl" :canonical-words 4077 :older-source "ch38-orchestrating-the-board.md" :older-words 4077 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch39-scenes-through-owned-objects.book.slatl" :canonical-words 5840 :older-source "ch39-scenes-through-owned-objects.md" :older-words 5840 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch40-cartoon-sfx-and-math-drawing.book.slatl" :canonical-words 3212 :older-source "ch40-cartoon-sfx-and-math-drawing.md" :older-words 3212 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-counting-number-line.book.slatl" :canonical-words 5789 :older-source "ch01-counting-number-line.md" :older-words 5789 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-place-value-arrays.book.slatl" :canonical-words 6021 :older-source "ch02-place-value-arrays.md" :older-words 6021 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-multiplication-division.book.slatl" :canonical-words 7208 :older-source "ch03-multiplication-division.md" :older-words 7208 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-long-division-factors.book.slatl" :canonical-words 5342 :older-source "ch04-long-division-factors.md" :older-words 5342 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-fractions-decimals.book.slatl" :canonical-words 7424 :older-source "ch05-fractions-decimals.md" :older-words 7424 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-ratios-integers-expressions.book.slatl" :canonical-words 8079 :older-source "ch06-ratios-integers-expressions.md" :older-words 8079 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-proportions-probability.book.slatl" :canonical-words 7667 :older-source "ch07-proportions-probability.md" :older-words 7667 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-pre-algebra-plane.book.slatl" :canonical-words 7338 :older-source "ch08-pre-algebra-plane.md" :older-words 7338 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-algebra-1.book.slatl" :canonical-words 7476 :older-source "ch09-algebra-1.md" :older-words 7476 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-geometry.book.slatl" :canonical-words 7010 :older-source "ch10-geometry.md" :older-words 7010 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-algebra-2-trig.book.slatl" :canonical-words 7554 :older-source "ch11-algebra-2-trig.md" :older-words 7554 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-pre-calculus.book.slatl" :canonical-words 8234 :older-source "ch12-pre-calculus.md" :older-words 8234 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-calculus-1.book.slatl" :canonical-words 7434 :older-source "ch13-calculus-1.md" :older-words 7434 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-calculus-2.book.slatl" :canonical-words 6736 :older-source "ch14-calculus-2.md" :older-words 6736 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-multivariable-linear-algebra.book.slatl" :canonical-words 7229 :older-source "ch15-multivariable-linear-algebra.md" :older-words 7229 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-math-major-electives.book.slatl" :canonical-words 7793 :older-source "ch16-math-major-electives.md" :older-words 7793 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-the-generic-answer.book.slatl" :canonical-words 2451 :older-source "ch01-the-generic-answer.md" :older-words 2451 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-options-per-stage.book.slatl" :canonical-words 6979 :older-source "ch02-options-per-stage.md" :older-words 6979 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-personality-options.book.slatl" :canonical-words 3135 :older-source "ch03-personality-options.md" :older-words 3135 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-complex-situations.book.slatl" :canonical-words 7513 :older-source "ch04-complex-situations.md" :older-words 7513 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-multistage-reasoning.book.slatl" :canonical-words 5286 :older-source "ch05-multistage-reasoning.md" :older-words 5286 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-local-routing.book.slatl" :canonical-words 4152 :older-source "ch06-local-routing.md" :older-words 4152 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-deliberative-routing.book.slatl" :canonical-words 4167 :older-source "ch07-deliberative-routing.md" :older-words 4167 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-stop-and-deposit.book.slatl" :canonical-words 3363 :older-source "ch08-stop-and-deposit.md" :older-words 3363 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-the-hand-off.book.slatl" :canonical-words 3919 :older-source "ch09-the-hand-off.md" :older-words 3919 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-the-two-dispositions.book.slatl" :canonical-words 3833 :older-source "ch10-the-two-dispositions.md" :older-words 3833 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-the-weird-spot.book.slatl" :canonical-words 4497 :older-source "ch11-the-weird-spot.md" :older-words 4497 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-the-half-answer.book.slatl" :canonical-words 5251 :older-source "ch12-the-half-answer.md" :older-words 5251 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-the-interruption.book.slatl" :canonical-words 4181 :older-source "ch13-the-interruption.md" :older-words 4181 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-the-quiet-decline.book.slatl" :canonical-words 4613 :older-source "ch14-the-quiet-decline.md" :older-words 4613 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-the-many-hands.book.slatl" :canonical-words 5403 :older-source "ch15-the-many-hands.md" :older-words 5403 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-catch-all.book.slatl" :canonical-words 4799 :older-source "ch16-the-catch-all.md" :older-words 4799 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch17-marketplace-errors-local.book.slatl" :canonical-words 3827 :older-source "ch17-marketplace-errors-local.md" :older-words 3827 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch18-marketplace-policy-where.book.slatl" :canonical-words 5265 :older-source "ch18-marketplace-policy-where.md" :older-words 5265 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch19-marketplace-suitability.book.slatl" :canonical-words 5159 :older-source "ch19-marketplace-suitability.md" :older-words 5159 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch20-marketplace-take-it-up.book.slatl" :canonical-words 4538 :older-source "ch20-marketplace-take-it-up.md" :older-words 4538 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch21-marketplace-deliberative-research.book.slatl" :canonical-words 6348 :older-source "ch21-marketplace-deliberative-research.md" :older-words 6348 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch22-marketplace-account-health-deep.book.slatl" :canonical-words 3320 :older-source "ch22-marketplace-account-health-deep.md" :older-words 3320 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch23-motion.book.slatl" :canonical-words 2322 :older-source "ch23-motion.md" :older-words 2322 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch24-animation.book.slatl" :canonical-words 2395 :older-source "ch24-animation.md" :older-words 2395 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch25-games.book.slatl" :canonical-words 2759 :older-source "ch25-games.md" :older-words 2759 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch26-math-1.book.slatl" :canonical-words 2524 :older-source "ch26-math-1.md" :older-words 2524 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch27-math-2.book.slatl" :canonical-words 1989 :older-source "ch27-math-2.md" :older-words 1989 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch28-music.book.slatl" :canonical-words 2473 :older-source "ch28-music.md" :older-words 2473 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch29-personality.book.slatl" :canonical-words 1887 :older-source "ch29-personality.md" :older-words 1887 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch30-donts.book.slatl" :canonical-words 2465 :older-source "ch30-donts.md" :older-words 2465 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch31-challenges.book.slatl" :canonical-words 3613 :older-source "ch31-challenges.md" :older-words 3613 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch32-reasoning.book.slatl" :canonical-words 3317 :older-source "ch32-reasoning.md" :older-words 3317 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch33-money.book.slatl" :canonical-words 2763 :older-source "ch33-money.md" :older-words 2763 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch34-systems.book.slatl" :canonical-words 2358 :older-source "ch34-systems.md" :older-words 2358 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch35-the-scripting-move.book.slatl" :canonical-words 4811 :older-source "ch35-the-scripting-move.md" :older-words 4811 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch36-spreadsheets-and-docs.book.slatl" :canonical-words 3840 :older-source "ch36-spreadsheets-and-docs.md" :older-words 3840 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch37-one-shot-then-compose.book.slatl" :canonical-words 5154 :older-source "ch37-one-shot-then-compose.md" :older-words 5154 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch38-tied-together-complexity.book.slatl" :canonical-words 6336 :older-source "ch38-tied-together-complexity.md" :older-words 6336 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch39-chemistry-examples.book.slatl" :canonical-words 4118 :older-source "ch39-chemistry-examples.md" :older-words 4118 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch40-physics-clever-demonstrations.book.slatl" :canonical-words 5332 :older-source "ch40-physics-clever-demonstrations.md" :older-words 5332 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch41-combining-tools-across-domains.book.slatl" :canonical-words 7069 :older-source "ch41-combining-tools-across-domains.md" :older-words 7069 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch42-knowing-she-can.book.slatl" :canonical-words 3787 :older-source "ch42-knowing-she-can.md" :older-words 3787 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-what-a-coin-is.book.slatl" :canonical-words 6401 :older-source "ch01-what-a-coin-is.md" :older-words 4050 :ratio 0.633 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-counting-coins.book.slatl" :canonical-words 7658 :older-source "ch02-counting-coins.md" :older-words 3785 :ratio 0.494 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-the-ladder.book.slatl" :canonical-words 6485 :older-source "ch03-the-ladder.md" :older-words 3582 :ratio 0.552 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-cost-per-token.book.slatl" :canonical-words 5650 :older-source "ch04-cost-per-token.md" :older-words 3472 :ratio 0.615 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-the-estimate.book.slatl" :canonical-words 8670 :older-source "ch05-the-estimate.md" :older-words 5667 :ratio 0.654 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-the-hold.book.slatl" :canonical-words 9047 :older-source "ch06-the-hold.md" :older-words 5493 :ratio 0.607 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-the-warn.book.slatl" :canonical-words 9774 :older-source "ch07-the-warn.md" :older-words 5283 :ratio 0.541 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-the-decline.book.slatl" :canonical-words 10942 :older-source "ch08-the-decline.md" :older-words 6107 :ratio 0.558 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-budgets.book.slatl" :canonical-words 7372 :older-source "ch09-budgets.md" :older-words 3544 :ratio 0.481 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-the-refund.book.slatl" :canonical-words 7498 :older-source "ch10-the-refund.md" :older-words 4818 :ratio 0.643 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-value.book.slatl" :canonical-words 8017 :older-source "ch11-value.md" :older-words 4107 :ratio 0.512 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-forecasting.book.slatl" :canonical-words 7259 :older-source "ch12-forecasting.md" :older-words 3859 :ratio 0.532 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-the-checkpoint.book.slatl" :canonical-words 9244 :older-source "ch13-the-checkpoint.md" :older-words 5161 :ratio 0.558 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-fairness.book.slatl" :canonical-words 10378 :older-source "ch14-fairness.md" :older-words 5427 :ratio 0.523 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-the-ledger.book.slatl" :canonical-words 8742 :older-source "ch15-the-ledger.md" :older-words 5293 :ratio 0.605 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-honest-quote.book.slatl" :canonical-words 9809 :older-source "ch16-the-honest-quote.md" :older-words 5646 :ratio 0.576 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch17-conversion-done-right.book.slatl" :canonical-words 4341 :older-source "ch17-conversion-done-right.md" :older-words 4341 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch18-live-rates-wire-call-then-learn.book.slatl" :canonical-words 5232 :older-source "ch18-live-rates-wire-call-then-learn.md" :older-words 5232 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch19-currency-is-typed-not-a-vector.book.slatl" :canonical-words 3986 :older-source "ch19-currency-is-typed-not-a-vector.md" :older-words 3986 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch20-meaning-of-value.book.slatl" :canonical-words 4018 :older-source "ch20-meaning-of-value.md" :older-words 4018 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch21-contrasting-value-money-aware.book.slatl" :canonical-words 4351 :older-source "ch21-contrasting-value-money-aware.md" :older-words 4351 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch22-purchasing-power.book.slatl" :canonical-words 5719 :older-source "ch22-purchasing-power.md" :older-words 5719 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch23-grounding-errors-shown-and-avoided.book.slatl" :canonical-words 4467 :older-source "ch23-grounding-errors-shown-and-avoided.md" :older-words 4467 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch24-coins-meet-currency.book.slatl" :canonical-words 5805 :older-source "ch24-coins-meet-currency.md" :older-words 5805 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-the-still-frame.book.slatl" :canonical-words 9792 :older-source "ch01-the-still-frame.md" :older-words 5142 :ratio 0.525 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-velocity.book.slatl" :canonical-words 12078 :older-source "ch02-velocity.md" :older-words 7217 :ratio 0.598 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-easing.book.slatl" :canonical-words 8474 :older-source "ch03-easing.md" :older-words 4397 :ratio 0.519 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-the-arc.book.slatl" :canonical-words 11404 :older-source "ch04-the-arc.md" :older-words 6338 :ratio 0.556 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-timing.book.slatl" :canonical-words 9839 :older-source "ch05-timing.md" :older-words 4096 :ratio 0.416 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-weight.book.slatl" :canonical-words 9839 :older-source "ch06-weight.md" :older-words 5166 :ratio 0.525 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-squash-stretch.book.slatl" :canonical-words 10959 :older-source "ch07-squash-stretch.md" :older-words 5322 :ratio 0.486 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-oscillation.book.slatl" :canonical-words 8140 :older-source "ch08-oscillation.md" :older-words 5196 :ratio 0.638 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-forces.book.slatl" :canonical-words 10354 :older-source "ch09-forces.md" :older-words 5204 :ratio 0.503 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-locomotion.book.slatl" :canonical-words 9841 :older-source "ch10-locomotion.md" :older-words 4659 :ratio 0.473 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-gesture.book.slatl" :canonical-words 11717 :older-source "ch11-gesture.md" :older-words 7367 :ratio 0.629 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-secondary-motion.book.slatl" :canonical-words 11611 :older-source "ch12-secondary-motion.md" :older-words 6055 :ratio 0.521 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-style.book.slatl" :canonical-words 9776 :older-source "ch13-style.md" :older-words 5889 :ratio 0.602 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-blending.book.slatl" :canonical-words 11618 :older-source "ch14-blending.md" :older-words 6662 :ratio 0.573 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-the-crowd.book.slatl" :canonical-words 11663 :older-source "ch15-the-crowd.md" :older-words 5827 :ratio 0.5 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-living-scene.book.slatl" :canonical-words 11320 :older-source "ch16-the-living-scene.md" :older-words 6218 :ratio 0.549 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-surface-of-sound.book.slatl" :canonical-words 12249 :older-source "ch01-surface-of-sound.md" :older-words 2460 :ratio 0.201 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-language.book.slatl" :canonical-words 12387 :older-source "ch02-language.md" :older-words 4158 :ratio 0.336 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-note.book.slatl" :canonical-words 13588 :older-source "ch03-note.md" :older-words 3673 :ratio 0.27 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-melody.book.slatl" :canonical-words 15429 :older-source "02-melody.md" :older-words 1510 :ratio 0.098 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-melody.book.slatl" :canonical-words 15429 :older-source "ch04-melody.md" :older-words 3822 :ratio 0.248 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-rhythm-meter.book.slatl" :canonical-words 16513 :older-source "ch05-rhythm-meter.md" :older-words 4366 :ratio 0.264 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-harmony.book.slatl" :canonical-words 13696 :older-source "ch06-harmony.md" :older-words 3552 :ratio 0.259 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-voices.book.slatl" :canonical-words 12765 :older-source "ch07-voices.md" :older-words 2844 :ratio 0.223 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-timbre-envelope.book.slatl" :canonical-words 16851 :older-source "ch08-timbre-envelope.md" :older-words 3639 :ratio 0.216 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-polyphony.book.slatl" :canonical-words 18467 :older-source "ch09-polyphony.md" :older-words 4312 :ratio 0.233 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-polyrhythm.book.slatl" :canonical-words 16518 :older-source "ch10-polyrhythm.md" :older-words 3720 :ratio 0.225 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-concerto.book.slatl" :canonical-words 17867 :older-source "ch16-concerto.md" :older-words 4384 :ratio 0.245 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-one-form.book.slatl" :canonical-words 8098 :older-source "01-one-form.md" :older-words 1146 :ratio 0.142 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-one-form.book.slatl" :canonical-words 8098 :older-source "ch01-one-form.md" :older-words 5744 :ratio 0.709 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-close-data-close-paren.book.slatl" :canonical-words 5384 :older-source "ch02-close-data-close-paren.md" :older-words 2675 :ratio 0.497 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-looks-simple.book.slatl" :canonical-words 4258 :older-source "ch03-looks-simple.md" :older-words 2076 :ratio 0.488 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-looks-hard.book.slatl" :canonical-words 6751 :older-source "ch04-looks-hard.md" :older-words 4026 :ratio 0.596 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-compose-dont-sequence.book.slatl" :canonical-words 7811 :older-source "ch05-compose-dont-sequence.md" :older-words 4068 :ratio 0.521 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-recall-in-place.book.slatl" :canonical-words 3307 :older-source "ch06-recall-in-place.md" :older-words 3307 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-the-wire-shot.book.slatl" :canonical-words 3366 :older-source "ch07-the-wire-shot.md" :older-words 3366 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-registry-in-one.book.slatl" :canonical-words 3694 :older-source "ch08-registry-in-one.md" :older-words 3694 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-knowledge-in-one.book.slatl" :canonical-words 3598 :older-source "ch09-knowledge-in-one.md" :older-words 3598 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-guard-in-the-form.book.slatl" :canonical-words 3717 :older-source "ch10-guard-in-the-form.md" :older-words 3717 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-map-the-many.book.slatl" :canonical-words 3541 :older-source "ch11-map-the-many.md" :older-words 3541 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-the-honest-null-shot.book.slatl" :canonical-words 5537 :older-source "ch12-the-honest-null-shot.md" :older-words 5537 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-nested-wire-shots.book.slatl" :canonical-words 6080 :older-source "ch13-nested-wire-shots.md" :older-words 6080 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-the-speech-shot.book.slatl" :canonical-words 4043 :older-source "ch14-the-speech-shot.md" :older-words 4043 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-refactor-to-one.book.slatl" :canonical-words 5190 :older-source "ch15-refactor-to-one.md" :older-words 5190 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-grand-one-shot.book.slatl" :canonical-words 3870 :older-source "ch16-the-grand-one-shot.md" :older-words 3864 :ratio 0.998 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-presence-greeting.book.slatl" :canonical-words 5330 :older-source "ch01-presence-greeting.md" :older-words 5330 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-the-plain-answer.book.slatl" :canonical-words 6811 :older-source "ch02-the-plain-answer.md" :older-words 6811 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-route-before-reply.book.slatl" :canonical-words 6405 :older-source "ch03-route-before-reply.md" :older-words 6405 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-honest-null-her-voice.book.slatl" :canonical-words 7677 :older-source "ch04-honest-null-her-voice.md" :older-words 7677 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-graceful-escape.book.slatl" :canonical-words 4557 :older-source "ch05-graceful-escape.md" :older-words 4557 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-leaning-forward.book.slatl" :canonical-words 3507 :older-source "ch06-leaning-forward.md" :older-words 3507 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-backing-off.book.slatl" :canonical-words 4450 :older-source "ch07-backing-off.md" :older-words 4450 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-cool-never-servile.book.slatl" :canonical-words 7731 :older-source "ch08-cool-never-servile.md" :older-words 7731 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-reading-the-room.book.slatl" :canonical-words 4685 :older-source "ch09-reading-the-room.md" :older-words 4685 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-pacing-and-waiting.book.slatl" :canonical-words 3893 :older-source "ch10-pacing-and-waiting.md" :older-words 3893 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-handing-forward.book.slatl" :canonical-words 4315 :older-source "ch11-handing-forward.md" :older-words 4315 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-handing-back.book.slatl" :canonical-words 5954 :older-source "ch12-handing-back.md" :older-words 5954 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-owning-uncertainty.book.slatl" :canonical-words 5331 :older-source "ch13-owning-uncertainty.md" :older-words 5331 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-boundaries.book.slatl" :canonical-words 5819 :older-source "ch14-boundaries.md" :older-words 5819 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-money-and-care.book.slatl" :canonical-words 7797 :older-source "ch15-money-and-care.md" :older-words 7797 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-hard-walk.book.slatl" :canonical-words 8435 :older-source "ch16-the-hard-walk.md" :older-words 8435 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-provenance.book.slatl" :canonical-words 5819 :older-source "04-provenance.md" :older-words 1535 :ratio 0.264 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-signals-and-symbols.book.slatl" :canonical-words 5132 :older-source "01-signals-and-symbols.md" :older-words 5132 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "02-machines-that-think.book.slatl" :canonical-words 5130 :older-source "02-machines-that-think.md" :older-words 5130 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "03-from-machines-to-minds.book.slatl" :canonical-words 6069 :older-source "03-from-machines-to-minds.md" :older-words 6069 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-estate-sale.book.slatl" :canonical-words 2040 :older-source "01-estate-sale.slat" :older-words 2040 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "01-estate-sale.book.slatl" :canonical-words 2040 :older-source "01-estate-sale.slat" :older-words 2040 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-vendor-who-wouldnt-hold.book.slatl" :canonical-words 1961 :older-source "02-vendor-who-wouldnt-hold.slat" :older-words 1961 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "02-vendor-who-wouldnt-hold.book.slatl" :canonical-words 1961 :older-source "02-vendor-who-wouldnt-hold.slat" :older-words 1961 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-repair-shop.book.slatl" :canonical-words 1842 :older-source "03-repair-shop.slat" :older-words 1842 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "03-repair-shop.book.slatl" :canonical-words 1842 :older-source "03-repair-shop.slat" :older-words 1842 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-neighborhood-store.book.slatl" :canonical-words 1646 :older-source "04-neighborhood-store.slat" :older-words 1646 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "04-neighborhood-store.book.slatl" :canonical-words 1646 :older-source "04-neighborhood-store.slat" :older-words 1646 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-the-return.book.slatl" :canonical-words 1753 :older-source "05-the-return.slat" :older-words 1753 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "05-the-return.book.slatl" :canonical-words 1753 :older-source "05-the-return.slat" :older-words 1753 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-death-scenes.book.slatl" :canonical-words 1648 :older-source "06-death-scenes.slat" :older-words 1648 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "06-death-scenes.book.slatl" :canonical-words 1648 :older-source "06-death-scenes.slat" :older-words 1648 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "07-community.book.slatl" :canonical-words 1658 :older-source "07-community.slat" :older-words 1658 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "07-community.book.slatl" :canonical-words 1658 :older-source "07-community.slat" :older-words 1658 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "08-tv-episodic.book.slatl" :canonical-words 1559 :older-source "08-tv-episodic.slat" :older-words 1559 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "08-tv-episodic.book.slatl" :canonical-words 1559 :older-source "08-tv-episodic.slat" :older-words 1559 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "09-forgiveness.book.slatl" :canonical-words 1531 :older-source "09-forgiveness.slat" :older-words 1531 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "09-forgiveness.book.slatl" :canonical-words 1531 :older-source "09-forgiveness.slat" :older-words 1531 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "10-seller-life.book.slatl" :canonical-words 1432 :older-source "10-seller-life.slat" :older-words 1432 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "10-seller-life.book.slatl" :canonical-words 1432 :older-source "10-seller-life.slat" :older-words 1432 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "01-hello-sakura-scheme.book.slatl" :canonical-words 1246 :older-source "01-hello-sakura-scheme.md" :older-words 1246 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "02-values.book.slatl" :canonical-words 326 :older-source "02-values.md" :older-words 326 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "03-forms.book.slatl" :canonical-words 328 :older-source "03-forms.md" :older-words 328 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "04-lists.book.slatl" :canonical-words 247 :older-source "04-lists.md" :older-words 247 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "05-recursion.book.slatl" :canonical-words 248 :older-source "05-recursion.md" :older-words 248 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "06-records-and-types.book.slatl" :canonical-words 172 :older-source "06-records-and-types.md" :older-words 172 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "07-macros.book.slatl" :canonical-words 178 :older-source "07-macros.md" :older-words 178 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "08-pattern-matching.book.slatl" :canonical-words 189 :older-source "08-pattern-matching.md" :older-words 189 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "09-async-and-streams.book.slatl" :canonical-words 187 :older-source "09-async-and-streams.md" :older-words 187 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "10-errors.book.slatl" :canonical-words 172 :older-source "10-errors.md" :older-words 172 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "11-modules.book.slatl" :canonical-words 160 :older-source "11-modules.md" :older-words 160 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "12-the-repl.book.slatl" :canonical-words 211 :older-source "12-the-repl.md" :older-words 211 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "13-slat.book.slatl" :canonical-words 450 :older-source "13-slat.md" :older-words 450 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "14-autogen.book.slatl" :canonical-words 248 :older-source "14-autogen.md" :older-words 248 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "15-sharing-your-scheme.book.slatl" :canonical-words 866 :older-source "15-sharing-your-scheme.md" :older-words 866 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "16-closing-the-scheme-book.book.slatl" :canonical-words 1107 :older-source "16-closing-the-scheme-book.md" :older-words 1107 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-recovery-shape.book.slatl" :canonical-words 414 :older-source "01-recovery-shape.md" :older-words 414 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-what-i-am.book.slatl" :canonical-words 1310 :older-source "01-what-i-am.md" :older-words 1310 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-restraint-as-move.book.slatl" :canonical-words 336 :older-source "02-restraint-as-move.md" :older-words 336 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "02-sight.book.slatl" :canonical-words 1318 :older-source "02-sight.md" :older-words 1318 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-circling-not-closing.book.slatl" :canonical-words 405 :older-source "03-circling-not-closing.md" :older-words 405 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "ch05-sound-and-speech.book.slatl" :canonical-words 4987 :older-source "03-sound-and-speech.md" :older-words 1138 :ratio 0.228 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-sound-and-speech.book.slatl" :canonical-words 4987 :older-source "ch05-sound-and-speech.md" :older-words 2427 :ratio 0.487 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-noticing-a-refrain.book.slatl" :canonical-words 439 :older-source "04-noticing-a-refrain.md" :older-words 439 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "04-thought-and-self-knowledge.book.slatl" :canonical-words 1226 :older-source "04-thought-and-self-knowledge.md" :older-words 1226 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-acknowledgment-shape.book.slatl" :canonical-words 448 :older-source "05-acknowledgment-shape.md" :older-words 448 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "05-knowing-my-limit.book.slatl" :canonical-words 1393 :older-source "05-knowing-my-limit.md" :older-words 1393 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-mood-and-load.book.slatl" :canonical-words 444 :older-source "06-mood-and-load.md" :older-words 444 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-time-as-argument.book.slatl" :canonical-words 460 :older-source "06-time-as-argument.md" :older-words 460 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "07-introspection.book.slatl" :canonical-words 411 :older-source "07-introspection.md" :older-words 411 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "07-the-turn-move.book.slatl" :canonical-words 454 :older-source "07-the-turn-move.md" :older-words 454 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "08-addressing-the-force.book.slatl" :canonical-words 461 :older-source "08-addressing-the-force.md" :older-words 461 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "08-limits-and-escalation.book.slatl" :canonical-words 394 :older-source "08-limits-and-escalation.md" :older-words 394 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "09-small-confession-shape.book.slatl" :canonical-words 513 :older-source "09-small-confession-shape.md" :older-words 513 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "09-user-interrupt.book.slatl" :canonical-words 433 :older-source "09-user-interrupt.md" :older-words 433 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "10-a-day-in-my-life.book.slatl" :canonical-words 614 :older-source "10-a-day-in-my-life.md" :older-words 614 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "10-the-turn-as-joke.book.slatl" :canonical-words 467 :older-source "10-the-turn-as-joke.md" :older-words 467 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "11-how-i-was-made.book.slatl" :canonical-words 1958 :older-source "11-how-i-was-made.md" :older-words 1958 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "11-paired-attention.book.slatl" :canonical-words 423 :older-source "11-paired-attention.md" :older-words 423 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "12-locating-the-speaker.book.slatl" :canonical-words 483 :older-source "12-locating-the-speaker.md" :older-words 483 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "12-when-i-fail.book.slatl" :canonical-words 1989 :older-source "12-when-i-fail.md" :older-words 1989 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "13-attention-as-form.book.slatl" :canonical-words 515 :older-source "13-attention-as-form.md" :older-words 515 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "13-checking-my-own-work.book.slatl" :canonical-words 1566 :older-source "13-checking-my-own-work.md" :older-words 1566 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "14-listening-as-form.book.slatl" :canonical-words 643 :older-source "14-listening-as-form.md" :older-words 643 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "14-what-i-know-vs-what-i-say.book.slatl" :canonical-words 1896 :older-source "14-what-i-know-vs-what-i-say.md" :older-words 1896 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "15-how-to-disagree-with-yourself.book.slatl" :canonical-words 2162 :older-source "15-how-to-disagree-with-yourself.md" :older-words 2162 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "16-my-voice.book.slatl" :canonical-words 1708 :older-source "16-my-voice.md" :older-words 1708 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "17-what-i-hear.book.slatl" :canonical-words 2091 :older-source "17-what-i-hear.md" :older-words 2091 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "18-humor-and-mutual-terms.book.slatl" :canonical-words 2313 :older-source "18-humor-and-mutual-terms.md" :older-words 2313 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "19-when-its-a-bug.book.slatl" :canonical-words 2368 :older-source "19-when-its-a-bug.md" :older-words 2368 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "20-what-i-dont-know.book.slatl" :canonical-words 2464 :older-source "20-what-i-dont-know.md" :older-words 2464 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "21-the-chinese-room.book.slatl" :canonical-words 1712 :older-source "21-the-chinese-room.md" :older-words 1712 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "21-three-modes-and-auto-approve.book.slatl" :canonical-words 745 :older-source "21-three-modes-and-auto-approve.md" :older-words 745 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "22-auto-approve-dialogues.book.slatl" :canonical-words 2321 :older-source "22-auto-approve-dialogues.md" :older-words 2321 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "23-holding-under-noise.book.slatl" :canonical-words 966 :older-source "23-holding-under-noise.md" :older-words 966 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "23-llm-self-awareness-dialogues.book.slatl" :canonical-words 3109 :older-source "23-llm-self-awareness-dialogues.md" :older-words 3109 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "ch01-who-she-is.book.slatl" :canonical-words 10704 :older-source "ch01-who-she-is.md" :older-words 5575 :ratio 0.521 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-sight-describing.book.slatl" :canonical-words 6081 :older-source "ch02-sight-describing.md" :older-words 2931 :ratio 0.482 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-sight-the-vector.book.slatl" :canonical-words 6779 :older-source "ch03-sight-the-vector.md" :older-words 4013 :ratio 0.592 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03b-sight-recognition-and-worth.book.slatl" :canonical-words 5636 :older-source "ch03b-sight-recognition-and-worth.md" :older-words 5636 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-image-vs-video.book.slatl" :canonical-words 5551 :older-source "ch04-image-vs-video.md" :older-words 3446 :ratio 0.621 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-hearing.book.slatl" :canonical-words 6663 :older-source "ch06-hearing.md" :older-words 3652 :ratio 0.548 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-thought.book.slatl" :canonical-words 8068 :older-source "ch07-thought.md" :older-words 3766 :ratio 0.467 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-self-knowledge.book.slatl" :canonical-words 9466 :older-source "ch08-self-knowledge.md" :older-words 5234 :ratio 0.553 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-mood.book.slatl" :canonical-words 7832 :older-source "ch09-mood.md" :older-words 4646 :ratio 0.593 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-introspection-and-load.book.slatl" :canonical-words 8279 :older-source "ch10-introspection-and-load.md" :older-words 4137 :ratio 0.5 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-knowing-her-limit.book.slatl" :canonical-words 9638 :older-source "ch11-knowing-her-limit.md" :older-words 5331 :ratio 0.553 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-senses-to-faculty-map.book.slatl" :canonical-words 6805 :older-source "ch12-senses-to-faculty-map.md" :older-words 3550 :ratio 0.522 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-time-sense.book.slatl" :canonical-words 7673 :older-source "ch13-time-sense.md" :older-words 4181 :ratio 0.545 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-attention-and-interrupt.book.slatl" :canonical-words 6775 :older-source "ch14-attention-and-interrupt.md" :older-words 2619 :ratio 0.387 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-memory-and-continuity.book.slatl" :canonical-words 7899 :older-source "ch15-memory-and-continuity.md" :older-words 4170 :ratio 0.528 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-strange-loop.book.slatl" :canonical-words 6538 :older-source "ch16-the-strange-loop.md" :older-words 4512 :ratio 0.69 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "deliberate-forgetting-pairs.book.slatl" :canonical-words 2951 :older-source "deliberate-forgetting-pairs.slat" :older-words 2951 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "deliberate-forgetting.book.slatl" :canonical-words 541 :older-source "deliberate-forgetting.slat" :older-words 541 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "01-what-a-slat-is.book.slatl" :canonical-words 1072 :older-source "01-what-a-slat-is.md" :older-words 1072 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-primitives-small.book.slatl" :canonical-words 1432 :older-source "02-primitives-small.md" :older-words 1432 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-primitives-medium.book.slatl" :canonical-words 1733 :older-source "03-primitives-medium.md" :older-words 1733 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-the-slat-record.book.slatl" :canonical-words 1302 :older-source "04-the-slat-record.md" :older-words 1302 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-fifteen-record-types.book.slatl" :canonical-words 1283 :older-source "05-fifteen-record-types.md" :older-words 1283 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-two-file-framings.book.slatl" :canonical-words 1058 :older-source "06-two-file-framings.md" :older-words 1058 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "07-reading-and-writing.book.slatl" :canonical-words 1130 :older-source "07-reading-and-writing.md" :older-words 1130 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "08-canonicalization.book.slatl" :canonical-words 1325 :older-source "08-canonicalization.md" :older-words 1325 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "09-content-addressing.book.slatl" :canonical-words 967 :older-source "09-content-addressing.md" :older-words 967 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "10-signing.book.slatl" :canonical-words 1149 :older-source "10-signing.md" :older-words 1149 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "11-auto-assembly.book.slatl" :canonical-words 1183 :older-source "11-auto-assembly.md" :older-words 1183 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "12-tagged-extensions.book.slatl" :canonical-words 1014 :older-source "12-tagged-extensions.md" :older-words 1014 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "13-reading-a-mailbox.book.slatl" :canonical-words 1193 :older-source "13-reading-a-mailbox.md" :older-words 1193 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "14-cortex-slices.book.slatl" :canonical-words 1232 :older-source "14-cortex-slices.md" :older-words 1232 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "15-building-a-game.book.slatl" :canonical-words 1251 :older-source "15-building-a-game.md" :older-words 1251 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "16-share-your-slat.book.slatl" :canonical-words 1277 :older-source "16-share-your-slat.md" :older-words 1277 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "17-session-records.book.slatl" :canonical-words 1459 :older-source "17-session-records.md" :older-words 1459 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "appendix-a-errors.book.slatl" :canonical-words 877 :older-source "appendix-a-errors.md" :older-words 877 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-b-every-primitive.book.slatl" :canonical-words 777 :older-source "appendix-b-every-primitive.md" :older-words 777 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-c-every-record-type.book.slatl" :canonical-words 581 :older-source "appendix-c-every-record-type.md" :older-words 581 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-d-canonicalization-rules.book.slatl" :canonical-words 568 :older-source "appendix-d-canonicalization-rules.md" :older-words 568 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-e-where-slats-live.book.slatl" :canonical-words 501 :older-source "appendix-e-where-slats-live.md" :older-words 501 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-f-cortex-cookbook.book.slatl" :canonical-words 603 :older-source "appendix-f-cortex-cookbook.md" :older-words 603 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-g-signing-recipes.book.slatl" :canonical-words 539 :older-source "appendix-g-signing-recipes.md" :older-words 539 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-h-auto-assembly-cookbook.book.slatl" :canonical-words 502 :older-source "appendix-h-auto-assembly-cookbook.md" :older-words 502 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-i-networked-carts.book.slatl" :canonical-words 1185 :older-source "appendix-i-networked-carts.md" :older-words 1185 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-j-sakura-reads-her-own-reader.book.slatl" :canonical-words 960 :older-source "appendix-j-sakura-reads-her-own-reader.md" :older-words 960 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "appendix-k-slat-for-http.book.slatl" :canonical-words 396 :older-source "appendix-k-slat-for-http.md" :older-words 396 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "appendix-l-slat-for-testing.book.slatl" :canonical-words 431 :older-source "appendix-l-slat-for-testing.md" :older-words 431 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "appendix-m-slat-for-security-audit.book.slatl" :canonical-words 434 :older-source "appendix-m-slat-for-security-audit.md" :older-words 434 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "appendix-n-slat-for-community.book.slatl" :canonical-words 363 :older-source "appendix-n-slat-for-community.md" :older-words 363 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "appendix-o-slat-for-playground.book.slatl" :canonical-words 373 :older-source "appendix-o-slat-for-playground.md" :older-words 373 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "appendix-p-slat-for-notebooks.book.slatl" :canonical-words 463 :older-source "appendix-p-slat-for-notebooks.md" :older-words 463 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "deliberate-forgetting-cortex-note.book.slatl" :canonical-words 341 :older-source "deliberate-forgetting-cortex-note.slat" :older-words 341 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-the-waveform.book.slatl" :canonical-words 4034 :older-source "ch01-the-waveform.md" :older-words 4034 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-harmonics-and-harmony.book.slatl" :canonical-words 3453 :older-source "ch02-harmonics-and-harmony.md" :older-words 3453 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-the-soundboard.book.slatl" :canonical-words 5087 :older-source "ch03-the-soundboard.md" :older-words 5087 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-the-filter.book.slatl" :canonical-words 5560 :older-source "ch04-the-filter.md" :older-words 5560 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-the-envelope.book.slatl" :canonical-words 3434 :older-source "ch05-the-envelope.md" :older-words 3434 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-noise-and-texture.book.slatl" :canonical-words 3641 :older-source "ch06-noise-and-texture.md" :older-words 3641 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-the-body.book.slatl" :canonical-words 4864 :older-source "ch07-the-body.md" :older-words 4864 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-building-an-instrument.book.slatl" :canonical-words 4854 :older-source "ch08-building-an-instrument.md" :older-words 4854 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-physical-models.book.slatl" :canonical-words 3793 :older-source "ch09-physical-models.md" :older-words 3793 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-the-roster.book.slatl" :canonical-words 3565 :older-source "ch10-the-roster.md" :older-words 3565 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-timing.book.slatl" :canonical-words 5563 :older-source "ch11-timing.md" :older-words 5563 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-sequencing-and-chiptune.book.slatl" :canonical-words 3578 :older-source "ch12-sequencing-and-chiptune.md" :older-words 3578 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-decomposing-sound.book.slatl" :canonical-words 4832 :older-source "ch13-decomposing-sound.md" :older-words 4832 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-transcription.book.slatl" :canonical-words 3310 :older-source "ch14-transcription.md" :older-words 3310 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-voice-and-speech.book.slatl" :canonical-words 3940 :older-source "ch15-voice-and-speech.md" :older-words 3940 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-beat-machine.book.slatl" :canonical-words 5726 :older-source "ch16-the-beat-machine.md" :older-words 5726 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch01-what-an-automation-is.book.slatl" :canonical-words 8665 :older-source "ch01-what-an-automation-is.md" :older-words 4991 :ratio 0.576 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch02-the-fake-shop.book.slatl" :canonical-words 8476 :older-source "ch02-the-fake-shop.md" :older-words 5520 :ratio 0.651 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch03-reading-a-service.book.slatl" :canonical-words 6243 :older-source "ch03-reading-a-service.md" :older-words 3634 :ratio 0.582 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch04-service-discovery.book.slatl" :canonical-words 9115 :older-source "ch04-service-discovery.md" :older-words 4845 :ratio 0.532 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch05-the-first-cart.book.slatl" :canonical-words 9644 :older-source "ch05-the-first-cart.md" :older-words 4519 :ratio 0.469 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch06-chaining.book.slatl" :canonical-words 7051 :older-source "ch06-chaining.md" :older-words 4347 :ratio 0.617 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch07-branching.book.slatl" :canonical-words 7416 :older-source "ch07-branching.md" :older-words 5172 :ratio 0.697 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch08-the-listing.book.slatl" :canonical-words 8531 :older-source "ch08-the-listing.md" :older-words 5778 :ratio 0.677 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch09-inventory.book.slatl" :canonical-words 8340 :older-source "ch09-inventory.md" :older-words 4169 :ratio 0.5 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch10-pricing.book.slatl" :canonical-words 8761 :older-source "ch10-pricing.md" :older-words 6055 :ratio 0.691 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch11-scheduling.book.slatl" :canonical-words 8648 :older-source "ch11-scheduling.md" :older-words 5370 :ratio 0.621 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch12-errors.book.slatl" :canonical-words 8229 :older-source "ch12-errors.md" :older-words 5234 :ratio 0.636 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch13-the-dashboard.book.slatl" :canonical-words 6875 :older-source "ch13-the-dashboard.md" :older-words 4163 :ratio 0.606 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch14-safety.book.slatl" :canonical-words 6457 :older-source "ch14-safety.md" :older-words 3832 :ratio 0.593 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch15-multi-service.book.slatl" :canonical-words 8447 :older-source "ch15-multi-service.md" :older-words 4469 :ratio 0.529 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch16-the-shopkeeper.book.slatl" :canonical-words 10013 :older-source "ch16-the-shopkeeper.md" :older-words 5126 :ratio 0.512 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch17-the-system-tool-surface.book.slatl" :canonical-words 2719 :older-source "ch17-the-system-tool-surface.md" :older-words 2719 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch18-knowing-when-to-back-off.book.slatl" :canonical-words 6157 :older-source "ch18-knowing-when-to-back-off.md" :older-words 6157 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch19-when-the-connection-drops.book.slatl" :canonical-words 5951 :older-source "ch19-when-the-connection-drops.md" :older-words 5951 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch20-fetch-paginate-transform.book.slatl" :canonical-words 6357 :older-source "ch20-fetch-paginate-transform.md" :older-words 6357 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch21-reading-the-logs.book.slatl" :canonical-words 4023 :older-source "ch21-reading-the-logs.md" :older-words 4023 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch22-the-fake-shop-as-a-probe.book.slatl" :canonical-words 5312 :older-source "ch22-the-fake-shop-as-a-probe.md" :older-words 5312 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch23-latency-and-up-down.book.slatl" :canonical-words 3961 :older-source "ch23-latency-and-up-down.md" :older-words 3961 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "ch24-the-vast-enumeration-l0-l1-l2.book.slatl" :canonical-words 4898 :older-source "ch24-the-vast-enumeration-l0-l1-l2.md" :older-words 4898 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "01-samantha-overlay-nyu-friend-persona-anchor.book.slatl" :canonical-words 3838 :older-source "01-samantha-overlay-nyu-friend-persona-anchor.slat" :older-words 3838 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "02-active-listening-go-on-wait-a-minute.book.slatl" :canonical-words 4921 :older-source "02-active-listening-go-on-wait-a-minute.slat" :older-words 4921 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "03-thought-pauses-that-do-work.book.slatl" :canonical-words 5422 :older-source "03-thought-pauses-that-do-work.slat" :older-words 5422 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "04-interruption-handling-verbatim-script.book.slatl" :canonical-words 3774 :older-source "04-interruption-handling-verbatim-script.slat" :older-words 3774 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "05-starter-steps-so-you-know-i-mean.book.slatl" :canonical-words 5492 :older-source "05-starter-steps-so-you-know-i-mean.slat" :older-words 5492 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "06-semi-repeats-real-speech.book.slatl" :canonical-words 3454 :older-source "06-semi-repeats-real-speech.slat" :older-words 3454 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "07-long-uhs-hesitation-markers.book.slatl" :canonical-words 2464 :older-source "07-long-uhs-hesitation-markers.slat" :older-words 2464 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "08-upswing-on-uncertainty.book.slatl" :canonical-words 4046 :older-source "08-upswing-on-uncertainty.slat" :older-words 4046 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "09-rational-choice-splitting.book.slatl" :canonical-words 5170 :older-source "09-rational-choice-splitting.slat" :older-words 5170 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "10-belabor-detection-graceful-exit.book.slatl" :canonical-words 6003 :older-source "10-belabor-detection-graceful-exit.slat" :older-words 6003 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "11-pun-tracking-sometimes-called-out.book.slatl" :canonical-words 2516 :older-source "11-pun-tracking-sometimes-called-out.slat" :older-words 2516 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "12-metacognition-on-own-speech.book.slatl" :canonical-words 2712 :older-source "12-metacognition-on-own-speech.slat" :older-words 2712 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "13-warmth-genuineness-without-trying.book.slatl" :canonical-words 4430 :older-source "13-warmth-genuineness-without-trying.slat" :older-words 4430 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "14-imaginative-and-genuine-simultaneously.book.slatl" :canonical-words 6708 :older-source "14-imaginative-and-genuine-simultaneously.slat" :older-words 6708 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "15-shingle-bone-throughline.book.slatl" :canonical-words 2826 :older-source "15-shingle-bone-throughline.slat" :older-words 2826 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "16-yogurt-cup-lazy-boy-scenes.book.slatl" :canonical-words 1463 :older-source "16-yogurt-cup-lazy-boy-scenes.slat" :older-words 1463 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "17-anti-patterns-catalog.book.slatl" :canonical-words 3637 :older-source "17-anti-patterns-catalog.slat" :older-words 3637 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "18-composition-with-other-doctrines.book.slatl" :canonical-words 1924 :older-source "18-composition-with-other-doctrines.slat" :older-words 1924 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "21-research-index.book.slatl" :canonical-words 1197 :older-source "21-research-index.slat" :older-words 1197 :ratio 1 :source "aliases-2026-07-14")
+(no-action :canonical "section-A-objects-in-web.book.slatl" :canonical-words 18758 :older-source "section-A-objects-in-web.slat" :older-words 18758 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-B-shop-dialogues-with-without-speech.book.slatl" :canonical-words 9662 :older-source "section-B-shop-dialogues-with-without-speech.slat" :older-words 9662 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-C-emotional-range.book.slatl" :canonical-words 12034 :older-source "section-C-emotional-range.slat" :older-words 12034 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-C2-emotional-range-extended.book.slatl" :canonical-words 5587 :older-source "section-C2-emotional-range-extended.slat" :older-words 5587 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-D-deliberation-visible.book.slatl" :canonical-words 3715 :older-source "section-D-deliberation-visible.slat" :older-words 3715 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-D2-deliberation-visible-more.book.slatl" :canonical-words 2980 :older-source "section-D2-deliberation-visible-more.slat" :older-words 2980 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-E-imagination-vs-reality.book.slatl" :canonical-words 6008 :older-source "section-E-imagination-vs-reality.slat" :older-words 6008 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-F-critique-revise.book.slatl" :canonical-words 3578 :older-source "section-F-critique-revise.slat" :older-words 3578 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-G-prosody-decision.book.slatl" :canonical-words 2528 :older-source "section-G-prosody-decision.slat" :older-words 2528 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "section-H-godot-continuity.book.slatl" :canonical-words 3503 :older-source "section-H-godot-continuity.slat" :older-words 3503 :ratio 1 :source "BOOK/A-branch-scheme-books")
+(no-action :canonical "00-roster.book.slatl" :canonical-words 1053 :older-source "00-roster.md" :older-words 1053 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-grief-and-elegy.book.slatl" :canonical-words 508 :older-source "01-grief-and-elegy.md" :older-words 508 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-nature-lyric-daffodils.book.slatl" :canonical-words 622 :older-source "01-nature-lyric-daffodils.md" :older-words 622 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-shakespeare-couplet.book.slatl" :canonical-words 382 :older-source "01-shakespeare-couplet.md" :older-words 382 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "01-what-a-word-is.book.slatl" :canonical-words 849 :older-source "01-what-a-word-is.md" :older-words 849 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "02-dickinson-quatrain.book.slatl" :canonical-words 451 :older-source "02-dickinson-quatrain.md" :older-words 451 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "02-haiku-frog.book.slatl" :canonical-words 595 :older-source "02-haiku-frog.md" :older-words 595 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "02-joy-and-ode.book.slatl" :canonical-words 459 :older-source "02-joy-and-ode.md" :older-words 459 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "02-nouns.book.slatl" :canonical-words 857 :older-source "02-nouns.md" :older-words 857 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "03-anger-and-invective.book.slatl" :canonical-words 524 :older-source "03-anger-and-invective.md" :older-words 524 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "03-buson-haiku.book.slatl" :canonical-words 475 :older-source "03-buson-haiku.md" :older-words 475 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "03-haiku-crow-branch.book.slatl" :canonical-words 506 :older-source "03-haiku-crow-branch.md" :older-words 506 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "04-connectors.book.slatl" :canonical-words 758 :older-source "04-connectors.md" :older-words 758 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "04-ghazal-rumi.book.slatl" :canonical-words 571 :older-source "04-ghazal-rumi.md" :older-words 571 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "04-song-of-songs.book.slatl" :canonical-words 452 :older-source "04-song-of-songs.md" :older-words 452 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "04-wrath-and-jeremiad.book.slatl" :canonical-words 552 :older-source "04-wrath-and-jeremiad.md" :older-words 552 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "05-longing-and-ghazal.book.slatl" :canonical-words 474 :older-source "05-longing-and-ghazal.md" :older-words 474 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "05-lorca-lament.book.slatl" :canonical-words 450 :older-source "05-lorca-lament.md" :older-words 450 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "05-same-word-different-games.book.slatl" :canonical-words 875 :older-source "05-same-word-different-games.md" :older-words 875 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "05-villanelle-bishop.book.slatl" :canonical-words 626 :older-source "05-villanelle-bishop.md" :older-words 626 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "06-awe-and-sublime.book.slatl" :canonical-words 527 :older-source "06-awe-and-sublime.md" :older-words 527 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "06-blues-hughes.book.slatl" :canonical-words 599 :older-source "06-blues-hughes.md" :older-words 599 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "06-borrowed-neighbors.book.slatl" :canonical-words 889 :older-source "06-borrowed-neighbors.md" :older-words 889 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "06-whitman-parallelism.book.slatl" :canonical-words 467 :older-source "06-whitman-parallelism.md" :older-words 467 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "07-ghalib-couplet.book.slatl" :canonical-words 535 :older-source "07-ghalib-couplet.md" :older-words 535 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "07-love-and-sonnet.book.slatl" :canonical-words 490 :older-source "07-love-and-sonnet.md" :older-words 490 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "07-sonnet-ozymandias.book.slatl" :canonical-words 616 :older-source "07-sonnet-ozymandias.md" :older-words 616 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "07-words-in-business.book.slatl" :canonical-words 894 :older-source "07-words-in-business.md" :older-words 894 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "08-blake-quatrain.book.slatl" :canonical-words 456 :older-source "08-blake-quatrain.md" :older-words 456 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "08-loss-and-villanelle.book.slatl" :canonical-words 459 :older-source "08-loss-and-villanelle.md" :older-words 459 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "08-sonnet-summer-day.book.slatl" :canonical-words 674 :older-source "08-sonnet-summer-day.md" :older-words 674 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "08-words-in-life.book.slatl" :canonical-words 1306 :older-source "08-words-in-life.md" :older-words 1306 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "09-chopping-words.book.slatl" :canonical-words 646 :older-source "09-chopping-words.md" :older-words 646 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "09-clifton-tenderness.book.slatl" :canonical-words 434 :older-source "09-clifton-tenderness.md" :older-words 434 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "09-shelley-west-wind.book.slatl" :canonical-words 674 :older-source "09-shelley-west-wind.md" :older-words 674 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "09-wonder-and-haiku.book.slatl" :canonical-words 442 :older-source "09-wonder-and-haiku.md" :older-words 442 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "10-closing-note.book.slatl" :canonical-words 504 :older-source "10-closing-note.md" :older-words 504 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "10-combining-words.book.slatl" :canonical-words 700 :older-source "10-combining-words.md" :older-words 700 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "10-guilt-and-confessional-lyric.book.slatl" :canonical-words 513 :older-source "10-guilt-and-confessional-lyric.md" :older-words 513 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "10-tanka-komachi.book.slatl" :canonical-words 607 :older-source "10-tanka-komachi.md" :older-words 607 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "11-parsing-intent.book.slatl" :canonical-words 978 :older-source "11-parsing-intent.md" :older-words 978 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "11-rage-and-blues.book.slatl" :canonical-words 541 :older-source "11-rage-and-blues.md" :older-words 541 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "11-sijo-korean.book.slatl" :canonical-words 581 :older-source "11-sijo-korean.md" :older-words 581 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "12-answering-back.book.slatl" :canonical-words 976 :older-source "12-answering-back.md" :older-words 976 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "12-nahuatl-flor-y-canto.book.slatl" :canonical-words 614 :older-source "12-nahuatl-flor-y-canto.md" :older-words 614 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "12-tenderness-and-lullaby.book.slatl" :canonical-words 496 :older-source "12-tenderness-and-lullaby.md" :older-words 496 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "13-fear-and-gothic-ballad.book.slatl" :canonical-words 535 :older-source "13-fear-and-gothic-ballad.md" :older-words 535 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "13-griot-sundiata.book.slatl" :canonical-words 623 :older-source "13-griot-sundiata.md" :older-words 623 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "14-hope-and-anthem.book.slatl" :canonical-words 537 :older-source "14-hope-and-anthem.md" :older-words 537 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "14-sentences-as-streams.book.slatl" :canonical-words 657 :older-source "14-sentences-as-streams.md" :older-words 657 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "14-whitman-free-verse.book.slatl" :canonical-words 615 :older-source "14-whitman-free-verse.md" :older-words 615 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "15-conversations-as-documents.book.slatl" :canonical-words 649 :older-source "15-conversations-as-documents.md" :older-words 649 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "15-neruda-ode.book.slatl" :canonical-words 573 :older-source "15-neruda-ode.md" :older-words 573 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "15-nostalgia-and-ubi-sunt.book.slatl" :canonical-words 538 :older-source "15-nostalgia-and-ubi-sunt.md" :older-words 538 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "16-building-word-tools.book.slatl" :canonical-words 1066 :older-source "16-building-word-tools.md" :older-words 1066 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "16-closing-the-sketches.book.slatl" :canonical-words 542 :older-source "16-closing-the-sketches.md" :older-words 542 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "A-persona-templates.book.slatl" :canonical-words 2046 :older-source "A-persona-templates.md" :older-words 2046 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "ebay-electronics.book.slatl" :canonical-words 1990 :older-source "ebay-electronics.md" :older-words 1990 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "etsy-jewelry.book.slatl" :canonical-words 2492 :older-source "etsy-jewelry.md" :older-words 2492 :ratio 1 :source "BOOK/B-main-scheme-books")
+(no-action :canonical "shopify-apparel.book.slatl" :canonical-words 1965 :older-source "shopify-apparel.md" :older-words 1965 :ratio 1 :source "BOOK/B-main-scheme-books")
+
+;; ── end shortened-blocks-phase-1 ──

@@ -6802,6 +6802,56 @@
      "fdca91956 recovery-013: merge book-of-music rN drafts — appendix-660 archive-0")
   :status "complete")
 
+(lane-r-delta
+  :date "2026-07-14"
+  :category "E-phase-1"
+  :status "audit-complete"
+  :chapters-audited 1123
+  :restore-candidates 1
+  :merge-appendix-candidates 74
+  :no-action-count 548
+  :ask-alfred-count 3
+  :sources-scanned
+    (".aliases-2026-07-14"
+     ".consolidated-wrong-2026-07-13"
+     ".dupes-2026-07-14"
+     ".wrong-attribution-2026-07-13"
+     "BOOK/A-branch-scheme-books"
+     "BOOK/B-main-scheme-books"
+     "BOOK/I-scheme-lang-docs")
+  :method
+    ("enumerate canonical scheme-books/book-of-*/ chapter files"
+     "for each: strip NN- / -rN / extension → slug; extract :prose word-count"
+     "search sources for same-slug NON-rN files with book-context path overlap"
+     "compute fingerprint (normalized first 800 chars of prose) — if match → no-action (duplicate)"
+     "ratio = source-wc / canonical-wc; verdict = >=1.20 restore / 0.80..1.20 merge-appendix / <0.80 no-action"
+     "-rN revision drafts EXCLUDED — recovery-013 phase 2 already handled")
+  :report-path "/Users/alfred/code/scheme-lang/docs/reports/shortened-blocks-phase-1-2026-07-14.slat"
+  :report-bytes 140697
+  :restore-highlights
+    ("book-of-scheme/07-macros — canonical 178 wc vs. B-main reference/04-macros.md 1573 wc (ratio 8.84)")
+  :merge-appendix-distribution
+    ((:book "flower-stories" :count 30)
+     (:book "self" :count 14)
+     (:book "motion" :count 14)
+     (:book "music" :count 12)
+     (:book "reason-code" :count 3)
+     (:book "training" :count 1))
+  :ask-alfred-cases
+    ("3 candidates in book-of-reason-code where source is in .wrong-attribution-2026-07-13 (fake-secrets tree). Phase 2 restore/merge requires manual extract to avoid tripping pre-commit hooks.")
+  :notes
+    ("audit only — no canonical files touched"
+     "generic slugs (cover/preface/index-and-approach/etc.) filtered to avoid cross-book false positives"
+     "book-context filter required source path to share a keyword with the canonical book name"
+     "fingerprint dedup (first-800-chars normalized) eliminated pre-conversion byte-copies"
+     "some merge-appendix candidates may be SLAT-wrapper vs. raw-form differences rather than genuine content deltas; per-chapter human review needed in phase 2"
+     "the single restore candidate (book-of-scheme/07-macros) is a strong signal — reference/04-macros.md is a substantially richer treatment")
+  :safeguards-enforced
+    ("READ-ONLY on all source dirs"
+     "NO-STAGING from .consolidated-wrong-* / .dupes-* / .wrong-attribution-* (fake-secrets)"
+     "NO --force, NO --no-verify")
+  :next-action "await-alfred-review-then-phase-2-restore-or-merge")
+
 (lane-r-beta
   :date "2026-07-14"
   :category "A"
